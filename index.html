@@ -1021,8 +1021,9 @@ function confirmBooking() {
           sign_date: parqData.signDate
         }, answers));
       }
-      // Update booked count on class
-      await sb.from("classes").update({ booked: c.booked }).eq("id", c.id);
+      // Update booked count on class — use fresh incremented value
+      var newBookedCount = (c.booked);
+      await sb.from("classes").update({ booked: newBookedCount }).eq("id", c.id);
     } catch(err) {
       console.error("Supabase save error:", err);
     }
@@ -1108,7 +1109,14 @@ function renderDashboard() {
       document.getElementById("btbody").innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading bookings. Please refresh.</td></tr>';
     }
 
-    // Render classes table
+    // Render classes table - fetch live booked counts from Supabase
+    var { data: liveClasses } = await sb.from("classes").select("id, booked, cap");
+    if (liveClasses) {
+      liveClasses.forEach(function(lc) {
+        var cls = classes.find(function(c) { return c.id === lc.id; });
+        if (cls) { cls.booked = lc.booked; cls.cap = lc.cap; }
+      });
+    }
     var chtml = "";
     for (var i = 0; i < classes.length; i++) {
       var c = classes[i];
@@ -1426,31 +1434,33 @@ function saveEditClass() {
 
 function confirmBookingAdmin(idx) {
   var b = bookings[idx];
-  bookings[idx].status = "confirmed";
-  renderDashboard();
-  showToast("Booking confirmed! Email sent to " + b.client + ".");
+  showToast("Confirming booking...");
   (async function() {
     try {
       await sb.from("bookings").update({ status: "confirmed" }).eq("id", b.dbId);
+      showToast("Booking confirmed for " + b.client + "!");
+      renderDashboard();
     } catch(err) {
       console.error("Supabase confirm error:", err);
+      showToast("Error confirming booking. Please try again.");
     }
   })();
 }
 
 function cancelBooking(idx) {
   var b = bookings[idx];
-  for (var i = 0; i < classes.length; i++) {
-    if (classes[i].id === b.classId) { classes[i].booked = Math.max(0, classes[i].booked - 1); break; }
-  }
-  bookings.splice(idx, 1);
-  renderDashboard();
-  showToast("Booking cancelled.");
+  showToast("Cancelling booking...");
   (async function() {
     try {
       await sb.from("bookings").update({ status: "cancelled" }).eq("id", b.dbId);
+      for (var i = 0; i < classes.length; i++) {
+        if (classes[i].id === b.classId) { classes[i].booked = Math.max(0, classes[i].booked - 1); break; }
+      }
+      showToast("Booking cancelled.");
+      renderDashboard();
     } catch(err) {
       console.error("Supabase cancel error:", err);
+      showToast("Error cancelling booking. Please try again.");
     }
   })();
 }
@@ -1502,53 +1512,68 @@ function viewBooking(idx) {
   var b = bookings[idx];
   document.getElementById("view-title").textContent = b.client;
   document.getElementById("view-sub").textContent = b.cls + " - " + b.when;
-  var html = "";
-
-  html += "<div class=\"parq-section-title\">Booking Details</div>";
-  html += "<div class=\"sdetail\">";
-  html += "<div class=\"srow\"><span>Status</span><span><span class=\"pill p-" + sanitise(b.status) + "\">" + sanitise(b.status) + "</span></span></div>";
-  html += "<div class=\"srow\"><span>Email</span><span>" + sanitise(b.email) + "</span></div>";
-  html += "<div class=\"srow\"><span>Phone</span><span>" + sanitise(b.phone) + "</span></div>";
-  html += "<div class=\"srow\"><span>Customer Type</span><span>" + sanitise(b.customerType) + "</span></div>";
-  html += "<div class=\"srow\"><span>Amount Due</span><span>&pound;" + sanitise(String(b.paid)) + "</span></div>";
-  html += "</div>";
-
-  if (b.parq) {
-    var p = b.parq;
-    html += "<div class=\"parq-section-title\" style=\"margin-top:20px\">PAR-Q Health Form</div>";
-    html += "<div class=\"sdetail\">";
-    html += "<div class=\"srow\"><span>Age</span><span>" + sanitise(p.age) + "</span></div>";
-    html += "<div class=\"srow\"><span>Emergency Contact</span><span>" + sanitise(p.emergency) + "</span></div>";
-    html += "</div>";
-
-    html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Medical Questions</div>";
-    html += "<div class=\"sdetail\">";
-    for (var i = 0; i < p.questions.length; i++) {
-      var q = p.questions[i];
-      var colour = q.a === "Yes" ? "color:var(--red);font-weight:600" : "color:var(--green)";
-      html += "<div class=\"srow\"><span>" + (i+1) + ". " + sanitise(q.q) + "</span><span style=\"" + colour + "\">" + sanitise(q.a) + "</span></div>";
-    }
-    html += "</div>";
-
-    if (p.details) {
-      html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Yes Answer Details</div>";
-      html += "<div class=\"health-note\">" + sanitise(p.details) + "</div>";
-    }
-    if (p.other) {
-      html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Additional Notes</div>";
-      html += "<div class=\"health-note\">" + sanitise(p.other) + "</div>";
-    }
-    html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Declaration</div>";
-    html += "<div class=\"sdetail\">";
-    html += "<div class=\"srow\"><span>Signed by</span><span>" + sanitise(p.printName) + "</span></div>";
-    html += "<div class=\"srow\"><span>Date</span><span>" + sanitise(p.signDate) + "</span></div>";
-    html += "</div>";
-  } else {
-    html += "<div class=\"health-note\" style=\"margin-top:16px\">Returning customer &mdash; no health form required.</div>";
-  }
-
-  document.getElementById("view-body").innerHTML = html;
+  document.getElementById("view-body").innerHTML = "<div style='text-align:center;padding:20px;color:var(--light)'>Loading...</div>";
   document.getElementById("view-overlay").className = "overlay on";
+
+  (async function() {
+    try {
+      console.log("Looking up PAR-Q for booking dbId:", b.dbId);
+      var { data: parqData, error: parqError } = await sb.from("parq").select("*").eq("booking_id", b.dbId).limit(1);
+      console.log("PAR-Q result:", parqData, "Error:", parqError);
+      var p = parqData && parqData.length > 0 ? parqData[0] : null;
+
+      var html = "";
+      html += "<div class=\"parq-section-title\">Booking Details</div>";
+      html += "<div class=\"sdetail\">";
+      html += "<div class=\"srow\"><span>Status</span><span><span class=\"pill p-" + sanitise(b.status) + "\">" + sanitise(b.status) + "</span></span></div>";
+      html += "<div class=\"srow\"><span>Email</span><span>" + sanitise(b.email) + "</span></div>";
+      html += "<div class=\"srow\"><span>Phone</span><span>" + sanitise(b.phone) + "</span></div>";
+      html += "<div class=\"srow\"><span>Customer Type</span><span>" + sanitise(b.customerType) + "</span></div>";
+      html += "<div class=\"srow\"><span>Amount Due</span><span>&pound;" + sanitise(String(b.paid)) + "</span></div>";
+      html += "</div>";
+
+      if (p) {
+        var qLabels = ["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
+        var qKeys = ["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
+
+        html += "<div class=\"parq-section-title\" style=\"margin-top:20px\">PAR-Q Health Form</div>";
+        html += "<div class=\"sdetail\">";
+        html += "<div class=\"srow\"><span>Age</span><span>" + sanitise(p.age) + "</span></div>";
+        html += "<div class=\"srow\"><span>Emergency Contact</span><span>" + sanitise(p.emergency_contact) + "</span></div>";
+        html += "</div>";
+
+        html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Medical Questions</div>";
+        html += "<div class=\"sdetail\">";
+        for (var i = 0; i < qKeys.length; i++) {
+          var answer = p[qKeys[i]] || "No";
+          var colour = answer === "Yes" ? "color:var(--red);font-weight:600" : "color:var(--green)";
+          html += "<div class=\"srow\"><span>" + (i+1) + ". " + sanitise(qLabels[i]) + "</span><span style=\"" + colour + "\">" + sanitise(answer) + "</span></div>";
+        }
+        html += "</div>";
+
+        if (p.yes_details) {
+          html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Yes Answer Details</div>";
+          html += "<div class=\"health-note\">" + sanitise(p.yes_details) + "</div>";
+        }
+        if (p.additional_notes) {
+          html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Additional Notes</div>";
+          html += "<div class=\"health-note\">" + sanitise(p.additional_notes) + "</div>";
+        }
+        html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Declaration</div>";
+        html += "<div class=\"sdetail\">";
+        html += "<div class=\"srow\"><span>Signed by</span><span>" + sanitise(p.print_name) + "</span></div>";
+        html += "<div class=\"srow\"><span>Date</span><span>" + sanitise(p.sign_date) + "</span></div>";
+        html += "</div>";
+      } else {
+        html += "<div class=\"health-note\" style=\"margin-top:16px\">Returning customer &mdash; no health form required.</div>";
+      }
+
+      document.getElementById("view-body").innerHTML = html;
+    } catch(err) {
+      console.error("PAR-Q load error:", err);
+      document.getElementById("view-body").innerHTML = "<div style='color:var(--red);padding:20px'>Error loading PAR-Q data.</div>";
+    }
+  })();
 }
 
 function showToast(msg) {
