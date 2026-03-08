@@ -1517,9 +1517,7 @@ function viewBooking(idx) {
 
   (async function() {
     try {
-      console.log("Looking up PAR-Q for booking dbId:", b.dbId);
       var { data: parqData, error: parqError } = await sb.from("parq").select("*").eq("booking_id", b.dbId).limit(1);
-      console.log("PAR-Q result:", parqData, "Error:", parqError);
       var p = parqData && parqData.length > 0 ? parqData[0] : null;
 
       var html = "";
