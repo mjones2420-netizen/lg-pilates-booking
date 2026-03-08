@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LG Pilates - Book a Class</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&family=Open+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --cream: #eef5f5;
+  --warm: #f7fafa;
+  --sage: #3a8a8a;
+  --sage-dk: #2a6b6b;
+  --sage-lt: #b8d8d8;
+  --clay: #e07b4a;
+  --charcoal: #1a2e2e;
+  --mid: #4a6060;
+  --light: #8aabab;
+  --border: #cde0e0;
+  --green: #3a8a6a;
+  --red: #c04040;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; margin:0; padding:0; font-family:'Open Sans',sans-serif; background:var(--warm); color:var(--charcoal); min-height:100vh; }
+nav { display:flex; align-items:center; justify-content:space-between; padding:20px 40px; border-bottom:1px solid var(--border); background:var(--warm); position:sticky; top:0; z-index:100; }
+.logo { font-family:'Raleway',sans-serif; font-size:28px; letter-spacing:0.06em; font-weight:600; }
+.logo span { color:var(--sage); font-style:italic; }
+.nav-links { display:flex; gap:28px; align-items:center; }
+.nav-btn { background:none; border:none; font-family:'Open Sans',sans-serif; font-size:16px; color:var(--mid); cursor:pointer; letter-spacing:0.04em; padding:0; transition:color 0.2s; }
+.nav-btn:hover, .nav-btn.on { color:var(--charcoal); }
+.nav-btn.cta { background:var(--charcoal); color:white; padding:9px 20px; border-radius:2px; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; }
+.nav-btn.cta:hover { background:var(--sage-dk); }
+.page { display:none; }
+.page.on { display:block; animation:fadeup 0.3s ease; }
+@keyframes fadeup { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.hero { padding:60px 40px 40px; max-width:100%; }
+.hero-tag { font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:var(--sage); margin-bottom:14px; }
+.hero h1 { font-family:'Raleway',sans-serif; font-size:72px; font-weight:300; line-height:1.1; margin-bottom:16px; }
+.hero h1 em { font-style:italic; color:var(--sage); }
+.hero p { font-size:18px; color:var(--mid); max-width:420px; line-height:1.7; }
+.filters { padding:28px 40px 40px; max-width:100%; }
+.filter-loc-row { display:flex; gap:12px; margin-bottom:28px; align-items:center; flex-wrap:wrap; }
+.fb-all { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; border:2px solid var(--border); border-radius:100px; background:white; font-family:'Raleway',sans-serif; font-size:16px; font-weight:600; color:var(--mid); cursor:pointer; transition:all 0.22s; white-space:nowrap; letter-spacing:0.02em; }
+.fb-all:hover { border-color:var(--sage-dk); color:var(--sage-dk); background:var(--sage-lt); }
+.fb-all.on { background:var(--charcoal); border-color:var(--charcoal); color:white; }
+.loc-pill { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; border:2px solid var(--border); border-radius:100px; background:white; font-family:'Raleway',sans-serif; font-size:16px; font-weight:600; color:var(--mid); cursor:pointer; transition:all 0.22s; white-space:nowrap; letter-spacing:0.02em; }
+.loc-pill:hover { border-color:var(--sage-dk); color:var(--sage-dk); background:var(--sage-lt); }
+.loc-pill.on { background:var(--sage-dk); border-color:var(--sage-dk); color:white; }
+.filter-divider { width:1px; height:28px; background:var(--border); margin:0 4px; }
+.filter-days-wrap { background:white; border:2px solid var(--sage-dk); border-radius:16px; padding:20px 24px; display:none; }
+.filter-days-wrap.on { display:block; }
+.filter-days-label { font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--light); font-weight:600; margin-bottom:14px; }
+.filter-days { display:flex; flex-wrap:wrap; gap:10px; }
+.fb { padding:11px 22px; border:2px solid var(--border); border-radius:100px; background:white; font-family:'Open Sans',sans-serif; font-size:15px; color:var(--mid); cursor:pointer; transition:all 0.2s; font-weight:500; }
+.fb:hover { border-color:var(--sage-dk); color:var(--sage-dk); background:var(--sage-lt); }
+.fb.on { background:var(--sage-dk); border-color:var(--sage-dk); color:white; font-weight:600; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:18px; padding:0 40px 60px; max-width:100%; }
+.no-filter-msg { grid-column:1/-1; text-align:center; padding:60px 20px; }
+.filter-prompt { display:flex; align-items:center; gap:12px; padding:16px 40px; background:var(--cream); border-top:1px solid var(--border); border-bottom:1px solid var(--border); font-size:16px; color:var(--mid); }
+.filter-prompt-icon { font-size:20px; }
+.filter-prompt.hidden { display:none; }
+.no-filter-icon { font-size:40px; margin-bottom:16px; }
+.no-filter-title { font-family:'Raleway',sans-serif; font-size:22px; font-weight:500; color:var(--charcoal); margin-bottom:10px; }
+.no-filter-sub { font-size:14px; color:var(--mid); max-width:380px; margin:0 auto; line-height:1.7; }
+.card { background:var(--cream); border:1px solid var(--border); border-radius:4px; padding:26px; cursor:pointer; transition:all 0.25s; }
+.card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,0.07); }
+
+.card-loc-wrap { background:var(--sage-dk); margin:-26px -26px 18px -26px; padding:10px 16px; border-radius:4px 4px 0 0; display:flex; justify-content:space-between; align-items:center; }
+.card-loc { font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:white; font-weight:600; }
+.card-loc svg { margin-right:6px; vertical-align:middle; }
+.badge { font-size:11px; padding:3px 10px; border-radius:100px; }
+.b-open { background:#e8f0e7; color:var(--green); }
+.b-wait { background:#f5ede3; color:var(--clay); }
+.b-full { background:var(--border); color:var(--light); }
+.card-name { font-family:'Raleway',sans-serif; font-size:30px; font-weight:400; margin-bottom:6px; }
+.card-venue-wrap { margin-bottom:18px; }
+.card-venue-lbl { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); margin-bottom:4px; }
+.card-venue { font-size:17px; color:var(--charcoal); font-weight:600; display:flex; align-items:center; gap:6px; }
+.card-level { font-size:15px; color:var(--mid); margin-top:2px; }
+.card-meta { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.meta-item { display:flex; flex-direction:column; gap:4px; background:white; border-radius:4px; padding:10px 12px; border:1px solid var(--border); }
+.meta-lbl { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); font-weight:600; }
+.meta-val { font-size:20px; font-weight:600; color:var(--charcoal); font-family:'Raleway',sans-serif; }
+.meta-val.price { color:var(--sage-dk); font-size:22px; }
+.block-dates { margin-bottom:16px; }
+.block-dates-lbl { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); margin-bottom:8px; }
+.block-dates-pills { display:flex; flex-wrap:wrap; gap:5px; }
+.date-pill { font-size:13px; padding:3px 9px; background:white; border:1px solid var(--border); border-radius:100px; color:var(--mid); }
+.cap-bar { height:3px; background:var(--border); border-radius:2px; margin-bottom:5px; overflow:hidden; }
+.cap-fill { height:100%; border-radius:2px; background:var(--sage); }
+.cap-fill.warn { background:var(--clay); }
+.cap-txt { font-size:12px; color:var(--light); }
+.book-btn { margin-top:18px; width:100%; padding:14px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:background 0.2s; }
+.book-btn:hover { background:var(--sage-dk); }
+.book-btn.wait { background:none; border:1px solid var(--clay); color:var(--clay); }
+.book-btn.wait:hover { background:var(--clay); color:white; }
+.book-btn:disabled { background:var(--border); color:var(--light); cursor:not-allowed; }
+.overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:200; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:20px; }
+.overlay.on { display:flex; animation:fadeup 0.2s ease; }
+.modal { background:var(--warm); border-radius:6px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; }
+.mhead { padding:28px 28px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; }
+.mtitle { font-family:'Raleway',sans-serif; font-size:28px; font-weight:400; }
+.msub { font-size:15px; color:var(--mid); margin-top:3px; }
+.mclose { background:none; border:none; font-size:22px; cursor:pointer; color:var(--light); transition:color 0.2s; line-height:1; }
+.mclose:hover { color:var(--charcoal); }
+.mbody { padding:24px 28px; }
+.msummary { background:var(--cream); border-radius:4px; padding:14px 18px; margin-bottom:22px; display:flex; justify-content:space-between; align-items:center; }
+.msum-info { font-size:16px; color:var(--mid); }
+.msum-info strong { display:block; font-size:18px; color:var(--charcoal); margin-bottom:2px; }
+.msum-price { font-family:'Raleway',sans-serif; font-size:38px; color:var(--charcoal); }
+.flbl { font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mid); margin-bottom:7px; display:block; }
+.finp { width:100%; padding:14px 17px; border:1px solid var(--border); border-radius:3px; background:white; font-family:'Open Sans',sans-serif; font-size:16px; color:var(--charcoal); outline:none; transition:border-color 0.2s; margin-bottom:14px; }
+.finp:focus { border-color:var(--sage); }
+.frow { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+.frow .finp { margin-bottom:0; }
+.divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
+.pay-lbl { font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mid); margin-bottom:12px; }
+.card-icons { display:flex; gap:6px; margin-bottom:14px; }
+.ci { background:var(--cream); border:1px solid var(--border); border-radius:3px; padding:5px 9px; font-size:11px; color:var(--mid); font-weight:500; }
+.stripe-note { font-size:14px; color:var(--light); margin-top:8px; }
+.step-label { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--sage-dk); font-weight:600; margin-bottom:16px; padding:8px 12px; background:var(--cream); border-radius:3px; border-left:3px solid var(--sage-dk); }
+.req { color:var(--red); }
+.field-err { font-size:11px; color:var(--red); margin-top:-10px; margin-bottom:10px; display:none; }
+.field-err.on { display:block; }
+.returning-row { margin-bottom:16px; }
+.returning-lbl { font-size:16px; color:var(--mid); display:flex; align-items:center; gap:8px; cursor:pointer; }
+.returning-lbl input { accent-color:var(--sage-dk); width:16px; height:16px; cursor:pointer; margin:0; }
+.step-btn { width:100%; padding:13px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:"Open Sans",sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:background 0.2s; margin-top:4px; }
+.step-btn:hover { background:var(--sage-dk); }
+.step-btn-back { padding:13px 20px; background:none; border:1px solid var(--border); border-radius:2px; font-family:"Open Sans",sans-serif; font-size:12px; letter-spacing:0.08em; color:var(--mid); cursor:pointer; transition:all 0.2s; }
+.step-btn-back:hover { border-color:var(--charcoal); color:var(--charcoal); }
+.frow-btns { display:flex; gap:10px; align-items:center; margin-top:4px; }
+.frow-btns .step-btn { flex:1; margin-top:0; }
+.health-note { font-size:15px; color:var(--mid); background:var(--cream); border-radius:3px; padding:10px 14px; margin-bottom:16px; line-height:1.6; border-left:3px solid var(--sage-lt); }
+.parq-section-title { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--charcoal); font-weight:600; margin-bottom:10px; }
+.parq-intro { font-size:15px; color:var(--mid); margin-bottom:10px; }
+.parq-question { display:flex; align-items:flex-start; gap:10px; padding:13px 16px; border-bottom:1px solid var(--border); background:white; font-size:15px; }
+.parq-question:first-of-type { border-radius:4px 4px 0 0; border:1px solid var(--border); border-bottom:none; }
+.parq-question:last-of-type { border-radius:0 0 4px 4px; border:1px solid var(--border); margin-bottom:12px; }
+.parq-question { border-left:1px solid var(--border); border-right:1px solid var(--border); }
+.parq-num { font-size:11px; font-weight:600; color:var(--light); min-width:18px; margin-top:2px; }
+.parq-text { flex:1; color:var(--charcoal); line-height:1.5; }
+.parq-radios { display:flex; gap:12px; align-items:center; min-width:90px; }
+.parq-radios label { display:flex; align-items:center; gap:4px; font-size:15px; cursor:pointer; color:var(--mid); }
+.parq-radios input[type="radio"] { accent-color:var(--sage-dk); cursor:pointer; }
+.parq-declaration { background:var(--cream); border:1px solid var(--border); border-radius:4px; padding:16px; margin-top:4px; }
+.parq-declaration p { font-size:14px; color:var(--mid); line-height:1.7; }
+.bank-details { background:var(--cream); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:12px; }
+.bank-row { display:flex; justify-content:space-between; align-items:center; padding:11px 16px; border-bottom:1px solid var(--border); }
+.bank-row:last-child { border-bottom:none; }
+.bank-lbl { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--light); }
+.bank-val { font-size:16px; font-weight:600; color:var(--charcoal); font-family:'Raleway',sans-serif; letter-spacing:0.03em; }
+.mfoot { padding:0 28px 28px; }
+.confirm-btn { width:100%; padding:16px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:14px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:background 0.2s; }
+.confirm-btn:hover { background:var(--sage-dk); }
+.terms { font-size:11px; color:var(--light); text-align:center; margin-top:10px; line-height:1.5; }
+.success { display:none; text-align:center; padding:44px 28px; }
+.success.on { display:block; }
+.sicon { width:60px; height:60px; background:#e8f0e7; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:26px; }
+.stitle { font-family:'Raleway',sans-serif; font-size:30px; font-weight:400; margin-bottom:10px; }
+.ssub { font-size:13px; color:var(--mid); line-height:1.7; margin-bottom:24px; }
+.sdetail { background:var(--cream); border-radius:4px; padding:18px; text-align:left; margin-bottom:24px; }
+.srow { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px solid var(--border); }
+.srow:last-child { border-bottom:none; }
+.srow span:first-child { color:var(--mid); }
+.srow span:last-child { font-weight:500; }
+.db-tabs { display:flex; gap:0; margin-bottom:24px; border-bottom:2px solid var(--border); }
+.db-tab { background:none; border:none; padding:12px 24px; font-family:'Open Sans',sans-serif; font-size:14px; color:var(--mid); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.2s; letter-spacing:0.04em; }
+.db-tab:hover { color:var(--charcoal); }
+.db-tab.on { color:var(--sage-dk); border-bottom-color:var(--sage-dk); font-weight:600; }
+.class-group { margin-bottom:24px; border:1px solid var(--border); border-radius:4px; overflow:hidden; }
+.class-group-header { background:var(--sage-dk); color:white; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+.class-group-title { font-family:'Raleway',sans-serif; font-size:18px; font-weight:400; }
+.class-group-meta { font-size:12px; opacity:0.85; }
+.class-group-badge { background:rgba(255,255,255,0.2); padding:3px 10px; border-radius:100px; font-size:12px; }
+.class-group-body { display:none; }
+.class-group-body.on { display:block; }
+.class-group-empty { padding:20px; text-align:center; color:var(--light); font-size:13px; }
+.ph { margin-bottom:40px; }
+.ph h2 { font-family:'Raleway',sans-serif; font-size:44px; font-weight:300; }
+.ph p { font-size:13px; color:var(--mid); margin-top:6px; }
+.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:40px; }
+.stat { background:var(--cream); border:1px solid var(--border); border-radius:4px; padding:22px; }
+.slbl { font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); margin-bottom:6px; }
+.sval { font-family:'Raleway',sans-serif; font-size:38px; font-weight:400; line-height:1; }
+.ssub2 { font-size:12px; color:var(--sage-dk); margin-top:5px; }
+.sec-title { font-family:'Raleway',sans-serif; font-size:26px; font-weight:400; margin-bottom:16px; }
+table { width:100%; border-collapse:collapse; margin-bottom:40px; }
+th { text-align:left; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); padding:0 14px 10px; border-bottom:1px solid var(--border); font-weight:500; }
+td { padding:14px; font-size:13px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:hover td { background:var(--cream); }
+.pill { display:inline-block; padding:3px 9px; border-radius:100px; font-size:11px; }
+.p-confirmed { background:#e8f0e7; color:var(--green); }
+.p-waitlist { background:#f5ede3; color:var(--clay); }
+.p-cancelled { background:var(--border); color:var(--light); }
+.act { padding:5px 12px; border:1px solid var(--border); background:none; border-radius:2px; font-size:11px; font-family:'Open Sans',sans-serif; cursor:pointer; color:var(--mid); transition:all 0.2s; margin-right:4px; }
+.act-confirm { border-color:var(--green); color:var(--green); }
+.act-confirm:hover { background:var(--green); color:white; border-color:var(--green); }
+.act-delete { border-color:var(--red); color:var(--red); }
+.act-delete:hover { background:var(--red); color:white; border-color:var(--red); }
+.p-reserved { background:#fef3e8; color:var(--clay); }
+.act:hover { border-color:var(--charcoal); color:var(--charcoal); }
+.acc-wrap { max-width:600px; margin:0 auto; padding:50px 40px; }
+.av { width:72px; height:72px; background:var(--sage-lt); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Raleway',sans-serif; font-size:28px; color:var(--sage-dk); margin-bottom:18px; }
+.acc-name { font-family:'Raleway',sans-serif; font-size:32px; font-weight:300; }
+.acc-sub { font-size:13px; color:var(--mid); margin-top:4px; margin-bottom:36px; }
+.acc-sec { margin-bottom:32px; }
+.acc-sec-title { font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--light); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.acc-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.acc-row span:first-child { color:var(--mid); }
+.my-booking { display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--border); }
+.mb-name { font-size:14px; font-weight:400; }
+.mb-meta { font-size:12px; color:var(--mid); margin-top:2px; }
+.cancel-lnk { font-size:12px; color:var(--light); cursor:pointer; text-decoration:underline; }
+.cancel-lnk:hover { color:var(--red); }
+.auth-wrap { min-height:calc(100vh - 70px); display:flex; align-items:center; justify-content:center; padding:40px; }
+.auth-box { background:var(--cream); border:1px solid var(--border); border-radius:6px; padding:44px; width:100%; max-width:420px; }
+.auth-logo { font-family:'Raleway',sans-serif; font-size:18px; margin-bottom:28px; }
+.auth-logo span { color:var(--sage); font-style:italic; }
+.auth-title { font-family:'Raleway',sans-serif; font-size:34px; font-weight:300; margin-bottom:6px; }
+.auth-sub { font-size:13px; color:var(--mid); margin-bottom:28px; }
+.auth-btn { width:100%; padding:13px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; margin-top:6px; transition:background 0.2s; }
+.auth-btn:hover { background:var(--sage-dk); }
+.auth-switch { font-size:13px; color:var(--mid); text-align:center; margin-top:18px; }
+.auth-switch a { color:var(--sage-dk); cursor:pointer; text-decoration:underline; }
+.or { display:flex; align-items:center; gap:10px; margin:16px 0; }
+.or hr { flex:1; border:none; border-top:1px solid var(--border); }
+.or span { font-size:12px; color:var(--light); }
+.toast { position:fixed; bottom:28px; right:28px; background:var(--charcoal); color:white; padding:12px 22px; border-radius:3px; font-size:13px; z-index:999; transform:translateY(60px); opacity:0; transition:all 0.3s; }
+.toast.on { transform:translateY(0); opacity:1; }
+@media(max-width:700px) {
+  nav { padding:14px 18px; }
+  .hero { padding:40px 18px 28px; }
+  .filters { padding:0 18px 28px; } .filter-prompt { padding:14px 18px; font-size:14px; } .filter-loc-row { gap:8px; } .fb-all, .loc-pill { padding:12px 20px; font-size:15px; } .fb { padding:10px 16px; font-size:14px; }
+  .grid { padding:0 18px 40px; grid-template-columns:1fr; }
+  .db-wrap, .acc-wrap { padding:36px 18px; }
+  .stats { grid-template-columns:1fr 1fr; }
+  .hero h1 { font-size:38px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">LG <span>Pilates</span></div>
+  <div class="nav-links">
+    <button class="nav-btn on" id="nb-schedule" onclick="show('schedule')">Schedule</button>
+    <button class="nav-btn" id="nb-dashboard" onclick="showDashboard()">Dashboard</button>
+  </div>
+</nav>
+
+<div class="page on" id="pg-schedule">
+  <div class="hero">
+    <h1>Book your<br><em>Pilates Block</em></h1>
+  </div>
+  <div class="filter-prompt hidden" id="filter-prompt">
+    <span class="filter-prompt-icon">&#128197;</span>
+    <span>Choose a location or day below to see available classes</span>
+  </div>
+  <div class="filters">
+    <div class="filter-loc-row" id="filter-loc-row">
+      <button class="fb-all on" id="fb-all" onclick="filterAll(this)">All Classes</button>
+      <div class="filter-divider"></div>
+      <div id="loc-pills"></div>
+    </div>
+    <div class="filter-days-wrap" id="filter-days-wrap">
+      <div class="filter-days-label" id="filter-days-label">Select a day</div>
+      <div class="filter-days" id="filter-row"></div>
+    </div>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="page" id="pg-dashboard">
+  <div class="db-wrap">
+    <div class="ph">
+      <h2>Admin Dashboard</h2>
+      <p>Manage bookings and track studio performance.</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="slbl">This Week</div><div class="sval">0</div><div class="ssub2">&nbsp;</div></div>
+      <div class="stat"><div class="slbl">Revenue MTD</div><div class="sval">£0</div><div class="ssub2">&nbsp;</div></div>
+      <div class="stat"><div class="slbl">Waitlisted</div><div class="sval">0</div><div class="ssub2">&nbsp;</div></div>
+      <div class="stat"><div class="slbl">Fill Rate</div><div class="sval">0%</div><div class="ssub2">&nbsp;</div></div>
+    </div>
+    <div class="db-tabs">
+      <button class="db-tab on" id="tab-bookings" onclick="switchTab('bookings')">All Bookings</button>
+      <button class="db-tab" id="tab-classes" onclick="switchTab('classes')">By Class</button>
+    </div>
+
+    <!-- All Bookings Tab -->
+    <div id="tab-panel-bookings">
+      <table><thead><tr><th>Client</th><th>Class</th><th>When</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead><tbody id="btbody"></tbody></table>
+    </div>
+
+    <!-- By Class Tab -->
+    <div id="tab-panel-classes" style="display:none">
+      <div id="classes-accordion"></div>
+    </div>
+
+    <div class="sec-title" style="margin-top:40px">Upcoming Classes</div>
+    <table><thead><tr><th>Class</th><th>Location</th><th>Day and Time</th><th>Booked/Cap</th><th>Waitlist</th><th>Actions</th></tr></thead><tbody id="ctbody"></tbody></table>
+  </div>
+</div>
+
+
+
+
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div id="form-view">
+      <div class="mhead">
+        <div>
+          <div class="mtitle" id="m-name">Class Name</div>
+          <div class="msub" id="m-sub">Details</div>
+        </div>
+        <button class="mclose" onclick="closeModal()">x</button>
+      </div>
+      <div class="mbody">
+        <div class="msummary" id="msummary-bar">
+          <div class="msum-info"><strong id="m-sname">Class</strong><span id="m-sdetail">Details</span></div>
+          <div class="msum-price" id="m-price">£10</div>
+        </div>
+
+        <!-- STEP 1: Your Details -->
+        <div id="step-1">
+          <div class="step-label">Step 1 of 3 &mdash; Your Details</div>
+          <div class="frow">
+            <div>
+              <label class="flbl">First Name <span class="req">*</span></label>
+              <input type="text" class="finp" id="b-firstname" placeholder="First name">
+              <div class="field-err" id="err-firstname">Please enter your first name.</div>
+            </div>
+            <div>
+              <label class="flbl">Last Name <span class="req">*</span></label>
+              <input type="text" class="finp" id="b-lastname" placeholder="Last name">
+              <div class="field-err" id="err-lastname">Please enter your last name.</div>
+            </div>
+          </div>
+          <label class="flbl">Email Address <span class="req">*</span></label>
+          <input type="text" class="finp" id="b-email" placeholder="your@email.com">
+          <div class="field-err" id="err-email">Please enter a valid email address.</div>
+          <label class="flbl">Phone Number <span class="req">*</span></label>
+          <input type="text" class="finp" id="b-phone" placeholder="+44 7700 000000">
+          <div class="field-err" id="err-phone">Please enter your phone number.</div>
+          <div id="customer-check-msg" style="display:none; font-size:14px; padding:14px 16px; border-radius:3px; margin-bottom:14px; font-weight:500; line-height:1.5;"></div>
+          <button class="step-btn" onclick="goStep2()">Continue</button>
+        </div>
+
+        <!-- STEP 2: Health Form (new students only) -->
+        <div id="step-2" style="display:none">
+          <div class="step-label">Step 2 of 3 &mdash; Health Form (PAR-Q)</div>
+          <div class="health-note">This form ensures you are fit and well enough to take part in physical activity. Please answer all questions honestly. If you answer YES to any question, you will need to consult your doctor before joining the class.</div>
+
+          <div class="parq-section-title">Personal Details</div>
+          <div class="frow">
+            <div><label class="flbl">Age <span class="req">*</span></label><input type="text" class="finp" id="b-age" placeholder="e.g. 34" style="margin-bottom:0"></div>
+            <div><label class="flbl">Emergency Contact <span class="req">*</span></label><input type="text" class="finp" id="b-emergency" placeholder="Name &amp; relationship" style="margin-bottom:0"></div>
+          </div>
+          <div class="field-err" id="err-age" style="margin-top:6px">Please enter your age.</div>
+          <div class="field-err" id="err-emergency">Please enter an emergency contact.</div>
+
+          <div class="parq-section-title" style="margin-top:16px">Medical Questions</div>
+          <div class="parq-intro">Answer YES or NO to each of the following:</div>
+
+          <div class="parq-question"><span class="parq-num">1</span><span class="parq-text">Do you currently or have you ever suffered from heart problems?</span><div class="parq-radios"><label><input type="radio" name="q1" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q1" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">2</span><span class="parq-text">Circulatory problems?</span><div class="parq-radios"><label><input type="radio" name="q2" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q2" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">3</span><span class="parq-text">Blood pressure problems (low or high)?</span><div class="parq-radios"><label><input type="radio" name="q3" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q3" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">4</span><span class="parq-text">Chest pain?</span><div class="parq-radios"><label><input type="radio" name="q4" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q4" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">5</span><span class="parq-text">Joint or movement problems that could be made worse by physical activity?</span><div class="parq-radios"><label><input type="radio" name="q5" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q5" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">6</span><span class="parq-text">Dizziness or imbalance?</span><div class="parq-radios"><label><input type="radio" name="q6" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q6" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">7</span><span class="parq-text">Are you pregnant or have you recently given birth?</span><div class="parq-radios"><label><input type="radio" name="q7" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q7" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">8</span><span class="parq-text">Has a doctor told you not to participate in physical activity?</span><div class="parq-radios"><label><input type="radio" name="q8" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q8" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">9</span><span class="parq-text">Do you receive medical care for spinal pain?</span><div class="parq-radios"><label><input type="radio" name="q9" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q9" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">10</span><span class="parq-text">Are you currently prescribed medication? If so, please specify below.</span><div class="parq-radios"><label><input type="radio" name="q10" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q10" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">11</span><span class="parq-text">Do you suffer from asthma or breathing difficulties?</span><div class="parq-radios"><label><input type="radio" name="q11" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q11" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+          <div class="parq-question"><span class="parq-num">12</span><span class="parq-text">Do you know of any other reasons why you should not take part in physical activity?</span><div class="parq-radios"><label><input type="radio" name="q12" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q12" value="No" checked onchange="updateYesSection()"> No</label></div></div>
+
+          <div id="parq-yes-section" style="display:none;margin-top:4px">
+            <label class="flbl">You answered YES to one or more questions &mdash; please provide details below <span class="req">*</span></label>
+            <textarea class="finp" id="b-health-conditions" placeholder="Please give details here..." rows="3" style="resize:vertical;margin-bottom:0"></textarea>
+            <div class="field-err" id="err-health">Please provide details for any YES answers.</div>
+          </div>
+          <div style="margin-top:12px">
+            <label class="flbl">Additional information (optional)</label>
+            <textarea class="finp" id="b-health-other" placeholder="Anything else Louise should know?" rows="2" style="resize:vertical"></textarea>
+          </div>
+
+          <div class="parq-declaration">
+            <div class="parq-section-title">Declaration</div>
+            <p>I have answered all the questions on this form honestly and I am aware that if I answered YES to any of the questions I will need to consult my doctor before taking part in the class. I am aware that if my circumstances in health or medical conditions change I must notify my instructor, and it is my responsibility to do so.</p>
+            <div class="frow" style="margin-top:14px">
+              <div><label class="flbl">Print Name <span class="req">*</span></label><input type="text" class="finp" id="b-print-name" placeholder="Full name" style="margin-bottom:0"></div>
+              <div><label class="flbl">Date <span class="req">*</span></label><input type="date" class="finp" id="b-sign-date" style="margin-bottom:0"></div>
+            </div>
+            <div class="field-err" id="err-declaration">Please enter your name and date to sign the declaration.</div>
+            <label class="returning-lbl" style="margin-top:14px">
+              <input type="checkbox" id="b-declaration">
+              I agree to the declaration above <span class="req">*</span>
+            </label>
+            <div class="field-err" id="err-agree">You must agree to the declaration to continue.</div>
+          </div>
+
+          <div class="frow-btns" style="margin-top:16px">
+            <button class="step-btn-back" onclick="goStep1()">Back</button>
+            <button class="step-btn" onclick="goStep3()">Continue</button>
+          </div>
+        </div>
+
+        <!-- STEP 3: Payment -->
+        <div id="step-3" style="display:none">
+          <div class="step-label" id="step-3-label" style="font-size:13px; margin-bottom:20px;">Step 3 of 3 &mdash; Payment</div>
+
+          <div style="background:var(--cream); border-left:4px solid var(--clay); border-radius:3px; padding:16px 18px; margin-bottom:22px;">
+            <div style="font-family:'Raleway',sans-serif; font-size:20px; font-weight:500; color:var(--charcoal); margin-bottom:6px;">Reserve your space</div>
+            <div style="font-size:14px; color:var(--mid); line-height:1.7;">You are reserving a spot on this block. <strong>Your place is not confirmed until payment is received.</strong> Once Louise has received your payment she will confirm your booking by email.</div>
+          </div>
+
+          <div class="pay-lbl" style="margin-bottom:10px;">Pay by Bank Transfer within 48 hours</div>
+          <div class="bank-details">
+            <div class="bank-row"><span class="bank-lbl">Name</span><span class="bank-val">L George</span></div>
+            <div class="bank-row"><span class="bank-lbl">Sort Code</span><span class="bank-val">12-34-56</span></div>
+            <div class="bank-row"><span class="bank-lbl">Account No.</span><span class="bank-val">12345678</span></div>
+            <div class="bank-row"><span class="bank-lbl">Reference</span><span class="bank-val" id="m-reference">Your name + class day</span></div>
+          </div>
+
+          <div class="frow-btns" style="margin-top:20px">
+            <button class="step-btn-back" onclick="goStepBack3()">Back</button>
+          </div>
+        </div>
+      </div>
+      <div class="mfoot" id="mfoot-confirm" style="display:none">
+        <button class="confirm-btn" onclick="confirmBooking()">Reserve My Spot &mdash; <span id="m-btnprice">£60</span> due</button>
+      </div>
+    </div>
+    <div class="success" id="success-view">
+      <div class="sicon">&#9203;</div>
+      <div class="stitle">Spot Reserved!</div>
+      <div class="ssub">Your spot is currently <strong>reserved but not yet confirmed.</strong> To secure your place please make your bank transfer within 48 hours using the details below. Louise will confirm your booking by email once payment has been received.</div>
+      <div class="sdetail" id="sdetail"></div>
+      <div style="background:var(--cream); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:20px;">
+        <div class="bank-row"><span class="bank-lbl">Name</span><span class="bank-val">L George</span></div>
+        <div class="bank-row"><span class="bank-lbl">Sort Code</span><span class="bank-val">12-34-56</span></div>
+        <div class="bank-row"><span class="bank-lbl">Account No.</span><span class="bank-val">12345678</span></div>
+        <div class="bank-row"><span class="bank-lbl">Reference</span><span class="bank-val" id="s-reference"></span></div>
+      </div>
+      <button class="confirm-btn" onclick="closeModal()">Back to Schedule</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- DASHBOARD LOGIN -->
+<div class="page" id="pg-dash-login">
+  <div class="auth-wrap">
+    <div class="auth-box">
+      <div class="auth-logo">LG <span>Pilates</span></div>
+      <div class="auth-title">Dashboard</div>
+      <div class="auth-sub">Sign in with your email and password to access the admin dashboard.</div>
+      <input type="email" class="finp" id="dash-email" placeholder="Email address">
+      <input type="password" class="finp" id="dash-password" placeholder="Password" onkeydown="if(event.key==='Enter')checkDashLogin()">
+      <div id="dash-error" style="color:var(--red);font-size:12px;margin-top:-8px;margin-bottom:10px;display:none">Incorrect email or password. Please try again.</div>
+      <button class="auth-btn" id="dash-login-btn" onclick="checkDashLogin()">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT CLASS MODAL -->
+<div class="overlay" id="edit-overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div>
+        <div class="mtitle">Edit Class</div>
+        <div class="msub" id="edit-modal-sub">Update class details</div>
+      </div>
+      <button class="mclose" onclick="closeEditModal()">x</button>
+    </div>
+    <div class="mbody">
+      <div class="frow">
+        <div><label class="flbl">Day</label><input type="text" class="finp" id="edit-day" style="margin-bottom:0"></div>
+        <div><label class="flbl">Level</label><input type="text" class="finp" id="edit-level" style="margin-bottom:0"></div>
+      </div>
+      <div class="frow" style="margin-top:14px">
+        <div><label class="flbl">Start Time</label><input type="text" class="finp" id="edit-time" style="margin-bottom:0"></div>
+        <div><label class="flbl">End Time</label><input type="text" class="finp" id="edit-end" style="margin-bottom:0"></div>
+      </div>
+      <label class="flbl" style="margin-top:14px">Venue</label>
+      <input type="text" class="finp" id="edit-venue">
+      <div class="frow">
+        <div><label class="flbl">Location</label>
+          <select class="finp" id="edit-loc" style="margin-bottom:0">
+            <option value="Baildon">Baildon</option>
+            <option value="Guiseley">Guiseley</option>
+          </select>
+        </div>
+        <div><label class="flbl">Price (£)</label><input type="text" class="finp" id="edit-price" style="margin-bottom:0"></div>
+      </div>
+      <label class="flbl" style="margin-top:14px">Capacity</label>
+      <input type="text" class="finp" id="edit-cap">
+      <div class="frow">
+        <div>
+          <label class="flbl">Block Start Date</label>
+          <input type="date" class="finp" id="edit-blockstart" onchange="validateBlockDate()" style="margin-bottom:0">
+          <div id="date-validation" style="font-size:12px;margin-top:6px;display:none;"></div>
+        </div>
+        <div><label class="flbl">Block Length (weeks)</label>
+          <select class="finp" id="edit-blocklength" style="margin-bottom:0">
+            <option value="2">2 weeks</option>
+            <option value="3">3 weeks</option>
+            <option value="4">4 weeks</option>
+            <option value="5">5 weeks</option>
+            <option value="6" selected>6 weeks</option>
+            <option value="7">7 weeks</option>
+            <option value="8">8 weeks</option>
+            <option value="9">9 weeks</option>
+            <option value="10">10 weeks</option>
+          </select>
+        </div>
+      </div>
+      <div class="stripe-note" style="margin-top:10px;margin-bottom:0">Session dates will be recalculated automatically when you save.</div>
+    </div>
+    <div class="mfoot">
+      <button class="confirm-btn" onclick="saveEditClass()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- BOOKING DETAIL MODAL -->
+<div class="overlay" id="view-overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div>
+        <div class="mtitle" id="view-title">Booking Details</div>
+        <div class="msub" id="view-sub"></div>
+      </div>
+      <button class="mclose" onclick="closeViewModal()">x</button>
+    </div>
+    <div class="mbody" id="view-body"></div>
+    <div class="mfoot">
+      <button class="confirm-btn" style="background:var(--mid)" onclick="closeViewModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+var classes = [
+  {id:1,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Monday",    time:"9:45am",  end:"10:30am", price:10, cap:12, booked:0, wait:0, venue:"Moravian Church",        loc:"Baildon",   dates:["9 Mar","16 Mar","23 Mar","30 Mar","6 Apr","13 Apr"], weeks:6, weeks:6, visible:true},
+  {id:2,  name:"Intermediate",        level:"Intermediate",   day:"Monday",    time:"6:30pm",  end:"7:15pm",  price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["9 Mar","16 Mar","23 Mar","30 Mar","6 Apr","13 Apr"], weeks:6, visible:true},
+  {id:3,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Monday",    time:"7:30pm",  end:"8:15pm",  price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["9 Mar","16 Mar","23 Mar","30 Mar","6 Apr","13 Apr"], weeks:6, visible:true},
+  {id:4,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Tuesday",   time:"9:45am",  end:"10:30am", price:10, cap:12, booked:0, wait:0, venue:"Starlight Academy",      loc:"Guiseley",  dates:["10 Mar","17 Mar","24 Mar","31 Mar","7 Apr","14 Apr"], weeks:6, visible:true},
+  {id:5,  name:"Beginner / Improver", level:"Beginner",       day:"Tuesday",   time:"6:15pm",  end:"7:00pm",  price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["10 Mar","17 Mar","24 Mar","31 Mar","7 Apr","14 Apr"], weeks:6, visible:true},
+  {id:6,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Tuesday",   time:"7:15pm",  end:"8:00pm",  price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["10 Mar","17 Mar","24 Mar","31 Mar","7 Apr","14 Apr"], weeks:6, visible:true},
+  {id:7,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Wednesday", time:"9:45am",  end:"10:30am", price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["11 Mar","18 Mar","25 Mar","1 Apr","8 Apr","15 Apr"], weeks:6, visible:true},
+  {id:8,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Wednesday", time:"5:30pm",  end:"6:15pm",  price:10, cap:12, booked:0, wait:0, venue:"DPTA Studio",            loc:"Guiseley",  dates:["11 Mar","18 Mar","25 Mar","1 Apr","8 Apr","15 Apr"], weeks:6, visible:true},
+  {id:9,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Wednesday", time:"6:30pm",  end:"7:15pm",  price:10, cap:12, booked:0, wait:0, venue:"DPTA Studio",            loc:"Guiseley",  dates:["11 Mar","18 Mar","25 Mar","1 Apr","8 Apr","15 Apr"], weeks:6, visible:true},
+  {id:10, name:"Mixed Ability",       level:"Mixed Ability",  day:"Thursday",  time:"9:45am",  end:"10:30am", price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["12 Mar","19 Mar","26 Mar","2 Apr","9 Apr","16 Apr"], weeks:6, visible:true},
+  {id:11, name:"Mixed Ability",       level:"Mixed Ability",  day:"Thursday",  time:"6:30pm",  end:"7:15pm",  price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["12 Mar","19 Mar","26 Mar","2 Apr","9 Apr","16 Apr"], weeks:6, visible:true},
+  {id:12, name:"Mixed Ability",       level:"Mixed Ability",  day:"Friday",    time:"10:00am", end:"10:45am", price:10, cap:12, booked:0, wait:0, venue:"DPTA Studio",            loc:"Guiseley",  dates:["13 Mar","20 Mar","27 Mar","3 Apr","10 Apr","17 Apr"], weeks:6, visible:true}
+];
+
+var bookings = [];
+
+// Supabase setup
+const SUPABASE_URL = "https://mrlooyixnlxzcfmvnqme.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ybG9veWl4bmx4emNmbXZucW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM2MDAsImV4cCI6MjA4ODQ4OTYwMH0.k1LbLenXS29NosaayGnQn3SR2G1xXVDBICeH7w7bD_c";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Sanitise user input before rendering to prevent XSS
+function sanitise(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/\//g, "&#x2F;");
+}
+
+var activeLoc = null;
+var activeDay = null;
+var selected = null;
+var activeFilter = "all";
+
+function show(pg) {
+  var pages = ["schedule","dashboard","dash-login"];
+  var navPages = ["schedule","dashboard"];
+  for (var i = 0; i < pages.length; i++) {
+    document.getElementById("pg-" + pages[i]).className = "page";
+  }
+  for (var i = 0; i < navPages.length; i++) {
+    document.getElementById("nb-" + navPages[i]).className = "nav-btn";
+  }
+  document.getElementById("pg-" + pg).className = "page on";
+  var nbEl = document.getElementById("nb-" + pg);
+  if (nbEl) nbEl.className = "nav-btn on";
+  if (pg === "dashboard") renderDashboard();
+}
+
+function buildFilters() {
+  var baildonDays = [];
+  var guiseleyDays = [];
+  var dayOrder = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  for (var i = 0; i < classes.length; i++) {
+    var c = classes[i];
+    if (c.loc === "Baildon" && baildonDays.indexOf(c.day) < 0) baildonDays.push(c.day);
+    if (c.loc === "Guiseley" && guiseleyDays.indexOf(c.day) < 0) guiseleyDays.push(c.day);
+  }
+  baildonDays.sort(function(a,b){ return dayOrder.indexOf(a) - dayOrder.indexOf(b); });
+  guiseleyDays.sort(function(a,b){ return dayOrder.indexOf(a) - dayOrder.indexOf(b); });
+
+  var pillHtml = "";
+  pillHtml += "<button class='loc-pill' id='fg-baildon-card' onclick=\"filterLoc('Baildon',this)\">Baildon</button>";
+  pillHtml += "<button class='loc-pill' id='fg-guiseley-card' onclick=\"filterLoc('Guiseley',this)\">Guiseley</button>";
+  document.getElementById("loc-pills").innerHTML = pillHtml;
+  document.getElementById("filter-row").innerHTML = "";
+  document.getElementById("filter-days-wrap").className = "filter-days-wrap";
+}
+
+function clearAllFilters() {
+  document.getElementById("fb-all").className = "fb-all";
+  var pills = document.querySelectorAll(".loc-pill");
+  for (var i = 0; i < pills.length; i++) pills[i].className = "loc-pill";
+  var fbs = document.querySelectorAll(".fb");
+  for (var i = 0; i < fbs.length; i++) fbs[i].className = "fb";
+}
+
+function filterAll(btn) {
+  clearAllFilters();
+  btn.className = "fb-all on";
+  document.getElementById("filter-prompt").className = "filter-prompt hidden";
+  document.getElementById("filter-days-wrap").className = "filter-days-wrap";
+  activeFilter = "all";
+  activeLoc = null;
+  renderGrid();
+}
+
+function filterLoc(loc, el) {
+  clearAllFilters();
+  el.className = "loc-pill on";
+  document.getElementById("filter-prompt").className = "filter-prompt hidden";
+  var dayOrder = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  var days = classes.filter(function(c){ return c.loc === loc && c.visible !== false; }).map(function(c){ return c.day; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+  days.sort(function(a,b){ return dayOrder.indexOf(a)-dayOrder.indexOf(b); });
+  var dhtml = "";
+  for (var i = 0; i < days.length; i++) {
+    dhtml += "<button class='fb' onclick=\"filterDay('" + days[i] + "','" + loc + "',this)\">" + days[i] + "</button>";
+  }
+  document.getElementById("filter-row").innerHTML = dhtml;
+  document.getElementById("filter-days-label").textContent = loc + " — select a day or view all " + loc + " classes";
+  document.getElementById("filter-days-wrap").className = "filter-days-wrap on";
+  activeFilter = "loc";
+  activeLoc = loc;
+  renderGrid();
+}
+
+function filterDay(day, loc, btn) {
+  var fbs = document.querySelectorAll(".fb");
+  for (var i = 0; i < fbs.length; i++) fbs[i].className = "fb";
+  btn.className = "fb on";
+  activeFilter = "day";
+  activeLoc = loc;
+  activeDay = day;
+  renderGrid();
+}
+
+function renderGrid() {
+  if (activeFilter === null) {
+    document.getElementById("grid").innerHTML = '';
+    return;
+  }
+  var filtered = [];
+  for (var i = 0; i < classes.length; i++) {
+    var c = classes[i];
+    if (c.visible === false) continue;
+    if (activeFilter === "all") {
+      filtered.push(c);
+    } else if (activeFilter === "loc" && c.loc === activeLoc) {
+      filtered.push(c);
+    } else if (activeFilter === "day" && c.loc === activeLoc && c.day === activeDay) {
+      filtered.push(c);
+    }
+  }
+  var html = "";
+  for (var i = 0; i < filtered.length; i++) {
+    var c = filtered[i];
+    var full = c.booked >= c.cap;
+    var pct = Math.min(100, Math.round(c.booked / c.cap * 100));
+    var warn = pct >= 80 ? " warn" : "";
+    var badge, badgeCls, btnTxt, btnCls, btnDis;
+    if (full && c.wait > 0) {
+      badge = "Waitlist (" + c.wait + ")"; badgeCls = "b-wait"; btnTxt = "Join Waitlist"; btnCls = "wait"; btnDis = "";
+    } else if (full) {
+      badge = "Full"; badgeCls = "b-full"; btnTxt = "Class Full"; btnCls = ""; btnDis = " disabled";
+    } else {
+      badge = "Open"; badgeCls = "b-open"; btnTxt = "Book Now"; btnCls = ""; btnDis = "";
+    }
+    html += '<div class="card">';
+    var badgeHtml = full ? '<span class="badge ' + badgeCls + '">' + badge + '</span>' : '';
+    html += '<div class="card-loc-wrap"><div class="card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + c.loc + '</div>' + badgeHtml + '</div>';
+    html += '<div class="card-name">' + c.name + '</div>';
+    html += '<div class="card-venue-wrap"><div class="card-venue-lbl">Location</div><div class="card-venue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + c.venue + '</div><div class="card-level">' + c.level + '</div></div>';
+    html += '<div class="card-meta">';
+    html += '<div class="meta-item"><div class="meta-lbl">Day</div><div class="meta-val">' + c.day + '</div></div>';
+    html += '<div class="meta-item"><div class="meta-lbl">Price per block</div><div class="meta-val price">&pound;' + (c.price * c.weeks) + '</div></div>';
+    html += '<div class="meta-item" style="grid-column:span 2"><div class="meta-lbl">Time</div><div class="meta-val" style="font-size:15px">' + c.time + ' &ndash; ' + c.end + '</div></div>';
+    html += '</div>';
+    var dpills = "";
+    for (var j = 0; j < c.dates.length; j++) { dpills += '<span class="date-pill">' + c.dates[j] + '</span>'; }
+    html += '<div class="block-dates"><div class="block-dates-lbl">6-Week Block</div><div class="block-dates-pills">' + dpills + '</div></div>';
+    html += '<div class="cap-bar"><div class="cap-fill' + warn + '" style="width:' + pct + '%"></div></div>';
+    html += '<div class="cap-txt">' + c.booked + ' of ' + c.cap + ' spots taken</div>';
+    html += '<button class="book-btn ' + btnCls + '"' + btnDis + ' onclick="openModal(' + c.id + ')">' + btnTxt + '</button>';
+    html += '</div>';
+  }
+  document.getElementById("grid").innerHTML = html;
+}
+
+function openModal(id) {
+  for (var i = 0; i < classes.length; i++) {
+    if (classes[i].id === id) { selected = classes[i]; break; }
+  }
+  var c = selected;
+  document.getElementById("m-name").textContent = c.name;
+  document.getElementById("m-sub").textContent = c.venue + ", " + c.loc + " - " + c.day + " " + c.time;
+  document.getElementById("m-sname").textContent = c.name;
+  document.getElementById("m-sdetail").textContent = c.day + " " + c.time + " - " + c.end + " | " + c.loc;
+  var totalPrice = c.price * (c.weeks || 6);
+  document.getElementById("m-price").textContent = "\u00a3" + totalPrice;
+  document.getElementById("m-btnprice").textContent = "\u00a3" + totalPrice;
+  document.getElementById("form-view").style.display = "block";
+  document.getElementById("success-view").className = "success";
+  document.getElementById("overlay").className = "overlay on";
+  document.getElementById("step-1").style.display = "block";
+  document.getElementById("step-2").style.display = "none";
+  document.getElementById("step-3").style.display = "none";
+  document.getElementById("mfoot-confirm").style.display = "none";
+  document.getElementById("b-firstname").value = "";
+  document.getElementById("b-lastname").value = "";
+  document.getElementById("b-email").value = "";
+  document.getElementById("b-phone").value = "";
+  window._customerIsReturning = false;
+  document.getElementById("b-health-conditions").value = "";
+  document.getElementById("b-health-other").value = "";
+  if (document.getElementById("b-health-conditions")) document.getElementById("b-health-conditions").value = "";
+  if (document.getElementById("b-age")) document.getElementById("b-age").value = "";
+  if (document.getElementById("b-emergency")) document.getElementById("b-emergency").value = "";
+  if (document.getElementById("b-print-name")) document.getElementById("b-print-name").value = "";
+  if (document.getElementById("b-sign-date")) document.getElementById("b-sign-date").value = "";
+  if (document.getElementById("b-declaration")) document.getElementById("b-declaration").checked = false;
+  if (document.getElementById("parq-yes-section")) document.getElementById("parq-yes-section").style.display = "none";
+  for (var qi = 1; qi <= 12; qi++) {
+    var nos = document.querySelectorAll("input[name=\"q" + qi + "\"][value=\"No\"]");
+    for (var ri = 0; ri < nos.length; ri++) nos[ri].checked = true;
+  }
+  var errs = document.querySelectorAll(".field-err");
+  for (var i = 0; i < errs.length; i++) errs[i].className = "field-err";
+}
+
+function closeModal() {
+  document.getElementById("overlay").className = "overlay";
+}
+
+function goStep1() {
+  document.getElementById("step-1").style.display = "block";
+  document.getElementById("step-2").style.display = "none";
+  document.getElementById("step-3").style.display = "none";
+  document.getElementById("mfoot-confirm").style.display = "none";
+}
+
+function goStep2() {
+  var fn = document.getElementById("b-firstname").value.trim();
+  var ln = document.getElementById("b-lastname").value.trim();
+  var em = document.getElementById("b-email").value.trim();
+  var ph = document.getElementById("b-phone").value.trim();
+  document.getElementById("err-firstname").className = "field-err" + (fn ? "" : " on");
+  document.getElementById("err-lastname").className  = "field-err" + (ln ? "" : " on");
+  var emailOk = em && em.indexOf("@") > 0 && em.indexOf(".") > 0;
+  document.getElementById("err-email").className = "field-err" + (emailOk ? "" : " on");
+  document.getElementById("err-phone").className  = "field-err" + (ph ? "" : " on");
+  if (!fn || !ln || !emailOk || !ph) return;
+
+  var btn = document.querySelector("#step-1 .step-btn");
+  btn.textContent = "Checking...";
+  btn.disabled = true;
+
+  (async function() {
+    try {
+      var { data: existingCustomers } = await sb.from("customers").select("id").eq("email", em).limit(1);
+      var isReturning = existingCustomers && existingCustomers.length > 0;
+      window._customerIsReturning = isReturning;
+
+      var msgEl = document.getElementById("customer-check-msg");
+      if (isReturning) {
+        msgEl.style.display = "block";
+        msgEl.style.background = "#e8f0e7";
+        msgEl.style.color = "var(--green)";
+        msgEl.textContent = "✓ Welcome back! As a returning customer you can skip the health form.";
+        setTimeout(function() { goStep3(); }, 2500);
+      } else {
+        msgEl.style.display = "block";
+        msgEl.style.background = "#f5ede3";
+        msgEl.style.color = "var(--clay)";
+        msgEl.textContent = "👋 Welcome! As a new customer please complete the short health form below before booking.";
+        setTimeout(function() {
+          document.getElementById("step-1").style.display = "none";
+          document.getElementById("step-2").style.display = "block";
+          document.getElementById("mfoot-confirm").style.display = "none";
+          // Move message to top of step 2 so it stays visible
+          var step2 = document.getElementById("step-2");
+          step2.insertBefore(msgEl, step2.firstChild);
+        }, 2500);
+      }
+    } catch(err) {
+      console.error("Customer check error:", err);
+      window._customerIsReturning = false;
+      document.getElementById("step-1").style.display = "none";
+      document.getElementById("step-2").style.display = "block";
+    } finally {
+      btn.textContent = "Continue";
+      btn.disabled = false;
+    }
+  })();
+}
+
+function getParqAnswers() {
+  var yesNos = [];
+  for (var i = 1; i <= 12; i++) {
+    var radios = document.querySelectorAll("input[name=\"q" + i + "\"]");
+    var val = "No";
+    for (var j = 0; j < radios.length; j++) { if (radios[j].checked) { val = radios[j].value; break; } }
+    yesNos.push("Q" + i + ": " + val);
+  }
+  return yesNos;
+}
+
+function hasAnyYes() {
+  for (var i = 1; i <= 12; i++) {
+    var radios = document.querySelectorAll("input[name=\"q" + i + "\"]");
+    for (var j = 0; j < radios.length; j++) { if (radios[j].checked && radios[j].value === "Yes") return true; }
+  }
+  return false;
+}
+
+function updateYesSection() {
+  document.getElementById("parq-yes-section").style.display = hasAnyYes() ? "block" : "none";
+}
+
+function goStep3() {
+  var isNew = !window._customerIsReturning;
+  if (isNew) {
+    var age = document.getElementById("b-age").value.trim();
+    var emg = document.getElementById("b-emergency").value.trim();
+    document.getElementById("err-age").className = "field-err" + (age ? "" : " on");
+    document.getElementById("err-emergency").className = "field-err" + (emg ? "" : " on");
+    if (!age || !emg) return;
+    if (hasAnyYes()) {
+      var hc = document.getElementById("b-health-conditions").value.trim();
+      document.getElementById("err-health").className = "field-err" + (hc ? "" : " on");
+      if (!hc) return;
+    }
+    var printName = document.getElementById("b-print-name").value.trim();
+    var signDate  = document.getElementById("b-sign-date").value;
+    var agreed    = document.getElementById("b-declaration").checked;
+    document.getElementById("err-declaration").className = "field-err" + (printName && signDate ? "" : " on");
+    document.getElementById("err-agree").className = "field-err" + (agreed ? "" : " on");
+    if (!printName || !signDate || !agreed) return;
+  }
+  document.getElementById("step-1").style.display = "none";
+  document.getElementById("step-2").style.display = "none";
+  document.getElementById("step-3").style.display = "block";
+  document.getElementById("mfoot-confirm").style.display = "block";
+  document.getElementById("msummary-bar").style.display = "none";
+  document.getElementById("step-3-label").textContent = (window._customerIsReturning ? "Step 2 of 2" : "Step 3 of 3") + " — Payment";
+  var c = selected;
+  var fn = document.getElementById("b-firstname").value.trim();
+  var ln = document.getElementById("b-lastname").value.trim();
+  document.getElementById("m-reference").textContent = fn + " " + ln + " " + c.day;
+}
+
+function goStepBack3() {
+  document.getElementById("step-3").style.display = "none";
+  document.getElementById("mfoot-confirm").style.display = "none";
+  document.getElementById("msummary-bar").style.display = "flex";
+  if (window._customerIsReturning) {
+    document.getElementById("step-1").style.display = "block";
+  } else {
+    document.getElementById("step-2").style.display = "block";
+  }
+}
+
+function toggleHealthForm() {
+  // no extra action needed - goStep2 handles routing
+}
+
+function confirmBooking() {
+  var c = selected;
+  var fn = document.getElementById("b-firstname").value.trim();
+  var ln = document.getElementById("b-lastname").value.trim();
+  var em = document.getElementById("b-email").value.trim();
+  var ph = document.getElementById("b-phone").value.trim();
+  var isNew = !window._customerIsReturning;
+  var health = "Returning customer";
+  if (isNew) {
+    var parqAnswers = getParqAnswers();
+    var details = document.getElementById("b-health-conditions") ? document.getElementById("b-health-conditions").value.trim() : "";
+    var other = document.getElementById("b-health-other").value.trim();
+    health = parqAnswers.join(", ");
+    if (details) health += " | Details: " + details;
+    if (other) health += " | Other: " + other;
+  }
+  var parqData = null;
+  if (isNew) {
+    parqData = {
+      age: document.getElementById("b-age").value.trim(),
+      emergency: document.getElementById("b-emergency").value.trim(),
+      questions: [],
+      details: document.getElementById("b-health-conditions") ? document.getElementById("b-health-conditions").value.trim() : "",
+      other: document.getElementById("b-health-other").value.trim(),
+      printName: document.getElementById("b-print-name").value.trim(),
+      signDate: document.getElementById("b-sign-date").value
+    };
+    var qLabels = [
+      "Heart problems",
+      "Circulatory problems",
+      "Blood pressure problems",
+      "Chest pain",
+      "Joint or movement problems",
+      "Dizziness or imbalance",
+      "Pregnant / recently given birth",
+      "Doctor advised not to exercise",
+      "Medical care for spinal pain",
+      "Prescribed medication",
+      "Asthma or breathing difficulties",
+      "Any other reasons not to exercise"
+    ];
+    for (var qi = 1; qi <= 12; qi++) {
+      var radios = document.querySelectorAll("input[name=\"q" + qi + "\"]");
+      var val = "No";
+      for (var ri = 0; ri < radios.length; ri++) { if (radios[ri].checked) { val = radios[ri].value; break; } }
+      parqData.questions.push({q: qLabels[qi-1], a: val});
+    }
+  }
+  var newBooking = {
+    client: fn + " " + ln,
+    cls: c.name,
+    when: c.day + " " + c.time + " - " + c.venue,
+    paid: String(c.price * (c.weeks || 6)),
+    status: "reserved",
+    email: em,
+    phone: ph,
+    health: health,
+    classId: c.id,
+    day: c.day,
+    customerType: isNew ? "New" : "Returning",
+    parq: parqData
+  };
+  bookings.push(newBooking);
+  c.booked = c.booked + 1;
+
+  var customerType = isNew ? "New" : "Returning";
+
+  // Save to Supabase
+  (async function() {
+    try {
+      // Save or find customer
+      var { data: existingCustomers } = await sb.from("customers").select("id").eq("email", em).limit(1);
+      var customerId;
+      if (existingCustomers && existingCustomers.length > 0) {
+        customerId = existingCustomers[0].id;
+        // Update their details in case anything has changed
+        await sb.from("customers").update({
+          first_name: fn,
+          last_name: ln,
+          phone: ph,
+          customer_type: customerType
+        }).eq("id", customerId);
+      } else {
+        var { data: newCustomer } = await sb.from("customers").insert({
+          first_name: fn,
+          last_name: ln,
+          email: em,
+          phone: ph,
+          customer_type: customerType
+        }).select("id").single();
+        customerId = newCustomer.id;
+      }
+      // Save booking
+      var { data: savedBooking } = await sb.from("bookings").insert({
+        class_id: c.id,
+        customer_id: customerId,
+        status: "reserved",
+        amount_due: c.price * (c.weeks || 6)
+      }).select("id").single();
+      // Store the database ID on the local booking object so we can update it later
+      if (savedBooking) {
+        bookings[bookings.length - 1].dbId = savedBooking.id;
+        bookings[bookings.length - 1].customerId = customerId;
+      }
+      // Save PAR-Q if new customer
+      if (isNew && parqData && savedBooking) {
+        var answers = {};
+        var qKeys = ["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
+        for (var qi = 0; qi < parqData.questions.length; qi++) {
+          answers[qKeys[qi]] = parqData.questions[qi].a;
+        }
+        await sb.from("parq").insert(Object.assign({
+          booking_id: savedBooking.id,
+          customer_id: customerId,
+          age: parqData.age,
+          emergency_contact: parqData.emergency,
+          yes_details: parqData.details,
+          additional_notes: parqData.other,
+          print_name: parqData.printName,
+          sign_date: parqData.signDate
+        }, answers));
+      }
+      // Update booked count on class
+      await sb.from("classes").update({ booked: c.booked }).eq("id", c.id);
+    } catch(err) {
+      console.error("Supabase save error:", err);
+    }
+  })();
+
+  var html = "";
+  html += "<div class=\"srow\"><span>Name</span><span>" + sanitise(fn) + " " + sanitise(ln) + "</span></div>";
+  html += "<div class=\"srow\"><span>Class</span><span>" + sanitise(c.name) + "</span></div>";
+  html += "<div class=\"srow\"><span>Venue</span><span>" + sanitise(c.venue) + ", " + sanitise(c.loc) + "</span></div>";
+  html += "<div class=\"srow\"><span>When</span><span>" + sanitise(c.day) + " " + sanitise(c.time) + " &ndash; " + sanitise(c.end) + "</span></div>";
+  html += "<div class=\"srow\"><span>Amount Due</span><span style=\"font-weight:600;color:var(--charcoal)\">&pound;" + sanitise(String(c.price * (c.weeks || 6))) + "</span></div>";
+  document.getElementById("sdetail").innerHTML = html;
+  document.getElementById("s-reference").textContent = fn + " " + ln + " " + c.day;
+  document.getElementById("form-view").style.display = "none";
+  document.getElementById("success-view").className = "success on";
+}
+
+function renderDashboard() {
+  document.getElementById("btbody").innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>';
+  (async function() {
+    try {
+      // Get current session and use it explicitly
+      var { data: sessionData } = await sb.auth.getSession();
+      if (!sessionData.session) {
+        document.getElementById("btbody").innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Not authenticated. Please log in again.</td></tr>';
+        return;
+      }
+
+      // Load bookings with customer data joined
+      var { data: dbBookings, error } = await sb
+        .from("bookings")
+        .select("id, status, amount_due, created_at, class_id, customer_id, customers(first_name, last_name, email, phone, customer_type)")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Sync local bookings array with database
+      bookings = dbBookings.map(function(b) {
+        var cls = classes.find(function(c) { return c.id === b.class_id; }) || {};
+        return {
+          dbId: b.id,
+          customerId: b.customer_id,
+          client: b.customers ? b.customers.first_name + " " + b.customers.last_name : "Unknown",
+          email: b.customers ? b.customers.email : "",
+          phone: b.customers ? b.customers.phone : "",
+          customerType: b.customers ? b.customers.customer_type : "",
+          cls: cls.name || "Unknown Class",
+          when: (cls.day || "") + " " + (cls.time || "") + " - " + (cls.venue || ""),
+          paid: b.amount_due,
+          status: b.status,
+          classId: b.class_id,
+          day: cls.day || ""
+        };
+      });
+
+      var bhtml = "";
+      if (bookings.length === 0) {
+        bhtml = '<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">No bookings yet.</td></tr>';
+      } else {
+        for (var i = 0; i < bookings.length; i++) {
+          var b = bookings[i];
+          bhtml += "<tr><td>" + sanitise(b.client) + "</td><td>" + sanitise(b.cls) + "</td><td>" + sanitise(b.when) + "</td><td>&pound;" + sanitise(String(b.paid)) + "</td>";
+          bhtml += "<td><span class=\"pill p-" + b.status + "\">" + b.status + "</span></td>";
+          var confirmBtn = b.status === "reserved" ? "<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin(" + i + ")\">Confirm</button>" : "";
+          bhtml += "<td><button class=\"act\" onclick=\"viewBooking(" + i + ")\">View</button>" + confirmBtn + "<button class=\"act\" onclick=\"cancelBooking(" + i + ")\">Cancel</button><button class=\"act act-delete\" onclick=\"deleteBookingOnly(" + i + ")\">Remove Booking</button><button class=\"act act-delete\" onclick=\"deleteCustomer(" + i + ")\">Delete Customer</button></td></tr>";
+        }
+      }
+      document.getElementById("btbody").innerHTML = bhtml;
+
+      // Update stats
+      var totalBookings = bookings.length;
+      var totalRevenue = bookings.reduce(function(sum, b) { return sum + (b.status !== "cancelled" ? Number(b.paid) : 0); }, 0);
+      var waitlisted = bookings.filter(function(b) { return b.status === "waitlist"; }).length;
+      var confirmed = bookings.filter(function(b) { return b.status === "confirmed"; }).length;
+      var fillRate = totalBookings > 0 ? Math.round(confirmed / totalBookings * 100) : 0;
+      document.querySelector(".stats .stat:nth-child(1) .sval").textContent = totalBookings;
+      document.querySelector(".stats .stat:nth-child(2) .sval").textContent = "£" + totalRevenue;
+      document.querySelector(".stats .stat:nth-child(3) .sval").textContent = waitlisted;
+      document.querySelector(".stats .stat:nth-child(4) .sval").textContent = fillRate + "%";
+
+    } catch(err) {
+      console.error("Dashboard load error:", err);
+      document.getElementById("btbody").innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading bookings. Please refresh.</td></tr>';
+    }
+
+    // Render classes table
+    var chtml = "";
+    for (var i = 0; i < classes.length; i++) {
+      var c = classes[i];
+      var visLabel = c.visible === false ? "Show" : "Hide";
+      var visStyle = c.visible === false ? "color:var(--sage-dk);border-color:var(--sage-dk)" : "";
+      chtml += "<tr style=\"" + (c.visible === false ? "opacity:0.5" : "") + "\">";
+      chtml += "<td><strong>" + c.name + "</strong></td><td>" + c.loc + "</td><td>" + c.day + " " + c.time + "</td>";
+      chtml += "<td>" + c.booked + " / " + c.cap + "</td><td>" + (c.wait > 0 ? c.wait : "-") + "</td>";
+      chtml += "<td><button class='act' onclick='openEditModal(" + c.id + ")'>Edit</button><button class='act' style='" + visStyle + "' onclick='toggleClassVisibility(" + c.id + ")'>" + visLabel + "</button></td></tr>";
+    }
+    document.getElementById("ctbody").innerHTML = chtml;
+  })();
+}
+
+function toggleClassVisibility(id) {
+  for (var i = 0; i < classes.length; i++) {
+    if (classes[i].id === id) {
+      classes[i].visible = classes[i].visible === false ? true : false;
+      var newVisible = classes[i].visible;
+      (async function(classId, visible) {
+        try {
+          await sb.from("classes").update({ visible: visible }).eq("id", classId);
+          showToast(visible ? "Class is now visible to customers." : "Class is now hidden from customers.");
+        } catch(err) {
+          console.error("Visibility update error:", err);
+        }
+      })(id, newVisible);
+      renderDashboard();
+      renderGrid();
+      break;
+    }
+  }
+}
+
+function switchTab(tab) {
+  document.getElementById("tab-bookings").className = "db-tab" + (tab === "bookings" ? " on" : "");
+  document.getElementById("tab-classes").className = "db-tab" + (tab === "classes" ? " on" : "");
+  document.getElementById("tab-panel-bookings").style.display = tab === "bookings" ? "block" : "none";
+  document.getElementById("tab-panel-classes").style.display = tab === "classes" ? "block" : "none";
+  if (tab === "classes") renderClassesView();
+}
+
+function renderClassesView() {
+  var html = "";
+  for (var i = 0; i < classes.length; i++) {
+    var c = classes[i];
+    var classBookings = bookings.filter(function(b) { return b.classId === c.id; });
+    var groupId = "cg-" + c.id;
+    html += "<div class=\"class-group\">";
+    html += "<div class=\"class-group-header\" onclick=\"toggleClassGroup('" + groupId + "')\">";
+    html += "<div>";
+    html += "<div class=\"class-group-title\">" + sanitise(c.name) + " &mdash; " + sanitise(c.day) + " " + sanitise(c.time) + "</div>";
+    html += "<div class=\"class-group-meta\">" + sanitise(c.venue) + ", " + sanitise(c.loc) + "</div>";
+    html += "</div>";
+    html += "<div style=\"display:flex;align-items:center;gap:10px\">";
+    html += "<span class=\"class-group-badge\">" + classBookings.length + " / " + c.cap + " booked</span>";
+    html += "<span style=\"font-size:18px\">&#8964;</span>";
+    html += "</div></div>";
+    html += "<div class=\"class-group-body\" id=\"" + groupId + "\">";
+    if (classBookings.length === 0) {
+      html += "<div class=\"class-group-empty\">No bookings yet for this class.</div>";
+    } else {
+      html += "<table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Type</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+      for (var j = 0; j < classBookings.length; j++) {
+        var b = classBookings[j];
+        var idx = bookings.indexOf(b);
+        var confirmBtn = b.status === "reserved" ? "<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin(" + idx + ")\">Confirm</button>" : "";
+        html += "<tr>";
+        html += "<td>" + sanitise(b.client) + "</td>";
+        html += "<td>" + sanitise(b.email) + "</td>";
+        html += "<td>" + sanitise(b.phone) + "</td>";
+        html += "<td>" + sanitise(b.customerType) + "</td>";
+        html += "<td>&pound;" + sanitise(String(b.paid)) + "</td>";
+        html += "<td><span class=\"pill p-" + sanitise(b.status) + "\">" + sanitise(b.status) + "</span></td>";
+        html += "<td><button class=\"act\" onclick=\"viewBooking(" + idx + ")\">View</button>" + confirmBtn + "<button class=\"act\" onclick=\"cancelBooking(" + idx + ")\">Cancel</button><button class=\"act act-delete\" onclick=\"deleteBookingOnly(" + idx + ")\">Remove</button></td>";
+        html += "</tr>";
+      }
+      html += "</tbody></table>";
+    }
+    html += "</div></div>";
+  }
+  document.getElementById("classes-accordion").innerHTML = html;
+}
+
+function toggleClassGroup(id) {
+  var el = document.getElementById(id);
+  el.className = el.className === "class-group-body on" ? "class-group-body" : "class-group-body on";
+}
+
+function renderAccount() {
+  var html = "";
+  var picks = [3, 4, 6];
+  for (var i = 0; i < picks.length; i++) {
+    var c = classes[picks[i]];
+    html += '<div class="my-booking">';
+    html += '<div><div class="mb-name">' + c.name + '</div><div class="mb-meta">' + c.day + ' ' + c.time + ' - ' + c.venue + '</div></div>';
+    html += '<span class="cancel-lnk" onclick="showToast(\'Booking cancelled\')">Cancel</span>';
+    html += '</div>';
+  }
+  document.getElementById("mybookings").innerHTML = html;
+}
+
+
+
+var dashUnlocked = false;
+
+function showDashboard() {
+  if (dashUnlocked) {
+    show("dashboard");
+  } else {
+    var allPages = ["schedule","dashboard","dash-login"];
+    for (var i = 0; i < allPages.length; i++) {
+      document.getElementById("pg-" + allPages[i]).className = "page";
+    }
+    document.getElementById("nb-schedule").className = "nav-btn";
+    document.getElementById("nb-dashboard").className = "nav-btn on";
+    document.getElementById("pg-dash-login").className = "page on";
+    document.getElementById("dash-email").value = "";
+    document.getElementById("dash-password").value = "";
+    document.getElementById("dash-error").style.display = "none";
+  }
+}
+
+function checkDashLogin() {
+  var email = document.getElementById("dash-email").value.trim();
+  var pw = document.getElementById("dash-password").value;
+  var btn = document.getElementById("dash-login-btn");
+  if (!email || !pw) {
+    document.getElementById("dash-error").style.display = "block";
+    return;
+  }
+  btn.textContent = "Signing in...";
+  btn.disabled = true;
+  (async function() {
+    try {
+      var { data, error } = await sb.auth.signInWithPassword({ email: email, password: pw });
+      if (error || !data.user) {
+        document.getElementById("dash-error").style.display = "block";
+        btn.textContent = "Sign In";
+        btn.disabled = false;
+      } else {
+        // Explicitly set the session so all subsequent queries use it
+        await sb.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
+        dashUnlocked = true;
+        show("dashboard");
+        renderDashboard();
+      }
+    } catch(err) {
+      console.error("Login error:", err);
+      document.getElementById("dash-error").style.display = "block";
+      btn.textContent = "Sign In";
+      btn.disabled = false;
+    }
+  })();
+}
+
+var editingId = null;
+
+var monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function parseDate(str) {
+  var parts = str.trim().split(" ");
+  var d = parseInt(parts[0]);
+  var m = monthNames.indexOf(parts[1]);
+  return {d:d, m:m};
+}
+
+function calcBlockDates(startStr, weeks) {
+  var base = new Date(startStr + "T00:00:00");
+  var dates = [];
+  for (var i = 0; i < weeks; i++) {
+    var dt = new Date(base.getTime() + i * 7 * 24 * 60 * 60 * 1000);
+    dates.push(dt.getDate() + " " + monthNames[dt.getMonth()]);
+  }
+  return dates;
+}
+
+function openEditModal(id) {
+  editingId = id;
+  var c = null;
+  for (var i = 0; i < classes.length; i++) { if (classes[i].id === id) { c = classes[i]; break; } }
+  document.getElementById("edit-modal-sub").textContent = c.day + " " + c.time + " - " + c.venue;
+  document.getElementById("edit-day").value = c.day;
+  document.getElementById("edit-level").value = c.level;
+  document.getElementById("edit-time").value = c.time;
+  document.getElementById("edit-end").value = c.end;
+  document.getElementById("edit-venue").value = c.venue;
+  document.getElementById("edit-loc").value = c.loc;
+  document.getElementById("edit-price").value = c.price;
+  document.getElementById("edit-cap").value = c.cap;
+  var firstDate = c.dates[0];
+  var dp = parseDate(firstDate);
+  var yr = 2026;
+  if (dp.m < 2) yr = 2027;
+  var mm = String(dp.m + 1).padStart(2, "0");
+  var dd = String(dp.d).padStart(2, "0");
+  document.getElementById("edit-blockstart").value = yr + "-" + mm + "-" + dd;
+  document.getElementById("date-validation").style.display = "none";
+  document.getElementById("edit-blocklength").value = c.weeks || 6;
+  document.getElementById("edit-overlay").className = "overlay on";
+}
+
+function closeEditModal() {
+  document.getElementById("edit-overlay").className = "overlay";
+}
+
+var dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+function validateBlockDate() {
+  var val = document.getElementById("edit-blockstart").value;
+  var el = document.getElementById("date-validation");
+  if (!val) { el.style.display = "none"; return true; }
+  var classDay = document.getElementById("edit-day").value;
+  var chosen = new Date(val + "T00:00:00");
+  var chosenDay = dayNames[chosen.getDay()];
+  if (chosenDay !== classDay) {
+    el.innerHTML = "<span style='color:var(--red)'>&#9888; " + val.split("-").reverse().join(" ") + " is a " + chosenDay + ". Please pick a " + classDay + ".</span>";
+    el.style.display = "block";
+    return false;
+  } else {
+    el.innerHTML = "<span style='color:var(--green)'>&#10003; " + chosenDay + " confirmed.</span>";
+    el.style.display = "block";
+    return true;
+  }
+}
+
+function saveEditClass() {
+  if (!validateBlockDate()) {
+    showToast("Please fix the date before saving.");
+    return;
+  }
+  for (var i = 0; i < classes.length; i++) {
+    if (classes[i].id === editingId) {
+      classes[i].day   = document.getElementById("edit-day").value;
+      classes[i].level = document.getElementById("edit-level").value;
+      classes[i].time  = document.getElementById("edit-time").value;
+      classes[i].end   = document.getElementById("edit-end").value;
+      classes[i].venue = document.getElementById("edit-venue").value;
+      classes[i].loc   = document.getElementById("edit-loc").value;
+      classes[i].price = parseInt(document.getElementById("edit-price").value);
+      classes[i].cap   = parseInt(document.getElementById("edit-cap").value);
+      var wks = parseInt(document.getElementById("edit-blocklength").value);
+      classes[i].weeks = wks;
+      classes[i].dates = calcBlockDates(document.getElementById("edit-blockstart").value, wks);
+      break;
+    }
+  }
+  closeEditModal();
+  renderDashboard();
+  showToast("Class updated successfully!");
+}
+
+function confirmBookingAdmin(idx) {
+  var b = bookings[idx];
+  bookings[idx].status = "confirmed";
+  renderDashboard();
+  showToast("Booking confirmed! Email sent to " + b.client + ".");
+  (async function() {
+    try {
+      await sb.from("bookings").update({ status: "confirmed" }).eq("id", b.dbId);
+    } catch(err) {
+      console.error("Supabase confirm error:", err);
+    }
+  })();
+}
+
+function cancelBooking(idx) {
+  var b = bookings[idx];
+  for (var i = 0; i < classes.length; i++) {
+    if (classes[i].id === b.classId) { classes[i].booked = Math.max(0, classes[i].booked - 1); break; }
+  }
+  bookings.splice(idx, 1);
+  renderDashboard();
+  showToast("Booking cancelled.");
+  (async function() {
+    try {
+      await sb.from("bookings").update({ status: "cancelled" }).eq("id", b.dbId);
+    } catch(err) {
+      console.error("Supabase cancel error:", err);
+    }
+  })();
+}
+
+function deleteBookingOnly(idx) {
+  if (!confirm("Remove this booking? The customer record will be kept in the database.")) return;
+  var b = bookings[idx];
+  for (var i = 0; i < classes.length; i++) {
+    if (classes[i].id === b.classId) { classes[i].booked = Math.max(0, classes[i].booked - 1); break; }
+  }
+  bookings.splice(idx, 1);
+  renderDashboard();
+  showToast("Booking removed. Customer record kept.");
+  (async function() {
+    try {
+      await sb.from("parq").delete().eq("booking_id", b.dbId);
+      await sb.from("bookings").delete().eq("id", b.dbId);
+    } catch(err) {
+      console.error("Supabase delete booking error:", err);
+    }
+  })();
+}
+
+function deleteCustomer(idx) {
+  if (!confirm("Permanently delete this customer AND their booking from the database?")) return;
+  var b = bookings[idx];
+  for (var i = 0; i < classes.length; i++) {
+    if (classes[i].id === b.classId) { classes[i].booked = Math.max(0, classes[i].booked - 1); break; }
+  }
+  bookings.splice(idx, 1);
+  renderDashboard();
+  showToast("Customer deleted from database.");
+  (async function() {
+    try {
+      await sb.from("parq").delete().eq("booking_id", b.dbId);
+      await sb.from("bookings").delete().eq("id", b.dbId);
+      await sb.from("customers").delete().eq("id", b.customerId);
+    } catch(err) {
+      console.error("Supabase delete error:", err);
+    }
+  })();
+}
+
+function closeViewModal() {
+  document.getElementById("view-overlay").className = "overlay";
+}
+
+function viewBooking(idx) {
+  var b = bookings[idx];
+  document.getElementById("view-title").textContent = b.client;
+  document.getElementById("view-sub").textContent = b.cls + " - " + b.when;
+  var html = "";
+
+  html += "<div class=\"parq-section-title\">Booking Details</div>";
+  html += "<div class=\"sdetail\">";
+  html += "<div class=\"srow\"><span>Status</span><span><span class=\"pill p-" + sanitise(b.status) + "\">" + sanitise(b.status) + "</span></span></div>";
+  html += "<div class=\"srow\"><span>Email</span><span>" + sanitise(b.email) + "</span></div>";
+  html += "<div class=\"srow\"><span>Phone</span><span>" + sanitise(b.phone) + "</span></div>";
+  html += "<div class=\"srow\"><span>Customer Type</span><span>" + sanitise(b.customerType) + "</span></div>";
+  html += "<div class=\"srow\"><span>Amount Due</span><span>&pound;" + sanitise(String(b.paid)) + "</span></div>";
+  html += "</div>";
+
+  if (b.parq) {
+    var p = b.parq;
+    html += "<div class=\"parq-section-title\" style=\"margin-top:20px\">PAR-Q Health Form</div>";
+    html += "<div class=\"sdetail\">";
+    html += "<div class=\"srow\"><span>Age</span><span>" + sanitise(p.age) + "</span></div>";
+    html += "<div class=\"srow\"><span>Emergency Contact</span><span>" + sanitise(p.emergency) + "</span></div>";
+    html += "</div>";
+
+    html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Medical Questions</div>";
+    html += "<div class=\"sdetail\">";
+    for (var i = 0; i < p.questions.length; i++) {
+      var q = p.questions[i];
+      var colour = q.a === "Yes" ? "color:var(--red);font-weight:600" : "color:var(--green)";
+      html += "<div class=\"srow\"><span>" + (i+1) + ". " + sanitise(q.q) + "</span><span style=\"" + colour + "\">" + sanitise(q.a) + "</span></div>";
+    }
+    html += "</div>";
+
+    if (p.details) {
+      html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Yes Answer Details</div>";
+      html += "<div class=\"health-note\">" + sanitise(p.details) + "</div>";
+    }
+    if (p.other) {
+      html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Additional Notes</div>";
+      html += "<div class=\"health-note\">" + sanitise(p.other) + "</div>";
+    }
+    html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Declaration</div>";
+    html += "<div class=\"sdetail\">";
+    html += "<div class=\"srow\"><span>Signed by</span><span>" + sanitise(p.printName) + "</span></div>";
+    html += "<div class=\"srow\"><span>Date</span><span>" + sanitise(p.signDate) + "</span></div>";
+    html += "</div>";
+  } else {
+    html += "<div class=\"health-note\" style=\"margin-top:16px\">Returning customer &mdash; no health form required.</div>";
+  }
+
+  document.getElementById("view-body").innerHTML = html;
+  document.getElementById("view-overlay").className = "overlay on";
+}
+
+function showToast(msg) {
+  var el = document.getElementById("toastEl");
+  el.textContent = msg;
+  el.className = "toast on";
+  setTimeout(function() { el.className = "toast"; }, 3000);
+}
+
+document.getElementById("overlay").addEventListener("click", function(e) {
+  if (e.target === this) closeModal();
+});
+
+buildFilters();
+renderGrid();
+</script>
+</body>
+</html>
