@@ -1117,10 +1117,73 @@ function renderDashboard() {
       chtml += "<tr style=\"" + (c.visible === false ? "opacity:0.5" : "") + "\">";
       chtml += "<td><strong>" + c.name + "</strong></td><td>" + c.loc + "</td><td>" + c.day + " " + c.time + "</td>";
       chtml += "<td>" + c.booked + " / " + c.cap + "</td><td>" + (c.wait > 0 ? c.wait : "-") + "</td>";
-      chtml += "<td><button class='act' onclick='openEditModal(" + c.id + ")'>Edit</button><button class='act' style='" + visStyle + "' onclick='toggleClassVisibility(" + c.id + ")'>" + visLabel + "</button></td></tr>";
+      chtml += "<td><button class='act' onclick='openEditModal(" + c.id + ")'>Edit</button><button class='act' style='" + visStyle + "' onclick='toggleClassVisibility(" + c.id + ")'>" + visLabel + "</button><button class='act act-delete' onclick='deleteClass(" + c.id + ")'>Delete</button></td></tr>";
     }
     document.getElementById("ctbody").innerHTML = chtml;
   })();
+}
+
+function deleteClass(id) {
+  var cls = classes.find(function(c) { return c.id === id; });
+  var classBookings = bookings.filter(function(b) { return b.classId === id; });
+
+  if (classBookings.length > 0) {
+    var choice = confirm(
+      "This class has " + classBookings.length + " existing booking(s).\n\n" +
+      "Click OK to cancel the class and mark all bookings as cancelled (recommended for refund tracking).\n\n" +
+      "Click Cancel to go back without deleting."
+    );
+    if (!choice) return;
+
+    var deleteAll = confirm(
+      "Do you also want to permanently delete all bookings and customer records for this class?\n\n" +
+      "Click OK to delete everything.\n" +
+      "Click Cancel to keep the booking records."
+    );
+
+    classes = classes.filter(function(c) { return c.id !== id; });
+    renderDashboard();
+    renderGrid();
+
+    (async function() {
+      try {
+        if (deleteAll) {
+          // Delete parq, bookings then class
+          for (var i = 0; i < classBookings.length; i++) {
+            await sb.from("parq").delete().eq("booking_id", classBookings[i].dbId);
+            await sb.from("bookings").delete().eq("id", classBookings[i].dbId);
+          }
+          showToast("Class and all bookings deleted.");
+        } else {
+          // Mark all bookings as cancelled
+          for (var i = 0; i < classBookings.length; i++) {
+            await sb.from("bookings").update({ status: "cancelled" }).eq("id", classBookings[i].dbId);
+          }
+          showToast("Class cancelled. Bookings marked as cancelled.");
+        }
+        await sb.from("classes").delete().eq("id", id);
+      } catch(err) {
+        console.error("Delete class error:", err);
+        showToast("Error deleting class. Please try again.");
+      }
+    })();
+
+  } else {
+    // No bookings, just confirm and delete
+    if (!confirm("Permanently delete this class? There are no existing bookings. This cannot be undone.")) return;
+    classes = classes.filter(function(c) { return c.id !== id; });
+    renderDashboard();
+    renderGrid();
+    showToast("Class deleted.");
+    (async function() {
+      try {
+        await sb.from("classes").delete().eq("id", id);
+      } catch(err) {
+        console.error("Delete class error:", err);
+        showToast("Error deleting class. Please try again.");
+      }
+    })();
+  }
 }
 
 function toggleClassVisibility(id) {
