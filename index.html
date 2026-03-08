@@ -200,6 +200,10 @@ tr:hover td { background:var(--cream); }
 .act-delete { border-color:var(--red); color:var(--red); }
 .act-delete:hover { background:var(--red); color:white; border-color:var(--red); }
 .p-reserved { background:#fef3e8; color:var(--clay); }
+.p-refund-pending { background:#fde8e8; color:var(--red); font-weight:600; }
+.p-refunded { background:#e8e8fd; color:#5050c0; }
+.act-refund { border-color:#c04040; color:#c04040; }
+.act-refund:hover { background:#c04040; color:white; }
 .act:hover { border-color:var(--charcoal); color:var(--charcoal); }
 .acc-wrap { max-width:600px; margin:0 auto; padding:50px 40px; }
 .av { width:72px; height:72px; background:var(--sage-lt); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Raleway',sans-serif; font-size:28px; color:var(--sage-dk); margin-bottom:18px; }
@@ -1055,7 +1059,7 @@ function renderDashboard() {
       // Load bookings with customer data joined
       var { data: dbBookings, error } = await sb
         .from("bookings")
-        .select("id, status, amount_due, created_at, class_id, customer_id, customers(first_name, last_name, email, phone, customer_type)")
+        .select("id, status, amount_due, refund_amount, refund_status, created_at, class_id, customer_id, customers(first_name, last_name, email, phone, customer_type)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -1074,6 +1078,7 @@ function renderDashboard() {
           when: (cls.day || "") + " " + (cls.time || "") + " - " + (cls.venue || ""),
           paid: b.amount_due,
           status: b.status,
+          refundAmount: b.refund_amount,
           classId: b.class_id,
           day: cls.day || ""
         };
@@ -1088,7 +1093,10 @@ function renderDashboard() {
           bhtml += "<tr><td>" + sanitise(b.client) + "</td><td>" + sanitise(b.cls) + "</td><td>" + sanitise(b.when) + "</td><td>&pound;" + sanitise(String(b.paid)) + "</td>";
           bhtml += "<td><span class=\"pill p-" + b.status + "\">" + b.status + "</span></td>";
           var confirmBtn = b.status === "reserved" ? "<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin(" + i + ")\">Confirm</button>" : "";
-          bhtml += "<td><button class=\"act\" onclick=\"viewBooking(" + i + ")\">View</button>" + confirmBtn + "<button class=\"act\" onclick=\"cancelBooking(" + i + ")\">Cancel</button><button class=\"act act-delete\" onclick=\"deleteBookingOnly(" + i + ")\">Remove Booking</button><button class=\"act act-delete\" onclick=\"deleteCustomer(" + i + ")\">Delete Customer</button></td></tr>";
+          var cancelBtn = (b.status !== "cancelled" && b.status !== "refunded") ? "<button class=\"act\" onclick=\"cancelBooking(" + i + ")\">Cancel</button>" : "";
+          var refundBtn = (b.status === "confirmed" || b.status === "cancelled") ? "<button class=\"act act-refund\" onclick=\"initiateRefund(" + i + ")\">Refund</button>" : "";
+          var markRefundedBtn = b.status === "refund-pending" ? "<button class=\"act act-confirm\" onclick=\"markRefunded(" + i + ")\">Mark Refunded</button>" : "";
+          bhtml += "<td><button class=\"act\" onclick=\"viewBooking(" + i + ")\">View</button>" + confirmBtn + cancelBtn + refundBtn + markRefundedBtn + "<button class=\"act act-delete\" onclick=\"deleteBookingOnly(" + i + ")\">Remove Booking</button><button class=\"act act-delete\" onclick=\"deleteCustomer(" + i + ")\">Delete Customer</button></td></tr>";
         }
       }
       document.getElementById("btbody").innerHTML = bhtml;
@@ -1247,6 +1255,9 @@ function renderClassesView() {
         var b = classBookings[j];
         var idx = bookings.indexOf(b);
         var confirmBtn = b.status === "reserved" ? "<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin(" + idx + ")\">Confirm</button>" : "";
+        var cancelBtn2 = (b.status !== "cancelled" && b.status !== "refunded") ? "<button class=\"act\" onclick=\"cancelBooking(" + idx + ")\">Cancel</button>" : "";
+        var refundBtn2 = (b.status === "confirmed" || b.status === "cancelled") ? "<button class=\"act act-refund\" onclick=\"initiateRefund(" + idx + ")\">Refund</button>" : "";
+        var markRefundedBtn2 = b.status === "refund-pending" ? "<button class=\"act act-confirm\" onclick=\"markRefunded(" + idx + ")\">Mark Refunded</button>" : "";
         html += "<tr>";
         html += "<td>" + sanitise(b.client) + "</td>";
         html += "<td>" + sanitise(b.email) + "</td>";
@@ -1254,7 +1265,7 @@ function renderClassesView() {
         html += "<td>" + sanitise(b.customerType) + "</td>";
         html += "<td>&pound;" + sanitise(String(b.paid)) + "</td>";
         html += "<td><span class=\"pill p-" + sanitise(b.status) + "\">" + sanitise(b.status) + "</span></td>";
-        html += "<td><button class=\"act\" onclick=\"viewBooking(" + idx + ")\">View</button>" + confirmBtn + "<button class=\"act\" onclick=\"cancelBooking(" + idx + ")\">Cancel</button><button class=\"act act-delete\" onclick=\"deleteBookingOnly(" + idx + ")\">Remove</button></td>";
+        html += "<td><button class=\"act\" onclick=\"viewBooking(" + idx + ")\">View</button>" + confirmBtn + cancelBtn2 + refundBtn2 + markRefundedBtn2 + "<button class=\"act act-delete\" onclick=\"deleteBookingOnly(" + idx + ")\">Remove</button></td>";
         html += "</tr>";
       }
       html += "</tbody></table>";
@@ -1447,6 +1458,85 @@ function confirmBookingAdmin(idx) {
   })();
 }
 
+function initiateRefund(idx) {
+  var b = bookings[idx];
+  var leavingBlock = confirm(
+    "Is " + b.client + " leaving the block entirely?\n\n" +
+    "Click OK if yes — their spot will be freed up for a new booking.\n" +
+    "Click Cancel if they are staying but receiving a partial refund."
+  );
+
+  var sessionsAttended = 0;
+  if (leavingBlock) {
+    var attended = prompt("How many sessions did they attend before cancelling?\n\nEnter 0 if none.", "0");
+    if (attended === null) return;
+    sessionsAttended = parseInt(attended) || 0;
+  }
+
+  var cls = classes.find(function(c) { return c.id === b.classId; });
+  var totalSessions = cls ? (cls.weeks || 6) : 6;
+  var pricePerSession = cls ? cls.price : 0;
+  var remainingSessions = totalSessions - sessionsAttended;
+  var suggestedRefund = remainingSessions * pricePerSession;
+
+  var refundAmount = prompt(
+    "Refund amount for " + b.client + "\n\n" +
+    "Sessions attended: " + sessionsAttended + " of " + totalSessions + "\n" +
+    "Suggested refund: £" + suggestedRefund + "\n\n" +
+    "Enter refund amount:",
+    suggestedRefund
+  );
+  if (refundAmount === null) return;
+  var amount = parseFloat(refundAmount) || suggestedRefund;
+
+  if (!confirm(
+    "Summary:\n\n" +
+    "Customer: " + b.client + "\n" +
+    "Leaving block: " + (leavingBlock ? "Yes" : "No") + "\n" +
+    "Sessions attended: " + sessionsAttended + "\n" +
+    "Refund amount: £" + amount + "\n\n" +
+    "Mark as Refund Pending?"
+  )) return;
+
+  showToast("Saving refund...");
+  (async function() {
+    try {
+      await sb.from("bookings").update({ status: "refund-pending", refund_amount: amount }).eq("id", b.dbId);
+      if (leavingBlock) {
+        for (var i = 0; i < classes.length; i++) {
+          if (classes[i].id === b.classId) {
+            classes[i].booked = Math.max(0, classes[i].booked - 1);
+            await sb.from("classes").update({ booked: classes[i].booked }).eq("id", classes[i].id);
+            break;
+          }
+        }
+      }
+      showToast("Refund pending — £" + amount + (leavingBlock ? ". Spot freed up." : ""));
+      renderDashboard();
+      renderGrid();
+    } catch(err) {
+      console.error("Refund error:", err);
+      showToast("Error saving refund. Please try again.");
+    }
+  })();
+}
+
+function markRefunded(idx) {
+  var b = bookings[idx];
+  if (!confirm("Confirm refund has been sent to " + b.client + "?\n\nThis will mark the booking as Refunded.")) return;
+  showToast("Marking as refunded...");
+  (async function() {
+    try {
+      await sb.from("bookings").update({ status: "refunded" }).eq("id", b.dbId);
+      showToast("Booking marked as Refunded.");
+      renderDashboard();
+    } catch(err) {
+      console.error("Mark refunded error:", err);
+      showToast("Error updating booking. Please try again.");
+    }
+  })();
+}
+
 function cancelBooking(idx) {
   var b = bookings[idx];
   showToast("Cancelling booking...");
@@ -1528,6 +1618,9 @@ function viewBooking(idx) {
       html += "<div class=\"srow\"><span>Phone</span><span>" + sanitise(b.phone) + "</span></div>";
       html += "<div class=\"srow\"><span>Customer Type</span><span>" + sanitise(b.customerType) + "</span></div>";
       html += "<div class=\"srow\"><span>Amount Due</span><span>&pound;" + sanitise(String(b.paid)) + "</span></div>";
+      if (b.refundAmount) {
+        html += "<div class=\"srow\"><span>Refund Amount</span><span style=\"color:var(--red);font-weight:600\">&pound;" + sanitise(String(b.refundAmount)) + "</span></div>";
+      }
       html += "</div>";
 
       if (p) {
