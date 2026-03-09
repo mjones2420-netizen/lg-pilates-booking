@@ -804,14 +804,25 @@ function renderGrid() {
     html+='<div class="meta-item"><div class="meta-lbl">Price per block</div><div class="meta-val price">&pound;'+(blk.price*blk.weeks)+'</div></div>';
     html+='<div class="meta-item" style="grid-column:span 2"><div class="meta-lbl">Time</div><div class="meta-val" style="font-size:15px">'+c.time+' &ndash; '+c.end_time+'</div></div>';
     html+='</div>';
+    // Active block section
     var dpills=(blk.dates||[]).map(function(d){ return '<span class="date-pill">'+d+'</span>'; }).join("");
-    html+='<div class="block-dates"><div class="block-dates-lbl">'+blk.weeks+'-Week Block</div><div class="block-dates-pills">'+dpills+'</div></div>';
-    if(nextBlk){
-      html+='<div style="margin-bottom:12px;padding:8px 10px;background:#f0f7f7;border-radius:3px;font-size:12px;color:var(--sage-dk)">📅 Next block starts '+nextBlk.dates[0]+' &ndash; booking open now</div>';
-    }
+    html+='<div class="block-dates"><div class="block-dates-lbl">Current Block</div><div class="block-dates-pills">'+dpills+'</div></div>';
     html+='<div class="cap-bar"><div class="cap-fill'+warn+'" style="width:'+pct+'%"></div></div>';
-    html+='<div class="cap-txt">'+blk.booked+' of '+blk.cap+' spots taken</div>';
-    html+='<button class="book-btn '+btnCls+'"'+btnDis+' onclick="openModal('+c.id+','+blk.id+')">'+btnTxt+'</button>';
+    html+='<div class="cap-txt" style="margin-bottom:10px">'+blk.booked+' of '+blk.cap+' spots taken</div>';
+    html+='<button class="book-btn '+btnCls+'"'+btnDis+' onclick="openModal('+c.id+','+blk.id+')">'+(full?'Current Block Full':'Book Current Block')+'</button>';
+    // Upcoming block section — also bookable
+    if(nextBlk){
+      var nextFull=nextBlk.booked>=nextBlk.cap;
+      var nextPct=Math.min(100,Math.round(nextBlk.booked/nextBlk.cap*100));
+      var nextWarn=nextPct>=80?" warn":"";
+      var nextpills=(nextBlk.dates||[]).map(function(d){ return '<span class="date-pill">'+d+'</span>'; }).join("");
+      html+='<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">';
+      html+='<div class="block-dates"><div class="block-dates-lbl" style="color:var(--sage-dk)">&#128197; Next Block &mdash; &pound;'+(nextBlk.price*nextBlk.weeks)+'</div><div class="block-dates-pills">'+nextpills+'</div></div>';
+      html+='<div class="cap-bar"><div class="cap-fill'+nextWarn+'" style="width:'+nextPct+'%"></div></div>';
+      html+='<div class="cap-txt" style="margin-bottom:10px">'+nextBlk.booked+' of '+nextBlk.cap+' spots taken</div>';
+      html+='<button class="book-btn"'+(nextFull?' disabled':'')+' onclick="openModal('+c.id+','+nextBlk.id+')">'+(nextFull?'Next Block Full':'Book Next Block')+'</button>';
+      html+='</div>';
+    }
     html+='</div>';
   });
   document.getElementById("grid").innerHTML=html;
@@ -822,10 +833,11 @@ function openModal(classId, blockId) {
   selected = classes.find(function(c){ return c.id===classId; });
   selectedBlock = blocks.find(function(b){ return b.id===blockId; });
   var c=selected, blk=selectedBlock;
+  var blockLabel=(blk.dates&&blk.dates.length>0)?" \u2014 "+blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:"";
   document.getElementById("m-name").textContent=c.name;
-  document.getElementById("m-sub").textContent=c.venue+", "+c.loc+" - "+c.day+" "+c.time;
+  document.getElementById("m-sub").textContent=c.venue+", "+c.loc+" \u2014 "+c.day+" "+c.time;
   document.getElementById("m-sname").textContent=c.name;
-  document.getElementById("m-sdetail").textContent=c.day+" "+c.time+" - "+c.end_time+" | "+c.loc;
+  document.getElementById("m-sdetail").textContent=c.day+" "+c.time+" \u2013 "+c.end_time+" | "+c.loc+blockLabel;
   var totalPrice=blk.price*blk.weeks;
   document.getElementById("m-price").textContent="\u00a3"+totalPrice;
   document.getElementById("m-btnprice").textContent="\u00a3"+totalPrice;
