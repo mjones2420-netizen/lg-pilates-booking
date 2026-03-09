@@ -303,8 +303,29 @@ tr:hover td { background:var(--cream); }
       <div id="classes-accordion"></div>
     </div>
 
-    <div class="sec-title" style="margin-top:40px">Upcoming Classes</div>
-    <table><thead><tr><th>Class</th><th>Location</th><th>Day and Time</th><th>Booked/Cap</th><th>Waitlist</th><th>Actions</th></tr></thead><tbody id="ctbody"></tbody></table>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:40px; margin-bottom:12px;">
+      <div class="sec-title" style="margin-top:0">Upcoming Classes</div>
+      <button class="step-btn" onclick="openAddModal()" style="padding:8px 18px; font-size:12px;">+ Add New Class</button>
+    </div>
+    <table><thead><tr><th>Class</th><th>Location</th><th>Day and Time</th><th>Block Dates</th><th>Booked/Cap</th><th>Waitlist</th><th>Actions</th></tr></thead><tbody id="ctbody"></tbody></table>
+
+    <div class="sec-title" style="margin-top:40px">Settings</div>
+    <div style="background:white; border:1px solid var(--border); border-radius:4px; padding:24px; max-width:480px;">
+      <div style="font-size:13px; color:var(--mid); margin-bottom:18px;">Bank details shown to customers on the payment and confirmation screens.</div>
+      <div style="margin-bottom:14px;">
+        <label class="flbl">Account Name</label>
+        <input type="text" class="finp" id="setting-bank-name" style="margin-bottom:0">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label class="flbl">Sort Code</label>
+        <input type="text" class="finp" id="setting-bank-sort" placeholder="00-00-00" style="margin-bottom:0">
+      </div>
+      <div style="margin-bottom:20px;">
+        <label class="flbl">Account Number</label>
+        <input type="text" class="finp" id="setting-bank-acc" placeholder="00000000" style="margin-bottom:0">
+      </div>
+      <button class="step-btn" onclick="saveSettings()" style="width:auto;padding:10px 24px;">Save Bank Details</button>
+    </div>
   </div>
 </div>
 
@@ -424,9 +445,9 @@ tr:hover td { background:var(--cream); }
 
           <div class="pay-lbl" style="margin-bottom:10px;">Pay by Bank Transfer within 48 hours</div>
           <div class="bank-details">
-            <div class="bank-row"><span class="bank-lbl">Name</span><span class="bank-val">L George</span></div>
-            <div class="bank-row"><span class="bank-lbl">Sort Code</span><span class="bank-val">12-34-56</span></div>
-            <div class="bank-row"><span class="bank-lbl">Account No.</span><span class="bank-val">12345678</span></div>
+            <div class="bank-row"><span class="bank-lbl">Name</span><span class="bank-val" id="bank-name-1"></span></div>
+            <div class="bank-row"><span class="bank-lbl">Sort Code</span><span class="bank-val" id="bank-sort-1"></span></div>
+            <div class="bank-row"><span class="bank-lbl">Account No.</span><span class="bank-val" id="bank-acc-1"></span></div>
             <div class="bank-row"><span class="bank-lbl">Reference</span><span class="bank-val" id="m-reference">Your name + class day</span></div>
           </div>
 
@@ -445,9 +466,9 @@ tr:hover td { background:var(--cream); }
       <div class="ssub">Your spot is currently <strong>reserved but not yet confirmed.</strong> To secure your place please make your bank transfer within 48 hours using the details below. Louise will confirm your booking by email once payment has been received.</div>
       <div class="sdetail" id="sdetail"></div>
       <div style="background:var(--cream); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:20px;">
-        <div class="bank-row"><span class="bank-lbl">Name</span><span class="bank-val">L George</span></div>
-        <div class="bank-row"><span class="bank-lbl">Sort Code</span><span class="bank-val">12-34-56</span></div>
-        <div class="bank-row"><span class="bank-lbl">Account No.</span><span class="bank-val">12345678</span></div>
+        <div class="bank-row"><span class="bank-lbl">Name</span><span class="bank-val" id="bank-name-2"></span></div>
+        <div class="bank-row"><span class="bank-lbl">Sort Code</span><span class="bank-val" id="bank-sort-2"></span></div>
+        <div class="bank-row"><span class="bank-lbl">Account No.</span><span class="bank-val" id="bank-acc-2"></span></div>
         <div class="bank-row"><span class="bank-lbl">Reference</span><span class="bank-val" id="s-reference"></span></div>
       </div>
       <button class="confirm-btn" onclick="closeModal()">Back to Schedule</button>
@@ -533,6 +554,74 @@ tr:hover td { background:var(--cream); }
 </div>
 
 
+
+<!-- ADD CLASS MODAL -->
+<div class="overlay" id="add-overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div>
+        <div class="mtitle">Add New Class</div>
+        <div class="msub">Fill in the details to create a new class</div>
+      </div>
+      <button class="mclose" onclick="closeAddModal()">x</button>
+    </div>
+    <div class="mbody">
+      <div class="frow">
+        <div>
+          <label class="flbl">Day</label>
+          <select class="finp" id="add-day" style="margin-bottom:0">
+            <option value="">Select day</option>
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+            <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+          </select>
+        </div>
+        <div><label class="flbl">Level</label><input type="text" class="finp" id="add-level" placeholder="e.g. Mixed Ability" style="margin-bottom:0"></div>
+      </div>
+      <div class="frow" style="margin-top:14px">
+        <div><label class="flbl">Start Time</label><input type="text" class="finp" id="add-time" placeholder="e.g. 9:45am" style="margin-bottom:0"></div>
+        <div><label class="flbl">End Time</label><input type="text" class="finp" id="add-end" placeholder="e.g. 10:30am" style="margin-bottom:0"></div>
+      </div>
+      <label class="flbl" style="margin-top:14px">Venue</label>
+      <input type="text" class="finp" id="add-venue" placeholder="e.g. St Johns Parish Church">
+      <div class="frow">
+        <div><label class="flbl">Location</label>
+          <select class="finp" id="add-loc" style="margin-bottom:0">
+            <option value="Baildon">Baildon</option>
+            <option value="Guiseley">Guiseley</option>
+          </select>
+        </div>
+        <div><label class="flbl">Price per session (pound)</label><input type="number" class="finp" id="add-price" placeholder="10" style="margin-bottom:0"></div>
+      </div>
+      <label class="flbl" style="margin-top:14px">Capacity</label>
+      <input type="number" class="finp" id="add-cap" placeholder="12">
+      <div class="frow">
+        <div>
+          <label class="flbl">Block Start Date</label>
+          <input type="date" class="finp" id="add-blockstart" onchange="validateAddDate()" style="margin-bottom:0">
+          <div id="add-date-validation" style="font-size:12px;margin-top:6px;display:none;"></div>
+        </div>
+        <div><label class="flbl">Block Length (weeks)</label>
+          <select class="finp" id="add-blocklength" style="margin-bottom:0">
+            <option value="2">2 weeks</option>
+            <option value="3">3 weeks</option>
+            <option value="4">4 weeks</option>
+            <option value="5">5 weeks</option>
+            <option value="6" selected>6 weeks</option>
+            <option value="7">7 weeks</option>
+            <option value="8">8 weeks</option>
+            <option value="9">9 weeks</option>
+            <option value="10">10 weeks</option>
+          </select>
+        </div>
+      </div>
+      <div id="add-err" style="color:#c04040;font-size:12px;margin-top:12px;display:none;">Please fill in all required fields.</div>
+    </div>
+    <div class="mfoot">
+      <button class="confirm-btn" id="add-class-btn" onclick="saveNewClass()">Add Class</button>
+    </div>
+  </div>
+</div>
+
 <!-- BOOKING DETAIL MODAL -->
 <div class="overlay" id="view-overlay">
   <div class="modal">
@@ -553,21 +642,7 @@ tr:hover td { background:var(--cream); }
 <div class="toast" id="toastEl"></div>
 
 <script>
-var classes = [
-  {id:1,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Monday",    time:"9:45am",  end:"10:30am", price:10, cap:12, booked:0, wait:0, venue:"Moravian Church",        loc:"Baildon",   dates:["9 Mar","16 Mar","23 Mar","30 Mar","6 Apr","13 Apr"], weeks:6, weeks:6, visible:true},
-  {id:2,  name:"Intermediate",        level:"Intermediate",   day:"Monday",    time:"6:30pm",  end:"7:15pm",  price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["9 Mar","16 Mar","23 Mar","30 Mar","6 Apr","13 Apr"], weeks:6, visible:true},
-  {id:3,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Monday",    time:"7:30pm",  end:"8:15pm",  price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["9 Mar","16 Mar","23 Mar","30 Mar","6 Apr","13 Apr"], weeks:6, visible:true},
-  {id:4,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Tuesday",   time:"9:45am",  end:"10:30am", price:10, cap:12, booked:0, wait:0, venue:"Starlight Academy",      loc:"Guiseley",  dates:["10 Mar","17 Mar","24 Mar","31 Mar","7 Apr","14 Apr"], weeks:6, visible:true},
-  {id:5,  name:"Beginner / Improver", level:"Beginner",       day:"Tuesday",   time:"6:15pm",  end:"7:00pm",  price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["10 Mar","17 Mar","24 Mar","31 Mar","7 Apr","14 Apr"], weeks:6, visible:true},
-  {id:6,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Tuesday",   time:"7:15pm",  end:"8:00pm",  price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["10 Mar","17 Mar","24 Mar","31 Mar","7 Apr","14 Apr"], weeks:6, visible:true},
-  {id:7,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Wednesday", time:"9:45am",  end:"10:30am", price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["11 Mar","18 Mar","25 Mar","1 Apr","8 Apr","15 Apr"], weeks:6, visible:true},
-  {id:8,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Wednesday", time:"5:30pm",  end:"6:15pm",  price:10, cap:12, booked:0, wait:0, venue:"DPTA Studio",            loc:"Guiseley",  dates:["11 Mar","18 Mar","25 Mar","1 Apr","8 Apr","15 Apr"], weeks:6, visible:true},
-  {id:9,  name:"Mixed Ability",       level:"Mixed Ability",  day:"Wednesday", time:"6:30pm",  end:"7:15pm",  price:10, cap:12, booked:0, wait:0, venue:"DPTA Studio",            loc:"Guiseley",  dates:["11 Mar","18 Mar","25 Mar","1 Apr","8 Apr","15 Apr"], weeks:6, visible:true},
-  {id:10, name:"Mixed Ability",       level:"Mixed Ability",  day:"Thursday",  time:"9:45am",  end:"10:30am", price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["12 Mar","19 Mar","26 Mar","2 Apr","9 Apr","16 Apr"], weeks:6, visible:true},
-  {id:11, name:"Mixed Ability",       level:"Mixed Ability",  day:"Thursday",  time:"6:30pm",  end:"7:15pm",  price:10, cap:12, booked:0, wait:0, venue:"St Johns Parish Church", loc:"Baildon",   dates:["12 Mar","19 Mar","26 Mar","2 Apr","9 Apr","16 Apr"], weeks:6, visible:true},
-  {id:12, name:"Mixed Ability",       level:"Mixed Ability",  day:"Friday",    time:"10:00am", end:"10:45am", price:10, cap:12, booked:0, wait:0, venue:"DPTA Studio",            loc:"Guiseley",  dates:["13 Mar","20 Mar","27 Mar","3 Apr","10 Apr","17 Apr"], weeks:6, visible:true}
-];
-
+var classes = [];
 var bookings = [];
 
 // Supabase setup
@@ -1132,6 +1207,8 @@ function renderDashboard() {
       var visStyle = c.visible === false ? "color:var(--sage-dk);border-color:var(--sage-dk)" : "";
       chtml += "<tr style=\"" + (c.visible === false ? "opacity:0.5" : "") + "\">";
       chtml += "<td><strong>" + c.name + "</strong></td><td>" + c.loc + "</td><td>" + c.day + " " + c.time + "</td>";
+      var dateRange = (c.dates && c.dates.length > 0) ? c.dates[0] + " &ndash; " + c.dates[c.dates.length - 1] : "&mdash;";
+      chtml += "<td style='font-size:12px;color:var(--mid)'>" + dateRange + "</td>";
       chtml += "<td>" + c.booked + " / " + c.cap + "</td><td>" + (c.wait > 0 ? c.wait : "-") + "</td>";
       chtml += "<td><button class='act' onclick='openEditModal(" + c.id + ")'>Edit</button><button class='act' style='" + visStyle + "' onclick='toggleClassVisibility(" + c.id + ")'>" + visLabel + "</button><button class='act act-delete' onclick='deleteClass(" + c.id + ")'>Delete</button></td></tr>";
     }
@@ -1368,6 +1445,129 @@ function calcBlockDates(startStr, weeks) {
   return dates;
 }
 
+function openAddModal() {
+  // Clear all fields
+  document.getElementById("add-day").value = "";
+  document.getElementById("add-level").value = "";
+  document.getElementById("add-time").value = "";
+  document.getElementById("add-end").value = "";
+  document.getElementById("add-venue").value = "";
+  document.getElementById("add-loc").value = "Baildon";
+  document.getElementById("add-price").value = "10";
+  document.getElementById("add-cap").value = "12";
+  document.getElementById("add-blockstart").value = "";
+  document.getElementById("add-blocklength").value = "6";
+  document.getElementById("add-date-validation").style.display = "none";
+  document.getElementById("add-err").style.display = "none";
+  document.getElementById("add-overlay").className = "overlay on";
+}
+
+function closeAddModal() {
+  document.getElementById("add-overlay").className = "overlay";
+}
+
+function validateAddDate() {
+  var val = document.getElementById("add-blockstart").value;
+  var el = document.getElementById("add-date-validation");
+  if (!val) { el.style.display = "none"; return true; }
+  var classDay = document.getElementById("add-day").value;
+  if (!classDay) { el.style.display = "none"; return true; }
+  var chosen = new Date(val + "T00:00:00");
+  var chosenDay = dayNames[chosen.getDay()];
+  if (chosenDay !== classDay) {
+    el.innerHTML = "<span style='color:var(--red)'>&#9888; " + val.split("-").reverse().join(" ") + " is a " + chosenDay + ". Please pick a " + classDay + ".</span>";
+    el.style.display = "block";
+    return false;
+  } else {
+    el.innerHTML = "<span style='color:var(--green)'>&#10003; " + chosenDay + " confirmed.</span>";
+    el.style.display = "block";
+    return true;
+  }
+}
+
+function saveNewClass() {
+  var day      = document.getElementById("add-day").value.trim();
+  var level    = document.getElementById("add-level").value.trim();
+  var time     = document.getElementById("add-time").value.trim();
+  var end      = document.getElementById("add-end").value.trim();
+  var venue    = document.getElementById("add-venue").value.trim();
+  var loc      = document.getElementById("add-loc").value;
+  var price    = parseInt(document.getElementById("add-price").value);
+  var cap      = parseInt(document.getElementById("add-cap").value);
+  var start    = document.getElementById("add-blockstart").value;
+  var weeks    = parseInt(document.getElementById("add-blocklength").value);
+
+  var errEl = document.getElementById("add-err");
+  if (!day || !level || !time || !end || !venue || !start || !price || !cap) {
+    errEl.style.display = "block";
+    return;
+  }
+  if (!validateAddDate()) {
+    errEl.textContent = "Please fix the block start date.";
+    errEl.style.display = "block";
+    return;
+  }
+  errEl.style.display = "none";
+
+  var dates = calcBlockDates(start, weeks);
+  var btn = document.getElementById("add-class-btn");
+  btn.textContent = "Saving...";
+  btn.disabled = true;
+
+  (async function() {
+    try {
+      var { data: newClass, error } = await sb.from("classes").insert({
+        name: level,
+        level: level,
+        day: day,
+        time: time,
+        end_time: end,
+        venue: venue,
+        loc: loc,
+        price: price,
+        cap: cap,
+        booked: 0,
+        wait: 0,
+        weeks: weeks,
+        dates: dates,
+        visible: true
+      }).select().single();
+
+      if (error) throw error;
+
+      classes.push({
+        id: newClass.id,
+        name: level,
+        level: level,
+        day: day,
+        time: time,
+        end: end,
+        venue: venue,
+        loc: loc,
+        price: price,
+        cap: cap,
+        booked: 0,
+        wait: 0,
+        weeks: weeks,
+        dates: dates,
+        visible: true
+      });
+
+      closeAddModal();
+      buildFilters();
+      renderGrid();
+      renderDashboard();
+      showToast("New class added successfully!");
+    } catch(err) {
+      console.error("Add class error:", err);
+      showToast("Error adding class. Please try again.");
+    } finally {
+      btn.textContent = "Add Class";
+      btn.disabled = false;
+    }
+  })();
+}
+
 function openEditModal(id) {
   editingId = id;
   var c = null;
@@ -1422,10 +1622,12 @@ function saveEditClass() {
     showToast("Please fix the date before saving.");
     return;
   }
+  var updated = null;
   for (var i = 0; i < classes.length; i++) {
     if (classes[i].id === editingId) {
       classes[i].day   = document.getElementById("edit-day").value;
       classes[i].level = document.getElementById("edit-level").value;
+      classes[i].name  = document.getElementById("edit-level").value;
       classes[i].time  = document.getElementById("edit-time").value;
       classes[i].end   = document.getElementById("edit-end").value;
       classes[i].venue = document.getElementById("edit-venue").value;
@@ -1435,12 +1637,38 @@ function saveEditClass() {
       var wks = parseInt(document.getElementById("edit-blocklength").value);
       classes[i].weeks = wks;
       classes[i].dates = calcBlockDates(document.getElementById("edit-blockstart").value, wks);
+      updated = classes[i];
       break;
     }
   }
   closeEditModal();
+  buildFilters();
+  renderGrid();
   renderDashboard();
-  showToast("Class updated successfully!");
+  showToast("Class updated!");
+
+  if (updated) {
+    (async function() {
+      try {
+        await sb.from("classes").update({
+          name: updated.name,
+          level: updated.level,
+          day: updated.day,
+          time: updated.time,
+          end_time: updated.end,
+          venue: updated.venue,
+          loc: updated.loc,
+          price: updated.price,
+          cap: updated.cap,
+          weeks: updated.weeks,
+          dates: updated.dates
+        }).eq("id", updated.id);
+      } catch(err) {
+        console.error("Save edit class error:", err);
+        showToast("Error saving changes. Please try again.");
+      }
+    })();
+  }
 }
 
 function confirmBookingAdmin(idx) {
@@ -1678,8 +1906,86 @@ document.getElementById("overlay").addEventListener("click", function(e) {
   if (e.target === this) closeModal();
 });
 
-buildFilters();
-renderGrid();
+function saveSettings() {
+  var bankName = document.getElementById("setting-bank-name").value.trim();
+  var bankSort = document.getElementById("setting-bank-sort").value.trim();
+  var bankAcc  = document.getElementById("setting-bank-acc").value.trim();
+  if (!bankName || !bankSort || !bankAcc) { showToast("Please fill in all bank details."); return; }
+  showToast("Saving...");
+  (async function() {
+    try {
+      await sb.from("settings").upsert([
+        { key: "bank_name",       value: bankName },
+        { key: "bank_sort_code",  value: bankSort },
+        { key: "bank_account_no", value: bankAcc  }
+      ]);
+      // Update displayed values immediately
+      ["bank-name-1","bank-name-2"].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = bankName; });
+      ["bank-sort-1","bank-sort-2"].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = bankSort; });
+      ["bank-acc-1","bank-acc-2"].forEach(function(id)  { var el = document.getElementById(id); if (el) el.textContent = bankAcc; });
+      showToast("Bank details saved!");
+    } catch(err) {
+      console.error("Save settings error:", err);
+      showToast("Error saving settings. Please try again.");
+    }
+  })();
+}
+
+// Load classes from Supabase on page load
+(async function() {
+  try {
+    // Load classes
+    var { data: dbClasses } = await sb.from("classes").select("*").order("id", { ascending: true });
+    if (dbClasses && dbClasses.length > 0) {
+      classes = dbClasses.map(function(c) {
+        return {
+          id: c.id,
+          name: c.name,
+          level: c.level || c.name,
+          day: c.day,
+          time: c.time,
+          end: c.end_time,
+          price: c.price,
+          cap: c.cap,
+          booked: c.booked || 0,
+          wait: c.wait || 0,
+          venue: c.venue,
+          loc: c.loc,
+          dates: c.dates || [],
+          weeks: c.weeks || 6,
+          visible: c.visible !== false
+        };
+      });
+    }
+  } catch(err) {
+    console.error("Error loading classes:", err);
+  }
+
+  // Load bank settings
+  try {
+    var { data: settingsRows } = await sb.from("settings").select("key, value");
+    if (settingsRows) {
+      var s = {};
+      settingsRows.forEach(function(r) { s[r.key] = r.value; });
+      var bankName = s.bank_name || "";
+      var bankSort = s.bank_sort_code || "";
+      var bankAcc  = s.bank_account_no || "";
+      ["bank-name-1","bank-name-2"].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = bankName; });
+      ["bank-sort-1","bank-sort-2"].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = bankSort; });
+      ["bank-acc-1","bank-acc-2"].forEach(function(id)  { var el = document.getElementById(id); if (el) el.textContent = bankAcc; });
+      // Pre-fill the settings form in the dashboard
+      var el;
+      el = document.getElementById("setting-bank-name"); if (el) el.value = bankName;
+      el = document.getElementById("setting-bank-sort"); if (el) el.value = bankSort;
+      el = document.getElementById("setting-bank-acc");  if (el) el.value = bankAcc;
+    }
+  } catch(err) {
+    console.error("Error loading settings:", err);
+  }
+
+  buildFilters();
+  renderGrid();
+})();
 </script>
 </body>
 </html>
