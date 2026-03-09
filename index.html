@@ -295,7 +295,7 @@ tr:hover td { background:var(--cream); }
 
     <!-- All Bookings Tab -->
     <div id="tab-panel-bookings">
-      <table><thead><tr><th>Client</th><th>Class</th><th>When</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead><tbody id="btbody"></tbody></table>
+      <table><thead><tr><th>Client</th><th>Class</th><th>When</th><th>Block</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead><tbody id="btbody"></tbody></table>
     </div>
 
     <!-- By Class Tab -->
@@ -325,6 +325,19 @@ tr:hover td { background:var(--cream); }
         <input type="text" class="finp" id="setting-bank-acc" placeholder="00000000" style="margin-bottom:0">
       </div>
       <button class="step-btn" onclick="saveSettings()" style="width:auto;padding:10px 24px;">Save Bank Details</button>
+    </div>
+
+    <div class="sec-title" style="margin-top:40px">Backup &amp; Export</div>
+    <div style="background:white; border:1px solid var(--border); border-radius:4px; padding:24px; max-width:480px;">
+      <div style="font-size:13px; color:var(--mid); margin-bottom:20px; line-height:1.7;">Download a snapshot of your entire database as a CSV file. Do this before making any significant changes so you can reconstruct your data if needed.</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="step-btn" onclick="exportTable('classes')" style="width:auto;padding:10px 24px;background:var(--sage-dk)">&#8659; Export Classes</button>
+        <button class="step-btn" onclick="exportTable('blocks')" style="width:auto;padding:10px 24px;background:var(--sage-dk)">&#8659; Export Blocks</button>
+        <button class="step-btn" onclick="exportTable('customers')" style="width:auto;padding:10px 24px;background:var(--sage-dk)">&#8659; Export Customers</button>
+        <button class="step-btn" onclick="exportTable('bookings')" style="width:auto;padding:10px 24px;background:var(--sage-dk)">&#8659; Export Bookings</button>
+        <button class="step-btn" onclick="exportAll()" style="width:auto;padding:10px 24px;">&#8659; Export Everything (single file)</button>
+      </div>
+      <div id="export-status" style="font-size:13px;color:var(--sage-dk);margin-top:14px;display:none;"></div>
     </div>
   </div>
 </div>
@@ -1081,11 +1094,12 @@ function renderDashboard(){
       // All Bookings tab
       var bhtml="";
       if(bookings.length===0){
-        bhtml='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">No bookings yet.</td></tr>';
+        bhtml='<tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">No bookings yet.</td></tr>';
       } else {
         for(var i=0;i<bookings.length;i++){
           var b=bookings[i];
-          bhtml+="<tr><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.cls)+"</td><td>"+sanitise(b.when)+"</td><td>&pound;"+sanitise(String(b.paid))+"</td>";
+          var blockCell=b.blockDates?sanitise(b.blockDates):'<span style="color:var(--light)">—</span>';
+          bhtml+="<tr><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.cls)+"</td><td style=\"font-size:12px\">"+sanitise(b.when)+"</td><td style=\"font-size:12px\">"+blockCell+"</td><td>&pound;"+sanitise(String(b.paid))+"</td>";
           bhtml+="<td><span class=\"pill p-"+b.status+"\">"+b.status+"</span></td>";
           var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+i+")\">Confirm</button>":"";
           var cancelBtn=(b.status!=="cancelled"&&b.status!=="refunded")?"<button class=\"act\" onclick=\"cancelBooking("+i+")\">Cancel</button>":"";
@@ -1572,6 +1586,83 @@ function saveSettings(){
       ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
       showToast("Bank details saved!");
     }catch(err){ console.error(err); showToast("Error saving settings."); }
+  })();
+}
+
+// ─── Export / Backup ──────────────────────────────────────────────────────────
+function rowsToCsv(rows){
+  if(!rows||rows.length===0) return "";
+  var headers=Object.keys(rows[0]);
+  var lines=[headers.join(",")];
+  rows.forEach(function(row){
+    var vals=headers.map(function(h){
+      var v=row[h];
+      if(v===null||v===undefined) return "";
+      v=String(v);
+      // Wrap in quotes if contains comma, quote, or newline
+      if(v.indexOf(",")>-1||v.indexOf('"')>-1||v.indexOf("\n")>-1){
+        return '"'+v.replace(/"/g,'""')+'"';
+      }
+      return v;
+    });
+    lines.push(vals.join(","));
+  });
+  return lines.join("\n");
+}
+
+function downloadCsv(filename, csvStr){
+  var blob=new Blob([csvStr],{type:"text/csv;charset=utf-8;"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url; a.download=filename; a.style.display="none";
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function setExportStatus(msg){
+  var el=document.getElementById("export-status");
+  if(el){ el.textContent=msg; el.style.display=msg?"block":"none"; }
+}
+
+function exportTable(tableName){
+  setExportStatus("Fetching "+tableName+"...");
+  (async function(){
+    try{
+      var{data,error}=await sb.from(tableName).select("*").order("id",{ascending:true});
+      if(error) throw error;
+      if(!data||data.length===0){ setExportStatus("No data in "+tableName+"."); return; }
+      var dateStr=new Date().toISOString().slice(0,10);
+      downloadCsv("lgpilates-"+tableName+"-"+dateStr+".csv", rowsToCsv(data));
+      setExportStatus("\u2713 "+tableName+" exported ("+data.length+" rows).");
+      setTimeout(function(){ setExportStatus(""); },4000);
+    }catch(err){
+      console.error(err); setExportStatus("Error exporting "+tableName+". See console.");
+    }
+  })();
+}
+
+function exportAll(){
+  var dateStr=new Date().toISOString().slice(0,10);
+  setExportStatus("Fetching all tables...");
+  (async function(){
+    try{
+      var tables=["classes","blocks","customers","bookings","parq"];
+      var sections=[];
+      for(var i=0;i<tables.length;i++){
+        var t=tables[i];
+        var{data,error}=await sb.from(t).select("*").order("id",{ascending:true});
+        if(error) throw error;
+        sections.push("### TABLE: "+t.toUpperCase()+" ("+( data?data.length:0)+" rows) ###");
+        sections.push(data&&data.length>0?rowsToCsv(data):"(empty)");
+        sections.push("");
+      }
+      downloadCsv("lgpilates-full-backup-"+dateStr+".csv", sections.join("\n"));
+      setExportStatus("\u2713 Full backup downloaded.");
+      setTimeout(function(){ setExportStatus(""); },4000);
+    }catch(err){
+      console.error(err); setExportStatus("Error during export. See console.");
+    }
   })();
 }
 
