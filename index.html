@@ -305,9 +305,9 @@ tr:hover td { background:var(--cream); }
 
     <div style="display:flex; align-items:center; justify-content:space-between; margin-top:40px; margin-bottom:12px;">
       <div class="sec-title" style="margin-top:0">Upcoming Classes</div>
-      <button class="step-btn" onclick="openAddModal()" style="padding:8px 18px; font-size:12px;">+ Add New Class</button>
+      <button class="step-btn" onclick="openAddClassModal()" style="padding:8px 18px; font-size:12px;">+ Add New Class</button>
     </div>
-    <table><thead><tr><th>Class</th><th>Location</th><th>Day and Time</th><th>Block Dates</th><th>Booked/Cap</th><th>Waitlist</th><th>Actions</th></tr></thead><tbody id="ctbody"></tbody></table>
+    <table><thead><tr><th>Class</th><th>Location</th><th>Day and Time</th><th>Active Block</th><th>Upcoming Block</th><th>Actions</th></tr></thead><tbody id="ctbody"></tbody></table>
 
     <div class="sec-title" style="margin-top:40px">Settings</div>
     <div style="background:white; border:1px solid var(--border); border-radius:4px; padding:24px; max-width:480px;">
@@ -556,68 +556,81 @@ tr:hover td { background:var(--cream); }
 
 
 <!-- ADD CLASS MODAL -->
-<div class="overlay" id="add-overlay">
+<div class="overlay" id="add-class-overlay">
   <div class="modal">
     <div class="mhead">
-      <div>
-        <div class="mtitle">Add New Class</div>
-        <div class="msub">Fill in the details to create a new class</div>
-      </div>
-      <button class="mclose" onclick="closeAddModal()">x</button>
+      <div><div class="mtitle">Add New Class</div><div class="msub">Create a permanent class slot</div></div>
+      <button class="mclose" onclick="closeAddClassModal()">x</button>
     </div>
     <div class="mbody">
       <div class="frow">
         <div>
           <label class="flbl">Day</label>
-          <select class="finp" id="add-day" style="margin-bottom:0">
+          <select class="finp" id="ac-day" style="margin-bottom:0">
             <option value="">Select day</option>
             <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
             <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
           </select>
         </div>
-        <div><label class="flbl">Level</label><input type="text" class="finp" id="add-level" placeholder="e.g. Mixed Ability" style="margin-bottom:0"></div>
+        <div><label class="flbl">Level</label><input type="text" class="finp" id="ac-level" placeholder="e.g. Mixed Ability" style="margin-bottom:0"></div>
       </div>
       <div class="frow" style="margin-top:14px">
-        <div><label class="flbl">Start Time</label><input type="text" class="finp" id="add-time" placeholder="e.g. 9:45am" style="margin-bottom:0"></div>
-        <div><label class="flbl">End Time</label><input type="text" class="finp" id="add-end" placeholder="e.g. 10:30am" style="margin-bottom:0"></div>
+        <div><label class="flbl">Start Time</label><input type="text" class="finp" id="ac-time" placeholder="e.g. 9:45am" style="margin-bottom:0"></div>
+        <div><label class="flbl">End Time</label><input type="text" class="finp" id="ac-end" placeholder="e.g. 10:30am" style="margin-bottom:0"></div>
       </div>
       <label class="flbl" style="margin-top:14px">Venue</label>
-      <input type="text" class="finp" id="add-venue" placeholder="e.g. St Johns Parish Church">
+      <input type="text" class="finp" id="ac-venue" placeholder="e.g. St Johns Parish Church">
       <div class="frow">
         <div><label class="flbl">Location</label>
-          <select class="finp" id="add-loc" style="margin-bottom:0">
+          <select class="finp" id="ac-loc" style="margin-bottom:0">
             <option value="Baildon">Baildon</option>
             <option value="Guiseley">Guiseley</option>
           </select>
         </div>
-        <div><label class="flbl">Price per session (pound)</label><input type="number" class="finp" id="add-price" placeholder="10" style="margin-bottom:0"></div>
+        <div style="display:flex;flex-direction:column;justify-content:flex-end"><label class="flbl">&nbsp;</label>
+          <div style="font-size:12px;color:var(--mid);padding:10px 0">You can add blocks after creating the class.</div>
+        </div>
       </div>
-      <label class="flbl" style="margin-top:14px">Capacity</label>
-      <input type="number" class="finp" id="add-cap" placeholder="12">
+      <div id="ac-err" style="color:#c04040;font-size:12px;margin-top:8px;display:none;">Please fill in all required fields.</div>
+    </div>
+    <div class="mfoot">
+      <button class="confirm-btn" id="ac-btn" onclick="saveNewClass()">Create Class</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD BLOCK MODAL -->
+<div class="overlay" id="add-block-overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div><div class="mtitle">Add Block</div><div class="msub" id="ab-sub">Add a new block to this class</div></div>
+      <button class="mclose" onclick="closeAddBlockModal()">x</button>
+    </div>
+    <div class="mbody">
       <div class="frow">
         <div>
           <label class="flbl">Block Start Date</label>
-          <input type="date" class="finp" id="add-blockstart" onchange="validateAddDate()" style="margin-bottom:0">
-          <div id="add-date-validation" style="font-size:12px;margin-top:6px;display:none;"></div>
+          <input type="date" class="finp" id="ab-start" onchange="validateAbDate()" style="margin-bottom:0">
+          <div id="ab-date-val" style="font-size:12px;margin-top:6px;display:none;"></div>
         </div>
         <div><label class="flbl">Block Length (weeks)</label>
-          <select class="finp" id="add-blocklength" style="margin-bottom:0">
-            <option value="2">2 weeks</option>
-            <option value="3">3 weeks</option>
-            <option value="4">4 weeks</option>
-            <option value="5">5 weeks</option>
-            <option value="6" selected>6 weeks</option>
-            <option value="7">7 weeks</option>
-            <option value="8">8 weeks</option>
-            <option value="9">9 weeks</option>
+          <select class="finp" id="ab-weeks" style="margin-bottom:0">
+            <option value="2">2 weeks</option><option value="3">3 weeks</option>
+            <option value="4">4 weeks</option><option value="5">5 weeks</option>
+            <option value="6" selected>6 weeks</option><option value="7">7 weeks</option>
+            <option value="8">8 weeks</option><option value="9">9 weeks</option>
             <option value="10">10 weeks</option>
           </select>
         </div>
       </div>
-      <div id="add-err" style="color:#c04040;font-size:12px;margin-top:12px;display:none;">Please fill in all required fields.</div>
+      <div class="frow" style="margin-top:14px">
+        <div><label class="flbl">Price per session (£)</label><input type="number" class="finp" id="ab-price" placeholder="10" style="margin-bottom:0"></div>
+        <div><label class="flbl">Capacity</label><input type="number" class="finp" id="ab-cap" placeholder="12" style="margin-bottom:0"></div>
+      </div>
+      <div id="ab-err" style="color:#c04040;font-size:12px;margin-top:8px;display:none;">Please fill in all required fields.</div>
     </div>
     <div class="mfoot">
-      <button class="confirm-btn" id="add-class-btn" onclick="saveNewClass()">Add Class</button>
+      <button class="confirm-btn" id="ab-btn" onclick="saveNewBlock()">Add Block</button>
     </div>
   </div>
 </div>
@@ -642,1350 +655,956 @@ tr:hover td { background:var(--cream); }
 <div class="toast" id="toastEl"></div>
 
 <script>
-var classes = [];
+var classes = [];   // permanent class slots
+var blocks  = [];   // all blocks loaded from DB
 var bookings = [];
+var selected = null;       // selected class
+var selectedBlock = null;  // selected block for booking
+var activeFilter = "all";
+var activeLoc = null;
+var activeDay = null;
+var editingClassId = null;
+var addingBlockClassId = null;
 
-// Supabase setup
+// ─── Supabase ────────────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://mrlooyixnlxzcfmvnqme.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ybG9veWl4bmx4emNmbXZucW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM2MDAsImV4cCI6MjA4ODQ4OTYwMH0.k1LbLenXS29NosaayGnQn3SR2G1xXVDBICeH7w7bD_c";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Sanitise user input before rendering to prevent XSS
+// ─── Sanitise ─────────────────────────────────────────────────────────────────
 function sanitise(str) {
   if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;")
-    .replace(/\//g, "&#x2F;");
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#x27;").replace(/\//g,"&#x2F;");
 }
 
-var activeLoc = null;
-var activeDay = null;
-var selected = null;
-var activeFilter = "all";
-
+// ─── Navigation ──────────────────────────────────────────────────────────────
 function show(pg) {
-  var pages = ["schedule","dashboard","dash-login"];
-  var navPages = ["schedule","dashboard"];
-  for (var i = 0; i < pages.length; i++) {
-    document.getElementById("pg-" + pages[i]).className = "page";
-  }
-  for (var i = 0; i < navPages.length; i++) {
-    document.getElementById("nb-" + navPages[i]).className = "nav-btn";
-  }
-  document.getElementById("pg-" + pg).className = "page on";
-  var nbEl = document.getElementById("nb-" + pg);
-  if (nbEl) nbEl.className = "nav-btn on";
-  if (pg === "dashboard") renderDashboard();
+  ["schedule","dashboard","dash-login"].forEach(function(p){ document.getElementById("pg-"+p).className="page"; });
+  ["schedule","dashboard"].forEach(function(p){ document.getElementById("nb-"+p).className="nav-btn"; });
+  document.getElementById("pg-"+pg).className="page on";
+  var nb=document.getElementById("nb-"+pg); if(nb) nb.className="nav-btn on";
+  if(pg==="dashboard") renderDashboard();
 }
 
-function buildFilters() {
-  var baildonDays = [];
-  var guiseleyDays = [];
-  var dayOrder = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-  for (var i = 0; i < classes.length; i++) {
-    var c = classes[i];
-    if (c.loc === "Baildon" && baildonDays.indexOf(c.day) < 0) baildonDays.push(c.day);
-    if (c.loc === "Guiseley" && guiseleyDays.indexOf(c.day) < 0) guiseleyDays.push(c.day);
-  }
-  baildonDays.sort(function(a,b){ return dayOrder.indexOf(a) - dayOrder.indexOf(b); });
-  guiseleyDays.sort(function(a,b){ return dayOrder.indexOf(a) - dayOrder.indexOf(b); });
-
-  var pillHtml = "";
-  pillHtml += "<button class='loc-pill' id='fg-baildon-card' onclick=\"filterLoc('Baildon',this)\">Baildon</button>";
-  pillHtml += "<button class='loc-pill' id='fg-guiseley-card' onclick=\"filterLoc('Guiseley',this)\">Guiseley</button>";
-  document.getElementById("loc-pills").innerHTML = pillHtml;
-  document.getElementById("filter-row").innerHTML = "";
-  document.getElementById("filter-days-wrap").className = "filter-days-wrap";
-}
-
-function clearAllFilters() {
-  document.getElementById("fb-all").className = "fb-all";
-  var pills = document.querySelectorAll(".loc-pill");
-  for (var i = 0; i < pills.length; i++) pills[i].className = "loc-pill";
-  var fbs = document.querySelectorAll(".fb");
-  for (var i = 0; i < fbs.length; i++) fbs[i].className = "fb";
-}
-
-function filterAll(btn) {
-  clearAllFilters();
-  btn.className = "fb-all on";
-  document.getElementById("filter-prompt").className = "filter-prompt hidden";
-  document.getElementById("filter-days-wrap").className = "filter-days-wrap";
-  activeFilter = "all";
-  activeLoc = null;
-  renderGrid();
-}
-
-function filterLoc(loc, el) {
-  clearAllFilters();
-  el.className = "loc-pill on";
-  document.getElementById("filter-prompt").className = "filter-prompt hidden";
-  var dayOrder = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-  var days = classes.filter(function(c){ return c.loc === loc && c.visible !== false; }).map(function(c){ return c.day; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
-  days.sort(function(a,b){ return dayOrder.indexOf(a)-dayOrder.indexOf(b); });
-  var dhtml = "";
-  for (var i = 0; i < days.length; i++) {
-    dhtml += "<button class='fb' onclick=\"filterDay('" + days[i] + "','" + loc + "',this)\">" + days[i] + "</button>";
-  }
-  document.getElementById("filter-row").innerHTML = dhtml;
-  document.getElementById("filter-days-label").textContent = loc + " — select a day or view all " + loc + " classes";
-  document.getElementById("filter-days-wrap").className = "filter-days-wrap on";
-  activeFilter = "loc";
-  activeLoc = loc;
-  renderGrid();
-}
-
-function filterDay(day, loc, btn) {
-  var fbs = document.querySelectorAll(".fb");
-  for (var i = 0; i < fbs.length; i++) fbs[i].className = "fb";
-  btn.className = "fb on";
-  activeFilter = "day";
-  activeLoc = loc;
-  activeDay = day;
-  renderGrid();
-}
-
-function renderGrid() {
-  if (activeFilter === null) {
-    document.getElementById("grid").innerHTML = '';
-    return;
-  }
-  var filtered = [];
-  for (var i = 0; i < classes.length; i++) {
-    var c = classes[i];
-    if (c.visible === false) continue;
-    if (activeFilter === "all") {
-      filtered.push(c);
-    } else if (activeFilter === "loc" && c.loc === activeLoc) {
-      filtered.push(c);
-    } else if (activeFilter === "day" && c.loc === activeLoc && c.day === activeDay) {
-      filtered.push(c);
-    }
-  }
-  var html = "";
-  for (var i = 0; i < filtered.length; i++) {
-    var c = filtered[i];
-    var full = c.booked >= c.cap;
-    var pct = Math.min(100, Math.round(c.booked / c.cap * 100));
-    var warn = pct >= 80 ? " warn" : "";
-    var badge, badgeCls, btnTxt, btnCls, btnDis;
-    if (full && c.wait > 0) {
-      badge = "Waitlist (" + c.wait + ")"; badgeCls = "b-wait"; btnTxt = "Join Waitlist"; btnCls = "wait"; btnDis = "";
-    } else if (full) {
-      badge = "Full"; badgeCls = "b-full"; btnTxt = "Class Full"; btnCls = ""; btnDis = " disabled";
-    } else {
-      badge = "Open"; badgeCls = "b-open"; btnTxt = "Book Now"; btnCls = ""; btnDis = "";
-    }
-    html += '<div class="card">';
-    var badgeHtml = full ? '<span class="badge ' + badgeCls + '">' + badge + '</span>' : '';
-    html += '<div class="card-loc-wrap"><div class="card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + c.loc + '</div>' + badgeHtml + '</div>';
-    html += '<div class="card-name">' + c.name + '</div>';
-    html += '<div class="card-venue-wrap"><div class="card-venue-lbl">Location</div><div class="card-venue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' + c.venue + '</div><div class="card-level">' + c.level + '</div></div>';
-    html += '<div class="card-meta">';
-    html += '<div class="meta-item"><div class="meta-lbl">Day</div><div class="meta-val">' + c.day + '</div></div>';
-    html += '<div class="meta-item"><div class="meta-lbl">Price per block</div><div class="meta-val price">&pound;' + (c.price * c.weeks) + '</div></div>';
-    html += '<div class="meta-item" style="grid-column:span 2"><div class="meta-lbl">Time</div><div class="meta-val" style="font-size:15px">' + c.time + ' &ndash; ' + c.end + '</div></div>';
-    html += '</div>';
-    var dpills = "";
-    for (var j = 0; j < c.dates.length; j++) { dpills += '<span class="date-pill">' + c.dates[j] + '</span>'; }
-    html += '<div class="block-dates"><div class="block-dates-lbl">6-Week Block</div><div class="block-dates-pills">' + dpills + '</div></div>';
-    html += '<div class="cap-bar"><div class="cap-fill' + warn + '" style="width:' + pct + '%"></div></div>';
-    html += '<div class="cap-txt">' + c.booked + ' of ' + c.cap + ' spots taken</div>';
-    html += '<button class="book-btn ' + btnCls + '"' + btnDis + ' onclick="openModal(' + c.id + ')">' + btnTxt + '</button>';
-    html += '</div>';
-  }
-  document.getElementById("grid").innerHTML = html;
-}
-
-function openModal(id) {
-  for (var i = 0; i < classes.length; i++) {
-    if (classes[i].id === id) { selected = classes[i]; break; }
-  }
-  var c = selected;
-  document.getElementById("m-name").textContent = c.name;
-  document.getElementById("m-sub").textContent = c.venue + ", " + c.loc + " - " + c.day + " " + c.time;
-  document.getElementById("m-sname").textContent = c.name;
-  document.getElementById("m-sdetail").textContent = c.day + " " + c.time + " - " + c.end + " | " + c.loc;
-  var totalPrice = c.price * (c.weeks || 6);
-  document.getElementById("m-price").textContent = "\u00a3" + totalPrice;
-  document.getElementById("m-btnprice").textContent = "\u00a3" + totalPrice;
-  document.getElementById("form-view").style.display = "block";
-  document.getElementById("success-view").className = "success";
-  document.getElementById("overlay").className = "overlay on";
-  document.getElementById("step-1").style.display = "block";
-  document.getElementById("step-2").style.display = "none";
-  document.getElementById("step-3").style.display = "none";
-  document.getElementById("mfoot-confirm").style.display = "none";
-  document.getElementById("b-firstname").value = "";
-  document.getElementById("b-lastname").value = "";
-  document.getElementById("b-email").value = "";
-  document.getElementById("b-phone").value = "";
-  window._customerIsReturning = false;
-  document.getElementById("b-health-conditions").value = "";
-  document.getElementById("b-health-other").value = "";
-  if (document.getElementById("b-health-conditions")) document.getElementById("b-health-conditions").value = "";
-  if (document.getElementById("b-age")) document.getElementById("b-age").value = "";
-  if (document.getElementById("b-emergency")) document.getElementById("b-emergency").value = "";
-  if (document.getElementById("b-print-name")) document.getElementById("b-print-name").value = "";
-  if (document.getElementById("b-sign-date")) document.getElementById("b-sign-date").value = "";
-  if (document.getElementById("b-declaration")) document.getElementById("b-declaration").checked = false;
-  if (document.getElementById("parq-yes-section")) document.getElementById("parq-yes-section").style.display = "none";
-  for (var qi = 1; qi <= 12; qi++) {
-    var nos = document.querySelectorAll("input[name=\"q" + qi + "\"][value=\"No\"]");
-    for (var ri = 0; ri < nos.length; ri++) nos[ri].checked = true;
-  }
-  var errs = document.querySelectorAll(".field-err");
-  for (var i = 0; i < errs.length; i++) errs[i].className = "field-err";
-}
-
-function closeModal() {
-  document.getElementById("overlay").className = "overlay";
-}
-
-function goStep1() {
-  document.getElementById("step-1").style.display = "block";
-  document.getElementById("step-2").style.display = "none";
-  document.getElementById("step-3").style.display = "none";
-  document.getElementById("mfoot-confirm").style.display = "none";
-}
-
-function goStep2() {
-  var fn = document.getElementById("b-firstname").value.trim();
-  var ln = document.getElementById("b-lastname").value.trim();
-  var em = document.getElementById("b-email").value.trim();
-  var ph = document.getElementById("b-phone").value.trim();
-  document.getElementById("err-firstname").className = "field-err" + (fn ? "" : " on");
-  document.getElementById("err-lastname").className  = "field-err" + (ln ? "" : " on");
-  var emailOk = em && em.indexOf("@") > 0 && em.indexOf(".") > 0;
-  document.getElementById("err-email").className = "field-err" + (emailOk ? "" : " on");
-  document.getElementById("err-phone").className  = "field-err" + (ph ? "" : " on");
-  if (!fn || !ln || !emailOk || !ph) return;
-
-  var btn = document.querySelector("#step-1 .step-btn");
-  btn.textContent = "Checking...";
-  btn.disabled = true;
-
-  (async function() {
-    try {
-      var { data: existingCustomers } = await sb.from("customers").select("id").eq("email", em).limit(1);
-      var isReturning = existingCustomers && existingCustomers.length > 0;
-      window._customerIsReturning = isReturning;
-
-      var msgEl = document.getElementById("customer-check-msg");
-      if (isReturning) {
-        msgEl.style.display = "block";
-        msgEl.style.background = "#e8f0e7";
-        msgEl.style.color = "var(--green)";
-        msgEl.textContent = "✓ Welcome back! As a returning customer you can skip the health form.";
-        setTimeout(function() { goStep3(); }, 2500);
-      } else {
-        msgEl.style.display = "block";
-        msgEl.style.background = "#f5ede3";
-        msgEl.style.color = "var(--clay)";
-        msgEl.textContent = "👋 Welcome! As a new customer please complete the short health form below before booking.";
-        setTimeout(function() {
-          document.getElementById("step-1").style.display = "none";
-          document.getElementById("step-2").style.display = "block";
-          document.getElementById("mfoot-confirm").style.display = "none";
-          // Move message to top of step 2 so it stays visible
-          var step2 = document.getElementById("step-2");
-          step2.insertBefore(msgEl, step2.firstChild);
-        }, 2500);
-      }
-    } catch(err) {
-      console.error("Customer check error:", err);
-      window._customerIsReturning = false;
-      document.getElementById("step-1").style.display = "none";
-      document.getElementById("step-2").style.display = "block";
-    } finally {
-      btn.textContent = "Continue";
-      btn.disabled = false;
-    }
-  })();
-}
-
-function getParqAnswers() {
-  var yesNos = [];
-  for (var i = 1; i <= 12; i++) {
-    var radios = document.querySelectorAll("input[name=\"q" + i + "\"]");
-    var val = "No";
-    for (var j = 0; j < radios.length; j++) { if (radios[j].checked) { val = radios[j].value; break; } }
-    yesNos.push("Q" + i + ": " + val);
-  }
-  return yesNos;
-}
-
-function hasAnyYes() {
-  for (var i = 1; i <= 12; i++) {
-    var radios = document.querySelectorAll("input[name=\"q" + i + "\"]");
-    for (var j = 0; j < radios.length; j++) { if (radios[j].checked && radios[j].value === "Yes") return true; }
-  }
-  return false;
-}
-
-function updateYesSection() {
-  document.getElementById("parq-yes-section").style.display = hasAnyYes() ? "block" : "none";
-}
-
-function goStep3() {
-  var isNew = !window._customerIsReturning;
-  if (isNew) {
-    var age = document.getElementById("b-age").value.trim();
-    var emg = document.getElementById("b-emergency").value.trim();
-    document.getElementById("err-age").className = "field-err" + (age ? "" : " on");
-    document.getElementById("err-emergency").className = "field-err" + (emg ? "" : " on");
-    if (!age || !emg) return;
-    if (hasAnyYes()) {
-      var hc = document.getElementById("b-health-conditions").value.trim();
-      document.getElementById("err-health").className = "field-err" + (hc ? "" : " on");
-      if (!hc) return;
-    }
-    var printName = document.getElementById("b-print-name").value.trim();
-    var signDate  = document.getElementById("b-sign-date").value;
-    var agreed    = document.getElementById("b-declaration").checked;
-    document.getElementById("err-declaration").className = "field-err" + (printName && signDate ? "" : " on");
-    document.getElementById("err-agree").className = "field-err" + (agreed ? "" : " on");
-    if (!printName || !signDate || !agreed) return;
-  }
-  document.getElementById("step-1").style.display = "none";
-  document.getElementById("step-2").style.display = "none";
-  document.getElementById("step-3").style.display = "block";
-  document.getElementById("mfoot-confirm").style.display = "block";
-  document.getElementById("msummary-bar").style.display = "none";
-  document.getElementById("step-3-label").textContent = (window._customerIsReturning ? "Step 2 of 2" : "Step 3 of 3") + " — Payment";
-  var c = selected;
-  var fn = document.getElementById("b-firstname").value.trim();
-  var ln = document.getElementById("b-lastname").value.trim();
-  document.getElementById("m-reference").textContent = fn + " " + ln + " " + c.day;
-}
-
-function goStepBack3() {
-  document.getElementById("step-3").style.display = "none";
-  document.getElementById("mfoot-confirm").style.display = "none";
-  document.getElementById("msummary-bar").style.display = "flex";
-  if (window._customerIsReturning) {
-    document.getElementById("step-1").style.display = "block";
-  } else {
-    document.getElementById("step-2").style.display = "block";
-  }
-}
-
-function toggleHealthForm() {
-  // no extra action needed - goStep2 handles routing
-}
-
-function confirmBooking() {
-  var c = selected;
-  var fn = document.getElementById("b-firstname").value.trim();
-  var ln = document.getElementById("b-lastname").value.trim();
-  var em = document.getElementById("b-email").value.trim();
-  var ph = document.getElementById("b-phone").value.trim();
-  var isNew = !window._customerIsReturning;
-  var health = "Returning customer";
-  if (isNew) {
-    var parqAnswers = getParqAnswers();
-    var details = document.getElementById("b-health-conditions") ? document.getElementById("b-health-conditions").value.trim() : "";
-    var other = document.getElementById("b-health-other").value.trim();
-    health = parqAnswers.join(", ");
-    if (details) health += " | Details: " + details;
-    if (other) health += " | Other: " + other;
-  }
-  var parqData = null;
-  if (isNew) {
-    parqData = {
-      age: document.getElementById("b-age").value.trim(),
-      emergency: document.getElementById("b-emergency").value.trim(),
-      questions: [],
-      details: document.getElementById("b-health-conditions") ? document.getElementById("b-health-conditions").value.trim() : "",
-      other: document.getElementById("b-health-other").value.trim(),
-      printName: document.getElementById("b-print-name").value.trim(),
-      signDate: document.getElementById("b-sign-date").value
-    };
-    var qLabels = [
-      "Heart problems",
-      "Circulatory problems",
-      "Blood pressure problems",
-      "Chest pain",
-      "Joint or movement problems",
-      "Dizziness or imbalance",
-      "Pregnant / recently given birth",
-      "Doctor advised not to exercise",
-      "Medical care for spinal pain",
-      "Prescribed medication",
-      "Asthma or breathing difficulties",
-      "Any other reasons not to exercise"
-    ];
-    for (var qi = 1; qi <= 12; qi++) {
-      var radios = document.querySelectorAll("input[name=\"q" + qi + "\"]");
-      var val = "No";
-      for (var ri = 0; ri < radios.length; ri++) { if (radios[ri].checked) { val = radios[ri].value; break; } }
-      parqData.questions.push({q: qLabels[qi-1], a: val});
-    }
-  }
-  var newBooking = {
-    client: fn + " " + ln,
-    cls: c.name,
-    when: c.day + " " + c.time + " - " + c.venue,
-    paid: String(c.price * (c.weeks || 6)),
-    status: "reserved",
-    email: em,
-    phone: ph,
-    health: health,
-    classId: c.id,
-    day: c.day,
-    customerType: isNew ? "New" : "Returning",
-    parq: parqData
-  };
-  bookings.push(newBooking);
-  c.booked = c.booked + 1;
-
-  var customerType = isNew ? "New" : "Returning";
-
-  // Save to Supabase
-  (async function() {
-    try {
-      // Save or find customer
-      var { data: existingCustomers } = await sb.from("customers").select("id").eq("email", em).limit(1);
-      var customerId;
-      if (existingCustomers && existingCustomers.length > 0) {
-        customerId = existingCustomers[0].id;
-        // Update their details in case anything has changed
-        await sb.from("customers").update({
-          first_name: fn,
-          last_name: ln,
-          phone: ph,
-          customer_type: customerType
-        }).eq("id", customerId);
-      } else {
-        var { data: newCustomer } = await sb.from("customers").insert({
-          first_name: fn,
-          last_name: ln,
-          email: em,
-          phone: ph,
-          customer_type: customerType
-        }).select("id").single();
-        customerId = newCustomer.id;
-      }
-      // Save booking
-      var { data: savedBooking } = await sb.from("bookings").insert({
-        class_id: c.id,
-        customer_id: customerId,
-        status: "reserved",
-        amount_due: c.price * (c.weeks || 6)
-      }).select("id").single();
-      // Store the database ID on the local booking object so we can update it later
-      if (savedBooking) {
-        bookings[bookings.length - 1].dbId = savedBooking.id;
-        bookings[bookings.length - 1].customerId = customerId;
-      }
-      // Save PAR-Q if new customer
-      if (isNew && parqData && savedBooking) {
-        var answers = {};
-        var qKeys = ["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
-        for (var qi = 0; qi < parqData.questions.length; qi++) {
-          answers[qKeys[qi]] = parqData.questions[qi].a;
-        }
-        await sb.from("parq").insert(Object.assign({
-          booking_id: savedBooking.id,
-          customer_id: customerId,
-          age: parqData.age,
-          emergency_contact: parqData.emergency,
-          yes_details: parqData.details,
-          additional_notes: parqData.other,
-          print_name: parqData.printName,
-          sign_date: parqData.signDate
-        }, answers));
-      }
-      // Update booked count on class — use fresh incremented value
-      var newBookedCount = (c.booked);
-      await sb.from("classes").update({ booked: newBookedCount }).eq("id", c.id);
-    } catch(err) {
-      console.error("Supabase save error:", err);
-    }
-  })();
-
-  var html = "";
-  html += "<div class=\"srow\"><span>Name</span><span>" + sanitise(fn) + " " + sanitise(ln) + "</span></div>";
-  html += "<div class=\"srow\"><span>Class</span><span>" + sanitise(c.name) + "</span></div>";
-  html += "<div class=\"srow\"><span>Venue</span><span>" + sanitise(c.venue) + ", " + sanitise(c.loc) + "</span></div>";
-  html += "<div class=\"srow\"><span>When</span><span>" + sanitise(c.day) + " " + sanitise(c.time) + " &ndash; " + sanitise(c.end) + "</span></div>";
-  html += "<div class=\"srow\"><span>Amount Due</span><span style=\"font-weight:600;color:var(--charcoal)\">&pound;" + sanitise(String(c.price * (c.weeks || 6))) + "</span></div>";
-  document.getElementById("sdetail").innerHTML = html;
-  document.getElementById("s-reference").textContent = fn + " " + ln + " " + c.day;
-  document.getElementById("form-view").style.display = "none";
-  document.getElementById("success-view").className = "success on";
-}
-
-function renderDashboard() {
-  document.getElementById("btbody").innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>';
-  (async function() {
-    try {
-      // Get current session and use it explicitly
-      var { data: sessionData } = await sb.auth.getSession();
-      if (!sessionData.session) {
-        document.getElementById("btbody").innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Not authenticated. Please log in again.</td></tr>';
-        return;
-      }
-
-      // Load bookings with customer data joined
-      var { data: dbBookings, error } = await sb
-        .from("bookings")
-        .select("id, status, amount_due, refund_amount, refund_status, created_at, class_id, customer_id, customers(first_name, last_name, email, phone, customer_type)")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Sync local bookings array with database
-      bookings = dbBookings.map(function(b) {
-        var cls = classes.find(function(c) { return c.id === b.class_id; }) || {};
-        return {
-          dbId: b.id,
-          customerId: b.customer_id,
-          client: b.customers ? b.customers.first_name + " " + b.customers.last_name : "Unknown",
-          email: b.customers ? b.customers.email : "",
-          phone: b.customers ? b.customers.phone : "",
-          customerType: b.customers ? b.customers.customer_type : "",
-          cls: cls.name || "Unknown Class",
-          when: (cls.day || "") + " " + (cls.time || "") + " - " + (cls.venue || ""),
-          paid: b.amount_due,
-          status: b.status,
-          refundAmount: b.refund_amount,
-          classId: b.class_id,
-          day: cls.day || ""
-        };
-      });
-
-      var bhtml = "";
-      if (bookings.length === 0) {
-        bhtml = '<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">No bookings yet.</td></tr>';
-      } else {
-        for (var i = 0; i < bookings.length; i++) {
-          var b = bookings[i];
-          bhtml += "<tr><td>" + sanitise(b.client) + "</td><td>" + sanitise(b.cls) + "</td><td>" + sanitise(b.when) + "</td><td>&pound;" + sanitise(String(b.paid)) + "</td>";
-          bhtml += "<td><span class=\"pill p-" + b.status + "\">" + b.status + "</span></td>";
-          var confirmBtn = b.status === "reserved" ? "<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin(" + i + ")\">Confirm</button>" : "";
-          var cancelBtn = (b.status !== "cancelled" && b.status !== "refunded") ? "<button class=\"act\" onclick=\"cancelBooking(" + i + ")\">Cancel</button>" : "";
-          var refundBtn = (b.status === "confirmed" || b.status === "cancelled") ? "<button class=\"act act-refund\" onclick=\"initiateRefund(" + i + ")\">Refund</button>" : "";
-          var markRefundedBtn = b.status === "refund-pending" ? "<button class=\"act act-confirm\" onclick=\"markRefunded(" + i + ")\">Mark Refunded</button>" : "";
-          bhtml += "<td><button class=\"act\" onclick=\"viewBooking(" + i + ")\">View</button>" + confirmBtn + cancelBtn + refundBtn + markRefundedBtn + "<button class=\"act act-delete\" onclick=\"deleteBookingOnly(" + i + ")\">Remove Booking</button><button class=\"act act-delete\" onclick=\"deleteCustomer(" + i + ")\">Delete Customer</button></td></tr>";
-        }
-      }
-      document.getElementById("btbody").innerHTML = bhtml;
-
-      // Update stats
-      var totalBookings = bookings.length;
-      var totalRevenue = bookings.reduce(function(sum, b) { return sum + (b.status !== "cancelled" ? Number(b.paid) : 0); }, 0);
-      var waitlisted = bookings.filter(function(b) { return b.status === "waitlist"; }).length;
-      var confirmed = bookings.filter(function(b) { return b.status === "confirmed"; }).length;
-      var fillRate = totalBookings > 0 ? Math.round(confirmed / totalBookings * 100) : 0;
-      document.querySelector(".stats .stat:nth-child(1) .sval").textContent = totalBookings;
-      document.querySelector(".stats .stat:nth-child(2) .sval").textContent = "£" + totalRevenue;
-      document.querySelector(".stats .stat:nth-child(3) .sval").textContent = waitlisted;
-      document.querySelector(".stats .stat:nth-child(4) .sval").textContent = fillRate + "%";
-
-    } catch(err) {
-      console.error("Dashboard load error:", err);
-      document.getElementById("btbody").innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading bookings. Please refresh.</td></tr>';
-    }
-
-    // Render classes table - fetch live booked counts from Supabase
-    var { data: liveClasses } = await sb.from("classes").select("id, booked, cap");
-    if (liveClasses) {
-      liveClasses.forEach(function(lc) {
-        var cls = classes.find(function(c) { return c.id === lc.id; });
-        if (cls) { cls.booked = lc.booked; cls.cap = lc.cap; }
-      });
-    }
-    var chtml = "";
-    for (var i = 0; i < classes.length; i++) {
-      var c = classes[i];
-      var visLabel = c.visible === false ? "Show" : "Hide";
-      var visStyle = c.visible === false ? "color:var(--sage-dk);border-color:var(--sage-dk)" : "";
-      chtml += "<tr style=\"" + (c.visible === false ? "opacity:0.5" : "") + "\">";
-      chtml += "<td><strong>" + c.name + "</strong></td><td>" + c.loc + "</td><td>" + c.day + " " + c.time + "</td>";
-      var dateRange = (c.dates && c.dates.length > 0) ? c.dates[0] + " &ndash; " + c.dates[c.dates.length - 1] : "&mdash;";
-      chtml += "<td style='font-size:12px;color:var(--mid)'>" + dateRange + "</td>";
-      chtml += "<td>" + c.booked + " / " + c.cap + "</td><td>" + (c.wait > 0 ? c.wait : "-") + "</td>";
-      chtml += "<td><button class='act' onclick='openEditModal(" + c.id + ")'>Edit</button><button class='act' style='" + visStyle + "' onclick='toggleClassVisibility(" + c.id + ")'>" + visLabel + "</button><button class='act act-delete' onclick='deleteClass(" + c.id + ")'>Delete</button></td></tr>";
-    }
-    document.getElementById("ctbody").innerHTML = chtml;
-  })();
-}
-
-function deleteClass(id) {
-  var cls = classes.find(function(c) { return c.id === id; });
-  var classBookings = bookings.filter(function(b) { return b.classId === id; });
-
-  if (classBookings.length > 0) {
-    var choice = confirm(
-      "This class has " + classBookings.length + " existing booking(s).\n\n" +
-      "Click OK to cancel the class and mark all bookings as cancelled (recommended for refund tracking).\n\n" +
-      "Click Cancel to go back without deleting."
-    );
-    if (!choice) return;
-
-    var deleteAll = confirm(
-      "Do you also want to permanently delete all bookings and customer records for this class?\n\n" +
-      "Click OK to delete everything.\n" +
-      "Click Cancel to keep the booking records."
-    );
-
-    classes = classes.filter(function(c) { return c.id !== id; });
-    renderDashboard();
-    renderGrid();
-
-    (async function() {
-      try {
-        if (deleteAll) {
-          // Delete parq, bookings then class
-          for (var i = 0; i < classBookings.length; i++) {
-            await sb.from("parq").delete().eq("booking_id", classBookings[i].dbId);
-            await sb.from("bookings").delete().eq("id", classBookings[i].dbId);
-          }
-          showToast("Class and all bookings deleted.");
-        } else {
-          // Mark all bookings as cancelled
-          for (var i = 0; i < classBookings.length; i++) {
-            await sb.from("bookings").update({ status: "cancelled" }).eq("id", classBookings[i].dbId);
-          }
-          showToast("Class cancelled. Bookings marked as cancelled.");
-        }
-        await sb.from("classes").delete().eq("id", id);
-      } catch(err) {
-        console.error("Delete class error:", err);
-        showToast("Error deleting class. Please try again.");
-      }
-    })();
-
-  } else {
-    // No bookings, just confirm and delete
-    if (!confirm("Permanently delete this class? There are no existing bookings. This cannot be undone.")) return;
-    classes = classes.filter(function(c) { return c.id !== id; });
-    renderDashboard();
-    renderGrid();
-    showToast("Class deleted.");
-    (async function() {
-      try {
-        await sb.from("classes").delete().eq("id", id);
-      } catch(err) {
-        console.error("Delete class error:", err);
-        showToast("Error deleting class. Please try again.");
-      }
-    })();
-  }
-}
-
-function toggleClassVisibility(id) {
-  for (var i = 0; i < classes.length; i++) {
-    if (classes[i].id === id) {
-      classes[i].visible = classes[i].visible === false ? true : false;
-      var newVisible = classes[i].visible;
-      (async function(classId, visible) {
-        try {
-          await sb.from("classes").update({ visible: visible }).eq("id", classId);
-          showToast(visible ? "Class is now visible to customers." : "Class is now hidden from customers.");
-        } catch(err) {
-          console.error("Visibility update error:", err);
-        }
-      })(id, newVisible);
-      renderDashboard();
-      renderGrid();
-      break;
-    }
-  }
-}
-
-function switchTab(tab) {
-  document.getElementById("tab-bookings").className = "db-tab" + (tab === "bookings" ? " on" : "");
-  document.getElementById("tab-classes").className = "db-tab" + (tab === "classes" ? " on" : "");
-  document.getElementById("tab-panel-bookings").style.display = tab === "bookings" ? "block" : "none";
-  document.getElementById("tab-panel-classes").style.display = tab === "classes" ? "block" : "none";
-  if (tab === "classes") renderClassesView();
-}
-
-function renderClassesView() {
-  var html = "";
-  for (var i = 0; i < classes.length; i++) {
-    var c = classes[i];
-    var classBookings = bookings.filter(function(b) { return b.classId === c.id; });
-    var groupId = "cg-" + c.id;
-    html += "<div class=\"class-group\">";
-    html += "<div class=\"class-group-header\" onclick=\"toggleClassGroup('" + groupId + "')\">";
-    html += "<div>";
-    html += "<div class=\"class-group-title\">" + sanitise(c.name) + " &mdash; " + sanitise(c.day) + " " + sanitise(c.time) + "</div>";
-    html += "<div class=\"class-group-meta\">" + sanitise(c.venue) + ", " + sanitise(c.loc) + "</div>";
-    html += "</div>";
-    html += "<div style=\"display:flex;align-items:center;gap:10px\">";
-    html += "<span class=\"class-group-badge\">" + classBookings.length + " / " + c.cap + " booked</span>";
-    html += "<span style=\"font-size:18px\">&#8964;</span>";
-    html += "</div></div>";
-    html += "<div class=\"class-group-body\" id=\"" + groupId + "\">";
-    if (classBookings.length === 0) {
-      html += "<div class=\"class-group-empty\">No bookings yet for this class.</div>";
-    } else {
-      html += "<table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Type</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
-      for (var j = 0; j < classBookings.length; j++) {
-        var b = classBookings[j];
-        var idx = bookings.indexOf(b);
-        var confirmBtn = b.status === "reserved" ? "<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin(" + idx + ")\">Confirm</button>" : "";
-        var cancelBtn2 = (b.status !== "cancelled" && b.status !== "refunded") ? "<button class=\"act\" onclick=\"cancelBooking(" + idx + ")\">Cancel</button>" : "";
-        var refundBtn2 = (b.status === "confirmed" || b.status === "cancelled") ? "<button class=\"act act-refund\" onclick=\"initiateRefund(" + idx + ")\">Refund</button>" : "";
-        var markRefundedBtn2 = b.status === "refund-pending" ? "<button class=\"act act-confirm\" onclick=\"markRefunded(" + idx + ")\">Mark Refunded</button>" : "";
-        html += "<tr>";
-        html += "<td>" + sanitise(b.client) + "</td>";
-        html += "<td>" + sanitise(b.email) + "</td>";
-        html += "<td>" + sanitise(b.phone) + "</td>";
-        html += "<td>" + sanitise(b.customerType) + "</td>";
-        html += "<td>&pound;" + sanitise(String(b.paid)) + "</td>";
-        html += "<td><span class=\"pill p-" + sanitise(b.status) + "\">" + sanitise(b.status) + "</span></td>";
-        html += "<td><button class=\"act\" onclick=\"viewBooking(" + idx + ")\">View</button>" + confirmBtn + cancelBtn2 + refundBtn2 + markRefundedBtn2 + "<button class=\"act act-delete\" onclick=\"deleteBookingOnly(" + idx + ")\">Remove</button></td>";
-        html += "</tr>";
-      }
-      html += "</tbody></table>";
-    }
-    html += "</div></div>";
-  }
-  document.getElementById("classes-accordion").innerHTML = html;
-}
-
-function toggleClassGroup(id) {
-  var el = document.getElementById(id);
-  el.className = el.className === "class-group-body on" ? "class-group-body" : "class-group-body on";
-}
-
-function renderAccount() {
-  var html = "";
-  var picks = [3, 4, 6];
-  for (var i = 0; i < picks.length; i++) {
-    var c = classes[picks[i]];
-    html += '<div class="my-booking">';
-    html += '<div><div class="mb-name">' + c.name + '</div><div class="mb-meta">' + c.day + ' ' + c.time + ' - ' + c.venue + '</div></div>';
-    html += '<span class="cancel-lnk" onclick="showToast(\'Booking cancelled\')">Cancel</span>';
-    html += '</div>';
-  }
-  document.getElementById("mybookings").innerHTML = html;
-}
-
-
-
-var dashUnlocked = false;
-
-function showDashboard() {
-  if (dashUnlocked) {
-    show("dashboard");
-  } else {
-    var allPages = ["schedule","dashboard","dash-login"];
-    for (var i = 0; i < allPages.length; i++) {
-      document.getElementById("pg-" + allPages[i]).className = "page";
-    }
-    document.getElementById("nb-schedule").className = "nav-btn";
-    document.getElementById("nb-dashboard").className = "nav-btn on";
-    document.getElementById("pg-dash-login").className = "page on";
-    document.getElementById("dash-email").value = "";
-    document.getElementById("dash-password").value = "";
-    document.getElementById("dash-error").style.display = "none";
-  }
-}
-
-function checkDashLogin() {
-  var email = document.getElementById("dash-email").value.trim();
-  var pw = document.getElementById("dash-password").value;
-  var btn = document.getElementById("dash-login-btn");
-  if (!email || !pw) {
-    document.getElementById("dash-error").style.display = "block";
-    return;
-  }
-  btn.textContent = "Signing in...";
-  btn.disabled = true;
-  (async function() {
-    try {
-      var { data, error } = await sb.auth.signInWithPassword({ email: email, password: pw });
-      if (error || !data.user) {
-        document.getElementById("dash-error").style.display = "block";
-        btn.textContent = "Sign In";
-        btn.disabled = false;
-      } else {
-        // Explicitly set the session so all subsequent queries use it
-        await sb.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
-        dashUnlocked = true;
-        show("dashboard");
-        renderDashboard();
-      }
-    } catch(err) {
-      console.error("Login error:", err);
-      document.getElementById("dash-error").style.display = "block";
-      btn.textContent = "Sign In";
-      btn.disabled = false;
-    }
-  })();
-}
-
-var editingId = null;
-
-var monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-
-function parseDate(str) {
-  var parts = str.trim().split(" ");
-  var d = parseInt(parts[0]);
-  var m = monthNames.indexOf(parts[1]);
-  return {d:d, m:m};
-}
-
-function calcBlockDates(startStr, weeks) {
-  var base = new Date(startStr + "T00:00:00");
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function calcBlockDates(startDateStr, weeks) {
   var dates = [];
+  var d = new Date(startDateStr + "T00:00:00");
   for (var i = 0; i < weeks; i++) {
-    var dt = new Date(base.getTime() + i * 7 * 24 * 60 * 60 * 1000);
-    dates.push(dt.getDate() + " " + monthNames[dt.getMonth()]);
+    var dd = new Date(d); dd.setDate(d.getDate() + i*7);
+    dates.push(dd.toLocaleDateString("en-GB",{day:"numeric",month:"short"}));
   }
   return dates;
 }
 
-function openAddModal() {
-  // Clear all fields
-  document.getElementById("add-day").value = "";
-  document.getElementById("add-level").value = "";
-  document.getElementById("add-time").value = "";
-  document.getElementById("add-end").value = "";
-  document.getElementById("add-venue").value = "";
-  document.getElementById("add-loc").value = "Baildon";
-  document.getElementById("add-price").value = "10";
-  document.getElementById("add-cap").value = "12";
-  document.getElementById("add-blockstart").value = "";
-  document.getElementById("add-blocklength").value = "6";
-  document.getElementById("add-date-validation").style.display = "none";
-  document.getElementById("add-err").style.display = "none";
-  document.getElementById("add-overlay").className = "overlay on";
-}
-
-function closeAddModal() {
-  document.getElementById("add-overlay").className = "overlay";
-}
-
-function validateAddDate() {
-  var val = document.getElementById("add-blockstart").value;
-  var el = document.getElementById("add-date-validation");
-  if (!val) { el.style.display = "none"; return true; }
-  var classDay = document.getElementById("add-day").value;
-  if (!classDay) { el.style.display = "none"; return true; }
-  var chosen = new Date(val + "T00:00:00");
-  var chosenDay = dayNames[chosen.getDay()];
-  if (chosenDay !== classDay) {
-    el.innerHTML = "<span style='color:var(--red)'>&#9888; " + val.split("-").reverse().join(" ") + " is a " + chosenDay + ". Please pick a " + classDay + ".</span>";
-    el.style.display = "block";
-    return false;
-  } else {
-    el.innerHTML = "<span style='color:var(--green)'>&#10003; " + chosenDay + " confirmed.</span>";
-    el.style.display = "block";
-    return true;
-  }
-}
-
-function saveNewClass() {
-  var day      = document.getElementById("add-day").value.trim();
-  var level    = document.getElementById("add-level").value.trim();
-  var time     = document.getElementById("add-time").value.trim();
-  var end      = document.getElementById("add-end").value.trim();
-  var venue    = document.getElementById("add-venue").value.trim();
-  var loc      = document.getElementById("add-loc").value;
-  var price    = parseInt(document.getElementById("add-price").value);
-  var cap      = parseInt(document.getElementById("add-cap").value);
-  var start    = document.getElementById("add-blockstart").value;
-  var weeks    = parseInt(document.getElementById("add-blocklength").value);
-
-  var errEl = document.getElementById("add-err");
-  if (!day || !level || !time || !end || !venue || !start || !price || !cap) {
-    errEl.style.display = "block";
-    return;
-  }
-  if (!validateAddDate()) {
-    errEl.textContent = "Please fix the block start date.";
-    errEl.style.display = "block";
-    return;
-  }
-  errEl.style.display = "none";
-
-  var dates = calcBlockDates(start, weeks);
-  var btn = document.getElementById("add-class-btn");
-  btn.textContent = "Saving...";
-  btn.disabled = true;
-
-  (async function() {
-    try {
-      var { data: newClass, error } = await sb.from("classes").insert({
-        name: level,
-        level: level,
-        day: day,
-        time: time,
-        end_time: end,
-        venue: venue,
-        loc: loc,
-        price: price,
-        cap: cap,
-        booked: 0,
-        wait: 0,
-        weeks: weeks,
-        dates: dates,
-        visible: true
-      }).select().single();
-
-      if (error) throw error;
-
-      classes.push({
-        id: newClass.id,
-        name: level,
-        level: level,
-        day: day,
-        time: time,
-        end: end,
-        venue: venue,
-        loc: loc,
-        price: price,
-        cap: cap,
-        booked: 0,
-        wait: 0,
-        weeks: weeks,
-        dates: dates,
-        visible: true
-      });
-
-      closeAddModal();
-      buildFilters();
-      renderGrid();
-      renderDashboard();
-      showToast("New class added successfully!");
-    } catch(err) {
-      console.error("Add class error:", err);
-      showToast("Error adding class. Please try again.");
-    } finally {
-      btn.textContent = "Add Class";
-      btn.disabled = false;
-    }
-  })();
-}
-
-function openEditModal(id) {
-  editingId = id;
-  var c = null;
-  for (var i = 0; i < classes.length; i++) { if (classes[i].id === id) { c = classes[i]; break; } }
-  document.getElementById("edit-modal-sub").textContent = c.day + " " + c.time + " - " + c.venue;
-  document.getElementById("edit-day").value = c.day;
-  document.getElementById("edit-level").value = c.level;
-  document.getElementById("edit-time").value = c.time;
-  document.getElementById("edit-end").value = c.end;
-  document.getElementById("edit-venue").value = c.venue;
-  document.getElementById("edit-loc").value = c.loc;
-  document.getElementById("edit-price").value = c.price;
-  document.getElementById("edit-cap").value = c.cap;
-  var firstDate = c.dates[0];
-  var dp = parseDate(firstDate);
-  var yr = 2026;
-  if (dp.m < 2) yr = 2027;
-  var mm = String(dp.m + 1).padStart(2, "0");
-  var dd = String(dp.d).padStart(2, "0");
-  document.getElementById("edit-blockstart").value = yr + "-" + mm + "-" + dd;
-  document.getElementById("date-validation").style.display = "none";
-  document.getElementById("edit-blocklength").value = c.weeks || 6;
-  document.getElementById("edit-overlay").className = "overlay on";
-}
-
-function closeEditModal() {
-  document.getElementById("edit-overlay").className = "overlay";
-}
-
 var dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-
-function validateBlockDate() {
-  var val = document.getElementById("edit-blockstart").value;
-  var el = document.getElementById("date-validation");
-  if (!val) { el.style.display = "none"; return true; }
-  var classDay = document.getElementById("edit-day").value;
-  var chosen = new Date(val + "T00:00:00");
-  var chosenDay = dayNames[chosen.getDay()];
-  if (chosenDay !== classDay) {
-    el.innerHTML = "<span style='color:var(--red)'>&#9888; " + val.split("-").reverse().join(" ") + " is a " + chosenDay + ". Please pick a " + classDay + ".</span>";
-    el.style.display = "block";
-    return false;
-  } else {
-    el.innerHTML = "<span style='color:var(--green)'>&#10003; " + chosenDay + " confirmed.</span>";
-    el.style.display = "block";
-    return true;
-  }
-}
-
-function saveEditClass() {
-  if (!validateBlockDate()) {
-    showToast("Please fix the date before saving.");
-    return;
-  }
-  var updated = null;
-  for (var i = 0; i < classes.length; i++) {
-    if (classes[i].id === editingId) {
-      classes[i].day   = document.getElementById("edit-day").value;
-      classes[i].level = document.getElementById("edit-level").value;
-      classes[i].name  = document.getElementById("edit-level").value;
-      classes[i].time  = document.getElementById("edit-time").value;
-      classes[i].end   = document.getElementById("edit-end").value;
-      classes[i].venue = document.getElementById("edit-venue").value;
-      classes[i].loc   = document.getElementById("edit-loc").value;
-      classes[i].price = parseInt(document.getElementById("edit-price").value);
-      classes[i].cap   = parseInt(document.getElementById("edit-cap").value);
-      var wks = parseInt(document.getElementById("edit-blocklength").value);
-      classes[i].weeks = wks;
-      classes[i].dates = calcBlockDates(document.getElementById("edit-blockstart").value, wks);
-      updated = classes[i];
-      break;
-    }
-  }
-  closeEditModal();
-  buildFilters();
-  renderGrid();
-  renderDashboard();
-  showToast("Class updated!");
-
-  if (updated) {
-    (async function() {
-      try {
-        await sb.from("classes").update({
-          name: updated.name,
-          level: updated.level,
-          day: updated.day,
-          time: updated.time,
-          end_time: updated.end,
-          venue: updated.venue,
-          loc: updated.loc,
-          price: updated.price,
-          cap: updated.cap,
-          weeks: updated.weeks,
-          dates: updated.dates
-        }).eq("id", updated.id);
-      } catch(err) {
-        console.error("Save edit class error:", err);
-        showToast("Error saving changes. Please try again.");
-      }
-    })();
-  }
-}
-
-function confirmBookingAdmin(idx) {
-  var b = bookings[idx];
-  showToast("Confirming booking...");
-  (async function() {
-    try {
-      await sb.from("bookings").update({ status: "confirmed" }).eq("id", b.dbId);
-      showToast("Booking confirmed for " + b.client + "!");
-      renderDashboard();
-    } catch(err) {
-      console.error("Supabase confirm error:", err);
-      showToast("Error confirming booking. Please try again.");
-    }
-  })();
-}
-
-function initiateRefund(idx) {
-  var b = bookings[idx];
-  var leavingBlock = confirm(
-    "Is " + b.client + " leaving the block entirely?\n\n" +
-    "Click OK if yes — their spot will be freed up for a new booking.\n" +
-    "Click Cancel if they are staying but receiving a partial refund."
-  );
-
-  var sessionsAttended = 0;
-  if (leavingBlock) {
-    var attended = prompt("How many sessions did they attend before cancelling?\n\nEnter 0 if none.", "0");
-    if (attended === null) return;
-    sessionsAttended = parseInt(attended) || 0;
-  }
-
-  var cls = classes.find(function(c) { return c.id === b.classId; });
-  var totalSessions = cls ? (cls.weeks || 6) : 6;
-  var pricePerSession = cls ? cls.price : 0;
-  var remainingSessions = totalSessions - sessionsAttended;
-  var suggestedRefund = remainingSessions * pricePerSession;
-
-  var refundAmount = prompt(
-    "Refund amount for " + b.client + "\n\n" +
-    "Sessions attended: " + sessionsAttended + " of " + totalSessions + "\n" +
-    "Suggested refund: £" + suggestedRefund + "\n\n" +
-    "Enter refund amount:",
-    suggestedRefund
-  );
-  if (refundAmount === null) return;
-  var amount = parseFloat(refundAmount) || suggestedRefund;
-
-  if (!confirm(
-    "Summary:\n\n" +
-    "Customer: " + b.client + "\n" +
-    "Leaving block: " + (leavingBlock ? "Yes" : "No") + "\n" +
-    "Sessions attended: " + sessionsAttended + "\n" +
-    "Refund amount: £" + amount + "\n\n" +
-    "Mark as Refund Pending?"
-  )) return;
-
-  showToast("Saving refund...");
-  (async function() {
-    try {
-      await sb.from("bookings").update({ status: "refund-pending", refund_amount: amount }).eq("id", b.dbId);
-      if (leavingBlock) {
-        for (var i = 0; i < classes.length; i++) {
-          if (classes[i].id === b.classId) {
-            classes[i].booked = Math.max(0, classes[i].booked - 1);
-            await sb.from("classes").update({ booked: classes[i].booked }).eq("id", classes[i].id);
-            break;
-          }
-        }
-      }
-      showToast("Refund pending — £" + amount + (leavingBlock ? ". Spot freed up." : ""));
-      renderDashboard();
-      renderGrid();
-    } catch(err) {
-      console.error("Refund error:", err);
-      showToast("Error saving refund. Please try again.");
-    }
-  })();
-}
-
-function markRefunded(idx) {
-  var b = bookings[idx];
-  if (!confirm("Confirm refund has been sent to " + b.client + "?\n\nThis will mark the booking as Refunded.")) return;
-  showToast("Marking as refunded...");
-  (async function() {
-    try {
-      await sb.from("bookings").update({ status: "refunded" }).eq("id", b.dbId);
-      showToast("Booking marked as Refunded.");
-      renderDashboard();
-    } catch(err) {
-      console.error("Mark refunded error:", err);
-      showToast("Error updating booking. Please try again.");
-    }
-  })();
-}
-
-function cancelBooking(idx) {
-  var b = bookings[idx];
-  showToast("Cancelling booking...");
-  (async function() {
-    try {
-      await sb.from("bookings").update({ status: "cancelled" }).eq("id", b.dbId);
-      for (var i = 0; i < classes.length; i++) {
-        if (classes[i].id === b.classId) { classes[i].booked = Math.max(0, classes[i].booked - 1); break; }
-      }
-      showToast("Booking cancelled.");
-      renderDashboard();
-    } catch(err) {
-      console.error("Supabase cancel error:", err);
-      showToast("Error cancelling booking. Please try again.");
-    }
-  })();
-}
-
-function deleteBookingOnly(idx) {
-  if (!confirm("Remove this booking? The customer record will be kept in the database.")) return;
-  var b = bookings[idx];
-  for (var i = 0; i < classes.length; i++) {
-    if (classes[i].id === b.classId) { classes[i].booked = Math.max(0, classes[i].booked - 1); break; }
-  }
-  bookings.splice(idx, 1);
-  renderDashboard();
-  showToast("Booking removed. Customer record kept.");
-  (async function() {
-    try {
-      await sb.from("parq").delete().eq("booking_id", b.dbId);
-      await sb.from("bookings").delete().eq("id", b.dbId);
-    } catch(err) {
-      console.error("Supabase delete booking error:", err);
-    }
-  })();
-}
-
-function deleteCustomer(idx) {
-  if (!confirm("Permanently delete this customer AND their booking from the database?")) return;
-  var b = bookings[idx];
-  for (var i = 0; i < classes.length; i++) {
-    if (classes[i].id === b.classId) { classes[i].booked = Math.max(0, classes[i].booked - 1); break; }
-  }
-  bookings.splice(idx, 1);
-  renderDashboard();
-  showToast("Customer deleted from database.");
-  (async function() {
-    try {
-      await sb.from("parq").delete().eq("booking_id", b.dbId);
-      await sb.from("bookings").delete().eq("id", b.dbId);
-      await sb.from("customers").delete().eq("id", b.customerId);
-    } catch(err) {
-      console.error("Supabase delete error:", err);
-    }
-  })();
-}
-
-function closeViewModal() {
-  document.getElementById("view-overlay").className = "overlay";
-}
-
-function viewBooking(idx) {
-  var b = bookings[idx];
-  document.getElementById("view-title").textContent = b.client;
-  document.getElementById("view-sub").textContent = b.cls + " - " + b.when;
-  document.getElementById("view-body").innerHTML = "<div style='text-align:center;padding:20px;color:var(--light)'>Loading...</div>";
-  document.getElementById("view-overlay").className = "overlay on";
-
-  (async function() {
-    try {
-      var { data: parqData, error: parqError } = await sb.from("parq").select("*").eq("booking_id", b.dbId).limit(1);
-      var p = parqData && parqData.length > 0 ? parqData[0] : null;
-
-      var html = "";
-      html += "<div class=\"parq-section-title\">Booking Details</div>";
-      html += "<div class=\"sdetail\">";
-      html += "<div class=\"srow\"><span>Status</span><span><span class=\"pill p-" + sanitise(b.status) + "\">" + sanitise(b.status) + "</span></span></div>";
-      html += "<div class=\"srow\"><span>Email</span><span>" + sanitise(b.email) + "</span></div>";
-      html += "<div class=\"srow\"><span>Phone</span><span>" + sanitise(b.phone) + "</span></div>";
-      html += "<div class=\"srow\"><span>Customer Type</span><span>" + sanitise(b.customerType) + "</span></div>";
-      html += "<div class=\"srow\"><span>Amount Due</span><span>&pound;" + sanitise(String(b.paid)) + "</span></div>";
-      if (b.refundAmount) {
-        html += "<div class=\"srow\"><span>Refund Amount</span><span style=\"color:var(--red);font-weight:600\">&pound;" + sanitise(String(b.refundAmount)) + "</span></div>";
-      }
-      html += "</div>";
-
-      if (p) {
-        var qLabels = ["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
-        var qKeys = ["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
-
-        html += "<div class=\"parq-section-title\" style=\"margin-top:20px\">PAR-Q Health Form</div>";
-        html += "<div class=\"sdetail\">";
-        html += "<div class=\"srow\"><span>Age</span><span>" + sanitise(p.age) + "</span></div>";
-        html += "<div class=\"srow\"><span>Emergency Contact</span><span>" + sanitise(p.emergency_contact) + "</span></div>";
-        html += "</div>";
-
-        html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Medical Questions</div>";
-        html += "<div class=\"sdetail\">";
-        for (var i = 0; i < qKeys.length; i++) {
-          var answer = p[qKeys[i]] || "No";
-          var colour = answer === "Yes" ? "color:var(--red);font-weight:600" : "color:var(--green)";
-          html += "<div class=\"srow\"><span>" + (i+1) + ". " + sanitise(qLabels[i]) + "</span><span style=\"" + colour + "\">" + sanitise(answer) + "</span></div>";
-        }
-        html += "</div>";
-
-        if (p.yes_details) {
-          html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Yes Answer Details</div>";
-          html += "<div class=\"health-note\">" + sanitise(p.yes_details) + "</div>";
-        }
-        if (p.additional_notes) {
-          html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Additional Notes</div>";
-          html += "<div class=\"health-note\">" + sanitise(p.additional_notes) + "</div>";
-        }
-        html += "<div class=\"parq-section-title\" style=\"margin-top:14px\">Declaration</div>";
-        html += "<div class=\"sdetail\">";
-        html += "<div class=\"srow\"><span>Signed by</span><span>" + sanitise(p.print_name) + "</span></div>";
-        html += "<div class=\"srow\"><span>Date</span><span>" + sanitise(p.sign_date) + "</span></div>";
-        html += "</div>";
-      } else {
-        html += "<div class=\"health-note\" style=\"margin-top:16px\">Returning customer &mdash; no health form required.</div>";
-      }
-
-      document.getElementById("view-body").innerHTML = html;
-    } catch(err) {
-      console.error("PAR-Q load error:", err);
-      document.getElementById("view-body").innerHTML = "<div style='color:var(--red);padding:20px'>Error loading PAR-Q data.</div>";
-    }
-  })();
-}
 
 function showToast(msg) {
   var el = document.getElementById("toastEl");
-  el.textContent = msg;
-  el.className = "toast on";
-  setTimeout(function() { el.className = "toast"; }, 3000);
+  el.textContent = msg; el.className = "toast on";
+  setTimeout(function(){ el.className = "toast"; }, 3000);
 }
 
-document.getElementById("overlay").addEventListener("click", function(e) {
-  if (e.target === this) closeModal();
-});
+// ─── Get active/upcoming block for a class ───────────────────────────────────
+function getActiveBlock(classId) {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var classBlocks = blocks.filter(function(b){ return b.class_id === classId && b.visible !== false; });
+  // prefer active (started, not ended)
+  var active = classBlocks.find(function(b){
+    var s=new Date(b.start_date+"T00:00:00"), e=new Date(b.end_date+"T00:00:00");
+    return s<=today && e>=today;
+  });
+  if(active) return active;
+  // next upcoming (not started yet) — soonest first
+  var upcoming = classBlocks.filter(function(b){ return new Date(b.start_date+"T00:00:00")>today; });
+  upcoming.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
+  return upcoming[0] || null;
+}
 
-function saveSettings() {
-  var bankName = document.getElementById("setting-bank-name").value.trim();
-  var bankSort = document.getElementById("setting-bank-sort").value.trim();
-  var bankAcc  = document.getElementById("setting-bank-acc").value.trim();
-  if (!bankName || !bankSort || !bankAcc) { showToast("Please fill in all bank details."); return; }
-  showToast("Saving...");
-  (async function() {
-    try {
-      await sb.from("settings").upsert([
-        { key: "bank_name",       value: bankName },
-        { key: "bank_sort_code",  value: bankSort },
-        { key: "bank_account_no", value: bankAcc  }
-      ]);
-      // Update displayed values immediately
-      ["bank-name-1","bank-name-2"].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = bankName; });
-      ["bank-sort-1","bank-sort-2"].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = bankSort; });
-      ["bank-acc-1","bank-acc-2"].forEach(function(id)  { var el = document.getElementById(id); if (el) el.textContent = bankAcc; });
-      showToast("Bank details saved!");
-    } catch(err) {
-      console.error("Save settings error:", err);
-      showToast("Error saving settings. Please try again.");
+function getNextBlock(classId, currentBlockId) {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var classBlocks = blocks.filter(function(b){ return b.class_id===classId && b.visible!==false && b.id!==currentBlockId; });
+  var future = classBlocks.filter(function(b){ return new Date(b.start_date+"T00:00:00")>today; });
+  future.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
+  return future[0] || null;
+}
+
+// ─── Schedule filters & grid ─────────────────────────────────────────────────
+function buildFilters() {
+  var dayOrder=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  document.getElementById("loc-pills").innerHTML =
+    "<button class='loc-pill' id='fg-baildon-card' onclick=\"filterLoc('Baildon',this)\">Baildon</button>" +
+    "<button class='loc-pill' id='fg-guiseley-card' onclick=\"filterLoc('Guiseley',this)\">Guiseley</button>";
+  document.getElementById("filter-row").innerHTML="";
+  document.getElementById("filter-days-wrap").className="filter-days-wrap";
+}
+
+function clearAllFilters(){
+  document.getElementById("fb-all").className="fb-all";
+  document.querySelectorAll(".loc-pill").forEach(function(p){ p.className="loc-pill"; });
+  document.querySelectorAll(".fb").forEach(function(p){ p.className="fb"; });
+}
+
+function filterAll(btn){
+  clearAllFilters(); btn.className="fb-all on";
+  document.getElementById("filter-prompt").className="filter-prompt hidden";
+  document.getElementById("filter-days-wrap").className="filter-days-wrap";
+  activeFilter="all"; activeLoc=null; renderGrid();
+}
+
+function filterLoc(loc,el){
+  clearAllFilters(); el.className="loc-pill on";
+  document.getElementById("filter-prompt").className="filter-prompt hidden";
+  var dayOrder=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  var days=[]; classes.forEach(function(c){ if(c.loc===loc && days.indexOf(c.day)<0) days.push(c.day); });
+  days.sort(function(a,b){ return dayOrder.indexOf(a)-dayOrder.indexOf(b); });
+  document.getElementById("filter-row").innerHTML = days.map(function(d){
+    return "<button class='fb' onclick=\"filterDay('"+d+"','"+loc+"',this)\">"+d+"</button>";
+  }).join("");
+  document.getElementById("filter-days-label").textContent = loc+" — select a day or view all "+loc+" classes";
+  document.getElementById("filter-days-wrap").className="filter-days-wrap on";
+  activeFilter="loc"; activeLoc=loc; renderGrid();
+}
+
+function filterDay(day,loc,btn){
+  document.querySelectorAll(".fb").forEach(function(b){ b.className="fb"; });
+  btn.className="fb on"; activeFilter="day"; activeLoc=loc; activeDay=day; renderGrid();
+}
+
+function renderGrid() {
+  // Only show classes that have at least one active or upcoming block
+  var filtered = classes.filter(function(c){
+    if(activeFilter==="loc" && c.loc!==activeLoc) return false;
+    if(activeFilter==="day" && (c.loc!==activeLoc || c.day!==activeDay)) return false;
+    return getActiveBlock(c.id) !== null;
+  });
+
+  if(filtered.length===0){
+    document.getElementById("grid").innerHTML='<div class="no-filter-msg"><div class="no-filter-icon">🗓️</div><div class="no-filter-title">No classes available</div><div class="no-filter-sub">There are no active or upcoming blocks at the moment. Check back soon!</div></div>';
+    return;
+  }
+
+  var html="";
+  filtered.forEach(function(c){
+    var blk = getActiveBlock(c.id);
+    var nextBlk = getNextBlock(c.id, blk.id);
+    var full = blk.booked >= blk.cap;
+    var pct = Math.min(100, Math.round(blk.booked/blk.cap*100));
+    var warn = pct>=80?" warn":"";
+    var badge,badgeCls,btnTxt,btnCls,btnDis="";
+    if(full){ badge="Full"; badgeCls="b-full"; btnTxt="Class Full"; btnCls=""; btnDis=" disabled"; }
+    else { badge="Open"; badgeCls="b-open"; btnTxt="Book Now"; btnCls=""; }
+
+    html+='<div class="card">';
+    html+='<div class="card-loc-wrap"><div class="card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>'+c.loc+'</div>'+(full?'<span class="badge '+badgeCls+'">'+badge+'</span>':'')+'</div>';
+    html+='<div class="card-name">'+c.name+'</div>';
+    html+='<div class="card-venue-wrap"><div class="card-venue-lbl">Location</div><div class="card-venue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>'+c.venue+'</div><div class="card-level">'+c.level+'</div></div>';
+    html+='<div class="card-meta">';
+    html+='<div class="meta-item"><div class="meta-lbl">Day</div><div class="meta-val">'+c.day+'</div></div>';
+    html+='<div class="meta-item"><div class="meta-lbl">Price per block</div><div class="meta-val price">&pound;'+(blk.price*blk.weeks)+'</div></div>';
+    html+='<div class="meta-item" style="grid-column:span 2"><div class="meta-lbl">Time</div><div class="meta-val" style="font-size:15px">'+c.time+' &ndash; '+c.end_time+'</div></div>';
+    html+='</div>';
+    var dpills=(blk.dates||[]).map(function(d){ return '<span class="date-pill">'+d+'</span>'; }).join("");
+    html+='<div class="block-dates"><div class="block-dates-lbl">'+blk.weeks+'-Week Block</div><div class="block-dates-pills">'+dpills+'</div></div>';
+    if(nextBlk){
+      html+='<div style="margin-bottom:12px;padding:8px 10px;background:#f0f7f7;border-radius:3px;font-size:12px;color:var(--sage-dk)">📅 Next block starts '+nextBlk.dates[0]+' &ndash; booking open now</div>';
+    }
+    html+='<div class="cap-bar"><div class="cap-fill'+warn+'" style="width:'+pct+'%"></div></div>';
+    html+='<div class="cap-txt">'+blk.booked+' of '+blk.cap+' spots taken</div>';
+    html+='<button class="book-btn '+btnCls+'"'+btnDis+' onclick="openModal('+c.id+','+blk.id+')">'+btnTxt+'</button>';
+    html+='</div>';
+  });
+  document.getElementById("grid").innerHTML=html;
+}
+
+// ─── Booking modal ────────────────────────────────────────────────────────────
+function openModal(classId, blockId) {
+  selected = classes.find(function(c){ return c.id===classId; });
+  selectedBlock = blocks.find(function(b){ return b.id===blockId; });
+  var c=selected, blk=selectedBlock;
+  document.getElementById("m-name").textContent=c.name;
+  document.getElementById("m-sub").textContent=c.venue+", "+c.loc+" - "+c.day+" "+c.time;
+  document.getElementById("m-sname").textContent=c.name;
+  document.getElementById("m-sdetail").textContent=c.day+" "+c.time+" - "+c.end_time+" | "+c.loc;
+  var totalPrice=blk.price*blk.weeks;
+  document.getElementById("m-price").textContent="\u00a3"+totalPrice;
+  document.getElementById("m-btnprice").textContent="\u00a3"+totalPrice;
+  document.getElementById("msummary-bar").style.display="flex";
+  document.getElementById("form-view").style.display="block";
+  document.getElementById("success-view").className="success";
+  document.getElementById("overlay").className="overlay on";
+  document.getElementById("step-1").style.display="block";
+  document.getElementById("step-2").style.display="none";
+  document.getElementById("step-3").style.display="none";
+  document.getElementById("mfoot-confirm").style.display="none";
+  // Reset fields
+  ["b-firstname","b-lastname","b-email","b-phone","b-health-other"].forEach(function(id){ document.getElementById(id).value=""; });
+  window._customerIsReturning=false;
+  if(document.getElementById("b-health-conditions")) document.getElementById("b-health-conditions").value="";
+  ["b-age","b-emergency","b-print-name"].forEach(function(id){ if(document.getElementById(id)) document.getElementById(id).value=""; });
+  if(document.getElementById("b-sign-date")) document.getElementById("b-sign-date").value="";
+  if(document.getElementById("b-declaration")) document.getElementById("b-declaration").checked=false;
+  if(document.getElementById("parq-yes-section")) document.getElementById("parq-yes-section").style.display="none";
+  for(var qi=1;qi<=12;qi++){
+    document.querySelectorAll("input[name=\"q"+qi+"\"][value=\"No\"]").forEach(function(r){ r.checked=true; });
+  }
+  document.querySelectorAll(".field-err").forEach(function(e){ e.className="field-err"; });
+}
+
+function closeModal(){ document.getElementById("overlay").className="overlay"; }
+
+function goStep1(){
+  document.getElementById("step-1").style.display="block";
+  document.getElementById("step-2").style.display="none";
+  document.getElementById("step-3").style.display="none";
+  document.getElementById("mfoot-confirm").style.display="none";
+}
+
+function goStep2(){
+  var fn=document.getElementById("b-firstname").value.trim();
+  var ln=document.getElementById("b-lastname").value.trim();
+  var em=document.getElementById("b-email").value.trim();
+  var ph=document.getElementById("b-phone").value.trim();
+  document.getElementById("err-firstname").className="field-err"+(fn?"":" on");
+  document.getElementById("err-lastname").className="field-err"+(ln?"":" on");
+  var emailOk=em&&em.indexOf("@")>0&&em.indexOf(".")>0;
+  document.getElementById("err-email").className="field-err"+(emailOk?"":" on");
+  document.getElementById("err-phone").className="field-err"+(ph?"":" on");
+  if(!fn||!ln||!emailOk||!ph) return;
+  var btn=document.querySelector("#step-1 .step-btn");
+  btn.textContent="Checking..."; btn.disabled=true;
+  (async function(){
+    try{
+      var{data:existing}=await sb.from("customers").select("id").eq("email",em).limit(1);
+      var isReturning=existing&&existing.length>0;
+      window._customerIsReturning=isReturning;
+      var msgEl=document.getElementById("customer-check-msg");
+      if(isReturning){
+        msgEl.style.display="block"; msgEl.style.background="#e8f0e7"; msgEl.style.color="var(--green)";
+        msgEl.textContent="✓ Welcome back! As a returning customer you can skip the health form.";
+        setTimeout(function(){ goStep3(); }, 2500);
+      } else {
+        msgEl.style.display="block"; msgEl.style.background="#f5ede3"; msgEl.style.color="var(--clay)";
+        msgEl.textContent="👋 Welcome! As a new customer please complete the short health form below before booking.";
+        setTimeout(function(){
+          document.getElementById("step-1").style.display="none";
+          document.getElementById("step-2").style.display="block";
+          var step2=document.getElementById("step-2");
+          step2.insertBefore(msgEl,step2.firstChild);
+        }, 2500);
+      }
+    }catch(err){ console.error(err); window._customerIsReturning=false; document.getElementById("step-1").style.display="none"; document.getElementById("step-2").style.display="block"; }
+    finally{ btn.textContent="Continue"; btn.disabled=false; }
+  })();
+}
+
+function goStep3(){
+  var isNew=!window._customerIsReturning;
+  if(isNew){
+    var age=document.getElementById("b-age").value.trim();
+    var emg=document.getElementById("b-emergency").value.trim();
+    document.getElementById("err-age").className="field-err"+(age?"":" on");
+    document.getElementById("err-emergency").className="field-err"+(emg?"":" on");
+    if(!age||!emg) return;
+    if(hasAnyYes()){
+      var hc=document.getElementById("b-health-conditions").value.trim();
+      document.getElementById("err-health").className="field-err"+(hc?"":" on");
+      if(!hc) return;
+    }
+    var pn=document.getElementById("b-print-name").value.trim();
+    var sd=document.getElementById("b-sign-date").value;
+    var ag=document.getElementById("b-declaration").checked;
+    document.getElementById("err-declaration").className="field-err"+((pn&&sd)?"":" on");
+    document.getElementById("err-agree").className="field-err"+(ag?"":" on");
+    if(!pn||!sd||!ag) return;
+  }
+  document.getElementById("step-1").style.display="none";
+  document.getElementById("step-2").style.display="none";
+  document.getElementById("step-3").style.display="block";
+  document.getElementById("mfoot-confirm").style.display="block";
+  document.getElementById("msummary-bar").style.display="none";
+  document.getElementById("step-3-label").textContent=(window._customerIsReturning?"Step 2 of 2":"Step 3 of 3")+" \u2014 Payment";
+  var fn=document.getElementById("b-firstname").value.trim();
+  var ln=document.getElementById("b-lastname").value.trim();
+  document.getElementById("m-reference").textContent=fn+" "+ln+" "+selected.day;
+}
+
+function goStepBack3(){
+  document.getElementById("step-3").style.display="none";
+  document.getElementById("mfoot-confirm").style.display="none";
+  document.getElementById("msummary-bar").style.display="flex";
+  if(window._customerIsReturning){ document.getElementById("step-1").style.display="block"; }
+  else { document.getElementById("step-2").style.display="block"; }
+}
+
+function hasAnyYes(){
+  for(var i=1;i<=12;i++){
+    var radios=document.querySelectorAll("input[name=\"q"+i+"\"]");
+    for(var j=0;j<radios.length;j++){ if(radios[j].checked&&radios[j].value==="Yes") return true; }
+  }
+  return false;
+}
+
+function getParqAnswers(){
+  var yesNos=[];
+  for(var i=1;i<=12;i++){
+    var radios=document.querySelectorAll("input[name=\"q"+i+"\"]");
+    var val="No";
+    for(var j=0;j<radios.length;j++){ if(radios[j].checked){ val=radios[j].value; break; } }
+    yesNos.push("Q"+i+": "+val);
+  }
+  return yesNos;
+}
+
+function updateYesSection(){ document.getElementById("parq-yes-section").style.display=hasAnyYes()?"block":"none"; }
+function toggleHealthForm(){}
+
+function confirmBooking(){
+  var c=selected, blk=selectedBlock;
+  var fn=document.getElementById("b-firstname").value.trim();
+  var ln=document.getElementById("b-lastname").value.trim();
+  var em=document.getElementById("b-email").value.trim();
+  var ph=document.getElementById("b-phone").value.trim();
+  var isNew=!window._customerIsReturning;
+  var parqData=null;
+  if(isNew){
+    parqData={
+      age:document.getElementById("b-age").value.trim(),
+      emergency:document.getElementById("b-emergency").value.trim(),
+      questions:[],
+      details:document.getElementById("b-health-conditions")?document.getElementById("b-health-conditions").value.trim():"",
+      other:document.getElementById("b-health-other").value.trim(),
+      printName:document.getElementById("b-print-name").value.trim(),
+      signDate:document.getElementById("b-sign-date").value
+    };
+    var qLabels=["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
+    for(var qi=1;qi<=12;qi++){
+      var radios=document.querySelectorAll("input[name=\"q"+qi+"\"]");
+      var val="No";
+      for(var ri=0;ri<radios.length;ri++){ if(radios[ri].checked){ val=radios[ri].value; break; } }
+      parqData.questions.push({q:qLabels[qi-1],a:val});
+    }
+  }
+  var customerType=isNew?"New":"Returning";
+  blk.booked=blk.booked+1;
+
+  (async function(){
+    try{
+      // Save/update customer
+      var{data:existing}=await sb.from("customers").select("id").eq("email",em).limit(1);
+      var customerId;
+      if(existing&&existing.length>0){
+        customerId=existing[0].id;
+        await sb.from("customers").update({first_name:fn,last_name:ln,phone:ph,customer_type:customerType}).eq("id",customerId);
+      } else {
+        var{data:nc}=await sb.from("customers").insert({first_name:fn,last_name:ln,email:em,phone:ph,customer_type:customerType}).select("id").single();
+        customerId=nc.id;
+      }
+      // Save booking — now includes block_id
+      var{data:savedBooking}=await sb.from("bookings").insert({
+        class_id:c.id,
+        block_id:blk.id,
+        customer_id:customerId,
+        status:"reserved",
+        amount_due:blk.price*blk.weeks
+      }).select("id").single();
+      // Save PAR-Q
+      if(isNew&&parqData&&savedBooking){
+        var answers={};
+        var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
+        for(var qi=0;qi<parqData.questions.length;qi++){ answers[qKeys[qi]]=parqData.questions[qi].a; }
+        await sb.from("parq").insert(Object.assign({booking_id:savedBooking.id,customer_id:customerId,age:parqData.age,emergency_contact:parqData.emergency,yes_details:parqData.details,additional_notes:parqData.other,print_name:parqData.printName,sign_date:parqData.signDate},answers));
+      }
+      // Update booked count on block
+      await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id);
+    }catch(err){ console.error("Save error:",err); }
+  })();
+
+  var html="";
+  html+="<div class=\"srow\"><span>Name</span><span>"+sanitise(fn)+" "+sanitise(ln)+"</span></div>";
+  html+="<div class=\"srow\"><span>Class</span><span>"+sanitise(c.name)+"</span></div>";
+  html+="<div class=\"srow\"><span>Venue</span><span>"+sanitise(c.venue)+", "+sanitise(c.loc)+"</span></div>";
+  html+="<div class=\"srow\"><span>When</span><span>"+sanitise(c.day)+" "+sanitise(c.time)+" &ndash; "+sanitise(c.end_time)+"</span></div>";
+  html+="<div class=\"srow\"><span>Block</span><span>"+sanitise((blk.dates||[])[0]||"")+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||"")+"</span></div>";
+  html+="<div class=\"srow\"><span>Amount Due</span><span style=\"font-weight:600;color:var(--charcoal)\">&pound;"+sanitise(String(blk.price*blk.weeks))+"</span></div>";
+  document.getElementById("sdetail").innerHTML=html;
+  document.getElementById("s-reference").textContent=fn+" "+ln+" "+c.day;
+  document.getElementById("form-view").style.display="none";
+  document.getElementById("success-view").className="success on";
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+function renderDashboard(){
+  document.getElementById("btbody").innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>';
+  (async function(){
+    try{
+      var{data:sessionData}=await sb.auth.getSession();
+      if(!sessionData.session){
+        document.getElementById("btbody").innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Not authenticated. Please log in again.</td></tr>';
+        return;
+      }
+      // Load bookings
+      var{data:dbBookings,error}=await sb.from("bookings")
+        .select("id,status,amount_due,refund_amount,block_id,class_id,customer_id,customers(first_name,last_name,email,phone,customer_type)")
+        .order("created_at",{ascending:false});
+      if(error) throw error;
+
+      bookings=dbBookings.map(function(b){
+        var cls=classes.find(function(c){ return c.id===b.class_id; })||{};
+        var blk=blocks.find(function(bl){ return bl.id===b.block_id; })||{};
+        return {
+          dbId:b.id, customerId:b.customer_id, blockId:b.block_id, classId:b.class_id,
+          client:b.customers?b.customers.first_name+" "+b.customers.last_name:"Unknown",
+          email:b.customers?b.customers.email:"",
+          phone:b.customers?b.customers.phone:"",
+          customerType:b.customers?b.customers.customer_type:"",
+          cls:cls.name||"Unknown Class",
+          when:(cls.day||"")+" "+(cls.time||"")+" - "+(cls.venue||""),
+          blockDates:blk.dates?blk.dates[0]+" \u2013 "+blk.dates[blk.dates.length-1]:"",
+          paid:b.amount_due, status:b.status, refundAmount:b.refund_amount,
+          day:cls.day||""
+        };
+      });
+
+      // All Bookings tab
+      var bhtml="";
+      if(bookings.length===0){
+        bhtml='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">No bookings yet.</td></tr>';
+      } else {
+        for(var i=0;i<bookings.length;i++){
+          var b=bookings[i];
+          bhtml+="<tr><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.cls)+"</td><td>"+sanitise(b.when)+"</td><td>&pound;"+sanitise(String(b.paid))+"</td>";
+          bhtml+="<td><span class=\"pill p-"+b.status+"\">"+b.status+"</span></td>";
+          var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+i+")\">Confirm</button>":"";
+          var cancelBtn=(b.status!=="cancelled"&&b.status!=="refunded")?"<button class=\"act\" onclick=\"cancelBooking("+i+")\">Cancel</button>":"";
+          var refundBtn=(b.status==="confirmed"||b.status==="cancelled")?"<button class=\"act act-refund\" onclick=\"initiateRefund("+i+")\">Refund</button>":"";
+          var markRefundedBtn=b.status==="refund-pending"?"<button class=\"act act-confirm\" onclick=\"markRefunded("+i+")\">Mark Refunded</button>":"";
+          bhtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button>"+confirmBtn+cancelBtn+refundBtn+markRefundedBtn+"<button class=\"act act-delete\" onclick=\"deleteBookingOnly("+i+")\">Remove</button><button class=\"act act-delete\" onclick=\"deleteCustomer("+i+")\">Del Customer</button></td></tr>";
+        }
+      }
+      document.getElementById("btbody").innerHTML=bhtml;
+
+      // Stats
+      var totalB=bookings.length;
+      var totalRev=bookings.reduce(function(s,b){ return s+(b.status!=="cancelled"?Number(b.paid):0); },0);
+      var confirmed=bookings.filter(function(b){ return b.status==="confirmed"; }).length;
+      var fillRate=totalB>0?Math.round(confirmed/totalB*100):0;
+      var statsEls=document.querySelectorAll(".stat .sval");
+      if(statsEls[0]) statsEls[0].textContent=totalB;
+      if(statsEls[1]) statsEls[1].textContent="\u00a3"+totalRev;
+      if(statsEls[2]) statsEls[2].textContent=bookings.filter(function(b){ return b.status==="waitlist"; }).length;
+      if(statsEls[3]) statsEls[3].textContent=fillRate+"%";
+
+      // Refresh blocks booked counts from DB
+      var{data:liveBlocks}=await sb.from("blocks").select("id,booked,cap,status");
+      if(liveBlocks){ liveBlocks.forEach(function(lb){ var blk=blocks.find(function(b){ return b.id===lb.id; }); if(blk){ blk.booked=lb.booked; blk.cap=lb.cap; } }); }
+
+      // Classes table — each class shows its active and upcoming block
+      var chtml="";
+      for(var i=0;i<classes.length;i++){
+        var c=classes[i];
+        var activeBlk=getActiveBlock(c.id);
+        var nextBlk=activeBlk?getNextBlock(c.id,activeBlk.id):null;
+        var activeCell=activeBlk?(activeBlk.dates[0]+" &ndash; "+activeBlk.dates[activeBlk.dates.length-1]+" ("+activeBlk.booked+"/"+activeBlk.cap+")"):'<span style="color:var(--light)">None</span>';
+        var nextCell=nextBlk?(nextBlk.dates[0]+" &ndash; "+nextBlk.dates[nextBlk.dates.length-1]):'<span style="color:var(--light)">None</span>';
+        chtml+="<tr>";
+        chtml+="<td><strong>"+sanitise(c.name)+"</strong></td><td>"+sanitise(c.loc)+"</td><td>"+sanitise(c.day)+" "+sanitise(c.time)+"</td>";
+        chtml+="<td style=\"font-size:12px\">"+activeCell+"</td>";
+        chtml+="<td style=\"font-size:12px\">"+nextCell+"</td>";
+        chtml+="<td><button class='act' onclick='openEditClassModal("+c.id+")'>Edit</button><button class='act act-confirm' onclick='openAddBlockModal("+c.id+")'>+ Block</button><button class='act act-delete' onclick='deleteClass("+c.id+")'>Delete</button></td></tr>";
+      }
+      document.getElementById("ctbody").innerHTML=chtml;
+
+      // By Class tab
+      renderClassesView();
+
+    }catch(err){
+      console.error("Dashboard error:",err);
+      document.getElementById("btbody").innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading. Please refresh.</td></tr>';
     }
   })();
 }
 
-// Load classes from Supabase on page load
-(async function() {
-  try {
-    // Load classes
-    var { data: dbClasses } = await sb.from("classes").select("*").order("id", { ascending: true });
-    if (dbClasses && dbClasses.length > 0) {
-      classes = dbClasses.map(function(c) {
-        return {
-          id: c.id,
-          name: c.name,
-          level: c.level || c.name,
-          day: c.day,
-          time: c.time,
-          end: c.end_time,
-          price: c.price,
-          cap: c.cap,
-          booked: c.booked || 0,
-          wait: c.wait || 0,
-          venue: c.venue,
-          loc: c.loc,
-          dates: c.dates || [],
-          weeks: c.weeks || 6,
-          visible: c.visible !== false
-        };
+function switchTab(tab){
+  ["bookings","classes"].forEach(function(t){
+    document.getElementById("tab-"+t).className="db-tab"+(t===tab?" on":"");
+    document.getElementById("tab-panel-"+t).style.display=t===tab?"block":"none";
+  });
+}
+
+function renderClassesView(){
+  var html="";
+  for(var i=0;i<classes.length;i++){
+    var c=classes[i];
+    var classBlocks=blocks.filter(function(b){ return b.class_id===c.id; });
+    classBlocks.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
+    var groupId="cg-"+c.id;
+    html+="<div class=\"class-group\">";
+    html+="<div class=\"class-group-header\" onclick=\"toggleClassGroup('"+groupId+"')\">";
+    html+="<div><div class=\"class-group-title\">"+sanitise(c.name)+" \u2014 "+sanitise(c.day)+" "+sanitise(c.time)+"</div>";
+    html+="<div class=\"class-group-meta\">"+sanitise(c.venue)+", "+sanitise(c.loc)+"</div></div>";
+    html+="<div style=\"display:flex;align-items:center;gap:10px\"><span class=\"class-group-badge\">"+classBlocks.length+" block(s)</span><span style=\"font-size:18px\">&#8964;</span></div></div>";
+    html+="<div class=\"class-group-body\" id=\""+groupId+"\">";
+    if(classBlocks.length===0){
+      html+="<div class=\"class-group-empty\">No blocks yet. <button class='act act-confirm' onclick='openAddBlockModal("+c.id+")' style='margin-left:8px'>+ Add Block</button></div>";
+    } else {
+      classBlocks.forEach(function(blk){
+        var today=new Date(); today.setHours(0,0,0,0);
+        var s=new Date(blk.start_date+"T00:00:00"), e=new Date(blk.end_date+"T00:00:00");
+        var blkStatus=e<today?"archived":(s<=today&&e>=today?"active":"upcoming");
+        var statusColour=blkStatus==="active"?"var(--green)":blkStatus==="upcoming"?"var(--clay)":"var(--light)";
+        var blkBookings=bookings.filter(function(b){ return b.blockId===blk.id; });
+        html+="<div style=\"padding:12px 16px;border-bottom:1px solid var(--border);\">";
+        html+="<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:8px\">";
+        html+="<div style=\"font-size:13px;font-weight:600\">"+sanitise((blk.dates||[])[0]||blk.start_date)+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||blk.end_date)+" <span style=\"font-size:11px;color:"+statusColour+";font-weight:normal\">("+blkStatus+")</span></div>";
+        html+="<div style=\"font-size:12px;color:var(--mid)\">"+blk.booked+"/"+blk.cap+" booked &bull; &pound;"+blk.price+"/session &bull; "+blk.weeks+" weeks</div></div>";
+        if(blkBookings.length>0){
+          html+="<table style=\"margin-bottom:0\"><thead><tr><th>Client</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+          blkBookings.forEach(function(b){
+            var idx=bookings.indexOf(b);
+            var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+idx+")\">Confirm</button>":"";
+            html+="<tr><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.email)+"</td><td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
+            html+="<td><button class=\"act\" onclick=\"viewBooking("+idx+")\">View</button>"+confirmBtn+"<button class=\"act\" onclick=\"cancelBooking("+idx+")\">Cancel</button></td></tr>";
+          });
+          html+="</tbody></table>";
+        } else {
+          html+="<div style=\"font-size:12px;color:var(--light)\">No bookings for this block yet.</div>";
+        }
+        html+="<div style='margin-top:8px'><button class='act' onclick='openEditBlockModal("+blk.id+")'>Edit Block</button><button class='act act-delete' onclick='deleteBlock("+blk.id+")'>Delete Block</button></div>";
+        html+="</div>";
       });
     }
-  } catch(err) {
-    console.error("Error loading classes:", err);
+    html+="</div></div>";
   }
+  document.getElementById("classes-accordion").innerHTML=html||"<div style='color:var(--light);padding:20px'>No classes yet.</div>";
+}
 
-  // Load bank settings
-  try {
-    var { data: settingsRows } = await sb.from("settings").select("key, value");
-    if (settingsRows) {
-      var s = {};
-      settingsRows.forEach(function(r) { s[r.key] = r.value; });
-      var bankName = s.bank_name || "";
-      var bankSort = s.bank_sort_code || "";
-      var bankAcc  = s.bank_account_no || "";
-      ["bank-name-1","bank-name-2"].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = bankName; });
-      ["bank-sort-1","bank-sort-2"].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = bankSort; });
-      ["bank-acc-1","bank-acc-2"].forEach(function(id)  { var el = document.getElementById(id); if (el) el.textContent = bankAcc; });
-      // Pre-fill the settings form in the dashboard
-      var el;
-      el = document.getElementById("setting-bank-name"); if (el) el.value = bankName;
-      el = document.getElementById("setting-bank-sort"); if (el) el.value = bankSort;
-      el = document.getElementById("setting-bank-acc");  if (el) el.value = bankAcc;
-    }
-  } catch(err) {
-    console.error("Error loading settings:", err);
+function toggleClassGroup(id){
+  var el=document.getElementById(id);
+  // CSS sets display:none by default; if style.display is empty treat as closed
+  var isOpen=el.style.display==="block";
+  el.style.display=isOpen?"none":"block";
+}
+
+// ─── Add/Edit Class ───────────────────────────────────────────────────────────
+function openAddClassModal(){
+  ["ac-day","ac-level","ac-time","ac-end","ac-venue"].forEach(function(id){ document.getElementById(id).value=""; });
+  document.getElementById("ac-loc").value="Baildon";
+  document.getElementById("ac-err").style.display="none";
+  document.getElementById("ac-btn").textContent="Create Class";
+  document.getElementById("ac-btn").disabled=false;
+  editingClassId=null;
+  document.getElementById("add-class-overlay").className="overlay on";
+}
+
+function closeAddClassModal(){ document.getElementById("add-class-overlay").className="overlay"; }
+
+function openEditClassModal(id){
+  var c=classes.find(function(x){ return x.id===id; });
+  if(!c) return;
+  editingClassId=id;
+  document.getElementById("ac-day").value=c.day;
+  document.getElementById("ac-level").value=c.level;
+  document.getElementById("ac-time").value=c.time;
+  document.getElementById("ac-end").value=c.end_time;
+  document.getElementById("ac-venue").value=c.venue;
+  document.getElementById("ac-loc").value=c.loc;
+  document.getElementById("ac-err").style.display="none";
+  document.getElementById("ac-btn").textContent="Save Changes";
+  document.getElementById("ac-btn").disabled=false;
+  document.querySelector("#add-class-overlay .mtitle").textContent="Edit Class";
+  document.getElementById("add-class-overlay").className="overlay on";
+}
+
+function saveNewClass(){
+  var day=document.getElementById("ac-day").value;
+  var level=document.getElementById("ac-level").value.trim();
+  var time=document.getElementById("ac-time").value.trim();
+  var end=document.getElementById("ac-end").value.trim();
+  var venue=document.getElementById("ac-venue").value.trim();
+  var loc=document.getElementById("ac-loc").value;
+  if(!day||!level||!time||!end||!venue){ document.getElementById("ac-err").style.display="block"; return; }
+  document.getElementById("ac-err").style.display="none";
+  var btn=document.getElementById("ac-btn"); btn.disabled=true;
+
+  (async function(){
+    try{
+      if(editingClassId){
+        // Update existing
+        await sb.from("classes").update({name:level,level:level,day:day,time:time,end_time:end,venue:venue,loc:loc}).eq("id",editingClassId);
+        var c=classes.find(function(x){ return x.id===editingClassId; });
+        if(c){ c.name=level; c.level=level; c.day=day; c.time=time; c.end_time=end; c.venue=venue; c.loc=loc; }
+        showToast("Class updated!");
+      } else {
+        // Insert new
+        var{data:nc,error}=await sb.from("classes").insert({name:level,level:level,day:day,time:time,end_time:end,venue:venue,loc:loc}).select().single();
+        if(error) throw error;
+        classes.push({id:nc.id,name:level,level:level,day:day,time:time,end_time:end,venue:venue,loc:loc});
+        showToast("Class created! Now add a block to make it bookable.");
+      }
+      closeAddClassModal();
+      document.querySelector("#add-class-overlay .mtitle").textContent="Add New Class";
+      buildFilters(); renderGrid(); renderDashboard();
+    }catch(err){ console.error(err); showToast("Error saving class."); }
+    finally{ btn.disabled=false; btn.textContent=editingClassId?"Save Changes":"Create Class"; }
+  })();
+}
+
+// ─── Add/Edit Block ───────────────────────────────────────────────────────────
+function openAddBlockModal(classId){
+  addingBlockClassId=classId;
+  var c=classes.find(function(x){ return x.id===classId; });
+  document.getElementById("ab-sub").textContent="Add a block to "+(c?c.name+" \u2014 "+c.day:"this class");
+  document.getElementById("ab-start").value="";
+  document.getElementById("ab-weeks").value="6";
+  document.getElementById("ab-price").value="10";
+  document.getElementById("ab-cap").value="12";
+  document.getElementById("ab-date-val").style.display="none";
+  document.getElementById("ab-err").style.display="none";
+  document.getElementById("ab-btn").textContent="Add Block";
+  document.getElementById("ab-btn").disabled=false;
+  document.getElementById("ab-btn").onclick=function(){ saveNewBlock(); };
+  document.getElementById("add-block-overlay").className="overlay on";
+}
+
+function closeAddBlockModal(){ document.getElementById("add-block-overlay").className="overlay"; }
+
+function validateAbDate(){
+  var val=document.getElementById("ab-start").value;
+  var el=document.getElementById("ab-date-val");
+  if(!val){ el.style.display="none"; return true; }
+  var c=classes.find(function(x){ return x.id===addingBlockClassId; });
+  if(!c){ el.style.display="none"; return true; }
+  var chosen=new Date(val+"T00:00:00");
+  var chosenDay=dayNames[chosen.getDay()];
+  if(chosenDay!==c.day){
+    el.innerHTML="<span style='color:var(--red)'>&#9888; "+val.split("-").reverse().join(" ")+" is a "+chosenDay+". Please pick a "+c.day+".</span>";
+    el.style.display="block"; return false;
+  } else {
+    el.innerHTML="<span style='color:var(--green)'>&#10003; "+chosenDay+" confirmed.</span>";
+    el.style.display="block"; return true;
   }
+}
+
+function saveNewBlock(){
+  var start=document.getElementById("ab-start").value;
+  var weeks=parseInt(document.getElementById("ab-weeks").value);
+  var price=parseInt(document.getElementById("ab-price").value);
+  var cap=parseInt(document.getElementById("ab-cap").value);
+  if(!start||!weeks||!price||!cap){ document.getElementById("ab-err").style.display="block"; return; }
+  if(!validateAbDate()){ document.getElementById("ab-err").textContent="Please fix the start date."; document.getElementById("ab-err").style.display="block"; return; }
+  document.getElementById("ab-err").style.display="none";
+  var btn=document.getElementById("ab-btn"); btn.disabled=true;
+  var dates=calcBlockDates(start,weeks);
+  var endDate=new Date(start+"T00:00:00"); endDate.setDate(endDate.getDate()+(weeks-1)*7);
+  var endStr=endDate.toISOString().split("T")[0];
+  (async function(){
+    try{
+      var{data:nb,error}=await sb.from("blocks").insert({
+        class_id:addingBlockClassId,start_date:start,end_date:endStr,
+        weeks:weeks,dates:dates,price:price,cap:cap,booked:0,wait:0,visible:true,status:"upcoming"
+      }).select().single();
+      if(error) throw error;
+      blocks.push({id:nb.id,class_id:addingBlockClassId,start_date:start,end_date:endStr,weeks:weeks,dates:dates,price:price,cap:cap,booked:0,wait:0,visible:true,status:"upcoming"});
+      closeAddBlockModal();
+      buildFilters(); renderGrid(); renderDashboard();
+      showToast("Block added!");
+    }catch(err){ console.error(err); showToast("Error adding block."); }
+    finally{ btn.disabled=false; }
+  })();
+}
+
+function openEditBlockModal(blockId){
+  var blk=blocks.find(function(b){ return b.id===blockId; });
+  if(!blk) return;
+  addingBlockClassId=blk.class_id;
+  var c=classes.find(function(x){ return x.id===blk.class_id; });
+  document.getElementById("ab-sub").textContent="Edit block for "+(c?c.name+" \u2014 "+c.day:"this class");
+  document.getElementById("ab-start").value=blk.start_date;
+  document.getElementById("ab-weeks").value=blk.weeks||6;
+  document.getElementById("ab-price").value=blk.price||10;
+  document.getElementById("ab-cap").value=blk.cap||12;
+  document.getElementById("ab-date-val").style.display="none";
+  document.getElementById("ab-err").style.display="none";
+  document.getElementById("ab-btn").textContent="Save Block";
+  document.getElementById("ab-btn").disabled=false;
+  document.getElementById("ab-btn").onclick=function(){ saveEditBlock(blockId); };
+  document.getElementById("add-block-overlay").className="overlay on";
+}
+
+function saveEditBlock(blockId){
+  var start=document.getElementById("ab-start").value;
+  var weeks=parseInt(document.getElementById("ab-weeks").value);
+  var price=parseInt(document.getElementById("ab-price").value);
+  var cap=parseInt(document.getElementById("ab-cap").value);
+  if(!start||!weeks||!price||!cap){ document.getElementById("ab-err").style.display="block"; return; }
+  if(!validateAbDate()){ document.getElementById("ab-err").textContent="Please fix the start date."; document.getElementById("ab-err").style.display="block"; return; }
+  var btn=document.getElementById("ab-btn"); btn.disabled=true;
+  var dates=calcBlockDates(start,weeks);
+  var endDate=new Date(start+"T00:00:00"); endDate.setDate(endDate.getDate()+(weeks-1)*7);
+  var endStr=endDate.toISOString().split("T")[0];
+  (async function(){
+    try{
+      await sb.from("blocks").update({start_date:start,end_date:endStr,weeks:weeks,dates:dates,price:price,cap:cap}).eq("id",blockId);
+      var blk=blocks.find(function(b){ return b.id===blockId; });
+      if(blk){ blk.start_date=start; blk.end_date=endStr; blk.weeks=weeks; blk.dates=dates; blk.price=price; blk.cap=cap; }
+      closeAddBlockModal();
+      buildFilters(); renderGrid(); renderDashboard();
+      showToast("Block updated!");
+    }catch(err){ console.error(err); showToast("Error updating block."); }
+    finally{ btn.disabled=false; }
+  })();
+}
+
+function deleteBlock(blockId){
+  if(!confirm("Delete this block? Any existing bookings for this block will also be deleted.")) return;
+  (async function(){
+    try{
+      await sb.from("parq").delete().eq("booking_id", blockId); // just in case
+      await sb.from("bookings").delete().eq("block_id",blockId);
+      await sb.from("blocks").delete().eq("id",blockId);
+      blocks=blocks.filter(function(b){ return b.id!==blockId; });
+      buildFilters(); renderGrid(); renderDashboard();
+      showToast("Block deleted.");
+    }catch(err){ console.error(err); showToast("Error deleting block."); }
+  })();
+}
+
+// ─── Delete Class ─────────────────────────────────────────────────────────────
+function deleteClass(id){
+  var classBlocks=blocks.filter(function(b){ return b.class_id===id; });
+  var totalBookings=bookings.filter(function(b){ return b.classId===id; }).length;
+  var msg="Delete this class";
+  if(classBlocks.length>0) msg+=" and its "+classBlocks.length+" block(s)";
+  if(totalBookings>0) msg+=" and "+totalBookings+" booking(s)";
+  msg+="? This cannot be undone.";
+  if(!confirm(msg)) return;
+  (async function(){
+    try{
+      await sb.from("bookings").delete().eq("class_id",id);
+      await sb.from("blocks").delete().eq("class_id",id);
+      await sb.from("classes").delete().eq("id",id);
+      classes=classes.filter(function(c){ return c.id!==id; });
+      blocks=blocks.filter(function(b){ return b.class_id!==id; });
+      buildFilters(); renderGrid(); renderDashboard();
+      showToast("Class deleted.");
+    }catch(err){ console.error(err); showToast("Error deleting class."); }
+  })();
+}
+
+// ─── Booking actions ──────────────────────────────────────────────────────────
+function confirmBookingAdmin(idx){
+  var b=bookings[idx];
+  showToast("Confirming...");
+  (async function(){
+    try{ await sb.from("bookings").update({status:"confirmed"}).eq("id",b.dbId); showToast("Booking confirmed for "+b.client+"!"); renderDashboard(); }
+    catch(err){ console.error(err); showToast("Error confirming booking."); }
+  })();
+}
+
+function cancelBooking(idx){
+  var b=bookings[idx];
+  showToast("Cancelling...");
+  (async function(){
+    try{
+      await sb.from("bookings").update({status:"cancelled"}).eq("id",b.dbId);
+      var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
+      if(blk){ blk.booked=Math.max(0,blk.booked-1); await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); }
+      showToast("Booking cancelled."); renderDashboard();
+    }catch(err){ console.error(err); showToast("Error cancelling."); }
+  })();
+}
+
+function initiateRefund(idx){
+  var b=bookings[idx];
+  var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
+  var leavingBlock=confirm("Is "+b.client+" leaving the block entirely?\n\nOK = Yes (spot freed up)\nCancel = No (partial refund only)");
+  var sessionsAttended=0;
+  if(leavingBlock){ var a=prompt("How many sessions did they attend?","0"); if(a===null) return; sessionsAttended=parseInt(a)||0; }
+  var totalSessions=blk.weeks||6;
+  var pricePerSession=blk.price||0;
+  var remaining=totalSessions-sessionsAttended;
+  var suggested=remaining*pricePerSession;
+  var refundAmt=prompt("Refund amount:\n\nSessions attended: "+sessionsAttended+" of "+totalSessions+"\nSuggested refund: \u00a3"+suggested+"\n\nEnter amount:",suggested);
+  if(refundAmt===null) return;
+  var amount=parseFloat(refundAmt)||suggested;
+  if(!confirm("Mark as Refund Pending?\n\nCustomer: "+b.client+"\nRefund: \u00a3"+amount+(leavingBlock?"\nSpot will be freed up":""))) return;
+  showToast("Saving...");
+  (async function(){
+    try{
+      await sb.from("bookings").update({status:"refund-pending",refund_amount:amount}).eq("id",b.dbId);
+      if(leavingBlock&&blk.id){
+        blk.booked=Math.max(0,blk.booked-1);
+        await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id);
+      }
+      showToast("Refund pending \u2014 \u00a3"+amount+(leavingBlock?". Spot freed up.":""));
+      renderDashboard(); renderGrid();
+    }catch(err){ console.error(err); showToast("Error saving refund."); }
+  })();
+}
+
+function markRefunded(idx){
+  var b=bookings[idx];
+  if(!confirm("Confirm refund sent to "+b.client+"?")) return;
+  showToast("Updating...");
+  (async function(){
+    try{ await sb.from("bookings").update({status:"refunded"}).eq("id",b.dbId); showToast("Marked as refunded."); renderDashboard(); }
+    catch(err){ console.error(err); showToast("Error updating."); }
+  })();
+}
+
+function deleteBookingOnly(idx){
+  if(!confirm("Remove this booking? Customer record will be kept.")) return;
+  var b=bookings[idx];
+  (async function(){
+    try{
+      await sb.from("parq").delete().eq("booking_id",b.dbId);
+      await sb.from("bookings").delete().eq("id",b.dbId);
+      var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
+      if(blk){ blk.booked=Math.max(0,blk.booked-1); await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); }
+      showToast("Booking removed."); renderDashboard();
+    }catch(err){ console.error(err); showToast("Error removing booking."); }
+  })();
+}
+
+function deleteCustomer(idx){
+  if(!confirm("Delete customer and ALL their bookings? This cannot be undone.")) return;
+  var b=bookings[idx];
+  (async function(){
+    try{
+      await sb.from("parq").delete().eq("customer_id",b.customerId);
+      await sb.from("bookings").delete().eq("customer_id",b.customerId);
+      await sb.from("customers").delete().eq("id",b.customerId);
+      showToast("Customer deleted."); renderDashboard();
+    }catch(err){ console.error(err); showToast("Error deleting customer."); }
+  })();
+}
+
+function viewBooking(idx){
+  var b=bookings[idx];
+  document.getElementById("view-title").textContent=b.client;
+  document.getElementById("view-sub").textContent=b.cls+" - "+b.when;
+  document.getElementById("view-body").innerHTML="<div style='text-align:center;padding:20px;color:var(--light)'>Loading...</div>";
+  document.getElementById("view-overlay").className="overlay on";
+  (async function(){
+    try{
+      var{data:parqData}=await sb.from("parq").select("*").eq("booking_id",b.dbId).limit(1);
+      var p=parqData&&parqData.length>0?parqData[0]:null;
+      var html="";
+      html+="<div class=\"parq-section-title\">Booking Details</div><div class=\"sdetail\">";
+      html+="<div class=\"srow\"><span>Status</span><span><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></span></div>";
+      html+="<div class=\"srow\"><span>Email</span><span>"+sanitise(b.email)+"</span></div>";
+      html+="<div class=\"srow\"><span>Phone</span><span>"+sanitise(b.phone)+"</span></div>";
+      html+="<div class=\"srow\"><span>Customer Type</span><span>"+sanitise(b.customerType)+"</span></div>";
+      html+="<div class=\"srow\"><span>Block</span><span>"+sanitise(b.blockDates)+"</span></div>";
+      html+="<div class=\"srow\"><span>Amount Due</span><span>&pound;"+sanitise(String(b.paid))+"</span></div>";
+      if(b.refundAmount) html+="<div class=\"srow\"><span>Refund Amount</span><span style=\"color:var(--red);font-weight:600\">&pound;"+sanitise(String(b.refundAmount))+"</span></div>";
+      html+="</div>";
+      if(p){
+        var qLabels=["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
+        var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
+        html+="<div class=\"parq-section-title\" style=\"margin-top:20px\">PAR-Q Health Form</div><div class=\"sdetail\">";
+        html+="<div class=\"srow\"><span>Age</span><span>"+sanitise(p.age)+"</span></div>";
+        html+="<div class=\"srow\"><span>Emergency Contact</span><span>"+sanitise(p.emergency_contact)+"</span></div></div>";
+        html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Medical Questions</div><div class=\"sdetail\">";
+        for(var i=0;i<qKeys.length;i++){
+          var ans=p[qKeys[i]]||"No";
+          var col=ans==="Yes"?"color:var(--red);font-weight:600":"color:var(--green)";
+          html+="<div class=\"srow\"><span>"+(i+1)+". "+sanitise(qLabels[i])+"</span><span style=\""+col+"\">"+sanitise(ans)+"</span></div>";
+        }
+        html+="</div>";
+        if(p.yes_details) html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Yes Details</div><div class=\"health-note\">"+sanitise(p.yes_details)+"</div>";
+        if(p.additional_notes) html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Additional Notes</div><div class=\"health-note\">"+sanitise(p.additional_notes)+"</div>";
+        html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Declaration</div><div class=\"sdetail\">";
+        html+="<div class=\"srow\"><span>Signed by</span><span>"+sanitise(p.print_name)+"</span></div>";
+        html+="<div class=\"srow\"><span>Date</span><span>"+sanitise(p.sign_date)+"</span></div></div>";
+      } else {
+        html+="<div class=\"health-note\" style=\"margin-top:16px\">Returning customer \u2014 no health form required.</div>";
+      }
+      document.getElementById("view-body").innerHTML=html;
+    }catch(err){ console.error(err); document.getElementById("view-body").innerHTML="<div style='color:var(--red);padding:20px'>Error loading.</div>"; }
+  })();
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+function showDashboard(){
+  (async function(){
+    var{data:s}=await sb.auth.getSession();
+    show(s.session?"dashboard":"dash-login");
+  })();
+}
+
+async function checkDashLogin(){
+  var em=document.getElementById("dash-email").value.trim();
+  var pw=document.getElementById("dash-password").value;
+  var btn=document.getElementById("dash-login-btn");
+  btn.textContent="Signing in..."; btn.disabled=true;
+  document.getElementById("dash-error").style.display="none";
+  var{data,error}=await sb.auth.signInWithPassword({email:em,password:pw});
+  if(error){ document.getElementById("dash-error").style.display="block"; btn.textContent="Sign In"; btn.disabled=false; }
+  else { show("dashboard"); }
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+function saveSettings(){
+  var bn=document.getElementById("setting-bank-name").value.trim();
+  var bs=document.getElementById("setting-bank-sort").value.trim();
+  var ba=document.getElementById("setting-bank-acc").value.trim();
+  if(!bn||!bs||!ba){ showToast("Please fill in all bank details."); return; }
+  showToast("Saving...");
+  (async function(){
+    try{
+      await sb.from("settings").upsert([{key:"bank_name",value:bn},{key:"bank_sort_code",value:bs},{key:"bank_account_no",value:ba}]);
+      ["bank-name-1","bank-name-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bn; });
+      ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
+      ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
+      showToast("Bank details saved!");
+    }catch(err){ console.error(err); showToast("Error saving settings."); }
+  })();
+}
+
+function showToast(msg){
+  var el=document.getElementById("toastEl");
+  el.textContent=msg; el.className="toast on";
+  setTimeout(function(){ el.className="toast"; },3000);
+}
+
+document.getElementById("overlay").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+
+// ─── Page load ────────────────────────────────────────────────────────────────
+(async function(){
+  try{
+    // Load settings
+    var{data:settingsRows}=await sb.from("settings").select("key,value");
+    if(settingsRows){
+      var s={}; settingsRows.forEach(function(r){ s[r.key]=r.value; });
+      var bn=s.bank_name||"", bs=s.bank_sort_code||"", ba=s.bank_account_no||"";
+      ["bank-name-1","bank-name-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bn; });
+      ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
+      ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
+      var e;
+      e=document.getElementById("setting-bank-name"); if(e) e.value=bn;
+      e=document.getElementById("setting-bank-sort"); if(e) e.value=bs;
+      e=document.getElementById("setting-bank-acc"); if(e) e.value=ba;
+    }
+  }catch(err){ console.error("Settings error:",err); }
+
+  try{
+    // Load classes
+    var{data:dbClasses}=await sb.from("classes").select("*").order("id",{ascending:true});
+    if(dbClasses) classes=dbClasses.map(function(c){ return {id:c.id,name:c.name,level:c.level||c.name,day:c.day,time:c.time,end_time:c.end_time,venue:c.venue,loc:c.loc}; });
+  }catch(err){ console.error("Classes error:",err); }
+
+  try{
+    // Load blocks
+    var{data:dbBlocks}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
+    if(dbBlocks) blocks=dbBlocks.map(function(b){ return {id:b.id,class_id:b.class_id,start_date:b.start_date,end_date:b.end_date,weeks:b.weeks,dates:b.dates||[],price:b.price,cap:b.cap,booked:b.booked||0,wait:b.wait||0,visible:b.visible!==false,status:b.status}; });
+  }catch(err){ console.error("Blocks error:",err); }
 
   buildFilters();
   renderGrid();
 })();
+
 </script>
 </body>
 </html>
