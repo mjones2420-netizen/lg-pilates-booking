@@ -237,6 +237,10 @@ tr:hover td { background:var(--cream); }
 .priority-check .finp { font-size:14px; padding:11px 14px; }
 .priority-badge { display:inline-flex; align-items:center; gap:5px; background:#fef3e8; color:var(--clay); border:1px solid #f0d0a0; border-radius:100px; font-size:11px; padding:3px 10px; font-weight:600; }
 .priority-badge.on { background:#e8f0e7; color:var(--green); border-color:#b0d0a0; }
+.tooltip-wrap { position:relative; display:inline; border-bottom:1px dotted var(--mid); cursor:help; }
+.tooltip-box { display:none; position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:var(--charcoal); color:white; font-size:12px; line-height:1.5; padding:9px 12px; border-radius:4px; width:220px; text-align:left; z-index:50; pointer-events:none; }
+.tooltip-box::after { content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--charcoal); }
+.tooltip-wrap:hover .tooltip-box, .tooltip-wrap:focus .tooltip-box { display:block; }
 @media(max-width:700px) {
   nav { padding:14px 18px; }
   .hero { padding:40px 18px 28px; }
@@ -858,10 +862,10 @@ function renderGrid() {
       if(nextFull){
         html+='<button class="book-btn" disabled>Next Block Full</button>';
       } else if(tooEarly){
-        html+='<div class="priority-info">&#128274; Booking opens '+stdOpenStr+'. Priority clients may book earlier.</div>';
+        html+='<div class="priority-info">&#128274; Booking opens '+stdOpenStr+'. <span class="tooltip-wrap">Priority clients<span class="tooltip-box">Priority clients are returning members who booked the previous block. They get early access to book the next block.</span></span> may book earlier.</div>';
         html+='<button class="book-btn" disabled>Not Open Yet</button>';
       } else if(inPriorityWindow){
-        html+='<div class="priority-info">&#11088; Priority booking is open. Returning clients from the current block can book now &mdash; all other spaces open on '+stdOpenStr+'.</div>';
+        html+='<div class="priority-info">&#11088; <span class="tooltip-wrap">Priority booking<span class="tooltip-box">Priority clients are returning members who booked the previous block. They get early access to book the next block.</span></span> is open. Returning clients from the current block can book now &mdash; all other spaces open on '+stdOpenStr+'.</div>';
         html+='<div class="priority-check" id="pcheck-'+nextBlk.id+'">';
         html+='<input type="text" class="finp" id="pemail-'+nextBlk.id+'" placeholder="Enter your email to check priority" style="margin-bottom:8px">';
         html+='<button class="book-btn" onclick="checkPriority('+c.id+','+nextBlk.id+')">Check My Priority</button>';
