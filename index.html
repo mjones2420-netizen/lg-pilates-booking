@@ -233,6 +233,10 @@ tr:hover td { background:var(--cream); }
 .or span { font-size:12px; color:var(--light); }
 .toast { position:fixed; bottom:28px; right:28px; background:var(--charcoal); color:white; padding:12px 22px; border-radius:3px; font-size:13px; z-index:999; transform:translateY(60px); opacity:0; transition:all 0.3s; }
 .toast.on { transform:translateY(0); opacity:1; }
+.priority-info { font-size:12px; color:var(--mid); background:#fef9ec; border:1px solid #f0e0a0; border-radius:3px; padding:9px 12px; margin-bottom:10px; line-height:1.6; }
+.priority-check .finp { font-size:14px; padding:11px 14px; }
+.priority-badge { display:inline-flex; align-items:center; gap:5px; background:#fef3e8; color:var(--clay); border:1px solid #f0d0a0; border-radius:100px; font-size:11px; padding:3px 10px; font-weight:600; }
+.priority-badge.on { background:#e8f0e7; color:var(--green); border-color:#b0d0a0; }
 @media(max-width:700px) {
   nav { padding:14px 18px; }
   .hero { padding:40px 18px 28px; }
@@ -291,6 +295,7 @@ tr:hover td { background:var(--cream); }
     <div class="db-tabs">
       <button class="db-tab on" id="tab-bookings" onclick="switchTab('bookings')">All Bookings</button>
       <button class="db-tab" id="tab-classes" onclick="switchTab('classes')">By Class</button>
+      <button class="db-tab" id="tab-customers" onclick="switchTab('customers')">Clients</button>
     </div>
 
     <!-- All Bookings Tab -->
@@ -301,6 +306,14 @@ tr:hover td { background:var(--cream); }
     <!-- By Class Tab -->
     <div id="tab-panel-classes" style="display:none">
       <div id="classes-accordion"></div>
+    </div>
+
+    <!-- Clients Tab -->
+    <div id="tab-panel-customers" style="display:none">
+      <div style="margin-bottom:16px;font-size:13px;color:var(--mid);line-height:1.7;background:var(--cream);padding:14px 18px;border-radius:4px;border-left:3px solid var(--sage-dk)">
+        <strong>Priority clients</strong> can book the next block up to 2 weeks before it starts. Standard clients can book 1 week before. Priority is granted automatically to anyone who booked the previous block, or you can set it manually here.
+      </div>
+      <table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Type</th><th>Priority</th><th>Actions</th></tr></thead><tbody id="customers-tbody"></tbody></table>
     </div>
 
     <div style="display:flex; align-items:center; justify-content:space-between; margin-top:40px; margin-bottom:12px;">
@@ -823,17 +836,40 @@ function renderGrid() {
     html+='<div class="cap-bar"><div class="cap-fill'+warn+'" style="width:'+pct+'%"></div></div>';
     html+='<div class="cap-txt" style="margin-bottom:10px">'+blk.booked+' of '+blk.cap+' spots taken</div>';
     html+='<button class="book-btn '+btnCls+'"'+btnDis+' onclick="openModal('+c.id+','+blk.id+')">'+(full?'Current Block Full':'Book Current Block')+'</button>';
-    // Upcoming block section — also bookable
+    // Upcoming block section — priority-aware
     if(nextBlk){
       var nextFull=nextBlk.booked>=nextBlk.cap;
       var nextPct=Math.min(100,Math.round(nextBlk.booked/nextBlk.cap*100));
       var nextWarn=nextPct>=80?" warn":"";
       var nextpills=(nextBlk.dates||[]).map(function(d){ return '<span class="date-pill">'+d+'</span>'; }).join("");
+      var today=new Date(); today.setHours(0,0,0,0);
+      var nextStart=new Date(nextBlk.start_date+"T00:00:00");
+      var daysUntil=Math.round((nextStart-today)/(1000*60*60*24));
+      // priority window: 8-14 days before; standard window: 0-7 days before
+      var inPriorityWindow=daysUntil<=14&&daysUntil>7;
+      var inStandardWindow=daysUntil<=7&&daysUntil>=0;
+      var tooEarly=daysUntil>14;
+      var stdOpenDate=new Date(nextStart); stdOpenDate.setDate(stdOpenDate.getDate()-7);
+      var stdOpenStr=stdOpenDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
       html+='<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">';
       html+='<div class="block-dates"><div class="block-dates-lbl" style="color:var(--sage-dk)">&#128197; Next Block &mdash; &pound;'+(nextBlk.price*nextBlk.weeks)+'</div><div class="block-dates-pills">'+nextpills+'</div></div>';
       html+='<div class="cap-bar"><div class="cap-fill'+nextWarn+'" style="width:'+nextPct+'%"></div></div>';
       html+='<div class="cap-txt" style="margin-bottom:10px">'+nextBlk.booked+' of '+nextBlk.cap+' spots taken</div>';
-      html+='<button class="book-btn"'+(nextFull?' disabled':'')+' onclick="openModal('+c.id+','+nextBlk.id+')">'+(nextFull?'Next Block Full':'Book Next Block')+'</button>';
+      if(nextFull){
+        html+='<button class="book-btn" disabled>Next Block Full</button>';
+      } else if(tooEarly){
+        html+='<div class="priority-info">&#128274; Booking opens '+stdOpenStr+'. Priority clients may book earlier.</div>';
+        html+='<button class="book-btn" disabled>Not Open Yet</button>';
+      } else if(inPriorityWindow){
+        html+='<div class="priority-info">&#11088; Priority booking is open. Returning clients from the current block can book now &mdash; all other spaces open on '+stdOpenStr+'.</div>';
+        html+='<div class="priority-check" id="pcheck-'+nextBlk.id+'">';
+        html+='<input type="text" class="finp" id="pemail-'+nextBlk.id+'" placeholder="Enter your email to check priority" style="margin-bottom:8px">';
+        html+='<button class="book-btn" onclick="checkPriority('+c.id+','+nextBlk.id+')">Check My Priority</button>';
+        html+='<div id="pmsg-'+nextBlk.id+'" style="display:none;font-size:13px;margin-top:8px;padding:10px 12px;border-radius:3px;line-height:1.6"></div>';
+        html+='</div>';
+      } else if(inStandardWindow){
+        html+='<button class="book-btn" onclick="openModal('+c.id+','+nextBlk.id+')">Book Next Block</button>';
+      }
       html+='</div>';
     }
     html+='</div>';
@@ -1152,10 +1188,161 @@ function renderDashboard(){
 }
 
 function switchTab(tab){
-  ["bookings","classes"].forEach(function(t){
+  ["bookings","classes","customers"].forEach(function(t){
     document.getElementById("tab-"+t).className="db-tab"+(t===tab?" on":"");
     document.getElementById("tab-panel-"+t).style.display=t===tab?"block":"none";
   });
+  if(tab==="customers") renderCustomersTab();
+}
+
+// ─── Clients tab ──────────────────────────────────────────────────────────────
+function renderCustomersTab(){
+  var tbody=document.getElementById("customers-tbody");
+  tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>';
+  (async function(){
+    try{
+      var{data:custs,error}=await sb.from("customers").select("*").order("last_name",{ascending:true});
+      if(error) throw error;
+      if(!custs||custs.length===0){
+        tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">No clients yet.</td></tr>';
+        return;
+      }
+      var html="";
+      custs.forEach(function(cu){
+        var isPriority=cu.priority===true;
+        var badge=isPriority
+          ?'<span class="priority-badge on">&#11088; Priority</span>'
+          :'<span class="priority-badge">Standard</span>';
+        var toggleLbl=isPriority?"Remove Priority":"Grant Priority";
+        var toggleCls=isPriority?"act act-delete":"act act-confirm";
+        html+="<tr>";
+        html+="<td><strong>"+sanitise(cu.first_name)+" "+sanitise(cu.last_name)+"</strong></td>";
+        html+="<td>"+sanitise(cu.email)+"</td>";
+        html+="<td>"+sanitise(cu.phone||"—")+"</td>";
+        html+="<td>"+sanitise(cu.customer_type||"—")+"</td>";
+        html+="<td>"+badge+"</td>";
+        html+="<td><button class='"+toggleCls+"' onclick='togglePriority("+cu.id+","+isPriority+")'>"+toggleLbl+"</button></td>";
+        html+="</tr>";
+      });
+      tbody.innerHTML=html;
+    }catch(err){
+      console.error(err);
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading clients.</td></tr>';
+    }
+  })();
+}
+
+function togglePriority(customerId, currentlyPriority){
+  var newVal=!currentlyPriority;
+  (async function(){
+    try{
+      await sb.from("customers").update({priority:newVal}).eq("id",customerId);
+      showToast(newVal?"Priority granted.":"Priority removed.");
+      renderCustomersTab();
+    }catch(err){ console.error(err); showToast("Error updating priority."); }
+  })();
+}
+
+// ─── Priority booking check ───────────────────────────────────────────────────
+function checkPriority(classId, blockId){
+  var emailEl=document.getElementById("pemail-"+blockId);
+  var msgEl=document.getElementById("pmsg-"+blockId);
+  var email=(emailEl?emailEl.value:"").trim();
+  if(!email||email.indexOf("@")<0){
+    msgEl.style.display="block";
+    msgEl.style.background="#fde8e8"; msgEl.style.color="var(--red)";
+    msgEl.textContent="Please enter a valid email address.";
+    return;
+  }
+  var btn=emailEl.nextElementSibling;
+  btn.disabled=true; btn.textContent="Checking...";
+  msgEl.style.display="none";
+
+  (async function(){
+    try{
+      // Check if customer exists and is manually flagged as priority
+      var{data:custs}=await sb.from("customers").select("id,priority").eq("email",email).limit(1);
+      var customer=custs&&custs.length>0?custs[0]:null;
+
+      if(customer&&customer.priority===true){
+        // Manually granted priority — let them book
+        grantPriorityAccess(classId, blockId, email, msgEl);
+        return;
+      }
+
+      // Check if they booked the previous block for this class
+      // Previous block = the most recently ended block for this class before this one
+      var thisBlk=blocks.find(function(b){ return b.id===blockId; });
+      var prevBlk=null;
+      if(thisBlk){
+        var classBlocks=blocks.filter(function(b){
+          return b.class_id===thisBlk.class_id && b.id!==blockId;
+        });
+        // Find the block whose end_date is closest before this block's start_date
+        classBlocks.sort(function(a,b){ return new Date(b.end_date)-new Date(a.end_date); });
+        var prevCandidates=classBlocks.filter(function(b){
+          return new Date(b.end_date+"T00:00:00") < new Date(thisBlk.start_date+"T00:00:00");
+        });
+        prevBlk=prevCandidates.length>0?prevCandidates[0]:null;
+      }
+
+      if(!customer){
+        // Not in system at all — no priority
+        denyPriorityAccess(blockId, msgEl, btn);
+        return;
+      }
+
+      if(!prevBlk){
+        // No previous block exists — can't have booked it
+        denyPriorityAccess(blockId, msgEl, btn);
+        return;
+      }
+
+      // Check if this customer has a booking on the previous block
+      var{data:prevBookings}=await sb.from("bookings")
+        .select("id,status")
+        .eq("customer_id",customer.id)
+        .eq("block_id",prevBlk.id)
+        .not("status","eq","cancelled")
+        .limit(1);
+
+      if(prevBookings&&prevBookings.length>0){
+        grantPriorityAccess(classId, blockId, email, msgEl);
+      } else {
+        denyPriorityAccess(blockId, msgEl, btn);
+      }
+
+    }catch(err){
+      console.error(err);
+      msgEl.style.display="block";
+      msgEl.style.background="#fde8e8"; msgEl.style.color="var(--red)";
+      msgEl.textContent="Something went wrong. Please try again.";
+    }finally{
+      btn.disabled=false; btn.textContent="Check My Priority";
+    }
+  })();
+}
+
+function grantPriorityAccess(classId, blockId, email, msgEl){
+  msgEl.style.display="block";
+  msgEl.style.background="#e8f0e7"; msgEl.style.color="var(--green)";
+  msgEl.textContent="✓ Priority confirmed! Opening booking form...";
+  setTimeout(function(){
+    openModal(classId, blockId);
+    // Pre-fill email in booking form
+    var emailField=document.getElementById("b-email");
+    if(emailField) emailField.value=email;
+  }, 1200);
+}
+
+function denyPriorityAccess(blockId, msgEl, btn){
+  var thisBlk=blocks.find(function(b){ return b.id===blockId; });
+  var stdOpenDate=thisBlk?new Date(thisBlk.start_date+"T00:00:00"):null;
+  if(stdOpenDate){ stdOpenDate.setDate(stdOpenDate.getDate()-7); }
+  var stdOpenStr=stdOpenDate?stdOpenDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"soon";
+  msgEl.style.display="block";
+  msgEl.style.background="#fef3e8"; msgEl.style.color="var(--clay)";
+  msgEl.innerHTML="You don't have priority booking for this block. Standard booking opens on <strong>"+stdOpenStr+"</strong> &mdash; we look forward to seeing you then!";
 }
 
 function renderClassesView(){
