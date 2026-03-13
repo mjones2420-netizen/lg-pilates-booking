@@ -259,6 +259,7 @@ tr:hover td { background:var(--cream); }
   <div class="nav-links">
     <button class="nav-btn on" id="nb-schedule" onclick="show('schedule')">Schedule</button>
     <button class="nav-btn" id="nb-dashboard" onclick="showDashboard()">Dashboard</button>
+    <button class="nav-btn" id="nb-signout" style="display:none;color:var(--light);font-size:13px" onclick="signOut()">Sign Out</button>
   </div>
 </nav>
 
@@ -730,6 +731,7 @@ function show(pg) {
   ["schedule","dashboard"].forEach(function(p){ document.getElementById("nb-"+p).className="nav-btn"; });
   document.getElementById("pg-"+pg).className="page on";
   var nb=document.getElementById("nb-"+pg); if(nb) nb.className="nav-btn on";
+  document.getElementById("nb-signout").style.display=(pg==="dashboard")?"inline":"none";
   if(pg==="dashboard") renderDashboard();
 }
 
@@ -1793,6 +1795,12 @@ async function checkDashLogin(){
   var{data,error}=await sb.auth.signInWithPassword({email:em,password:pw});
   if(error){ document.getElementById("dash-error").style.display="block"; btn.textContent="Sign In"; btn.disabled=false; }
   else { show("dashboard"); }
+}
+
+async function signOut(){
+  await sb.auth.signOut();
+  document.getElementById("nb-signout").style.display="none";
+  show("schedule");
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
