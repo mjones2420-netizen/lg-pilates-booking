@@ -118,10 +118,13 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .mclose { background:none; border:none; font-size:22px; cursor:pointer; color:var(--light); transition:color 0.2s; line-height:1; }
 .mclose:hover { color:var(--charcoal); }
 .mbody { padding:24px 28px; }
-.msummary { background:var(--cream); border-radius:4px; padding:14px 18px; margin-bottom:22px; display:flex; justify-content:space-between; align-items:center; }
-.msum-info { font-size:16px; color:var(--mid); }
-.msum-info strong { display:block; font-size:18px; color:var(--charcoal); margin-bottom:2px; }
-.msum-price { font-family:'Raleway',sans-serif; font-size:38px; color:var(--charcoal); }
+.msummary { background:var(--cream); border-radius:4px; padding:14px 18px; margin-bottom:22px; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.msum-info { font-size:13px; color:var(--mid); flex:1; }
+.msum-info strong { display:block; font-family:'Raleway',sans-serif; font-size:17px; color:var(--charcoal); margin-bottom:2px; font-weight:500; }
+.msum-info .msum-detail { font-size:13px; color:var(--mid); margin-bottom:8px; display:block; }
+.msum-pills { display:flex; flex-wrap:wrap; gap:4px; }
+.msum-pill { font-size:11px; padding:2px 8px; background:white; border:1px solid var(--border); border-radius:100px; color:var(--mid); }
+.msum-price { font-family:'Raleway',sans-serif; font-size:32px; color:var(--sage-dk); white-space:nowrap; }
 .flbl { font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mid); margin-bottom:7px; display:block; }
 .finp { width:100%; padding:14px 17px; border:1px solid var(--border); border-radius:3px; background:white; font-family:'Open Sans',sans-serif; font-size:16px; color:var(--charcoal); outline:none; transition:border-color 0.2s; margin-bottom:14px; }
 .finp:focus { border-color:var(--sage); }
@@ -389,8 +392,12 @@ tr:hover td { background:var(--cream); }
       </div>
       <div class="mbody">
         <div class="msummary" id="msummary-bar">
-          <div class="msum-info"><strong id="m-sname">Class</strong><span id="m-sdetail">Details</span></div>
-          <div class="msum-price" id="m-price">£10</div>
+          <div class="msum-info">
+            <strong id="m-sname">Class</strong>
+            <span class="msum-detail" id="m-sdetail">Details</span>
+            <div class="msum-pills" id="m-spills"></div>
+          </div>
+          <div class="msum-price" id="m-price">£60</div>
         </div>
 
         <!-- STEP 1: Your Details -->
@@ -940,9 +947,10 @@ function openModal(classId, blockId) {
   var c=selected, blk=selectedBlock;
   var blockLabel=(blk.dates&&blk.dates.length>0)?" \u2014 "+blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:"";
   document.getElementById("m-name").textContent=c.name;
-  document.getElementById("m-sub").textContent=c.venue+", "+c.loc+" \u2014 "+c.day+" "+c.time;
+  document.getElementById("m-sub").textContent=c.venue+" \u2022 "+c.loc+" \u2022 "+c.day+" "+c.time;
   document.getElementById("m-sname").textContent=c.name;
-  document.getElementById("m-sdetail").textContent=c.day+" "+c.time+" \u2013 "+c.end_time+" | "+c.loc+blockLabel;
+  document.getElementById("m-sdetail").textContent=c.day+" "+c.time+" \u2013 "+c.end_time+" \u2022 "+c.loc;
+  document.getElementById("m-spills").innerHTML=(blk.dates||[]).map(function(d){ return '<span class="msum-pill">'+d+'</span>'; }).join("");
   var totalPrice=blk.price*blk.weeks;
   document.getElementById("m-price").textContent="\u00a3"+totalPrice;
   document.getElementById("m-btnprice").textContent="\u00a3"+totalPrice;
