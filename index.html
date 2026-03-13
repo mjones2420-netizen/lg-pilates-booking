@@ -91,13 +91,11 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .cap-fill { height:100%; border-radius:2px; background:var(--sage); }
 .cap-fill.warn { background:var(--clay); }
 .cap-txt { font-size:12px; color:var(--light); }
-.book-btn { margin-top:18px; width:100%; padding:14px; background:#4a7faa; color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:all 0.2s; }
-.book-btn:hover { background:#3a6688; }
-.book-btn.next-blk { background:none; border:2px solid #4a7faa; color:#4a7faa; }
-.book-btn.next-blk:hover { background:#4a7faa; color:white; }
-.book-btn.wait { background:none; border:2px solid var(--clay); color:var(--clay); }
+.book-btn { margin-top:18px; width:100%; padding:14px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:background 0.2s; }
+.book-btn:hover { background:var(--sage-dk); }
+.book-btn.wait { background:none; border:1px solid var(--clay); color:var(--clay); }
 .book-btn.wait:hover { background:var(--clay); color:white; }
-.book-btn:disabled { background:var(--border); color:var(--light); cursor:not-allowed; border:none; }
+.book-btn:disabled { background:var(--border); color:var(--light); cursor:not-allowed; }
 .overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:200; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:20px; }
 .overlay.on { display:flex; animation:fadeup 0.2s ease; }
 .modal { background:var(--warm); border-radius:6px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; }
@@ -236,23 +234,6 @@ tr:hover td { background:var(--cream); }
 .toast { position:fixed; bottom:28px; right:28px; background:var(--charcoal); color:white; padding:12px 22px; border-radius:3px; font-size:13px; z-index:999; transform:translateY(60px); opacity:0; transition:all 0.3s; }
 .toast.on { transform:translateY(0); opacity:1; }
 .priority-info { font-size:12px; color:var(--mid); background:#fef9ec; border:1px solid #f0e0a0; border-radius:3px; padding:9px 12px; margin-bottom:10px; line-height:1.6; }
-.card-when { display:flex; align-items:baseline; gap:10px; margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--border); }
-.card-when-day { font-family:'Raleway',sans-serif; font-size:26px; font-weight:500; color:var(--charcoal); }
-.card-when-time { font-size:15px; color:var(--sage-dk); font-weight:600; }
-.card-block-section { background:white; border:1px solid var(--border); border-radius:4px; padding:12px 14px; margin-bottom:10px; }
-.card-block-lbl { font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); font-weight:600; margin-bottom:6px; }
-.card-block-range { font-size:14px; font-weight:600; color:var(--charcoal); margin-bottom:8px; }
-.card-price-row { display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
-.card-price-lbl { font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#000; font-weight:600; }
-.card-price-val { font-size:13px; padding:2px 10px; background:white; border:1px solid var(--border); border-radius:100px; color:var(--sage-dk); font-weight:700; }
-.next-blk-toggle { cursor:pointer; padding:10px 14px; background:white; border:1px solid var(--border); border-radius:4px; user-select:none; margin-top:10px; }
-.next-blk-toggle-top { display:flex; justify-content:space-between; align-items:center; }
-.next-blk-toggle-label { font-size:12px; color:var(--mid); font-weight:600; letter-spacing:0.04em; display:flex; align-items:center; gap:6px; }
-.next-blk-toggle-dates { font-size:12px; color:var(--light); margin-top:4px; }
-.next-blk-arrow { font-size:14px; color:var(--light); transition:transform 0.2s; display:inline-block; }
-.next-blk-arrow.open { transform:rotate(180deg); }
-.next-blk-body { display:none; background:white; border:1px solid var(--border); border-top:none; border-radius:0 0 4px 4px; padding:12px 14px; }
-.next-blk-body.open { display:block; }
 .priority-check .finp { font-size:14px; padding:11px 14px; }
 .priority-badge { display:inline-flex; align-items:center; gap:5px; background:#fef3e8; color:var(--clay); border:1px solid #f0d0a0; border-radius:100px; font-size:11px; padding:3px 10px; font-weight:600; }
 .priority-badge.on { background:#e8f0e7; color:var(--green); border-color:#b0d0a0; }
@@ -425,18 +406,26 @@ tr:hover td { background:var(--cream); }
 
         <!-- STEP 2: Health Form (new students only) -->
         <div id="step-2" style="display:none">
-          <div class="step-label">Step 2 of 3 &mdash; Health Form (PAR-Q)</div>
+          <div class="step-label">Step 2 of 3 &mdash; Health Form</div>
           <div class="health-note">This form ensures you are fit and well enough to take part in physical activity. Please answer all questions honestly. If you answer YES to any question, you will need to consult your doctor before joining the class.</div>
 
           <div class="parq-section-title">Personal Details</div>
-          <div class="frow">
-            <div><label class="flbl">Age <span class="req">*</span></label><input type="text" class="finp" id="b-age" placeholder="e.g. 34" style="margin-bottom:0"></div>
-            <div><label class="flbl">Emergency Contact <span class="req">*</span></label><input type="text" class="finp" id="b-emergency" placeholder="Name &amp; relationship" style="margin-bottom:0"></div>
+          <div style="margin-bottom:12px;width:90px">
+            <label class="flbl">Age <span class="req">*</span></label>
+            <input type="text" class="finp" id="b-age" placeholder="e.g. 34" style="margin-bottom:0">
           </div>
-          <div class="field-err" id="err-age" style="margin-top:6px">Please enter your age.</div>
-          <div class="field-err" id="err-emergency">Please enter an emergency contact.</div>
+          <div class="field-err" id="err-age" style="margin-top:0;margin-bottom:10px">Please enter your age.</div>
+          <div style="font-size:13px;color:var(--light);margin-bottom:10px;line-height:1.5">Please provide an emergency contact who can be reached if needed during class.</div>
+          <div class="frow" style="margin-bottom:10px">
+            <div><label class="flbl">Emergency Contact Name <span class="req">*</span></label><input type="text" class="finp" id="b-emergency-name" placeholder="Full name" style="margin-bottom:0"></div>
+            <div><label class="flbl">Relationship <span class="req">*</span></label><input type="text" class="finp" id="b-emergency-relationship" placeholder="e.g. Husband" style="margin-bottom:0"></div>
+          </div>
+          <label class="flbl">Emergency Contact Phone <span class="req">*</span></label>
+          <input type="text" class="finp" id="b-emergency-phone" placeholder="07700 000000">
+          <div class="field-err" id="err-emergency">Please fill in all emergency contact details.</div>
 
           <div class="parq-section-title" style="margin-top:16px">Medical Questions</div>
+
           <div class="parq-intro">Answer YES or NO to each of the following:</div>
 
           <div class="parq-question"><span class="parq-num">1</span><span class="parq-text">Do you currently or have you ever suffered from heart problems?</span><div class="parq-radios"><label><input type="radio" name="q1" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q1" value="No" checked onchange="updateYesSection()"> No</label></div></div>
@@ -467,7 +456,7 @@ tr:hover td { background:var(--cream); }
             <p>I have answered all the questions on this form honestly and I am aware that if I answered YES to any of the questions I will need to consult my doctor before taking part in the class. I am aware that if my circumstances in health or medical conditions change I must notify my instructor, and it is my responsibility to do so.</p>
             <div class="frow" style="margin-top:14px">
               <div><label class="flbl">Print Name <span class="req">*</span></label><input type="text" class="finp" id="b-print-name" placeholder="Full name" style="margin-bottom:0"></div>
-              <div><label class="flbl">Date <span class="req">*</span></label><input type="date" class="finp" id="b-sign-date" style="margin-bottom:0"></div>
+              <div><label class="flbl">Date</label><div class="finp" id="b-sign-date" style="margin-bottom:0;background:#f5f5f5;color:var(--light);cursor:default"></div></div>
             </div>
             <div class="field-err" id="err-declaration">Please enter your name and date to sign the declaration.</div>
             <label class="returning-lbl" style="margin-top:14px">
@@ -486,6 +475,15 @@ tr:hover td { background:var(--cream); }
         <!-- STEP 3: Payment -->
         <div id="step-3" style="display:none">
           <div class="step-label" id="step-3-label" style="font-size:13px; margin-bottom:20px;">Step 3 of 3 &mdash; Payment</div>
+
+          <div style="background:white;border:1px solid var(--border);border-radius:4px;padding:14px 16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:3px" id="m-block-summary-title"></div>
+              <div style="font-size:13px;color:var(--mid);margin-bottom:8px" id="m-block-summary-time"></div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px" id="m-block-summary-pills"></div>
+            </div>
+            <div style="font-family:'Raleway',sans-serif;font-size:28px;color:var(--sage-dk);font-weight:400;margin-left:16px;white-space:nowrap" id="m-block-summary-price"></div>
+          </div>
 
           <div style="background:var(--cream); border-left:4px solid var(--clay); border-radius:3px; padding:16px 18px; margin-bottom:22px;">
             <div style="font-family:'Raleway',sans-serif; font-size:20px; font-weight:500; color:var(--charcoal); margin-bottom:6px;">Reserve your space</div>
@@ -820,17 +818,6 @@ function filterDay(day,loc,btn){
   btn.className="fb on"; activeFilter="day"; activeLoc=loc; activeDay=day; renderGrid();
 }
 
-function toggleNextBlk(bodyId, arrowId, toggleId) {
-  var body=document.getElementById(bodyId);
-  var arrow=document.getElementById(arrowId);
-  var toggle=document.getElementById(toggleId);
-  var isOpen=body.classList.contains('open');
-  body.classList.toggle('open');
-  arrow.classList.toggle('open');
-  toggle.style.borderRadius=isOpen?'4px':'4px 4px 0 0';
-  toggle.style.borderBottom=isOpen?'':'1px solid #cde0e0';
-}
-
 function renderGrid() {
   // Only show classes that have at least one active or upcoming block
   var filtered = classes.filter(function(c){
@@ -851,38 +838,26 @@ function renderGrid() {
     var full = blk.booked >= blk.cap;
     var pct = Math.min(100, Math.round(blk.booked/blk.cap*100));
     var warn = pct>=80?" warn":"";
+    var badge,badgeCls,btnTxt,btnCls,btnDis="";
+    if(full){ badge="Full"; badgeCls="b-full"; btnTxt="Class Full"; btnCls=""; btnDis=" disabled"; }
+    else { badge="Open"; badgeCls="b-open"; btnTxt="Book Now"; btnCls=""; }
 
     html+='<div class="card">';
-
-    // Header bar
-    html+='<div class="card-loc-wrap"><div class="card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>'+c.loc+'</div>'+(full?'<span class="badge b-full">Full</span>':'')+'</div>';
-
-    // Day + time prominent row
-    html+='<div class="card-when"><div class="card-when-day">'+c.day+'</div><div class="card-when-time">'+c.time+' &ndash; '+c.end_time+'</div></div>';
-
-    // Venue + level
-    html+='<div style="font-size:15px;font-weight:600;color:var(--charcoal);margin-bottom:2px">'+c.venue+'</div>';
-    html+='<div style="font-size:13px;color:var(--mid);margin-bottom:16px">'+c.level+'</div>';
-
-    // Current block panel
-    var dpills=(blk.dates||[]).map(function(d){ return '<span class="date-pill">'+d+'</span>'; }).join("");
-    html+='<div class="card-block-section">';
-    html+='<div class="card-block-lbl">Current Block</div>';
-    html+='<div class="card-block-range">'+((blk.dates||[])[0]||'')+(blk.dates&&blk.dates.length>1?' &ndash; '+blk.dates[blk.dates.length-1]:'')+'</div>';
-    html+='<div class="block-dates-pills" style="margin-bottom:10px">'+dpills+'</div>';
-    html+='<div class="cap-bar"><div class="cap-fill'+warn+'" style="width:'+pct+'%"></div></div>';
-    html+='<div class="cap-txt">'+blk.booked+' of '+blk.cap+' spots taken</div>';
-    html+='<div class="card-price-row"><span class="card-price-lbl">Block price</span><span class="card-price-val">&pound;'+(blk.price*blk.weeks)+'</span></div>';
+    html+='<div class="card-loc-wrap"><div class="card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>'+c.loc+'</div>'+(full?'<span class="badge '+badgeCls+'">'+badge+'</span>':'')+'</div>';
+    html+='<div class="card-name">'+c.name+'</div>';
+    html+='<div class="card-venue-wrap"><div class="card-venue-lbl">Location</div><div class="card-venue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>'+c.venue+'</div><div class="card-level">'+c.level+'</div></div>';
+    html+='<div class="card-meta">';
+    html+='<div class="meta-item"><div class="meta-lbl">Day</div><div class="meta-val">'+c.day+'</div></div>';
+    html+='<div class="meta-item"><div class="meta-lbl">Price per block</div><div class="meta-val price">&pound;'+(blk.price*blk.weeks)+'</div></div>';
+    html+='<div class="meta-item" style="grid-column:span 2"><div class="meta-lbl">Time</div><div class="meta-val" style="font-size:15px">'+c.time+' &ndash; '+c.end_time+'</div></div>';
     html+='</div>';
-
-    // Book current block button
-    if(full){
-      html+='<button class="book-btn" disabled>Current Block Full</button>';
-    } else {
-      html+='<button class="book-btn" onclick="openModal('+c.id+','+blk.id+')">Book Current Block</button>';
-    }
-
-    // Next block — collapsible toggle
+    // Active block section
+    var dpills=(blk.dates||[]).map(function(d){ return '<span class="date-pill">'+d+'</span>'; }).join("");
+    html+='<div class="block-dates"><div class="block-dates-lbl">Current Block</div><div class="block-dates-pills">'+dpills+'</div></div>';
+    html+='<div class="cap-bar"><div class="cap-fill'+warn+'" style="width:'+pct+'%"></div></div>';
+    html+='<div class="cap-txt" style="margin-bottom:10px">'+blk.booked+' of '+blk.cap+' spots taken</div>';
+    html+='<button class="book-btn '+btnCls+'"'+btnDis+' onclick="openModal('+c.id+','+blk.id+')">'+(full?'Current Block Full':'Book Current Block')+'</button>';
+    // Upcoming block section — priority-aware
     if(nextBlk){
       var nextFull=nextBlk.booked>=nextBlk.cap;
       var nextPct=Math.min(100,Math.round(nextBlk.booked/nextBlk.cap*100));
@@ -891,48 +866,33 @@ function renderGrid() {
       var today=new Date(); today.setHours(0,0,0,0);
       var nextStart=new Date(nextBlk.start_date+"T00:00:00");
       var daysUntil=Math.round((nextStart-today)/(1000*60*60*24));
+      // priority window: 8-14 days before; standard window: 0-7 days before
       var inPriorityWindow=daysUntil<=14&&daysUntil>7;
       var inStandardWindow=daysUntil<=7&&daysUntil>=0;
       var tooEarly=daysUntil>14;
       var stdOpenDate=new Date(nextStart); stdOpenDate.setDate(stdOpenDate.getDate()-7);
       var stdOpenStr=stdOpenDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
-      var nextDateRange=((nextBlk.dates||[])[0]||'')+(nextBlk.dates&&nextBlk.dates.length>1?' \u2013 '+nextBlk.dates[nextBlk.dates.length-1]:'');
-      var toggleIcon, toggleLabel;
-      if(nextFull){ toggleIcon='&#128274;'; toggleLabel='Next Block &mdash; Full'; }
-      else if(tooEarly){ toggleIcon='&#128274;'; toggleLabel='Next Block &mdash; Not Open Yet'; }
-      else if(inPriorityWindow){ toggleIcon='&#11088;'; toggleLabel='Next Block &mdash; Priority Booking Open'; }
-      else { toggleIcon='&#128197;'; toggleLabel='Next Block &mdash; Available'; }
-      var tid='nbt-'+blk.id;
-      var bid='nbb-'+blk.id;
-      var aid='nba-'+blk.id;
-      html+='<div class="next-blk-toggle" id="'+tid+'" onclick="toggleNextBlk(\''+bid+'\',\''+aid+'\',\''+tid+'\')">';
-      html+='<div class="next-blk-toggle-top"><div class="next-blk-toggle-label">'+toggleIcon+' '+toggleLabel+'</div><span class="next-blk-arrow" id="'+aid+'">&#8964;</span></div>';
-      html+='<div class="next-blk-toggle-dates">'+nextDateRange+'</div>';
-      html+='</div>';
-      html+='<div class="next-blk-body" id="'+bid+'">';
-      html+='<div class="card-block-lbl" style="margin-top:2px">Next Block</div>';
-      html+='<div class="card-block-range">'+nextDateRange+'</div>';
-      html+='<div class="block-dates-pills" style="margin-bottom:10px">'+nextpills+'</div>';
+      html+='<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">';
+      html+='<div class="block-dates"><div class="block-dates-lbl" style="color:var(--sage-dk)">&#128197; Next Block &mdash; &pound;'+(nextBlk.price*nextBlk.weeks)+'</div><div class="block-dates-pills">'+nextpills+'</div></div>';
       html+='<div class="cap-bar"><div class="cap-fill'+nextWarn+'" style="width:'+nextPct+'%"></div></div>';
-      html+='<div class="cap-txt">'+nextBlk.booked+' of '+nextBlk.cap+' spots taken</div>';
-      html+='<div class="card-price-row"><span class="card-price-lbl">Block price</span><span class="card-price-val">&pound;'+(nextBlk.price*nextBlk.weeks)+'</span></div>';
+      html+='<div class="cap-txt" style="margin-bottom:10px">'+nextBlk.booked+' of '+nextBlk.cap+' spots taken</div>';
       if(nextFull){
-        html+='<button class="book-btn" style="margin-top:10px" disabled>Next Block Full</button>';
+        html+='<button class="book-btn" disabled>Next Block Full</button>';
       } else if(tooEarly){
-        html+='<div class="priority-info" style="margin-top:10px">&#128274; Standard booking opens '+stdOpenStr+'. <span class="tooltip-wrap">Priority clients<span class="tooltip-box">Priority clients are returning members who booked the previous block. They get early access to book the next block.</span></span> may book earlier.</div>';
+        html+='<div class="priority-info">&#128274; Booking opens '+stdOpenStr+'. <span class="tooltip-wrap">Priority clients<span class="tooltip-box">Priority clients are returning members who booked the previous block. They get early access to book the next block.</span></span> may book earlier.</div>';
+        html+='<button class="book-btn" disabled>Not Open Yet</button>';
       } else if(inPriorityWindow){
-        html+='<div class="priority-info" style="margin-top:10px">&#11088; <span class="tooltip-wrap">Priority booking<span class="tooltip-box">Priority clients are returning members who booked the previous block. They get early access to book the next block.</span></span> is open. Returning clients can book now &mdash; all other spaces open on '+stdOpenStr+'.</div>';
-        html+='<div id="pcheck-'+nextBlk.id+'">';
+        html+='<div class="priority-info">&#11088; <span class="tooltip-wrap">Priority booking<span class="tooltip-box">Priority clients are returning members who booked the previous block. They get early access to book the next block.</span></span> is open. Returning clients from the current block can book now &mdash; all other spaces open on '+stdOpenStr+'.</div>';
+        html+='<div class="priority-check" id="pcheck-'+nextBlk.id+'">';
         html+='<input type="text" class="finp" id="pemail-'+nextBlk.id+'" placeholder="Enter your email to check priority" style="margin-bottom:8px">';
-        html+='<button class="book-btn next-blk" onclick="checkPriority('+c.id+','+nextBlk.id+')">Check My Priority</button>';
+        html+='<button class="book-btn" onclick="checkPriority('+c.id+','+nextBlk.id+')">Check My Priority</button>';
         html+='<div id="pmsg-'+nextBlk.id+'" style="display:none;font-size:13px;margin-top:8px;padding:10px 12px;border-radius:3px;line-height:1.6"></div>';
         html+='</div>';
       } else if(inStandardWindow){
-        html+='<button class="book-btn next-blk" style="margin-top:10px" onclick="openModal('+c.id+','+nextBlk.id+')">Book Next Block</button>';
+        html+='<button class="book-btn" onclick="openModal('+c.id+','+nextBlk.id+')">Book Next Block</button>';
       }
       html+='</div>';
     }
-
     html+='</div>';
   });
   document.getElementById("grid").innerHTML=html;
@@ -963,8 +923,12 @@ function openModal(classId, blockId) {
   ["b-firstname","b-lastname","b-email","b-phone","b-health-other"].forEach(function(id){ document.getElementById(id).value=""; });
   window._customerIsReturning=false;
   if(document.getElementById("b-health-conditions")) document.getElementById("b-health-conditions").value="";
-  ["b-age","b-emergency","b-print-name"].forEach(function(id){ if(document.getElementById(id)) document.getElementById(id).value=""; });
-  if(document.getElementById("b-sign-date")) document.getElementById("b-sign-date").value="";
+  ["b-age","b-emergency-name","b-emergency-relationship","b-emergency-phone","b-print-name"].forEach(function(id){ if(document.getElementById(id)) document.getElementById(id).value=""; });
+  // Auto-populate today's date on sign date display
+  var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var now=new Date();
+  var signDateEl=document.getElementById("b-sign-date");
+  if(signDateEl) signDateEl.textContent=now.getDate()+" "+months[now.getMonth()]+" "+now.getFullYear();
   if(document.getElementById("b-declaration")) document.getElementById("b-declaration").checked=false;
   if(document.getElementById("parq-yes-section")) document.getElementById("parq-yes-section").style.display="none";
   for(var qi=1;qi<=12;qi++){
@@ -1024,21 +988,23 @@ function goStep3(){
   var isNew=!window._customerIsReturning;
   if(isNew){
     var age=document.getElementById("b-age").value.trim();
-    var emg=document.getElementById("b-emergency").value.trim();
+    var ename=document.getElementById("b-emergency-name").value.trim();
+    var erel=document.getElementById("b-emergency-relationship").value.trim();
+    var ephone=document.getElementById("b-emergency-phone").value.trim();
     document.getElementById("err-age").className="field-err"+(age?"":" on");
-    document.getElementById("err-emergency").className="field-err"+(emg?"":" on");
-    if(!age||!emg) return;
+    document.getElementById("err-emergency").className="field-err"+((ename&&erel&&ephone)?"":" on");
+    if(!age||!ename||!erel||!ephone) return;
     if(hasAnyYes()){
       var hc=document.getElementById("b-health-conditions").value.trim();
       document.getElementById("err-health").className="field-err"+(hc?"":" on");
       if(!hc) return;
     }
     var pn=document.getElementById("b-print-name").value.trim();
-    var sd=document.getElementById("b-sign-date").value;
+    var sd=document.getElementById("b-sign-date").textContent;
     var ag=document.getElementById("b-declaration").checked;
-    document.getElementById("err-declaration").className="field-err"+((pn&&sd)?"":" on");
+    document.getElementById("err-declaration").className="field-err"+(pn?"":" on");
     document.getElementById("err-agree").className="field-err"+(ag?"":" on");
-    if(!pn||!sd||!ag) return;
+    if(!pn||!ag) return;
   }
   document.getElementById("step-1").style.display="none";
   document.getElementById("step-2").style.display="none";
@@ -1049,6 +1015,13 @@ function goStep3(){
   var fn=document.getElementById("b-firstname").value.trim();
   var ln=document.getElementById("b-lastname").value.trim();
   document.getElementById("m-reference").textContent=fn+" "+ln+" "+selected.day;
+  // Populate block summary
+  var blk=selectedBlock;
+  var totalPrice=blk.price*blk.weeks;
+  document.getElementById("m-block-summary-title").textContent=blk.weeks+"-week block \u2014 \u00a3"+blk.price+" per session";
+  document.getElementById("m-block-summary-time").textContent=selected.day+" "+selected.time+" \u2013 "+selected.end_time;
+  document.getElementById("m-block-summary-price").textContent="\u00a3"+totalPrice;
+  document.getElementById("m-block-summary-pills").innerHTML=(blk.dates||[]).map(function(d){ return '<span style="font-size:12px;padding:3px 9px;background:#eef5f5;border:1px solid #cde0e0;border-radius:100px;color:#4a6060">'+d+'</span>'; }).join("");
 }
 
 function goStepBack3(){
@@ -1092,12 +1065,14 @@ function confirmBooking(){
   if(isNew){
     parqData={
       age:document.getElementById("b-age").value.trim(),
-      emergency:document.getElementById("b-emergency").value.trim(),
+      emergencyName:document.getElementById("b-emergency-name").value.trim(),
+      emergencyRelationship:document.getElementById("b-emergency-relationship").value.trim(),
+      emergencyPhone:document.getElementById("b-emergency-phone").value.trim(),
       questions:[],
       details:document.getElementById("b-health-conditions")?document.getElementById("b-health-conditions").value.trim():"",
       other:document.getElementById("b-health-other").value.trim(),
       printName:document.getElementById("b-print-name").value.trim(),
-      signDate:document.getElementById("b-sign-date").value
+      signDate:document.getElementById("b-sign-date").textContent
     };
     var qLabels=["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
     for(var qi=1;qi<=12;qi++){
@@ -1135,7 +1110,7 @@ function confirmBooking(){
         var answers={};
         var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
         for(var qi=0;qi<parqData.questions.length;qi++){ answers[qKeys[qi]]=parqData.questions[qi].a; }
-        await sb.from("parq").insert(Object.assign({booking_id:savedBooking.id,customer_id:customerId,age:parqData.age,emergency_contact:parqData.emergency,yes_details:parqData.details,additional_notes:parqData.other,print_name:parqData.printName,sign_date:parqData.signDate},answers));
+        await sb.from("parq").insert(Object.assign({booking_id:savedBooking.id,customer_id:customerId,age:parqData.age,emergency_name:parqData.emergencyName,emergency_relationship:parqData.emergencyRelationship,emergency_phone:parqData.emergencyPhone,yes_details:parqData.details,additional_notes:parqData.other,print_name:parqData.printName,sign_date:parqData.signDate},answers));
       }
       // Update booked count on block
       await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id);
@@ -1777,9 +1752,10 @@ function viewBooking(idx){
       if(p){
         var qLabels=["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
         var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
-        html+="<div class=\"parq-section-title\" style=\"margin-top:20px\">PAR-Q Health Form</div><div class=\"sdetail\">";
+        html+="<div class=\"parq-section-title\" style=\"margin-top:20px\">Health Form</div><div class=\"sdetail\">";
         html+="<div class=\"srow\"><span>Age</span><span>"+sanitise(p.age)+"</span></div>";
-        html+="<div class=\"srow\"><span>Emergency Contact</span><span>"+sanitise(p.emergency_contact)+"</span></div></div>";
+        html+="<div class=\"srow\"><span>Emergency Contact</span><span>"+sanitise(p.emergency_name||"")+(p.emergency_relationship?" ("+sanitise(p.emergency_relationship)+")":"")+"</span></div>";
+        html+="<div class=\"srow\"><span>Emergency Phone</span><span>"+sanitise(p.emergency_phone||"")+"</span></div></div>";
         html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Medical Questions</div><div class=\"sdetail\">";
         for(var i=0;i<qKeys.length;i++){
           var ans=p[qKeys[i]]||"No";
