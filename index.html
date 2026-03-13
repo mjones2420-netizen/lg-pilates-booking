@@ -93,8 +93,21 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .cap-txt { font-size:12px; color:var(--light); }
 .book-btn { margin-top:18px; width:100%; padding:14px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:background 0.2s; }
 .book-btn:hover { background:var(--sage-dk); }
-.book-btn.wait { background:none; border:1px solid var(--clay); color:var(--clay); }
-.book-btn.wait:hover { background:var(--clay); color:white; }
+.book-btn.next-blk { background:none; border:2px solid #4a7faa; color:#4a7faa; }
+.book-btn.next-blk:hover { background:#4a7faa; color:white; }
+.card-when { display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
+.card-when-day { font-family:'Raleway',sans-serif; font-size:26px; font-weight:500; color:var(--charcoal); }
+.card-when-time { font-size:15px; color:var(--mid); }
+.card-block-section { background:white; border:1px solid var(--border); border-radius:4px; padding:12px 14px; margin-bottom:12px; margin-top:12px; }
+.card-block-lbl { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); margin-bottom:4px; }
+.card-block-range { font-size:14px; font-weight:600; color:var(--charcoal); margin-bottom:4px; }
+.card-price-row { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+.card-price-lbl { font-size:12px; color:#000; font-weight:500; }
+.card-price-val { font-family:'Raleway',sans-serif; font-size:22px; color:var(--sage-dk); font-weight:600; }
+.next-blk-toggle { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--sage-dk); font-weight:600; cursor:pointer; padding:10px 0; border-top:1px dashed var(--border); margin-top:10px; }
+.next-blk-arrow { font-size:16px; transition:transform 0.2s; }
+.next-blk-body { display:none; }
+.next-blk-body.on { display:block; }
 .book-btn:disabled { background:var(--border); color:var(--light); cursor:not-allowed; }
 .overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:200; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:20px; }
 .overlay.on { display:flex; animation:fadeup 0.2s ease; }
@@ -778,6 +791,14 @@ function getNextBlock(classId, currentBlockId) {
   return future[0] || null;
 }
 
+function toggleNextBlk(id){
+  var el=document.getElementById(id);
+  var arr=document.getElementById("arr-"+id);
+  var isOpen=el.className==="next-blk-body on";
+  el.className=isOpen?"next-blk-body":"next-blk-body on";
+  if(arr) arr.style.transform=isOpen?"":"rotate(180deg)";
+}
+
 // ─── Schedule filters & grid ─────────────────────────────────────────────────
 function buildFilters() {
   var dayOrder=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
@@ -840,26 +861,32 @@ function renderGrid() {
     var full = blk.booked >= blk.cap;
     var pct = Math.min(100, Math.round(blk.booked/blk.cap*100));
     var warn = pct>=80?" warn":"";
-    var badge,badgeCls,btnTxt,btnCls,btnDis="";
-    if(full){ badge="Full"; badgeCls="b-full"; btnTxt="Class Full"; btnCls=""; btnDis=" disabled"; }
-    else { badge="Open"; badgeCls="b-open"; btnTxt="Book Now"; btnCls=""; }
 
     html+='<div class="card">';
-    html+='<div class="card-loc-wrap"><div class="card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>'+c.loc+'</div>'+(full?'<span class="badge '+badgeCls+'">'+badge+'</span>':'')+'</div>';
-    html+='<div class="card-name">'+c.name+'</div>';
-    html+='<div class="card-venue-wrap"><div class="card-venue-lbl">Location</div><div class="card-venue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>'+c.venue+'</div><div class="card-level">'+c.level+'</div></div>';
-    html+='<div class="card-meta">';
-    html+='<div class="meta-item"><div class="meta-lbl">Day</div><div class="meta-val">'+c.day+'</div></div>';
-    html+='<div class="meta-item"><div class="meta-lbl">Price per block</div><div class="meta-val price">&pound;'+(blk.price*blk.weeks)+'</div></div>';
-    html+='<div class="meta-item" style="grid-column:span 2"><div class="meta-lbl">Time</div><div class="meta-val" style="font-size:15px">'+c.time+' &ndash; '+c.end_time+'</div></div>';
-    html+='</div>';
-    // Active block section
+
+    // Location header bar
+    html+='<div class="card-loc-wrap"><div class="card-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>'+c.loc+'</div>'+(full?'<span class="badge b-full">Full</span>':'')+'</div>';
+
+    // Day + time prominent
+    html+='<div class="card-when"><span class="card-when-day">'+c.day+'</span><span class="card-when-time">'+c.time+' &ndash; '+c.end_time+'</span></div>';
+
+    // Venue + level
+    html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:600;color:var(--charcoal)">'+c.venue+'</div><div style="font-size:13px;color:var(--mid);margin-top:2px">'+c.level+'</div></div>';
+
+    // Current block panel
     var dpills=(blk.dates||[]).map(function(d){ return '<span class="date-pill">'+d+'</span>'; }).join("");
-    html+='<div class="block-dates"><div class="block-dates-lbl">Current Block</div><div class="block-dates-pills">'+dpills+'</div></div>';
+    html+='<div class="card-block-section">';
+    html+='<div class="card-block-lbl">Current Block</div>';
+    html+='<div class="card-block-range">'+(blk.dates&&blk.dates.length>0?blk.dates[0]+' &ndash; '+blk.dates[blk.dates.length-1]:'')+'</div>';
+    html+='<div class="block-dates-pills" style="margin:8px 0">'+dpills+'</div>';
     html+='<div class="cap-bar"><div class="cap-fill'+warn+'" style="width:'+pct+'%"></div></div>';
-    html+='<div class="cap-txt" style="margin-bottom:10px">'+blk.booked+' of '+blk.cap+' spots taken</div>';
-    html+='<button class="book-btn '+btnCls+'"'+btnDis+' onclick="openModal('+c.id+','+blk.id+')">'+(full?'Current Block Full':'Book Current Block')+'</button>';
-    // Upcoming block section — priority-aware
+    html+='<div class="cap-txt">'+blk.booked+' of '+blk.cap+' spots taken</div>';
+    html+='<div class="card-price-row"><span class="card-price-lbl">Block price</span><span class="card-price-val">&pound;'+(blk.price*blk.weeks)+'</span></div>';
+    html+='</div>';
+
+    html+='<button class="book-btn"'+(full?' disabled':'')+' onclick="openModal('+c.id+','+blk.id+')">'+(full?'Current Block Full':'Book Current Block')+'</button>';
+
+    // Next block — collapsible
     if(nextBlk){
       var nextFull=nextBlk.booked>=nextBlk.cap;
       var nextPct=Math.min(100,Math.round(nextBlk.booked/nextBlk.cap*100));
@@ -868,16 +895,21 @@ function renderGrid() {
       var today=new Date(); today.setHours(0,0,0,0);
       var nextStart=new Date(nextBlk.start_date+"T00:00:00");
       var daysUntil=Math.round((nextStart-today)/(1000*60*60*24));
-      // priority window: 8-14 days before; standard window: 0-7 days before
       var inPriorityWindow=daysUntil<=14&&daysUntil>7;
       var inStandardWindow=daysUntil<=7&&daysUntil>=0;
       var tooEarly=daysUntil>14;
       var stdOpenDate=new Date(nextStart); stdOpenDate.setDate(stdOpenDate.getDate()-7);
       var stdOpenStr=stdOpenDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
-      html+='<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">';
-      html+='<div class="block-dates"><div class="block-dates-lbl" style="color:var(--sage-dk)">&#128197; Next Block &mdash; &pound;'+(nextBlk.price*nextBlk.weeks)+'</div><div class="block-dates-pills">'+nextpills+'</div></div>';
+      var toggleIcon=tooEarly?'&#128274;':inPriorityWindow?'&#11088;':'&#128197;';
+      var nextDateRange=nextBlk.dates&&nextBlk.dates.length>0?nextBlk.dates[0]+' \u2013 '+nextBlk.dates[nextBlk.dates.length-1]:'';
+      html+='<div class="next-blk-toggle" onclick="toggleNextBlk(\'nb-'+nextBlk.id+'\')">'+toggleIcon+' Next Block &mdash; '+nextDateRange+'<span class="next-blk-arrow" id="arr-nb-'+nextBlk.id+'">&#8964;</span></div>';
+      html+='<div class="next-blk-body" id="nb-'+nextBlk.id+'">';
+      html+='<div class="card-block-section" style="margin-top:0;border-top:none">';
+      html+='<div class="block-dates-pills" style="margin-bottom:8px">'+nextpills+'</div>';
       html+='<div class="cap-bar"><div class="cap-fill'+nextWarn+'" style="width:'+nextPct+'%"></div></div>';
-      html+='<div class="cap-txt" style="margin-bottom:10px">'+nextBlk.booked+' of '+nextBlk.cap+' spots taken</div>';
+      html+='<div class="cap-txt">'+nextBlk.booked+' of '+nextBlk.cap+' spots taken</div>';
+      html+='<div class="card-price-row"><span class="card-price-lbl">Block price</span><span class="card-price-val">&pound;'+(nextBlk.price*nextBlk.weeks)+'</span></div>';
+      html+='</div>';
       if(nextFull){
         html+='<button class="book-btn" disabled>Next Block Full</button>';
       } else if(tooEarly){
@@ -891,10 +923,11 @@ function renderGrid() {
         html+='<div id="pmsg-'+nextBlk.id+'" style="display:none;font-size:13px;margin-top:8px;padding:10px 12px;border-radius:3px;line-height:1.6"></div>';
         html+='</div>';
       } else if(inStandardWindow){
-        html+='<button class="book-btn" onclick="openModal('+c.id+','+nextBlk.id+')">Book Next Block</button>';
+        html+='<button class="book-btn next-blk" onclick="openModal('+c.id+','+nextBlk.id+')">Book Next Block</button>';
       }
       html+='</div>';
     }
+
     html+='</div>';
   });
   document.getElementById("grid").innerHTML=html;
