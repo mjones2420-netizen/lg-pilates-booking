@@ -118,13 +118,10 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .mclose { background:none; border:none; font-size:22px; cursor:pointer; color:var(--light); transition:color 0.2s; line-height:1; }
 .mclose:hover { color:var(--charcoal); }
 .mbody { padding:24px 28px; }
-.msummary { background:var(--cream); border-radius:4px; padding:14px 18px; margin-bottom:22px; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
-.msum-info { font-size:13px; color:var(--mid); flex:1; }
-.msum-info strong { display:block; font-family:'Raleway',sans-serif; font-size:17px; color:var(--charcoal); margin-bottom:2px; font-weight:500; }
-.msum-info .msum-detail { font-size:13px; color:var(--mid); margin-bottom:8px; display:block; }
-.msum-pills { display:flex; flex-wrap:wrap; gap:4px; }
-.msum-pill { font-size:11px; padding:2px 8px; background:white; border:1px solid var(--border); border-radius:100px; color:var(--mid); }
-.msum-price { font-family:'Raleway',sans-serif; font-size:32px; color:var(--sage-dk); white-space:nowrap; }
+.msummary { background:var(--cream); border-radius:4px; padding:14px 18px; margin-bottom:22px; display:flex; justify-content:space-between; align-items:center; }
+.msum-info { font-size:16px; color:var(--mid); }
+.msum-info strong { display:block; font-size:18px; color:var(--charcoal); margin-bottom:2px; }
+.msum-price { font-family:'Raleway',sans-serif; font-size:38px; color:var(--charcoal); }
 .flbl { font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mid); margin-bottom:7px; display:block; }
 .finp { width:100%; padding:14px 17px; border:1px solid var(--border); border-radius:3px; background:white; font-family:'Open Sans',sans-serif; font-size:16px; color:var(--charcoal); outline:none; transition:border-color 0.2s; margin-bottom:14px; }
 .finp:focus { border-color:var(--sage); }
@@ -392,12 +389,8 @@ tr:hover td { background:var(--cream); }
       </div>
       <div class="mbody">
         <div class="msummary" id="msummary-bar">
-          <div class="msum-info">
-            <strong id="m-sname">Class</strong>
-            <span class="msum-detail" id="m-sdetail">Details</span>
-            <div class="msum-pills" id="m-spills"></div>
-          </div>
-          <div class="msum-price" id="m-price">£60</div>
+          <div class="msum-info"><strong id="m-sname">Class</strong><span id="m-sdetail">Details</span></div>
+          <div class="msum-price" id="m-price">£10</div>
         </div>
 
         <!-- STEP 1: Your Details -->
@@ -947,10 +940,9 @@ function openModal(classId, blockId) {
   var c=selected, blk=selectedBlock;
   var blockLabel=(blk.dates&&blk.dates.length>0)?" \u2014 "+blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:"";
   document.getElementById("m-name").textContent=c.name;
-  document.getElementById("m-sub").textContent=c.venue+" \u2022 "+c.loc+" \u2022 "+c.day+" "+c.time;
+  document.getElementById("m-sub").textContent=c.venue+", "+c.loc+" \u2014 "+c.day+" "+c.time;
   document.getElementById("m-sname").textContent=c.name;
-  document.getElementById("m-sdetail").textContent=c.day+" "+c.time+" \u2013 "+c.end_time+" \u2022 "+c.loc;
-  document.getElementById("m-spills").innerHTML=(blk.dates||[]).map(function(d){ return '<span class="msum-pill">'+d+'</span>'; }).join("");
+  document.getElementById("m-sdetail").textContent=c.day+" "+c.time+" \u2013 "+c.end_time+" | "+c.loc+blockLabel;
   var totalPrice=blk.price*blk.weeks;
   document.getElementById("m-price").textContent="\u00a3"+totalPrice;
   document.getElementById("m-btnprice").textContent="\u00a3"+totalPrice;
@@ -1148,15 +1140,21 @@ function confirmBooking(){
         status:"reserved",
         amount_due:blk.price*blk.weeks
       }).select("id").single();
-      // Save PAR-Q
-      if(isNew&&parqData&&savedBooking){
-        var answers={};
-        var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
-        for(var qi=0;qi<parqData.questions.length;qi++){ answers[qKeys[qi]]=parqData.questions[qi].a; }
-        await sb.from("parq").insert(Object.assign({booking_id:savedBooking.id,customer_id:customerId,age:parqData.age,emergency_name:parqData.emergencyName,emergency_relationship:parqData.emergencyRelationship,emergency_phone:parqData.emergencyPhone,yes_details:parqData.details,additional_notes:parqData.other,print_name:parqData.printName,sign_date:parqData.signDate},answers));
-      }
       // Update booked count on block
       await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id);
+      // Save PAR-Q separately — failure here won't affect the booking
+      if(isNew&&parqData&&savedBooking){
+        try{
+          // Convert display date (e.g. "13 Mar 2026") to YYYY-MM-DD for database
+          var monthMap={"Jan":"01","Feb":"02","Mar":"03","Apr":"04","May":"05","Jun":"06","Jul":"07","Aug":"08","Sep":"09","Oct":"10","Nov":"11","Dec":"12"};
+          var dateParts=parqData.signDate.split(" ");
+          var signDateFormatted=dateParts.length===3?(dateParts[2]+"-"+(monthMap[dateParts[1]]||"01")+"-"+(dateParts[0].length===1?"0":"")+dateParts[0]):parqData.signDate;
+          var answers={};
+          var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
+          for(var qi=0;qi<parqData.questions.length;qi++){ answers[qKeys[qi]]=parqData.questions[qi].a; }
+          await sb.from("parq").insert(Object.assign({booking_id:savedBooking.id,customer_id:customerId,age:parqData.age,emergency_name:parqData.emergencyName,emergency_relationship:parqData.emergencyRelationship,emergency_phone:parqData.emergencyPhone,yes_details:parqData.details,additional_notes:parqData.other,print_name:parqData.printName,sign_date:signDateFormatted},answers));
+        }catch(parqErr){ console.error("PAR-Q save error (booking still saved):",parqErr); }
+      }
     }catch(err){ console.error("Save error:",err); }
   })();
 
