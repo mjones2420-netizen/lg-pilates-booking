@@ -973,6 +973,14 @@ function openModal(classId, blockId) {
 }
 
 function closeModal(){ document.getElementById("overlay").className="overlay"; }
+function closeViewModal(){ document.getElementById("view-overlay").className="overlay"; }
+function closeEditModal(){ document.getElementById("edit-overlay").className="overlay"; }
+
+document.getElementById("overlay").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+document.getElementById("view-overlay").addEventListener("click",function(e){ if(e.target===this) closeViewModal(); });
+document.getElementById("edit-overlay").addEventListener("click",function(e){ if(e.target===this) closeEditModal(); });
+document.getElementById("add-class-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddClassModal(); });
+document.getElementById("add-block-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddBlockModal(); });
 
 function goStep1(){
   document.getElementById("step-1").style.display="block";
@@ -1943,7 +1951,6 @@ function showToast(msg){
   setTimeout(function(){ el.className="toast"; },3000);
 }
 
-document.getElementById("overlay").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
 
 // ─── Page load ────────────────────────────────────────────────────────────────
 (async function(){
