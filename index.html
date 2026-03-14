@@ -1012,7 +1012,8 @@ function goStep2(){
   btn.textContent="Checking..."; btn.disabled=true;
   (async function(){
     try{
-      var{data:existing}=await sb.from("customers").select("id").eq("email",em).limit(1);
+      var existingRes=await sb.from("customers").select("id").eq("email",em).limit(1);
+      var existing=existingRes.data;
       var isReturning=existing&&existing.length>0;
       window._customerIsReturning=isReturning;
       var msgEl=document.getElementById("customer-check-msg");
@@ -1139,36 +1140,39 @@ function confirmBooking(){
   (async function(){
     try{
       // Save/update customer
-      var{data:existing}=await sb.from("customers").select("id").eq("email",em).limit(1);
+      var existingRes=await sb.from("customers").select("id").eq("email",em).limit(1);
+      var existing=existingRes.data;
       var customerId;
       if(existing&&existing.length>0){
         customerId=existing[0].id;
         await sb.from("customers").update({first_name:fn,last_name:ln,phone:ph,customer_type:customerType}).eq("id",customerId);
       } else {
-        var{data:nc}=await sb.from("customers").insert({first_name:fn,last_name:ln,email:em,phone:ph,customer_type:customerType}).select("id").single();
-        customerId=nc.id;
+        var insertRes=await sb.from("customers").insert({first_name:fn,last_name:ln,email:em,phone:ph,customer_type:customerType}).select("id").single();
+        if(!insertRes.data) throw new Error("Customer insert failed: "+(insertRes.error?insertRes.error.message:"unknown"));
+        customerId=insertRes.data.id;
       }
-      // Save booking — now includes block_id
-      var{data:savedBooking}=await sb.from("bookings").insert({
+      // Save booking
+      var bookingRes=await sb.from("bookings").insert({
         class_id:c.id,
         block_id:blk.id,
         customer_id:customerId,
         status:"reserved",
         amount_due:blk.price*blk.weeks
       }).select("id").single();
+      if(!bookingRes.data) throw new Error("Booking insert failed: "+(bookingRes.error?bookingRes.error.message:"unknown"));
+      var savedBookingId=bookingRes.data.id;
       // Update booked count on block
       await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id);
       // Save PAR-Q separately — failure here won't affect the booking
-      if(isNew&&parqData&&savedBooking){
+      if(isNew&&parqData){
         try{
-          // Convert display date (e.g. "13 Mar 2026") to YYYY-MM-DD for database
           var monthMap={"Jan":"01","Feb":"02","Mar":"03","Apr":"04","May":"05","Jun":"06","Jul":"07","Aug":"08","Sep":"09","Oct":"10","Nov":"11","Dec":"12"};
           var dateParts=parqData.signDate.split(" ");
           var signDateFormatted=dateParts.length===3?(dateParts[2]+"-"+(monthMap[dateParts[1]]||"01")+"-"+(dateParts[0].length===1?"0":"")+dateParts[0]):parqData.signDate;
           var answers={};
           var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
           for(var qi=0;qi<parqData.questions.length;qi++){ answers[qKeys[qi]]=parqData.questions[qi].a; }
-          await sb.from("parq").insert(Object.assign({booking_id:savedBooking.id,customer_id:customerId,age:parqData.age,emergency_name:parqData.emergencyName,emergency_relationship:parqData.emergencyRelationship,emergency_phone:parqData.emergencyPhone,yes_details:parqData.details,additional_notes:parqData.other,print_name:parqData.printName,sign_date:signDateFormatted},answers));
+          await sb.from("parq").insert(Object.assign({booking_id:savedBookingId,customer_id:customerId,age:parqData.age,emergency_name:parqData.emergencyName,emergency_relationship:parqData.emergencyRelationship,emergency_phone:parqData.emergencyPhone,yes_details:parqData.details,additional_notes:parqData.other,print_name:parqData.printName,sign_date:signDateFormatted},answers));
         }catch(parqErr){ console.error("PAR-Q save error (booking still saved):",parqErr); }
       }
     }catch(err){ console.error("Save error:",err); }
@@ -1970,7 +1974,8 @@ function showToast(msg){
 (async function(){
   try{
     // Load settings
-    var{data:settingsRows}=await sb.from("settings").select("key,value");
+    var settingsRes=await sb.from("settings").select("key,value");
+    var settingsRows=settingsRes.data;
     if(settingsRows){
       var s={}; settingsRows.forEach(function(r){ s[r.key]=r.value; });
       var bn=s.bank_name||"", bs=s.bank_sort_code||"", ba=s.bank_account_no||"";
@@ -1986,13 +1991,15 @@ function showToast(msg){
 
   try{
     // Load classes
-    var{data:dbClasses}=await sb.from("classes").select("*").order("id",{ascending:true});
+    var classesRes=await sb.from("classes").select("*").order("id",{ascending:true});
+    var dbClasses=classesRes.data;
     if(dbClasses) classes=dbClasses.map(function(c){ return {id:c.id,name:c.name,level:c.level||c.name,day:c.day,time:c.time,end_time:c.end_time,venue:c.venue,loc:c.loc}; });
   }catch(err){ console.error("Classes error:",err); }
 
   try{
     // Load blocks
-    var{data:dbBlocks}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
+    var blocksRes=await sb.from("blocks").select("*").order("start_date",{ascending:true});
+    var dbBlocks=blocksRes.data;
     if(dbBlocks) blocks=dbBlocks.map(function(b){ return {id:b.id,class_id:b.class_id,start_date:b.start_date,end_date:b.end_date,weeks:b.weeks,dates:b.dates||[],price:b.price,cap:b.cap,booked:b.booked||0,wait:b.wait||0,visible:b.visible!==false,status:b.status}; });
   }catch(err){ console.error("Blocks error:",err); }
 
