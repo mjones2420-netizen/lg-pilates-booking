@@ -1191,19 +1191,25 @@ function renderDashboard(){
       }
       // Load bookings
       var{data:dbBookings,error}=await sb.from("bookings")
-        .select("id,status,amount_due,refund_amount,block_id,class_id,customer_id,customers(first_name,last_name,email,phone,customer_type)")
+        .select("id,status,amount_due,refund_amount,block_id,class_id,customer_id")
         .order("created_at",{ascending:false});
       if(error) throw error;
+
+      // Load customers separately and map by id
+      var{data:dbCustomers}=await sb.from("customers").select("id,first_name,last_name,email,phone,customer_type");
+      var customerMap={};
+      if(dbCustomers) dbCustomers.forEach(function(c){ customerMap[c.id]=c; });
 
       bookings=dbBookings.map(function(b){
         var cls=classes.find(function(c){ return c.id===b.class_id; })||{};
         var blk=blocks.find(function(bl){ return bl.id===b.block_id; })||{};
+        var cust=customerMap[b.customer_id]||{};
         return {
           dbId:b.id, customerId:b.customer_id, blockId:b.block_id, classId:b.class_id,
-          client:b.customers?b.customers.first_name+" "+b.customers.last_name:"Unknown",
-          email:b.customers?b.customers.email:"",
-          phone:b.customers?b.customers.phone:"",
-          customerType:b.customers?b.customers.customer_type:"",
+          client:(cust.first_name||"")+" "+(cust.last_name||""),
+          email:cust.email||"",
+          phone:cust.phone||"",
+          customerType:cust.customer_type||"",
           cls:cls.name||"Unknown Class",
           when:(cls.day||"")+" "+(cls.time||"")+" - "+(cls.venue||""),
           blockDates:blk.dates?blk.dates[0]+" \u2013 "+blk.dates[blk.dates.length-1]:"",
