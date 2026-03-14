@@ -533,7 +533,7 @@ tr:hover td { background:var(--cream); }
         <div class="bank-row"><span class="bank-lbl">Reference</span><span class="bank-val" id="s-reference"></span></div>
       </div>
       <button class="confirm-btn" onclick="closeModal()">Back to Schedule</button>
-      <div id="booking-diag" style="display:none;margin-top:16px;background:#fde8e8;border-radius:4px;padding:12px;font-size:11px;color:#c04040;text-align:left;line-height:1.8;word-break:break-all"></div>
+
     </div>
   </div>
 </div>
@@ -971,8 +971,6 @@ function openModal(classId, blockId) {
     document.querySelectorAll("input[name=\"q"+qi+"\"][value=\"No\"]").forEach(function(r){ r.checked=true; });
   }
   document.querySelectorAll(".field-err").forEach(function(e){ e.className="field-err"; });
-  var diagEl=document.getElementById("booking-diag");
-  if(diagEl){ diagEl.style.display="none"; diagEl.innerHTML=""; }
 }
 
 function closeModal(){ document.getElementById("overlay").className="overlay"; }
@@ -997,18 +995,23 @@ function goStep2(){
   var ln=document.getElementById("b-lastname").value.trim();
   var em=document.getElementById("b-email").value.trim();
   var ph=document.getElementById("b-phone").value.trim();
-  document.getElementById("err-firstname").className="field-err"+(fn?"":" on");
-  document.getElementById("err-lastname").className="field-err"+(ln?"":" on");
-  var emailOk=em&&em.indexOf("@")>0&&em.indexOf(".")>0;
-  document.getElementById("err-email").className="field-err"+(emailOk?"":" on");
-  document.getElementById("err-phone").className="field-err"+(ph?"":" on");
-  if(!fn||!ln||!emailOk||!ph) return;
+  var emailOk=em&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
+  var phDigits=ph.replace(/[\s\-\+\(\)]/g,"");
+  var phoneOk=phDigits.length>=11&&/^\d+$/.test(phDigits);
+  var errors=[];
+  if(!fn) errors.push("First name is required");
+  if(!ln) errors.push("Last name is required");
+  if(!em) errors.push("Email address is required");
+  else if(!emailOk) errors.push("Email address is not valid (e.g. name@example.com)");
+  if(!ph) errors.push("Phone number is required");
+  else if(!phoneOk) errors.push("Phone number must be 11 digits (e.g. 07700 123456)");
+  if(errors.length>0){ showValidationToast(errors); return; }
   var btn=document.querySelector("#step-1 .step-btn");
   btn.textContent="Checking..."; btn.disabled=true;
   (async function(){
     try{
-      var{data:existing}=await sb.from("customers").select("id").eq("email",em).limit(1);
-      var isReturning=existing&&existing.length>0;
+      var existingRes=await sb.from("customers").select("id").eq("email",em).limit(1);
+      var isReturning=existingRes.data&&existingRes.data.length>0;
       window._customerIsReturning=isReturning;
       var msgEl=document.getElementById("customer-check-msg");
       if(isReturning){
@@ -1037,20 +1040,30 @@ function goStep3(){
     var ename=document.getElementById("b-emergency-name").value.trim();
     var erel=document.getElementById("b-emergency-relationship").value.trim();
     var ephone=document.getElementById("b-emergency-phone").value.trim();
-    document.getElementById("err-age").className="field-err"+(age?"":" on");
-    document.getElementById("err-emergency").className="field-err"+((ename&&erel&&ephone)?"":" on");
-    if(!age||!ename||!erel||!ephone) return;
+    var pn=document.getElementById("b-print-name").value.trim();
+    var ag=document.getElementById("b-declaration").checked;
+    // Validate age
+    var ageNum=parseInt(age);
+    var ageOk=age&&!isNaN(ageNum)&&ageNum>=18;
+    // Validate emergency phone
+    var ephDigits=ephone.replace(/[\s\-\+\(\)]/g,"");
+    var ephoneOk=ephDigits.length>=11&&/^\d+$/.test(ephDigits);
+    // Build errors
+    var errors=[];
+    if(!age) errors.push("Age is required");
+    else if(isNaN(ageNum)) errors.push("Age must be a number");
+    else if(ageNum<18) errors.push("You must be at least 18 years old to book a class");
+    if(!ename) errors.push("Emergency contact name is required");
+    if(!erel) errors.push("Emergency contact relationship is required");
+    if(!ephone) errors.push("Emergency contact phone number is required");
+    else if(!ephoneOk) errors.push("Emergency contact phone must be 11 digits (e.g. 07700 123456)");
     if(hasAnyYes()){
       var hc=document.getElementById("b-health-conditions").value.trim();
-      document.getElementById("err-health").className="field-err"+(hc?"":" on");
-      if(!hc) return;
+      if(!hc) errors.push("Please provide details for any YES answers");
     }
-    var pn=document.getElementById("b-print-name").value.trim();
-    var sd=document.getElementById("b-sign-date").textContent;
-    var ag=document.getElementById("b-declaration").checked;
-    document.getElementById("err-declaration").className="field-err"+(pn?"":" on");
-    document.getElementById("err-agree").className="field-err"+(ag?"":" on");
-    if(!pn||!ag) return;
+    if(!pn) errors.push("Please print your name in the declaration");
+    if(!ag) errors.push("You must agree to the declaration to continue");
+    if(errors.length>0){ showValidationToast(errors); return; }
   }
   document.getElementById("step-1").style.display="none";
   document.getElementById("step-2").style.display="none";
@@ -1132,29 +1145,23 @@ function confirmBooking(){
   blk.booked=blk.booked+1;
 
   (async function(){
-    var diagEl=document.getElementById("booking-diag");
-    function diag(msg){ if(diagEl){ diagEl.style.display="block"; diagEl.innerHTML+=msg+"<br>"; } }
     try{
-      diag("1. Looking up customer...");
+      // Save/update customer
       var existingRes=await sb.from("customers").select("id").eq("email",em).limit(1);
       var existing=existingRes.data;
       var existingErr=existingRes.error;
-      if(existingErr){ diag("ERROR looking up customer: "+existingErr.message); throw existingErr; }
+      if(existingErr) throw existingErr;
       var customerId;
       if(existing&&existing.length>0){
         customerId=existing[0].id;
-        diag("2. Returning customer found, id="+customerId);
         await sb.from("customers").update({first_name:fn,last_name:ln,phone:ph,customer_type:customerType}).eq("id",customerId);
       } else {
-        diag("2. New customer, inserting...");
         var insertRes=await sb.from("customers").insert({first_name:fn,last_name:ln,email:em,phone:ph,customer_type:customerType}).select("id").single();
         var insertErr=insertRes.error;
-        if(insertErr){ diag("ERROR inserting customer: "+insertErr.message); throw insertErr; }
-        if(!insertRes.data){ diag("ERROR: customer insert returned no data"); throw new Error("Customer insert returned no data"); }
+        if(insertErr) throw insertErr;
+        if(!insertRes.data) throw new Error("Customer insert returned no data");
         customerId=insertRes.data.id;
-        diag("3. Customer inserted, id="+customerId);
       }
-      diag("4. Inserting booking via function...");
       // Save booking via security definer function to bypass RLS
       var bookingRes=await sb.rpc("insert_booking", {
         p_class_id: c.id,
@@ -1164,9 +1171,9 @@ function confirmBooking(){
       });
       if(bookingRes.error) throw new Error("Booking insert failed: "+bookingRes.error.message);
       var savedBookingId=bookingRes.data;
-      diag("5. Booking saved, id="+savedBookingId);
+      // Update booked count on block
       await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id);
-      diag("6. Block count updated. ALL DONE.");
+      // Save PAR-Q separately — failure here won't affect the booking
       if(isNew&&parqData){
         try{
           var monthMap={"Jan":"01","Feb":"02","Mar":"03","Apr":"04","May":"05","Jun":"06","Jul":"07","Aug":"08","Sep":"09","Oct":"10","Nov":"11","Dec":"12"};
@@ -1176,10 +1183,9 @@ function confirmBooking(){
           var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
           for(var qi=0;qi<parqData.questions.length;qi++){ answers[qKeys[qi]]=parqData.questions[qi].a; }
           await sb.from("parq").insert(Object.assign({booking_id:savedBookingId,customer_id:customerId,age:parqData.age,emergency_name:parqData.emergencyName,emergency_relationship:parqData.emergencyRelationship,emergency_phone:parqData.emergencyPhone,yes_details:parqData.details,additional_notes:parqData.other,print_name:parqData.printName,sign_date:signDateFormatted},answers));
-          diag("7. PAR-Q saved.");
-        }catch(parqErr){ diag("PAR-Q error (booking still saved): "+parqErr.message); }
+        }catch(parqErr){ console.error("PAR-Q save error:",parqErr); }
       }
-    }catch(err){ diag("FATAL ERROR: "+err.message); }
+    }catch(err){ console.error("Save error:",err); }
   })();
 
   var html="";
@@ -1967,6 +1973,23 @@ function exportAll(){
       console.error(err); setExportStatus("Error during export. See console.");
     }
   })();
+}
+
+function showValidationToast(errors){
+  var existing=document.getElementById("validation-toast");
+  if(existing) existing.remove();
+  var t=document.createElement("div");
+  t.id="validation-toast";
+  t.style.cssText="position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a2e2e;color:white;padding:16px 22px;border-radius:4px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:340px;width:90%;animation:fadeup 0.2s ease";
+  var title=document.createElement("div");
+  title.style.cssText="font-weight:600;margin-bottom:8px;font-size:14px";
+  title.textContent="⚠ Please fix the following:";
+  var ul=document.createElement("ul");
+  ul.style.cssText="padding-left:16px;line-height:2";
+  errors.forEach(function(e){ var li=document.createElement("li"); li.style.color="#b8d8d8"; li.textContent=e; ul.appendChild(li); });
+  t.appendChild(title); t.appendChild(ul);
+  document.body.appendChild(t);
+  setTimeout(function(){ if(t.parentNode) t.remove(); }, 5000);
 }
 
 function showToast(msg){
