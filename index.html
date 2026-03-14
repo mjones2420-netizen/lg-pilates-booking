@@ -1154,18 +1154,16 @@ function confirmBooking(){
         customerId=insertRes.data.id;
         diag("3. Customer inserted, id="+customerId);
       }
-      diag("4. Inserting booking...");
-      var bookingRes=await sb.from("bookings").insert({
-        class_id:c.id,
-        block_id:blk.id,
-        customer_id:customerId,
-        status:"reserved",
-        amount_due:blk.price*blk.weeks
-      }).select("id").single();
-      var bookingErr=bookingRes.error;
-      if(bookingErr){ diag("ERROR inserting booking: "+bookingErr.message); throw bookingErr; }
-      if(!bookingRes.data){ diag("ERROR: booking insert returned no data"); throw new Error("Booking insert returned no data"); }
-      var savedBookingId=bookingRes.data.id;
+      diag("4. Inserting booking via function...");
+      // Save booking via security definer function to bypass RLS
+      var bookingRes=await sb.rpc("insert_booking", {
+        p_class_id: c.id,
+        p_block_id: blk.id,
+        p_customer_id: customerId,
+        p_amount_due: blk.price*blk.weeks
+      });
+      if(bookingRes.error) throw new Error("Booking insert failed: "+bookingRes.error.message);
+      var savedBookingId=bookingRes.data;
       diag("5. Booking saved, id="+savedBookingId);
       await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id);
       diag("6. Block count updated. ALL DONE.");
