@@ -1199,28 +1199,67 @@ function renderBlockWarnings(){
   var el=document.getElementById("block-warnings");
   if(!el) return;
 
-  // Find classes with no upcoming block (active OR future-starting)
   var today=new Date(); today.setHours(0,0,0,0);
-  var missing=classes.filter(function(c){
-    var hasUpcoming=blocks.some(function(b){
+
+  // CRITICAL: classes with no active or upcoming block — already hidden from clients
+  var hidden=classes.filter(function(c){
+    return !blocks.some(function(b){
       return b.class_id===c.id && b.visible!==false && new Date(b.end_date+"T00:00:00")>=today;
     });
-    return !hasUpcoming;
   });
 
-  if(missing.length===0){ el.style.display="none"; el.innerHTML=""; return; }
+  // ADVISORY: classes with an active block but no next block — will disappear when it ends
+  var expiring=classes.filter(function(c){
+    var activeBlk=blocks.find(function(b){
+      var s=new Date(b.start_date+"T00:00:00"), e=new Date(b.end_date+"T00:00:00");
+      return b.class_id===c.id && b.visible!==false && s<=today && e>=today;
+    });
+    if(!activeBlk) return false; // no active block — already caught by hidden, or has future block
+    var hasNext=blocks.some(function(b){
+      return b.class_id===c.id && b.visible!==false && new Date(b.start_date+"T00:00:00")>today;
+    });
+    return !hasNext;
+  });
 
-  var html='<div class="block-warning">';
-  html+='<div class="block-warning-title">&#9888; '+missing.length+' class'+(missing.length>1?"es have":" has")+' no upcoming block &mdash; '+
-        (missing.length>1?"they are":"it is")+' hidden from the booking page</div>';
-  missing.forEach(function(c){
-    html+='<div class="block-warning-row">';
-    html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
-    html+='<div class="block-warning-meta">'+sanitise(c.venue)+', '+sanitise(c.loc)+'</div></div>';
-    html+='<button class="act act-confirm" onclick="openAddBlockModal('+c.id+')" style="white-space:nowrap">+ Add Block</button>';
+  if(hidden.length===0 && expiring.length===0){ el.style.display="none"; el.innerHTML=""; return; }
+
+  var html="";
+
+  // Critical banner — red-amber
+  if(hidden.length>0){
+    html+='<div class="block-warning" style="margin-bottom:'+(expiring.length>0?'12px':'28px')+'">';
+    html+='<div class="block-warning-title">&#128683; '+hidden.length+' class'+(hidden.length>1?"es are":" is")+
+          ' not visible on the booking page &mdash; no active or upcoming block</div>';
+    hidden.forEach(function(c){
+      html+='<div class="block-warning-row">';
+      html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
+      html+='<div class="block-warning-meta">'+sanitise(c.venue)+', '+sanitise(c.loc)+'</div></div>';
+      html+='<button class="act act-confirm" onclick="openAddBlockModal('+c.id+')" style="white-space:nowrap">+ Add Block</button>';
+      html+='</div>';
+    });
     html+='</div>';
-  });
-  html+='</div>';
+  }
+
+  // Advisory banner — softer yellow
+  if(expiring.length>0){
+    html+='<div class="block-warning" style="background:#fffbf0;border-color:#e8d080;margin-bottom:28px">';
+    html+='<div class="block-warning-title" style="color:#a07020">&#9888; '+expiring.length+' class'+(expiring.length>1?"es have":" has")+
+          ' an active block but no next block &mdash; '+(expiring.length>1?"they will disappear":"it will disappear")+' from the booking page when the current block ends</div>';
+    expiring.forEach(function(c){
+      var activeBlk=blocks.find(function(b){
+        var s=new Date(b.start_date+"T00:00:00"), e=new Date(b.end_date+"T00:00:00");
+        return b.class_id===c.id && b.visible!==false && s<=today && e>=today;
+      });
+      var endsStr=activeBlk?new Date(activeBlk.end_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
+      html+='<div class="block-warning-row">';
+      html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
+      html+='<div class="block-warning-meta">'+sanitise(c.venue)+', '+sanitise(c.loc)+(endsStr?' &mdash; current block ends '+sanitise(endsStr):'')+'</div></div>';
+      html+='<button class="act act-confirm" onclick="openAddBlockModal('+c.id+')" style="white-space:nowrap">+ Add Block</button>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
   el.innerHTML=html;
   el.style.display="block";
 }
