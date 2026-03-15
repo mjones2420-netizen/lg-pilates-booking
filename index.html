@@ -1333,9 +1333,10 @@ function renderDashboard(){
       if(statsEls[2]) statsEls[2].textContent=bookings.filter(function(b){ return b.status==="waitlist"; }).length;
       if(statsEls[3]) statsEls[3].textContent=fillRate+"%";
 
-      // Refresh blocks booked counts from DB
-      var{data:liveBlocks}=await sb.from("blocks").select("id,booked,cap,status");
-      if(liveBlocks){ liveBlocks.forEach(function(lb){ var blk=blocks.find(function(b){ return b.id===lb.id; }); if(blk){ blk.booked=lb.booked; blk.cap=lb.cap; } }); }
+      // Reload blocks fully from DB — ensures deleted/added blocks are reflected
+      // (a partial refresh would leave stale entries in the local array)
+      var{data:freshBlocks}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
+      if(freshBlocks) blocks=freshBlocks.map(function(b){ return {id:b.id,class_id:b.class_id,start_date:b.start_date,end_date:b.end_date,weeks:b.weeks,dates:b.dates||[],price:b.price,cap:b.cap,booked:b.booked||0,wait:b.wait||0,visible:b.visible!==false,status:b.status}; });
 
       // Classes table — each class shows its active and upcoming block
       var chtml="";
