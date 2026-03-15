@@ -1200,6 +1200,13 @@ function renderBlockWarnings(){
   if(!el) return;
 
   var today=new Date(); today.setHours(0,0,0,0);
+  console.log("=== renderBlockWarnings ===");
+  console.log("Today:", today.toISOString());
+  console.log("Total blocks in memory:", blocks.length);
+  blocks.forEach(function(b){
+    console.log("  Block id:"+b.id+" class_id:"+b.class_id+" start:"+b.start_date+" end:"+b.end_date+" visible:"+b.visible);
+  });
+  console.log("Total classes:", classes.length);
 
   // CRITICAL: classes with no active or upcoming block — already hidden from clients
   var hidden=classes.filter(function(c){
@@ -1207,6 +1214,7 @@ function renderBlockWarnings(){
       return b.class_id===c.id && b.visible!==false && new Date(b.end_date+"T00:00:00")>=today;
     });
   });
+  console.log("Hidden classes (no block at all):", hidden.map(function(c){ return c.id+":"+c.name; }));
 
   // ADVISORY: classes with an active block but no next block — will disappear when it ends
   var expiring=classes.filter(function(c){
@@ -1214,12 +1222,16 @@ function renderBlockWarnings(){
       var s=new Date(b.start_date+"T00:00:00"), e=new Date(b.end_date+"T00:00:00");
       return b.class_id===c.id && b.visible!==false && s<=today && e>=today;
     });
-    if(!activeBlk) return false; // no active block — already caught by hidden, or has future block
+    console.log("Class "+c.id+" "+c.name+": activeBlk=", activeBlk?activeBlk.id:"none");
+    if(!activeBlk) return false;
     var hasNext=blocks.some(function(b){
       return b.class_id===c.id && b.visible!==false && new Date(b.start_date+"T00:00:00")>today;
     });
+    console.log("  hasNext="+hasNext);
     return !hasNext;
   });
+  console.log("Expiring classes (active but no next):", expiring.map(function(c){ return c.id+":"+c.name; }));
+  console.log("===========================");
 
   if(hidden.length===0 && expiring.length===0){ el.style.display="none"; el.innerHTML=""; return; }
 
