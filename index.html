@@ -1200,13 +1200,6 @@ function renderBlockWarnings(){
   if(!el) return;
 
   var today=new Date(); today.setHours(0,0,0,0);
-  console.log("=== renderBlockWarnings ===");
-  console.log("Today:", today.toISOString());
-  console.log("Total blocks in memory:", blocks.length);
-  blocks.forEach(function(b){
-    console.log("  Block id:"+b.id+" class_id:"+b.class_id+" start:"+b.start_date+" end:"+b.end_date+" visible:"+b.visible);
-  });
-  console.log("Total classes:", classes.length);
 
   // CRITICAL: classes with no active or upcoming block — already hidden from clients
   var hidden=classes.filter(function(c){
@@ -1214,24 +1207,21 @@ function renderBlockWarnings(){
       return b.class_id===c.id && b.visible!==false && new Date(b.end_date+"T00:00:00")>=today;
     });
   });
-  console.log("Hidden classes (no block at all):", hidden.map(function(c){ return c.id+":"+c.name; }));
 
-  // ADVISORY: classes with an active block but no next block — will disappear when it ends
+  // ADVISORY: classes whose soonest current/upcoming block has no block behind it.
+  // "Current" here means end_date >= today (started or not yet started — both are visible to clients).
   var expiring=classes.filter(function(c){
-    var activeBlk=blocks.find(function(b){
-      var s=new Date(b.start_date+"T00:00:00"), e=new Date(b.end_date+"T00:00:00");
-      return b.class_id===c.id && b.visible!==false && s<=today && e>=today;
+    // Already in the hidden list — skip
+    if(hidden.indexOf(c)>-1) return false;
+    // Find all blocks for this class that are still relevant (end_date >= today)
+    var relevant=blocks.filter(function(b){
+      return b.class_id===c.id && b.visible!==false && new Date(b.end_date+"T00:00:00")>=today;
     });
-    console.log("Class "+c.id+" "+c.name+": activeBlk=", activeBlk?activeBlk.id:"none");
-    if(!activeBlk) return false;
-    var hasNext=blocks.some(function(b){
-      return b.class_id===c.id && b.visible!==false && new Date(b.start_date+"T00:00:00")>today;
-    });
-    console.log("  hasNext="+hasNext);
-    return !hasNext;
+    // Sort soonest first
+    relevant.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
+    // If there is only one relevant block, there is nothing lined up after it
+    return relevant.length===1;
   });
-  console.log("Expiring classes (active but no next):", expiring.map(function(c){ return c.id+":"+c.name; }));
-  console.log("===========================");
 
   if(hidden.length===0 && expiring.length===0){ el.style.display="none"; el.innerHTML=""; return; }
 
@@ -1258,11 +1248,12 @@ function renderBlockWarnings(){
     html+='<div class="block-warning-title" style="color:#a07020">&#9888; '+expiring.length+' class'+(expiring.length>1?"es have":" has")+
           ' an active block but no next block &mdash; '+(expiring.length>1?"they will disappear":"it will disappear")+' from the booking page when the current block ends</div>';
     expiring.forEach(function(c){
-      var activeBlk=blocks.find(function(b){
-        var s=new Date(b.start_date+"T00:00:00"), e=new Date(b.end_date+"T00:00:00");
-        return b.class_id===c.id && b.visible!==false && s<=today && e>=today;
+      var relevant=blocks.filter(function(b){
+        return b.class_id===c.id && b.visible!==false && new Date(b.end_date+"T00:00:00")>=today;
       });
-      var endsStr=activeBlk?new Date(activeBlk.end_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
+      relevant.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
+      var currentBlk=relevant[0];
+      var endsStr=currentBlk?new Date(currentBlk.end_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
       html+='<div class="block-warning-row">';
       html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
       html+='<div class="block-warning-meta">'+sanitise(c.venue)+', '+sanitise(c.loc)+(endsStr?' &mdash; current block ends '+sanitise(endsStr):'')+'</div></div>';
