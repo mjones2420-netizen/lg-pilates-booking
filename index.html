@@ -1141,39 +1141,56 @@ function confirmBooking(){
       parqData.questions.push({q:qLabels[qi-1],a:val});
     }
   }
-  blk.booked=blk.booked+1;
+
+  // Disable confirm button to prevent double-submission
+  var confirmBtn=document.querySelector(".confirm-btn");
+  if(confirmBtn){ confirmBtn.disabled=true; confirmBtn.textContent="Reserving..."; }
 
   (async function(){
     try{
-      // Look up customer via security definer function
+      // Step 1: Upsert customer
       var lookupRes=await sb.rpc("lookup_customer", {p_email: em});
       if(lookupRes.error) throw new Error("Customer lookup failed: "+lookupRes.error.message);
       var existing=lookupRes.data;
-      var isReturning=existing&&existing.length>0;
-      var customerType=isReturning?"Returning":"New";
-      // Upsert customer via security definer function
+      var customerType=(existing&&existing.length>0)?"Returning":"New";
       var upsertRes=await sb.rpc("upsert_customer", {
-        p_first_name: fn,
-        p_last_name: ln,
-        p_email: em,
-        p_phone: ph,
-        p_customer_type: customerType
+        p_first_name: fn, p_last_name: ln, p_email: em, p_phone: ph, p_customer_type: customerType
       });
       if(upsertRes.error) throw new Error("Customer upsert failed: "+upsertRes.error.message);
       var customerId=upsertRes.data;
-      // Save booking via security definer function
-      var bookingRes=await sb.rpc("insert_booking", {
-        p_class_id: c.id,
+
+      // Step 2: Atomic capacity check + booking insert via book_if_available RPC.
+      // This runs entirely inside the database as a single transaction, preventing
+      // race conditions where two people book the last spot simultaneously.
+      var bookRes=await sb.rpc("book_if_available", {
         p_block_id: blk.id,
+        p_class_id: c.id,
         p_customer_id: customerId,
         p_amount_due: blk.price*blk.weeks
       });
-      if(bookingRes.error) throw new Error("Booking insert failed: "+bookingRes.error.message);
-      var savedBookingId=bookingRes.data;
-      // Update booked count on block via security definer function
-      await sb.rpc("increment_block_booked", {p_block_id: blk.id, p_booked: blk.booked});
-      // Save PAR-Q separately — failure here won't affect the booking
-      if(isNew&&parqData){
+      if(bookRes.error){
+        // Surface user-friendly messages for known failure cases
+        var msg=bookRes.error.message||"";
+        if(msg.indexOf("CLASS_FULL")>-1){
+          showToast("Sorry — this class just became full. Please try another block.");
+          renderGrid(); // Refresh card to show full status
+          closeModal();
+          return;
+        }
+        if(msg.indexOf("ALREADY_BOOKED")>-1){
+          showToast("You already have a booking on this block.");
+          closeModal();
+          return;
+        }
+        throw new Error("Booking failed: "+msg);
+      }
+      var savedBookingId=bookRes.data;
+
+      // Update local booked count to keep UI in sync
+      blk.booked=blk.booked+1;
+
+      // Step 3: Save PAR-Q — failure here does not affect the booking
+      if(isNew&&parqData&&savedBookingId){
         try{
           var monthMap={"Jan":"01","Feb":"02","Mar":"03","Apr":"04","May":"05","Jun":"06","Jul":"07","Aug":"08","Sep":"09","Oct":"10","Nov":"11","Dec":"12"};
           var dateParts=parqData.signDate.split(" ");
@@ -1181,23 +1198,34 @@ function confirmBooking(){
           var answers={};
           var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
           for(var qi=0;qi<parqData.questions.length;qi++){ answers[qKeys[qi]]=parqData.questions[qi].a; }
-          await sb.from("parq").insert(Object.assign({booking_id:savedBookingId,customer_id:customerId,age:parqData.age,emergency_name:parqData.emergencyName,emergency_relationship:parqData.emergencyRelationship,emergency_phone:parqData.emergencyPhone,yes_details:parqData.details,additional_notes:parqData.other,print_name:parqData.printName,sign_date:signDateFormatted},answers));
-        }catch(parqErr){ console.error("PAR-Q save error:",parqErr); }
+          await sb.from("parq").insert(Object.assign({
+            booking_id:savedBookingId, customer_id:customerId, age:parqData.age,
+            emergency_name:parqData.emergencyName, emergency_relationship:parqData.emergencyRelationship,
+            emergency_phone:parqData.emergencyPhone, yes_details:parqData.details,
+            additional_notes:parqData.other, print_name:parqData.printName, sign_date:signDateFormatted
+          },answers));
+        }catch(parqErr){ console.error("PAR-Q save error (booking still saved):",parqErr); }
       }
-    }catch(err){ console.error("Save error:",err); }
-  })();
 
-  var html="";
-  html+="<div class=\"srow\"><span>Name</span><span>"+sanitise(fn)+" "+sanitise(ln)+"</span></div>";
-  html+="<div class=\"srow\"><span>Class</span><span>"+sanitise(c.name)+"</span></div>";
-  html+="<div class=\"srow\"><span>Venue</span><span>"+sanitise(c.venue)+", "+sanitise(c.loc)+"</span></div>";
-  html+="<div class=\"srow\"><span>When</span><span>"+sanitise(c.day)+" "+sanitise(c.time)+" &ndash; "+sanitise(c.end_time)+"</span></div>";
-  html+="<div class=\"srow\"><span>Block</span><span>"+sanitise((blk.dates||[])[0]||"")+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||"")+"</span></div>";
-  html+="<div class=\"srow\"><span>Amount Due</span><span style=\"font-weight:600;color:var(--charcoal)\">&pound;"+sanitise(String(blk.price*blk.weeks))+"</span></div>";
-  document.getElementById("sdetail").innerHTML=html;
-  document.getElementById("s-reference").textContent=fn+" "+ln+" "+c.day;
-  document.getElementById("form-view").style.display="none";
-  document.getElementById("success-view").className="success on";
+      // Step 4: Show success screen
+      var html="";
+      html+="<div class=\"srow\"><span>Name</span><span>"+sanitise(fn)+" "+sanitise(ln)+"</span></div>";
+      html+="<div class=\"srow\"><span>Class</span><span>"+sanitise(c.name)+"</span></div>";
+      html+="<div class=\"srow\"><span>Venue</span><span>"+sanitise(c.venue)+", "+sanitise(c.loc)+"</span></div>";
+      html+="<div class=\"srow\"><span>When</span><span>"+sanitise(c.day)+" "+sanitise(c.time)+" &ndash; "+sanitise(c.end_time)+"</span></div>";
+      html+="<div class=\"srow\"><span>Block</span><span>"+sanitise((blk.dates||[])[0]||"")+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||"")+"</span></div>";
+      html+="<div class=\"srow\"><span>Amount Due</span><span style=\"font-weight:600;color:var(--charcoal)\">&pound;"+sanitise(String(blk.price*blk.weeks))+"</span></div>";
+      document.getElementById("sdetail").innerHTML=html;
+      document.getElementById("s-reference").textContent=fn+" "+ln+" "+c.day;
+      document.getElementById("form-view").style.display="none";
+      document.getElementById("success-view").className="success on";
+
+    }catch(err){
+      console.error("Booking error:",err);
+      showToast("Something went wrong. Please try again.");
+      if(confirmBtn){ confirmBtn.disabled=false; confirmBtn.textContent="Reserve My Spot \u2014 \u00a3"+sanitise(String(blk.price*blk.weeks))+" due"; }
+    }
+  })();
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
