@@ -112,11 +112,22 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:200; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:20px; }
 .overlay.on { display:flex; animation:fadeup 0.2s ease; }
 .modal { background:var(--warm); border-radius:6px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; }
-.mhead { padding:28px 28px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; }
+.mhead { padding:28px 28px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; }
+.mhead-top { display:flex; justify-content:space-between; align-items:flex-start; width:100%; padding-bottom:16px; }
 .mtitle { font-family:'Raleway',sans-serif; font-size:28px; font-weight:400; }
 .msub { font-size:15px; color:var(--mid); margin-top:3px; }
 .mclose { background:none; border:none; font-size:22px; cursor:pointer; color:var(--light); transition:color 0.2s; line-height:1; }
 .mclose:hover { color:var(--charcoal); }
+.step-progress { display:flex; align-items:center; width:100%; padding:12px 0 14px; }
+.step-pip { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; }
+.step-pip-circle { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; border:2px solid var(--border); background:white; color:var(--light); transition:all 0.25s; }
+.step-pip-circle.active { background:var(--sage); border-color:var(--sage); color:white; }
+.step-pip-circle.done { background:var(--sage-lt); border-color:var(--sage-lt); color:var(--sage-dk); }
+.step-pip-label { font-size:10px; letter-spacing:0.04em; color:var(--light); white-space:nowrap; transition:color 0.25s; }
+.step-pip-label.active { color:var(--sage-dk); font-weight:600; }
+.step-pip-label.done { color:var(--sage); }
+.step-connector { flex:1; height:2px; background:var(--border); margin:0 6px 14px; border-radius:2px; transition:background 0.25s; }
+.step-connector.done { background:var(--sage-lt); }
 .mbody { padding:24px 28px; }
 .msummary { background:var(--cream); border-radius:4px; padding:14px 18px; margin-bottom:22px; display:flex; justify-content:space-between; align-items:center; }
 .msum-info { font-size:16px; color:var(--mid); }
@@ -388,11 +399,29 @@ tr:hover td { background:var(--cream); }
   <div class="modal">
     <div id="form-view">
       <div class="mhead">
-        <div>
-          <div class="mtitle" id="m-name">Class Name</div>
-          <div class="msub" id="m-sub">Details</div>
+        <div class="mhead-top">
+          <div>
+            <div class="mtitle" id="m-name">Class Name</div>
+            <div class="msub" id="m-sub">Details</div>
+          </div>
+          <button class="mclose" onclick="closeModal()">x</button>
         </div>
-        <button class="mclose" onclick="closeModal()">x</button>
+        <div class="step-progress" id="step-progress">
+          <div class="step-pip">
+            <div class="step-pip-circle active" id="pip-1">1</div>
+            <span class="step-pip-label active" id="pip-lbl-1">Your details</span>
+          </div>
+          <div class="step-connector" id="conn-1"></div>
+          <div class="step-pip" id="pip-wrap-2">
+            <div class="step-pip-circle" id="pip-2">2</div>
+            <span class="step-pip-label" id="pip-lbl-2">Health form</span>
+          </div>
+          <div class="step-connector" id="conn-2"></div>
+          <div class="step-pip" id="pip-wrap-3">
+            <div class="step-pip-circle" id="pip-3">3</div>
+            <span class="step-pip-label" id="pip-lbl-3">Payment</span>
+          </div>
+        </div>
       </div>
       <div class="mbody">
         <div class="msummary" id="msummary-bar">
@@ -928,6 +957,7 @@ function openModal(classId, blockId) {
   document.getElementById("step-2").style.display="none";
   document.getElementById("step-3").style.display="none";
   document.getElementById("mfoot-confirm").style.display="none";
+  updateStepIndicator(1, false);
   // Reset fields
   ["b-firstname","b-lastname","b-email","b-phone","b-health-other"].forEach(function(id){ document.getElementById(id).value=""; });
   window._customerIsReturning=false;
@@ -954,11 +984,49 @@ document.getElementById("view-overlay").addEventListener("click",function(e){ if
 document.getElementById("add-class-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddClassModal(); });
 document.getElementById("add-block-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddBlockModal(); });
 
+function scrollModalTop(){
+  var modal=document.querySelector(".overlay.on .modal");
+  if(modal) modal.scrollTo({top:0, behavior:"smooth"});
+}
+
+function updateStepIndicator(activeStep, isReturning){
+  var totalSteps=isReturning?2:3;
+  // Update pip 2 label for returning clients
+  var pip2lbl=document.getElementById("pip-lbl-2");
+  var conn2=document.getElementById("conn-2");
+  var pipWrap3=document.getElementById("pip-wrap-3");
+  if(isReturning){
+    pip2lbl.textContent="Payment";
+    conn2.style.display="none";
+    pipWrap3.style.display="none";
+  } else {
+    pip2lbl.textContent="Health form";
+    conn2.style.display="";
+    pipWrap3.style.display="";
+  }
+  var steps=isReturning?[1,2]:[1,2,3];
+  steps.forEach(function(s){
+    var circle=document.getElementById("pip-"+s);
+    var label=document.getElementById("pip-lbl-"+s);
+    if(!circle) return;
+    circle.classList.remove("active","done");
+    label.classList.remove("active","done");
+    if(s<activeStep){ circle.classList.add("done"); circle.textContent="✓"; label.classList.add("done"); }
+    else if(s===activeStep){ circle.classList.add("active"); circle.textContent=s; label.classList.add("active"); }
+    else { circle.textContent=s; }
+  });
+  var conn1=document.getElementById("conn-1");
+  if(conn1) conn1.classList.toggle("done", activeStep>1);
+  if(conn2) conn2.classList.toggle("done", activeStep>2);
+}
+
 function goStep1(){
   document.getElementById("step-1").style.display="block";
   document.getElementById("step-2").style.display="none";
   document.getElementById("step-3").style.display="none";
   document.getElementById("mfoot-confirm").style.display="none";
+  updateStepIndicator(1, window._customerIsReturning||false);
+  scrollModalTop();
 }
 
 function goStep2(){
@@ -997,9 +1065,11 @@ function goStep2(){
           document.getElementById("step-2").style.display="block";
           var step2=document.getElementById("step-2");
           step2.insertBefore(msgEl,step2.firstChild);
+          updateStepIndicator(2, false);
+          scrollModalTop();
         }, 2500);
       }
-    }catch(err){ console.error(err); window._customerIsReturning=false; document.getElementById("step-1").style.display="none"; document.getElementById("step-2").style.display="block"; }
+    }catch(err){ console.error(err); window._customerIsReturning=false; document.getElementById("step-1").style.display="none"; document.getElementById("step-2").style.display="block"; updateStepIndicator(2, false); scrollModalTop(); }
     finally{ btn.textContent="Continue"; btn.disabled=false; }
   })();
 }
@@ -1059,14 +1129,19 @@ function goStep3(){
   document.getElementById("m-block-summary-time").textContent=selected.day+" "+selected.time+" \u2013 "+selected.end_time;
   document.getElementById("m-block-summary-price").textContent="\u00a3"+totalPrice;
   document.getElementById("m-block-summary-pills").innerHTML=(blk.dates||[]).map(function(d){ return '<span style="font-size:12px;padding:3px 9px;background:#eef5f5;border:1px solid #cde0e0;border-radius:100px;color:#4a6060">'+d+'</span>'; }).join("");
+  var isRet=!!window._customerIsReturning;
+  updateStepIndicator(isRet?2:3, isRet);
+  scrollModalTop();
 }
 
 function goStepBack3(){
   document.getElementById("step-3").style.display="none";
   document.getElementById("mfoot-confirm").style.display="none";
   document.getElementById("msummary-bar").style.display="flex";
-  if(window._customerIsReturning){ document.getElementById("step-1").style.display="block"; }
-  else { document.getElementById("step-2").style.display="block"; }
+  var isRet=!!window._customerIsReturning;
+  if(isRet){ document.getElementById("step-1").style.display="block"; updateStepIndicator(1, true); }
+  else { document.getElementById("step-2").style.display="block"; updateStepIndicator(2, false); }
+  scrollModalTop();
 }
 
 function onTcsChange(){
