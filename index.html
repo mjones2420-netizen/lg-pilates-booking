@@ -519,13 +519,44 @@ tr:hover td { background:var(--cream); }
             <div class="bank-row"><span class="bank-lbl">Reference</span><span class="bank-val" id="m-reference">Your name + class day</span></div>
           </div>
 
+          <div style="border:1px solid var(--border);border-radius:4px;margin-top:20px;overflow:hidden;">
+            <div style="padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border);">
+              <span style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:var(--light);font-weight:600;">Terms &amp; Conditions</span>
+            </div>
+            <div style="height:160px;overflow-y:scroll;padding:12px 14px;font-size:12px;line-height:1.7;color:var(--mid);">
+              <ul style="margin:0;padding-left:1.1rem;">
+                <li style="margin-bottom:5px">Payment is to be made before the start of a block, no later than 48 hours.</li>
+                <li style="margin-bottom:5px">Blocks will run between 4&ndash;6 weeks dependent on school holidays, instructor holiday or venue availability.</li>
+                <li style="margin-bottom:5px">Advance notice will be given regarding block length and any changes to blocks or block prices.</li>
+                <li style="margin-bottom:5px">Please make payment within the time frame stated on the invoice. To secure your space it is recommended payment is made promptly.</li>
+                <li style="margin-bottom:5px">You pay for your block upfront regardless of how many sessions you attend.</li>
+                <li style="margin-bottom:5px">If you cancel your block booking you must give the instructor at least 48 hours notice. Any cancellations after this time will be charged.</li>
+                <li style="margin-bottom:5px">If you are aware you cannot make one of the sessions within the block, please notify the instructor in advance and they will try to accommodate you into another class, although this will be dependent on availability. You must make up your session within the block.</li>
+                <li style="margin-bottom:5px">Classes cannot be carried over into a new block. Blocks cannot be carried on to other blocks.</li>
+                <li style="margin-bottom:5px">A recorded video will be available if you are unable to make up the session in person. There will be a new recording for each block.</li>
+                <li style="margin-bottom:5px">Missed classes will not be refunded.</li>
+                <li style="margin-bottom:5px">Classes cannot be refunded due to weather (snow, heatwaves etc), but an online/Zoom class will be provided.</li>
+                <li style="margin-bottom:5px">No participants under the age of 18. Participants are not to bring children to class.</li>
+                <li style="margin-bottom:5px">You are responsible for any personal belongings that you bring to class.</li>
+                <li style="margin-bottom:5px">Please arrive early for your class. The instructor has the right to refuse late participants.</li>
+              </ul>
+              <p style="margin:10px 0 0;font-size:12px;font-style:italic;color:var(--light);">By booking your block you agree to accept the terms and conditions for LG Pilates.</p>
+            </div>
+          </div>
+
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-top:14px;padding:12px 14px;border-radius:4px;border:1px solid var(--border);background:var(--cream);">
+            <input type="checkbox" id="tcs-agree" style="margin-top:3px;accent-color:var(--sage);width:15px;height:15px;flex-shrink:0;" onchange="onTcsChange()">
+            <span style="font-size:13px;color:var(--charcoal);line-height:1.5;">I have read and agree to the <strong>Terms &amp; Conditions</strong> of LG Pilates</span>
+          </label>
+
           <div class="frow-btns" style="margin-top:20px">
             <button class="step-btn-back" onclick="goStepBack3()">Back</button>
           </div>
         </div>
       </div>
       <div class="mfoot" id="mfoot-confirm" style="display:none">
-        <button class="confirm-btn" onclick="confirmBooking()">Reserve My Spot &mdash; <span id="m-btnprice">£60</span> due</button>
+        <button class="confirm-btn" id="reserve-btn" onclick="confirmBooking()" disabled style="opacity:0.5;cursor:not-allowed;">Reserve My Spot &mdash; <span id="m-btnprice">£60</span> due</button>
+        <div id="tcs-hint" style="text-align:center;font-size:12px;color:var(--light);margin-top:8px;">Please agree to the Terms &amp; Conditions above to continue</div>
       </div>
     </div>
     <div class="success" id="success-view">
@@ -1010,6 +1041,13 @@ function goStep3(){
   document.getElementById("step-3").style.display="block";
   document.getElementById("mfoot-confirm").style.display="block";
   document.getElementById("msummary-bar").style.display="none";
+  // Reset T&Cs checkbox and button state on each entry to step 3
+  var tcsChk=document.getElementById("tcs-agree");
+  var reserveBtn=document.getElementById("reserve-btn");
+  var tcsHint=document.getElementById("tcs-hint");
+  if(tcsChk){ tcsChk.checked=false; }
+  if(reserveBtn){ reserveBtn.disabled=true; reserveBtn.style.opacity="0.5"; reserveBtn.style.cursor="not-allowed"; }
+  if(tcsHint){ tcsHint.style.display="block"; }
   document.getElementById("step-3-label").textContent=(window._customerIsReturning?"Step 2 of 2":"Step 3 of 3")+" \u2014 Payment";
   var fn=document.getElementById("b-firstname").value.trim();
   var ln=document.getElementById("b-lastname").value.trim();
@@ -1029,6 +1067,16 @@ function goStepBack3(){
   document.getElementById("msummary-bar").style.display="flex";
   if(window._customerIsReturning){ document.getElementById("step-1").style.display="block"; }
   else { document.getElementById("step-2").style.display="block"; }
+}
+
+function onTcsChange(){
+  var checked=document.getElementById("tcs-agree").checked;
+  var btn=document.getElementById("reserve-btn");
+  var hint=document.getElementById("tcs-hint");
+  btn.disabled=!checked;
+  btn.style.opacity=checked?"1":"0.5";
+  btn.style.cursor=checked?"pointer":"not-allowed";
+  hint.style.display=checked?"none":"block";
 }
 
 function hasAnyYes(){
