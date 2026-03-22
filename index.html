@@ -391,10 +391,6 @@ tr:hover td { background:var(--cream); }
   </div>
 </div>
 
-
-
-
-
 <div class="overlay" id="overlay">
   <div class="modal">
     <div id="form-view">
@@ -645,8 +641,8 @@ tr:hover td { background:var(--cream); }
         <div><label class="flbl">Level</label><input type="text" class="finp" id="ac-level" placeholder="e.g. Mixed Ability" style="margin-bottom:0"></div>
       </div>
       <div class="frow" style="margin-top:14px">
-        <div><label class="flbl">Start Time</label><input type="text" class="finp" id="ac-time" placeholder="e.g. 9:45am" style="margin-bottom:0"></div>
-        <div><label class="flbl">End Time</label><input type="text" class="finp" id="ac-end" placeholder="e.g. 10:30am" style="margin-bottom:0"></div>
+        <div><label class="flbl">Start Time</label><input type="text" class="finp" id="ac-time" placeholder="e.g. 9:45am" style="margin-bottom:0" onblur="onTimeBlur('ac-time')"></div>
+        <div><label class="flbl">End Time</label><input type="text" class="finp" id="ac-end" placeholder="e.g. 10:30am" style="margin-bottom:0" onblur="onTimeBlur('ac-end')"></div>
       </div>
       <label class="flbl" style="margin-top:14px">Venue</label>
       <input type="text" class="finp" id="ac-venue" placeholder="e.g. St Johns Parish Church">
@@ -1339,10 +1335,15 @@ function renderBlockWarnings(){
       relevant.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
       var currentBlk=relevant[0];
       var endsStr=currentBlk?new Date(currentBlk.end_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
+      var nextStartDate=(function(){
+        var d=new Date(currentBlk.end_date+"T00:00:00");
+        d.setDate(d.getDate()+7);
+        return d.toISOString().split("T")[0];
+      })();
       html+='<div class="block-warning-row">';
       html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
       html+='<div class="block-warning-meta">'+sanitise(c.venue)+', '+sanitise(c.loc)+(endsStr?' &mdash; current block ends '+sanitise(endsStr):'')+'</div></div>';
-      html+='<button class="act act-confirm" onclick="openAddBlockModal('+c.id+')" style="white-space:nowrap">+ Add Block</button>';
+      html+='<button class="act act-confirm" onclick="openAddBlockModal('+c.id+',\''+nextStartDate+'\')" style="white-space:nowrap">+ Add Block</button>';
       html+='</div>';
     });
     html+='</div>';
@@ -1733,11 +1734,11 @@ function saveNewClass(){
 }
 
 // ─── Add/Edit Block ───────────────────────────────────────────────────────────
-function openAddBlockModal(classId){
+function openAddBlockModal(classId, prefillDate){
   addingBlockClassId=classId;
   var c=classes.find(function(x){ return x.id===classId; });
-  document.getElementById("ab-sub").textContent="Add a block to "+(c?c.name+" \u2014 "+c.day:"this class");
-  document.getElementById("ab-start").value="";
+  document.getElementById("ab-sub").textContent="Add a block to "+(c?c.name+" \u2014 "+c.day+" "+c.time:"this class");
+  document.getElementById("ab-start").value=prefillDate||"";
   document.getElementById("ab-weeks").value="6";
   document.getElementById("ab-price").value="10";
   document.getElementById("ab-cap").value="12";
@@ -1747,6 +1748,7 @@ function openAddBlockModal(classId){
   document.getElementById("ab-btn").disabled=false;
   document.getElementById("ab-btn").onclick=function(){ saveNewBlock(); };
   document.getElementById("add-block-overlay").className="overlay on";
+  if(prefillDate){ validateAbDate(); }
 }
 
 function closeAddBlockModal(){ document.getElementById("add-block-overlay").className="overlay"; }
@@ -1775,6 +1777,28 @@ function saveNewBlock(){
   var cap=parseInt(document.getElementById("ab-cap").value);
   if(!start||!weeks||!price||!cap){ document.getElementById("ab-err").style.display="block"; return; }
   if(!validateAbDate()){ document.getElementById("ab-err").textContent="Please fix the start date."; document.getElementById("ab-err").style.display="block"; return; }
+  // Change 3 & 4: Check for overlapping dates or same-day start/end with existing blocks
+  var newStart=new Date(start+"T00:00:00");
+  var newEnd=new Date(start+"T00:00:00"); newEnd.setDate(newEnd.getDate()+(weeks-1)*7);
+  var existingBlocks=blocks.filter(function(b){ return b.class_id===addingBlockClassId; });
+  for(var bi=0;bi<existingBlocks.length;bi++){
+    var eb=existingBlocks[bi];
+    var ebStart=new Date(eb.start_date+"T00:00:00");
+    var ebEnd=new Date(eb.end_date+"T00:00:00");
+    // Same-day: new block starts on day existing block ends
+    if(newStart.getTime()===ebEnd.getTime()){
+      document.getElementById("ab-err").textContent="This block cannot start on "+start.split("-").reverse().join(" ")+
+        " — that is the same day an existing block ends. Please choose a later date.";
+      document.getElementById("ab-err").style.display="block"; return;
+    }
+    // Overlap: new block dates overlap with existing block dates
+    if(newStart<=ebEnd && newEnd>=ebStart){
+      document.getElementById("ab-err").textContent="These dates overlap with an existing block ("+
+        (eb.dates&&eb.dates.length>0?eb.dates[0]+" to "+eb.dates[eb.dates.length-1]:eb.start_date+" to "+eb.end_date)+
+        "). Please choose dates that do not clash with an existing block.";
+      document.getElementById("ab-err").style.display="block"; return;
+    }
+  }
   document.getElementById("ab-err").style.display="none";
   var btn=document.getElementById("ab-btn"); btn.disabled=true;
   var dates=calcBlockDates(start,weeks);
@@ -1801,7 +1825,7 @@ function openEditBlockModal(blockId){
   if(!blk) return;
   addingBlockClassId=blk.class_id;
   var c=classes.find(function(x){ return x.id===blk.class_id; });
-  document.getElementById("ab-sub").textContent="Edit block for "+(c?c.name+" \u2014 "+c.day:"this class");
+  document.getElementById("ab-sub").textContent="Edit block for "+(c?c.name+" \u2014 "+c.day+" "+c.time:"this class");
   document.getElementById("ab-start").value=blk.start_date;
   document.getElementById("ab-weeks").value=blk.weeks||6;
   document.getElementById("ab-price").value=blk.price||10;
@@ -1821,6 +1845,26 @@ function saveEditBlock(blockId){
   var cap=parseInt(document.getElementById("ab-cap").value);
   if(!start||!weeks||!price||!cap){ document.getElementById("ab-err").style.display="block"; return; }
   if(!validateAbDate()){ document.getElementById("ab-err").textContent="Please fix the start date."; document.getElementById("ab-err").style.display="block"; return; }
+  // Change 3 & 4: Check for overlapping dates or same-day start/end (exclude the block being edited)
+  var newStart=new Date(start+"T00:00:00");
+  var newEnd=new Date(start+"T00:00:00"); newEnd.setDate(newEnd.getDate()+(weeks-1)*7);
+  var existingBlocks=blocks.filter(function(b){ return b.class_id===addingBlockClassId && b.id!==blockId; });
+  for(var bi=0;bi<existingBlocks.length;bi++){
+    var eb=existingBlocks[bi];
+    var ebStart=new Date(eb.start_date+"T00:00:00");
+    var ebEnd=new Date(eb.end_date+"T00:00:00");
+    if(newStart.getTime()===ebEnd.getTime()){
+      document.getElementById("ab-err").textContent="This block cannot start on "+start.split("-").reverse().join(" ")+
+        " — that is the same day an existing block ends. Please choose a later date.";
+      document.getElementById("ab-err").style.display="block"; return;
+    }
+    if(newStart<=ebEnd && newEnd>=ebStart){
+      document.getElementById("ab-err").textContent="These dates overlap with an existing block ("+
+        (eb.dates&&eb.dates.length>0?eb.dates[0]+" to "+eb.dates[eb.dates.length-1]:eb.start_date+" to "+eb.end_date)+
+        "). Please choose dates that do not clash with an existing block.";
+      document.getElementById("ab-err").style.display="block"; return;
+    }
+  }
   var btn=document.getElementById("ab-btn"); btn.disabled=true;
   var dates=calcBlockDates(start,weeks);
   var endDate=new Date(start+"T00:00:00"); endDate.setDate(endDate.getDate()+(weeks-1)*7);
@@ -2157,6 +2201,26 @@ function showToast(msg){
   setTimeout(function(){ el.className="toast"; },3000);
 }
 
+// ─── Change 5: Auto am/pm formatting for time inputs ─────────────────────────
+function formatTimeInput(val){
+  if(!val) return val;
+  val=val.trim().toLowerCase();
+  // Already has am/pm — return as-is
+  if(/[ap]m$/.test(val)) return val;
+  // Parse 24hr or 12hr time
+  var m=val.match(/^(\d{1,2})(?::(\d{2}))?$/);
+  if(!m) return val;
+  var h=parseInt(m[1],10);
+  var min=m[2]||"00";
+  var suffix=h<12?"am":"pm";
+  var h12=h===0?12:h>12?h-12:h;
+  return h12+":"+min+suffix;
+}
+
+function onTimeBlur(fieldId){
+  var el=document.getElementById(fieldId);
+  if(el) el.value=formatTimeInput(el.value);
+}
 
 // ─── Page load ────────────────────────────────────────────────────────────────
 (async function(){
