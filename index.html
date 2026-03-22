@@ -1338,7 +1338,9 @@ function renderBlockWarnings(){
       var nextStartDate=(function(){
         var d=new Date(currentBlk.end_date+"T00:00:00");
         d.setDate(d.getDate()+7);
-        return d.toISOString().split("T")[0];
+        var mm=String(d.getMonth()+1).padStart(2,"0");
+        var dd=String(d.getDate()).padStart(2,"0");
+        return d.getFullYear()+"-"+mm+"-"+dd;
       })();
       html+='<div class="block-warning-row">';
       html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
@@ -1803,7 +1805,7 @@ function saveNewBlock(){
   var btn=document.getElementById("ab-btn"); btn.disabled=true;
   var dates=calcBlockDates(start,weeks);
   var endDate=new Date(start+"T00:00:00"); endDate.setDate(endDate.getDate()+(weeks-1)*7);
-  var endStr=endDate.toISOString().split("T")[0];
+  var endStr=endDate.getFullYear()+"-"+String(endDate.getMonth()+1).padStart(2,"0")+"-"+String(endDate.getDate()).padStart(2,"0");
   (async function(){
     try{
       var{data:nb,error}=await sb.from("blocks").insert({
@@ -1868,7 +1870,7 @@ function saveEditBlock(blockId){
   var btn=document.getElementById("ab-btn"); btn.disabled=true;
   var dates=calcBlockDates(start,weeks);
   var endDate=new Date(start+"T00:00:00"); endDate.setDate(endDate.getDate()+(weeks-1)*7);
-  var endStr=endDate.toISOString().split("T")[0];
+  var endStr=endDate.getFullYear()+"-"+String(endDate.getMonth()+1).padStart(2,"0")+"-"+String(endDate.getDate()).padStart(2,"0");
   (async function(){
     try{
       await sb.from("blocks").update({start_date:start,end_date:endStr,weeks:weeks,dates:dates,price:price,cap:cap}).eq("id",blockId);
