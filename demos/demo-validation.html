@@ -36,10 +36,13 @@ body{font-family:'Open Sans',sans-serif;background:#0f1e1e;color:var(--charcoal)
 .nar-dismiss-btn:hover{background:var(--sage);}
 .nar-back-btn{padding:13px 18px;background:none;border:1px solid #2a4040;border-radius:2px;color:var(--light);font-family:'Open Sans',sans-serif;font-size:12px;cursor:pointer;}
 .nar-back-btn:disabled{opacity:.3;cursor:not-allowed;}
-.next-strip{background:#0a1414;border-top:1px solid #1a3030;padding:10px 24px;display:flex;align-items:center;gap:10px;cursor:pointer;position:sticky;bottom:0;z-index:200;}
-.next-strip-label{color:var(--sage);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:10px;}
-.next-strip-text{color:var(--light);font-size:12px;}
-.next-strip-arrow{margin-left:auto;color:var(--sage);font-size:16px;}
+.next-strip{background:var(--clay);padding:16px 28px;display:flex;align-items:center;gap:14px;cursor:pointer;position:sticky;bottom:0;z-index:200;transition:filter .2s;}
+.next-strip:hover{filter:brightness(1.1);}
+.next-strip-label{color:rgba(255,255,255,.75);font-weight:600;letter-spacing:.16em;text-transform:uppercase;font-size:10px;margin-bottom:3px;}
+.next-strip-text{color:white;font-size:15px;font-family:'Raleway',sans-serif;font-weight:500;}
+.next-strip-arrow{margin-left:auto;color:white;font-size:26px;font-weight:300;animation:next-nudge 1.4s ease-in-out infinite;}
+@keyframes next-nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+50%{transform:translateX(6px)}}
 .demo-layout{max-width:1000px;margin:0 auto;padding:28px 20px 80px;}
 .site-frame{background:var(--warm);border-radius:4px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);}
 .browser-bar{background:#0a1414;padding:10px 16px;display:flex;align-items:center;gap:8px;}
@@ -150,8 +153,7 @@ body{font-family:'Open Sans',sans-serif;background:#0f1e1e;color:var(--charcoal)
 
 <div class="vtarget" id="vtoast"></div>
 
-<div class="next-strip" id="nextStrip" onclick="openNarration(currentStep+1)" style="display:none">
-  <span class="next-strip-label">Next</span><span class="next-strip-text" id="nextStripText">—</span><span class="next-strip-arrow">›</span>
+  <span class="next-strip-arrow">›</span>
 </div>
 <script>
 var currentStep=0;var vTimer=null;
@@ -255,5 +257,13 @@ function hideCta(id){
   if(l)l.style.display='none';
 }
 </script>
+<div class="next-strip" id="nextStrip" onclick="openNarration(currentStep + 1)" style="display:none">
+  <div style="display:flex;flex-direction:column;gap:3px;">
+    <span class="next-strip-label">▶ Continue to next step</span>
+    <span class="next-strip-text" id="nextStripText">—</span>
+  </div>
+  <span class="next-strip-arrow">›</span>
+</div>
+
 </body>
 </html>
