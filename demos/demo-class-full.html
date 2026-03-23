@@ -86,6 +86,13 @@ body{font-family:'Open Sans',sans-serif;background:#0f1e1e;color:var(--charcoal)
 .book-btn:disabled{background:var(--border);color:var(--light);cursor:not-allowed;}
 .next-blk-toggle{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sage-dk);font-weight:600;cursor:pointer;padding:10px 0;border-top:1px dashed var(--border);margin-top:10px;}
 @media(max-width:700px){.s-nav{padding:14px 18px;}.s-hero{padding:30px 18px 16px;}.s-hero h1{font-size:36px;}.s-grid{grid-template-columns:1fr;padding:0 18px 30px;}.demo-topbar{padding:10px 14px;gap:8px;}.demo-title{display:none;}}
+
+.cta-wrap{position:relative;}
+.cta-label{position:absolute;top:-42px;left:50%;transform:translateX(-50%);background:#c04040;color:white;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:6px 13px;border-radius:2px;white-space:nowrap;pointer-events:none;z-index:100;animation:cta-float 1.5s ease-in-out infinite;display:none;}
+.cta-label::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #c04040;}
+.cta-ring{animation:cta-pulse 1.8s ease-out infinite;border:2px solid #c04040!important;}
+@keyframes cta-float{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-4px)}}
+@keyframes cta-pulse{0%{box-shadow:0 0 0 0 rgba(192,64,64,.65),0 0 0 3px rgba(192,64,64,.25)}70%{box-shadow:0 0 0 10px rgba(192,64,64,0),0 0 0 3px rgba(192,64,64,0)}100%{box-shadow:0 0 0 0 rgba(192,64,64,0),0 0 0 3px rgba(192,64,64,0)}}
 </style>
 </head>
 <body>
@@ -165,6 +172,7 @@ function openNarration(idx){
 }
 function dismissNarration(){
   document.getElementById('narOverlay').classList.remove('open');
+  if(currentStep===0){showCta('bookBtn');}
   if(currentStep===1){
     document.getElementById('capFill').style.width='100%';
     document.getElementById('capFill').className='cap-fill full';
@@ -180,6 +188,38 @@ function dismissNarration(){
 }
 function narBack(){openNarration(currentStep-1);}
 openNarration(0);
+
+function showCta(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  // wrap if not already wrapped
+  if(!el.parentElement.classList.contains('cta-wrap')){
+    var wrap=document.createElement('div');
+    wrap.className='cta-wrap';
+    el.parentNode.insertBefore(wrap,el);
+    wrap.appendChild(el);
+    var lbl=document.createElement('div');
+    lbl.className='cta-label';
+    lbl.innerHTML='&#x270B; Try it — click here';
+    wrap.appendChild(lbl);
+  }
+  el.classList.add('cta-ring');
+  el.parentElement.querySelector('.cta-label').style.display='block';
+  function removeCta(){
+    el.classList.remove('cta-ring');
+    var l=el.parentElement.querySelector('.cta-label');
+    if(l)l.style.display='none';
+    el.removeEventListener('click',removeCta);
+  }
+  el.addEventListener('click',removeCta);
+}
+function hideCta(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.classList.remove('cta-ring');
+  var l=el.parentElement.querySelector?el.parentElement.querySelector('.cta-label'):null;
+  if(l)l.style.display='none';
+}
 </script>
 </body>
 </html>

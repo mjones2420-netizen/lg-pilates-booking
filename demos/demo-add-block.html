@@ -79,6 +79,13 @@ tr:hover td{background:var(--cream);}
 .confirm-btn:hover{background:var(--sage-dk);}
 .step-btn{padding:8px 18px;background:var(--sage-dk);color:white;border:none;border-radius:2px;font-family:'Open Sans',sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;}
 @media(max-width:700px){.db-wrap{padding:24px 18px;}.demo-topbar{padding:10px 14px;}.demo-title{display:none;}}
+
+.cta-wrap{position:relative;}
+.cta-label{position:absolute;top:-42px;left:50%;transform:translateX(-50%);background:#c04040;color:white;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:6px 13px;border-radius:2px;white-space:nowrap;pointer-events:none;z-index:100;animation:cta-float 1.5s ease-in-out infinite;display:none;}
+.cta-label::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #c04040;}
+.cta-ring{animation:cta-pulse 1.8s ease-out infinite;border:2px solid #c04040!important;}
+@keyframes cta-float{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-4px)}}
+@keyframes cta-pulse{0%{box-shadow:0 0 0 0 rgba(192,64,64,.65),0 0 0 3px rgba(192,64,64,.25)}70%{box-shadow:0 0 0 10px rgba(192,64,64,0),0 0 0 3px rgba(192,64,64,0)}100%{box-shadow:0 0 0 0 rgba(192,64,64,0),0 0 0 3px rgba(192,64,64,0)}}
 </style>
 </head>
 <body>
@@ -115,7 +122,7 @@ tr:hover td{background:var(--cream);}
               <div class="block-warning-class">Mixed Ability — Friday 10:00am</div>
               <div class="block-warning-meta">DPTA Studio, Baildon</div>
             </div>
-            <button class="act act-confirm" onclick="openAddBlock()">+ Add Block</button>
+            <button class="act act-confirm" id="bannerAddBtn" onclick="openAddBlock()">+ Add Block</button>
           </div>
         </div>
       </div>
@@ -147,7 +154,7 @@ tr:hover td{background:var(--cream);}
         <div><label class="flbl">Capacity</label><input type="number" class="finp" value="12" style="margin-bottom:0"></div>
       </div>
     </div>
-    <div class="mfoot"><button class="confirm-btn" onclick="saveBlock()">Add Block</button></div>
+    <div class="mfoot"><button class="confirm-btn" id="saveBlockBtn" onclick="saveBlock()">Add Block</button></div>
   </div>
 </div>
 
@@ -180,7 +187,8 @@ function openNarration(idx){
 }
 function dismissNarration(){
   document.getElementById('narOverlay').classList.remove('open');
-  if(currentStep===1){document.getElementById('addBlockOverlay').className='modal-overlay-db on';}
+  if(currentStep===0){showCta('bannerAddBtn');}
+  if(currentStep===1){document.getElementById('addBlockOverlay').className='modal-overlay-db on';showCta('saveBlockBtn');}
   if(currentStep===2){
     document.getElementById('addBlockOverlay').className='modal-overlay-db';
     document.getElementById('fridayRow').cells[3].innerHTML='<span style="font-size:12px">2 May – 6 Jun (0/12)</span>';
@@ -194,6 +202,38 @@ function narBack(){openNarration(currentStep-1);}
 function openAddBlock(){openNarration(1);}
 function saveBlock(){openNarration(2);}
 openNarration(0);
+
+function showCta(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  // wrap if not already wrapped
+  if(!el.parentElement.classList.contains('cta-wrap')){
+    var wrap=document.createElement('div');
+    wrap.className='cta-wrap';
+    el.parentNode.insertBefore(wrap,el);
+    wrap.appendChild(el);
+    var lbl=document.createElement('div');
+    lbl.className='cta-label';
+    lbl.innerHTML='&#x270B; Try it — click here';
+    wrap.appendChild(lbl);
+  }
+  el.classList.add('cta-ring');
+  el.parentElement.querySelector('.cta-label').style.display='block';
+  function removeCta(){
+    el.classList.remove('cta-ring');
+    var l=el.parentElement.querySelector('.cta-label');
+    if(l)l.style.display='none';
+    el.removeEventListener('click',removeCta);
+  }
+  el.addEventListener('click',removeCta);
+}
+function hideCta(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.classList.remove('cta-ring');
+  var l=el.parentElement.querySelector?el.parentElement.querySelector('.cta-label'):null;
+  if(l)l.style.display='none';
+}
 </script>
 </body>
 </html>

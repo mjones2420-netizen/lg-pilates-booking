@@ -76,6 +76,13 @@ tr:hover td{background:var(--cream);}
 .health-note{font-size:14px;color:var(--mid);background:var(--cream);border-radius:3px;padding:10px 14px;margin-top:8px;line-height:1.6;border-left:3px solid var(--sage-lt);}
 .confirm-btn{width:100%;padding:14px;background:var(--mid);color:white;border:none;border-radius:2px;font-family:'Open Sans',sans-serif;font-size:13px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;}
 @media(max-width:700px){.db-wrap{padding:24px 18px;}.demo-topbar{padding:10px 14px;}.demo-title{display:none;}}
+
+.cta-wrap{position:relative;}
+.cta-label{position:absolute;top:-42px;left:50%;transform:translateX(-50%);background:#c04040;color:white;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:6px 13px;border-radius:2px;white-space:nowrap;pointer-events:none;z-index:100;animation:cta-float 1.5s ease-in-out infinite;display:none;}
+.cta-label::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid #c04040;}
+.cta-ring{animation:cta-pulse 1.8s ease-out infinite;border:2px solid #c04040!important;}
+@keyframes cta-float{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-4px)}}
+@keyframes cta-pulse{0%{box-shadow:0 0 0 0 rgba(192,64,64,.65),0 0 0 3px rgba(192,64,64,.25)}70%{box-shadow:0 0 0 10px rgba(192,64,64,0),0 0 0 3px rgba(192,64,64,0)}100%{box-shadow:0 0 0 0 rgba(192,64,64,0),0 0 0 3px rgba(192,64,64,0)}}
 </style>
 </head>
 <body>
@@ -108,7 +115,7 @@ tr:hover td{background:var(--cream);}
       <table>
         <thead><tr><th>Client</th><th>Class</th><th>Block</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>
-          <tr><td>Sarah Mitchell</td><td>Mixed Ability — Mon 9:45am</td><td style="font-size:12px">28 Apr – 2 Jun</td><td>£72</td><td><span class="pill p-confirmed">confirmed</span></td><td><button class="act" onclick="openView()">View</button><button class="act">Cancel</button></td></tr>
+          <tr><td>Sarah Mitchell</td><td>Mixed Ability — Mon 9:45am</td><td style="font-size:12px">28 Apr – 2 Jun</td><td>£72</td><td><span class="pill p-confirmed">confirmed</span></td><td><button class="act" id="sarahViewBtn" onclick="openView()">View</button><button class="act">Cancel</button></td></tr>
           <tr><td>Emma Thompson</td><td>Mixed Ability — Wed 6:30pm</td><td style="font-size:12px">30 Apr – 4 Jun</td><td>£72</td><td><span class="pill p-confirmed">confirmed</span></td><td><button class="act">View</button><button class="act">Cancel</button></td></tr>
         </tbody>
       </table>
@@ -188,6 +195,7 @@ function openNarration(idx){
 }
 function dismissNarration(){
   document.getElementById('narOverlay').classList.remove('open');
+  if(currentStep===0){showCta('sarahViewBtn');}
   if(currentStep>=1){document.getElementById('viewOverlay').className='modal-overlay-db on';}
   var strip=document.getElementById('nextStrip');
   if(currentStep===STEPS.length-1){strip.style.display='none';}
@@ -197,6 +205,38 @@ function narBack(){openNarration(currentStep-1);}
 function openView(){openNarration(1);}
 function closeView(){document.getElementById('viewOverlay').className='modal-overlay-db';}
 openNarration(0);
+
+function showCta(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  // wrap if not already wrapped
+  if(!el.parentElement.classList.contains('cta-wrap')){
+    var wrap=document.createElement('div');
+    wrap.className='cta-wrap';
+    el.parentNode.insertBefore(wrap,el);
+    wrap.appendChild(el);
+    var lbl=document.createElement('div');
+    lbl.className='cta-label';
+    lbl.innerHTML='&#x270B; Try it — click here';
+    wrap.appendChild(lbl);
+  }
+  el.classList.add('cta-ring');
+  el.parentElement.querySelector('.cta-label').style.display='block';
+  function removeCta(){
+    el.classList.remove('cta-ring');
+    var l=el.parentElement.querySelector('.cta-label');
+    if(l)l.style.display='none';
+    el.removeEventListener('click',removeCta);
+  }
+  el.addEventListener('click',removeCta);
+}
+function hideCta(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.classList.remove('cta-ring');
+  var l=el.parentElement.querySelector?el.parentElement.querySelector('.cta-label'):null;
+  if(l)l.style.display='none';
+}
 </script>
 </body>
 </html>
