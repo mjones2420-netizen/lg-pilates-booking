@@ -3,302 +3,195 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LG Pilates Demo — Next Block Booking</title>
-<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<title>LG Pilates — Next Block Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&family=Open+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --cream:#eef5f5;--warm:#f7fafa;--sage:#3a8a8a;--sage-dk:#2a6b6b;--sage-lt:#b8d8d8;
-  --clay:#e07b4a;--charcoal:#1a2e2e;--mid:#4a6060;--light:#8aabab;--border:#cde0e0;
-  --green:#3a8a6a;--red:#c04040;
-}
-body{font-family:'Open Sans',sans-serif;background:#f0f4f4;min-height:100vh;padding-bottom:80px}
-.topbar{background:var(--charcoal);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.topbar-left{font-family:'Raleway',sans-serif;color:#fff;font-weight:700;font-size:15px;letter-spacing:0.05em}
-.topbar-centre{background:var(--clay);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:4px}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.step-counter{color:rgba(255,255,255,0.6);font-size:12px}
-.pips{display:flex;gap:6px;align-items:center}
-.pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);transition:all 0.3s}
-.pip.done{background:var(--clay);border-color:var(--clay)}
-.pip.active{background:var(--sage-lt);border-color:var(--sage-lt)}
-.page{max-width:760px;margin:0 auto;padding:32px 20px}
-h1{font-family:'Raleway',sans-serif;color:var(--charcoal);font-size:22px;font-weight:800;margin-bottom:6px}
-.subtitle{color:var(--mid);font-size:14px;margin-bottom:28px}
-
-.class-card{background:var(--cream);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:16px}
-.card-header{background:var(--sage-dk);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
-.card-header h3{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700}
-.card-header span{font-size:12px;opacity:0.8}
-.card-body{padding:18px 20px}
-.card-info{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
-.info-row{display:flex;align-items:center;gap:8px;color:var(--mid);font-size:14px}
-
-/* CURRENT BLOCK PILL */
-.current-block-pill{background:var(--sage-lt);color:var(--sage-dk);font-size:12px;font-weight:700;padding:4px 12px;border-radius:4px;display:inline-block;margin-bottom:14px}
-
-/* TOGGLE */
-.block-toggle{border:1px solid var(--border);border-radius:4px;overflow:hidden}
-.toggle-header{background:#fff;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:background 0.2s}
-.toggle-header:hover{background:var(--warm)}
-.toggle-left{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--charcoal)}
-.chevron{color:var(--light);transition:transform 0.3s;font-size:12px}
-.chevron.open{transform:rotate(180deg)}
-.toggle-body{display:none;padding:20px 18px;background:#fafefe;border-top:1px solid var(--border)}
-.toggle-body.open{display:block;animation:fadeIn 0.2s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{transform:translateY(0);opacity:1}}
-
-/* LOCKED STATE */
-.locked-state{text-align:center;padding:8px 0}
-.lock-icon{font-size:36px;margin-bottom:12px}
-.locked-state h4{font-family:'Raleway',sans-serif;font-size:15px;font-weight:700;color:var(--charcoal);margin-bottom:6px}
-.locked-state p{color:var(--mid);font-size:13px;line-height:1.5}
-.open-date{background:var(--cream);border:1px solid var(--border);border-radius:4px;padding:10px 16px;margin:12px 0;font-size:13px;color:var(--charcoal)}
-.open-date strong{color:var(--sage-dk)}
-
-/* OPEN STATE */
-.open-state{display:none;text-align:center;padding:8px 0}
-.calendar-icon{font-size:36px;margin-bottom:12px}
-.open-state h4{font-family:'Raleway',sans-serif;font-size:15px;font-weight:700;color:var(--charcoal);margin-bottom:6px}
-.open-state p{color:var(--mid);font-size:13px;line-height:1.5;margin-bottom:14px}
-
-/* BUTTONS */
-.btn{background:var(--charcoal);color:#fff;border:none;padding:11px 24px;font-family:'Open Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.2s}
-.btn:hover{opacity:0.85}
-.btn-clay{background:var(--clay)}
-.btn-sage{background:var(--sage)}
-.btn-sm{padding:8px 16px;font-size:12px}
-.btn:disabled{background:#ccc;cursor:not-allowed;opacity:0.6}
-
-/* FF BUTTON */
-.ff-section{margin-top:20px;border-top:1px solid var(--border);padding-top:18px;text-align:center}
-.ff-section p{font-size:12px;color:var(--light);margin-bottom:10px}
-
-/* MODAL */
-.overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.55);z-index:200;align-items:center;justify-content:center;padding:20px}
-.overlay.active{display:flex}
-.modal{background:#fff;border-radius:4px;width:100%;max-width:460px;overflow:hidden;animation:slideUp 0.25s ease}
-@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-header{background:var(--sage-dk);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
-.modal-header h3{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700}
-.modal-close{background:none;border:none;color:rgba(255,255,255,0.8);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px}
-.modal-close:hover{color:#fff}
-.modal-body{padding:24px}
-.form-group{margin-bottom:16px}
-.form-group label{display:block;font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:6px}
-.form-group input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:4px;font-family:'Open Sans',sans-serif;font-size:14px;color:var(--charcoal);outline:none}
-
-/* NARRATION */
-.narration-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.7);z-index:300;align-items:center;justify-content:center;padding:20px}
-.narration-overlay.active{display:flex}
-.narration-card{background:var(--charcoal);color:#fff;border-radius:4px;width:100%;max-width:480px;padding:28px;animation:slideUp 0.25s ease}
-.narration-card h2{font-family:'Raleway',sans-serif;font-size:20px;font-weight:800;margin-bottom:16px}
-.narration-card ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
-.narration-card ul li{display:flex;gap:10px;font-size:14px;line-height:1.5}
-.narration-card ul li::before{content:"•";color:var(--sage);font-size:18px;line-height:1.2;flex-shrink:0}
-.narration-card ul li span{color:rgba(255,255,255,0.85)}
-.sticky-bar{position:fixed;bottom:0;left:0;right:0;background:var(--charcoal);color:rgba(255,255,255,0.7);font-size:13px;padding:12px 24px;text-align:center;z-index:150}
-.sticky-bar strong{color:var(--clay)}
+:root{--cream:#eef5f5;--warm:#f7fafa;--sage:#3a8a8a;--sage-dk:#2a6b6b;--sage-lt:#b8d8d8;--clay:#e07b4a;--charcoal:#1a2e2e;--mid:#4a6060;--light:#8aabab;--border:#cde0e0;--green:#3a8a6a;--red:#c04040;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Open Sans',sans-serif;background:#0f1e1e;color:var(--charcoal);min-height:100vh;}
+.demo-topbar{background:#0a1414;border-bottom:1px solid #1a3030;padding:12px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:300;}
+.demo-badge{background:var(--clay);color:#fff;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:4px 11px;border-radius:2px;}
+.demo-title{font-family:'Raleway',sans-serif;font-size:16px;font-weight:400;color:var(--sage-lt);}
+.demo-progress{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.dpip{width:8px;height:8px;border-radius:50%;background:#1a3030;border:1px solid #2a4040;transition:all .3s;}
+.dpip.active{background:var(--sage);border-color:var(--sage);}
+.dpip.done{background:var(--sage-dk);border-color:var(--sage-dk);}
+.demo-step-counter{font-size:11px;color:var(--light);margin-left:6px;font-family:'Raleway',sans-serif;}
+.nar-overlay{position:fixed;inset:0;background:rgba(8,16,16,.75);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s;}
+.nar-overlay.open{opacity:1;pointer-events:all;}
+.nar-card{background:#1a2e2e;border:1px solid #2a4040;border-radius:4px;width:100%;max-width:500px;box-shadow:0 24px 60px rgba(0,0,0,.6);transform:translateY(12px);transition:transform .25s ease;overflow:hidden;}
+.nar-overlay.open .nar-card{transform:translateY(0);}
+.nar-card-header{background:#0f1e1e;padding:16px 22px;border-bottom:1px solid #2a4040;}
+.nar-step-pill{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage);font-weight:600;}
+.nar-card-body{padding:24px 22px 20px;}
+.nar-heading{font-family:'Raleway',sans-serif;font-size:24px;font-weight:400;color:#fff;margin-bottom:12px;}
+.nar-text{font-size:13px;color:var(--light);line-height:1.85;margin-bottom:16px;}
+.nar-text strong{color:var(--sage-lt);font-weight:500;}
+.nar-hints{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;}
+.nar-hint{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--light);line-height:1.5;}
+.nar-hint-dot{width:6px;height:6px;border-radius:50%;background:var(--sage);flex-shrink:0;margin-top:4px;}
+.nar-hint strong{color:var(--sage-lt);font-weight:500;}
+.nar-card-footer{padding:0 22px 22px;display:flex;gap:10px;}
+.nar-dismiss-btn{flex:1;padding:13px;background:var(--sage-dk);color:#fff;border:none;border-radius:2px;font-family:'Open Sans',sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;}
+.nar-dismiss-btn:hover{background:var(--sage);}
+.nar-back-btn{padding:13px 18px;background:none;border:1px solid #2a4040;border-radius:2px;color:var(--light);font-family:'Open Sans',sans-serif;font-size:12px;cursor:pointer;}
+.nar-back-btn:disabled{opacity:.3;cursor:not-allowed;}
+.next-strip{background:#0a1414;border-top:1px solid #1a3030;padding:10px 24px;display:flex;align-items:center;gap:10px;cursor:pointer;position:sticky;bottom:0;z-index:200;}
+.next-strip-label{color:var(--sage);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:10px;}
+.next-strip-text{color:var(--light);font-size:12px;}
+.next-strip-arrow{margin-left:auto;color:var(--sage);font-size:16px;}
+.demo-layout{max-width:1000px;margin:0 auto;padding:28px 20px 80px;}
+.site-frame{background:var(--warm);border-radius:4px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+.browser-bar{background:#0a1414;padding:10px 16px;display:flex;align-items:center;gap:8px;}
+.bdot{width:10px;height:10px;border-radius:50%;}
+.bd-r{background:#ff5f57;}.bd-y{background:#febc2e;}.bd-g{background:#28c840;}
+.burl{flex:1;background:#1a2e2e;border-radius:3px;padding:5px 12px;font-size:11px;color:var(--light);margin-left:10px;}
+.s-nav{display:flex;align-items:center;justify-content:space-between;padding:20px 40px;border-bottom:1px solid var(--border);background:var(--warm);}
+.s-logo{font-family:'Raleway',sans-serif;font-size:28px;letter-spacing:.06em;font-weight:600;}
+.s-logo span{color:var(--sage);font-style:italic;}
+.s-hero{padding:50px 40px 24px;}
+.s-hero-tag{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--sage);margin-bottom:14px;}
+.s-hero h1{font-family:'Raleway',sans-serif;font-size:56px;font-weight:300;line-height:1.1;margin-bottom:10px;}
+.s-hero h1 em{font-style:italic;color:var(--sage);}
+.s-hero p{font-size:16px;color:var(--mid);max-width:380px;line-height:1.7;}
+.s-grid{padding:0 40px 50px;}
+.card{background:var(--cream);border:1px solid var(--border);border-radius:4px;padding:26px;max-width:360px;}
+.card-loc-wrap{background:var(--sage-dk);margin:-26px -26px 18px -26px;padding:10px 16px;border-radius:4px 4px 0 0;}
+.card-loc{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:white;font-weight:600;}
+.card-when{display:flex;align-items:baseline;gap:10px;margin-bottom:6px;}
+.card-when-day{font-family:'Raleway',sans-serif;font-size:26px;font-weight:500;}
+.card-when-time{font-size:15px;color:var(--mid);}
+.card-venue-name{font-size:15px;font-weight:600;}
+.card-level{font-size:13px;color:var(--mid);margin-top:2px;margin-bottom:16px;}
+.card-block-section{background:white;border:1px solid var(--border);border-radius:4px;padding:12px 14px;margin-bottom:12px;}
+.card-block-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--light);margin-bottom:4px;}
+.card-block-range{font-size:14px;font-weight:600;margin-bottom:4px;}
+.block-dates-pills{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0;}
+.date-pill{font-size:13px;padding:3px 9px;background:white;border:1px solid var(--border);border-radius:100px;color:var(--mid);}
+.cap-bar{height:3px;background:var(--border);border-radius:2px;margin-bottom:5px;}
+.cap-fill{height:100%;border-radius:2px;background:var(--sage);}
+.cap-txt{font-size:12px;color:var(--light);}
+.card-price-row{display:flex;justify-content:space-between;margin-top:10px;}
+.card-price-lbl{font-size:12px;color:#000;font-weight:500;}
+.card-price-val{font-family:'Raleway',sans-serif;font-size:22px;color:var(--sage-dk);font-weight:600;}
+.book-btn{margin-top:18px;width:100%;padding:14px;background:var(--charcoal);color:white;border:none;border-radius:2px;font-family:'Open Sans',sans-serif;font-size:13px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;}
+.book-btn:hover{background:var(--sage-dk);}
+.book-btn:disabled{background:var(--border);color:var(--light);cursor:not-allowed;}
+.book-btn.next-blk{background:none;border:2px solid #4a7faa;color:#4a7faa;}
+.book-btn.next-blk:hover{background:#4a7faa;color:white;}
+.next-blk-toggle{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sage-dk);font-weight:600;cursor:pointer;padding:10px 0;border-top:1px dashed var(--border);margin-top:10px;}
+.next-blk-body{display:none;}
+.next-blk-body.on{display:block;}
+.priority-info{font-size:12px;color:var(--mid);background:#fef9ec;border:1px solid #f0e0a0;border-radius:3px;padding:9px 12px;margin-bottom:10px;line-height:1.6;}
+@media(max-width:700px){.s-nav{padding:14px 18px;}.s-hero{padding:30px 18px 16px;}.s-hero h1{font-size:36px;}.s-grid{padding:0 18px 30px;}.demo-topbar{padding:10px 14px;}.demo-title{display:none;}}
 </style>
 </head>
 <body>
-
-<div class="topbar">
-  <div class="topbar-left">LG Pilates — Demo</div>
-  <div class="topbar-centre">Interactive Demo</div>
-  <div class="topbar-right">
-    <div class="pips">
-      <div class="pip active" id="pip1"></div>
-      <div class="pip" id="pip2"></div>
-      <div class="pip" id="pip3"></div>
+<div class="demo-topbar">
+  <span class="demo-badge">Interactive Demo</span>
+  <span class="demo-title">LG Pilates — Next Block Booking</span>
+  <div class="demo-progress" id="demoPips"><div class="dpip active"></div><div class="dpip"></div><div class="dpip"></div></div>
+  <span class="demo-step-counter" id="stepCounter">1 / 3</span>
+</div>
+<div class="nar-overlay" id="narOverlay">
+  <div class="nar-card">
+    <div class="nar-card-header"><span class="nar-step-pill" id="narPill">Step 1 of 3</span></div>
+    <div class="nar-card-body">
+      <div class="nar-heading" id="narHeading">—</div>
+      <div class="nar-text" id="narText"></div>
+      <div class="nar-hints" id="narHints"></div>
     </div>
-    <div class="step-counter" id="stepCounter">Step 1 of 3</div>
+    <div class="nar-card-footer">
+      <button class="nar-back-btn" id="narBackBtn" onclick="narBack()" disabled>← Back</button>
+      <button class="nar-dismiss-btn" id="narDismissBtn" onclick="dismissNarration()">Got it — show me ›</button>
+    </div>
   </div>
 </div>
-
-<div class="narration-overlay active" id="narration">
-  <div class="narration-card">
-    <h2>Next Block Booking</h2>
-    <ul>
-      <li><span>The Next Block toggle lets clients see when the next block opens — without needing to contact Louise.</span></li>
-      <li><span>A lock icon means it's too early to book. A calendar means standard booking is now open.</span></li>
-      <li><span>Use the Fast Forward button in this demo to skip ahead and see the open state.</span></li>
-    </ul>
-    <button class="btn btn-clay" onclick="closeNarration()">Got it — show me ›</button>
-  </div>
-</div>
-
-<div class="page">
-  <h1>Book a Class</h1>
-  <p class="subtitle">Select a class to book your place on the next block.</p>
-
-  <div class="class-card">
-    <div class="card-header">
-      <h3>Mixed Ability</h3>
-      <span>Baildon Moravian Church</span>
-    </div>
-    <div class="card-body">
-      <div class="card-info">
-        <div class="info-row">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Monday 9:45am
+<div class="demo-layout">
+  <div class="site-frame">
+    <div class="browser-bar"><div class="bdot bd-r"></div><div class="bdot bd-y"></div><div class="bdot bd-g"></div><div class="burl">lg-pilates.co.uk/book</div></div>
+    <div class="s-nav"><div class="s-logo">LG <span>Pilates</span></div><div style="display:flex;gap:28px"><span style="font-family:'Open Sans',sans-serif;font-size:16px;color:var(--charcoal);font-weight:500">Schedule</span><span style="font-family:'Open Sans',sans-serif;font-size:16px;color:var(--mid)">Dashboard</span></div></div>
+    <div class="s-hero"><div class="s-hero-tag">Baildon &amp; Guiseley</div><h1>Book your<br><em>Pilates Block</em></h1><p>Six-week blocks, multiple venues.</p></div>
+    <div class="s-grid">
+      <div class="card">
+        <div class="card-loc-wrap"><div class="card-loc">📍 Baildon</div></div>
+        <div class="card-when"><span class="card-when-day">Monday</span><span class="card-when-time">9:45am – 10:45am</span></div>
+        <div class="card-venue-name">Baildon Moravian Church</div>
+        <div class="card-level">Mixed Ability</div>
+        <div class="card-block-section">
+          <div class="card-block-lbl">Current Block</div>
+          <div class="card-block-range">28 Apr – 2 Jun 2025</div>
+          <div class="block-dates-pills"><span class="date-pill">28 Apr</span><span class="date-pill">5 May</span><span class="date-pill">12 May</span><span class="date-pill">19 May</span><span class="date-pill">26 May</span><span class="date-pill">2 Jun</span></div>
+          <div class="cap-bar"><div class="cap-fill" style="width:42%"></div></div>
+          <div class="cap-txt">5 of 12 spots taken</div>
+          <div class="card-price-row"><span class="card-price-lbl">Block price</span><span class="card-price-val">£72</span></div>
         </div>
-        <div class="info-row">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Baildon Moravian Church
-        </div>
-        <div class="info-row">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Current block: 3 Mar – 7 Apr 2026
-        </div>
-      </div>
-
-      <div class="current-block-pill">Current block in progress</div>
-
-      <div class="block-toggle">
-        <div class="toggle-header" onclick="toggleBlock()" id="toggleHeader">
-          <div class="toggle-left">
-            <span id="toggleIcon">📅</span>
-            <span>Next Block · 7 Apr – 12 May 2026</span>
+        <button class="book-btn">Book Current Block</button>
+        <div class="next-blk-toggle" onclick="toggleNext()" id="nextToggle">🔒 Next Block — 9 Jun – 14 Jul 2025 <span id="nextArrow">⌄</span></div>
+        <div class="next-blk-body" id="nextBlkBody">
+          <div class="card-block-section" style="margin-top:0">
+            <div class="block-dates-pills"><span class="date-pill">9 Jun</span><span class="date-pill">16 Jun</span><span class="date-pill">23 Jun</span><span class="date-pill">30 Jun</span><span class="date-pill">7 Jul</span><span class="date-pill">14 Jul</span></div>
+            <div class="cap-bar"><div class="cap-fill" style="width:0%"></div></div>
+            <div class="cap-txt">0 of 12 spots taken</div>
+            <div class="card-price-row"><span class="card-price-lbl">Block price</span><span class="card-price-val">£72</span></div>
           </div>
-          <span class="chevron" id="chevron">▼</span>
-        </div>
-
-        <div class="toggle-body" id="toggleBody">
-          <!-- LOCKED STATE -->
-          <div class="locked-state" id="lockedState">
-            <div class="lock-icon">🔒</div>
-            <h4>Next block booking isn't open yet</h4>
-            <p>Standard booking for this block will open on:</p>
-            <div class="open-date">📅 <strong>31 March 2026</strong> — check back then to reserve your spot.</div>
-            <p style="font-size:12px;color:var(--light);margin-top:8px">Already a priority client? Louise may have given you early access.</p>
-
-            <div class="ff-section">
-              <p>— Demo shortcut —</p>
-              <button class="btn btn-clay btn-sm" onclick="fastForward()">⏩ Fast forward to booking window ›</button>
-            </div>
-          </div>
-
-          <!-- OPEN STATE -->
-          <div class="open-state" id="openState">
-            <div class="calendar-icon">📅</div>
-            <h4>Standard booking is open!</h4>
-            <p>You can now reserve your place on the next block — 7 April to 12 May 2026.</p>
-            <button class="btn btn-sage" onclick="openBookingModal()">Book Next Block</button>
-            <p style="font-size:12px;color:var(--light);margin-top:12px">6 weeks · £54.00 · Baildon Moravian Church</p>
-          </div>
+          <div class="priority-info" id="nextBlkMsg">🔒 Booking opens <strong>2 Jun</strong>. Priority clients may book earlier.</div>
+          <button class="book-btn" id="nextBlkBtn" disabled>Not Open Yet</button>
         </div>
       </div>
     </div>
   </div>
 </div>
-
-<!-- BOOKING MODAL -->
-<div class="overlay" id="bookingModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Book Next Block</h3>
-      <button class="modal-close" onclick="document.getElementById('bookingModal').classList.remove('active')">×</button>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--cream);border:1px solid var(--border);border-radius:4px;padding:14px;margin-bottom:18px;font-size:13px;color:var(--mid)">
-        <div style="font-weight:700;color:var(--charcoal);margin-bottom:6px">Mixed Ability — Mon 9:45am</div>
-        <div>7 April – 12 May 2026 · 6 weeks · £54.00</div>
-      </div>
-      <div class="form-group">
-        <label>Email address</label>
-        <input type="email" value="sarah.mitchell@email.com">
-      </div>
-      <button class="btn" style="width:100%" onclick="bookingConfirmed()">Reserve My Place →</button>
-    </div>
-  </div>
+<div class="next-strip" id="nextStrip" onclick="openNarration(currentStep+1)" style="display:none">
+  <span class="next-strip-label">Next</span><span class="next-strip-text" id="nextStripText">—</span><span class="next-strip-arrow">›</span>
 </div>
-
-<!-- SUCCESS -->
-<div class="overlay" id="successModal">
-  <div class="modal">
-    <div class="modal-header" style="background:var(--green)">
-      <h3>🎉 Place Reserved</h3>
-      <button class="modal-close" onclick="resetDemo()">×</button>
-    </div>
-    <div class="modal-body" style="text-align:center;padding:28px 24px">
-      <div style="font-size:40px;margin-bottom:12px">✅</div>
-      <p style="color:var(--mid);font-size:14px;margin-bottom:16px">Sarah Mitchell is reserved on the next block — 7 Apr to 12 May 2026.</p>
-      <button class="btn" onclick="resetDemo()">↺ Restart Demo</button>
-    </div>
-  </div>
-</div>
-
-<div class="sticky-bar" id="stickyBar">
-  <strong>Step 1:</strong> Click the <strong>📅 Next Block</strong> toggle to see the locked state
-</div>
-
 <script>
-let isOpen = false;
-let isForwarded = false;
-
-function closeNarration() {
-  document.getElementById('narration').classList.remove('active');
+var currentStep=0;var nextOpen=false;
+var STEPS=[
+  {label:'Step 1 of 3',heading:'Next block toggle — locked',text:'When a next block exists but booking isn\'t open yet, a collapsible toggle appears below the current block. The lock icon signals that it isn\'t available to book yet.',hints:[{text:'The lock icon 🔒 means booking is <strong>not yet open</strong>'},{text:'The toggle shows the date range so clients can plan ahead'},{text:'Click the toggle to see the next block details'}],nextLabel:'Locked state details'},
+  {label:'Step 2 of 3',heading:'Inside the locked next block',text:'Opening the toggle shows the session dates, capacity and price — but the Book button is disabled and greyed out. The message tells clients exactly when booking opens.',hints:[{text:'The button reads <strong>"Not Open Yet"</strong> and cannot be clicked'},{text:'The message shows the exact <strong>date booking opens</strong>'},{text:'Priority clients get a link to check early access'}],nextLabel:'Booking window opens'},
+  {label:'Step 3 of 3',heading:'Standard booking window open',text:'Once we\'re within 7 days of the block start, the toggle updates. The lock icon changes to a calendar icon, the button becomes active, and clients can now book the next block directly.',hints:[{text:'The icon changes from 🔒 to 📅 when booking is open'},{text:'The button changes to <strong>"Book Next Block"</strong> in teal'},{text:'Clicking it opens the same booking form as the current block'}],nextLabel:null}
+];
+function openNarration(idx){
+  if(idx<0||idx>=STEPS.length)return;
+  currentStep=idx;
+  var s=STEPS[idx];
+  document.getElementById('narPill').textContent=s.label;
+  document.getElementById('narHeading').textContent=s.heading;
+  document.getElementById('narText').innerHTML=s.text;
+  var h=document.getElementById('narHints');
+  h.innerHTML=(s.hints||[]).map(function(x){return'<div class="nar-hint"><div class="nar-hint-dot"></div><span>'+x.text+'</span></div>';}).join('');
+  document.getElementById('narDismissBtn').textContent=idx===STEPS.length-1?'Got it — close demo ›':'Got it — show me ›';
+  document.getElementById('narBackBtn').disabled=idx===0;
+  var pips=document.querySelectorAll('.dpip');
+  pips.forEach(function(p,i){p.classList.remove('active','done');if(i<idx)p.classList.add('done');if(i===idx)p.classList.add('active');});
+  document.getElementById('stepCounter').textContent=(idx+1)+' / '+STEPS.length;
+  document.getElementById('narOverlay').classList.add('open');
 }
-
-function toggleBlock() {
-  isOpen = !isOpen;
-  document.getElementById('toggleBody').classList.toggle('open', isOpen);
-  document.getElementById('chevron').classList.toggle('open', isOpen);
-  if (isOpen && !isForwarded) {
-    updateStep(2);
-    document.getElementById('stickyBar').innerHTML = '<strong>Step 2:</strong> Booking is locked — click <strong>Fast Forward</strong> to advance the demo';
-  } else if (isOpen && isForwarded) {
-    updateStep(3);
-    document.getElementById('stickyBar').innerHTML = '<strong>Step 3:</strong> Booking window is open — click <strong>Book Next Block</strong>';
-  } else {
-    updateStep(1);
-    document.getElementById('stickyBar').innerHTML = '<strong>Step 1:</strong> Click the <strong>📅 Next Block</strong> toggle to see the locked state';
+function dismissNarration(){
+  document.getElementById('narOverlay').classList.remove('open');
+  if(currentStep===1&&!nextOpen){toggleNext();}
+  if(currentStep===2){
+    document.getElementById('nextToggle').innerHTML='📅 Next Block — 9 Jun – 14 Jul 2025 <span id="nextArrow" style="transform:rotate(180deg);display:inline-block">⌄</span>';
+    document.getElementById('nextBlkMsg').textContent='📅 Standard booking is now open — book your next block below.';
+    document.getElementById('nextBlkMsg').style.background='#e8f0e7';
+    document.getElementById('nextBlkMsg').style.borderColor='#b0d0a0';
+    document.getElementById('nextBlkMsg').style.color='var(--green)';
+    document.getElementById('nextBlkBtn').disabled=false;
+    document.getElementById('nextBlkBtn').className='book-btn next-blk';
+    document.getElementById('nextBlkBtn').textContent='Book Next Block';
+    if(!nextOpen){toggleNext();}
   }
+  var strip=document.getElementById('nextStrip');
+  if(currentStep===STEPS.length-1){strip.style.display='none';}
+  else{document.getElementById('nextStripText').textContent=STEPS[currentStep+1].heading;strip.style.display='flex';}
 }
-
-function fastForward() {
-  isForwarded = true;
-  document.getElementById('lockedState').style.display = 'none';
-  document.getElementById('openState').style.display = 'block';
-  document.getElementById('toggleIcon').textContent = '✅';
-  updateStep(3);
-  document.getElementById('stickyBar').innerHTML = '<strong>Step 3:</strong> Booking window is now open — click <strong>Book Next Block</strong>';
+function narBack(){openNarration(currentStep-1);}
+function toggleNext(){
+  nextOpen=!nextOpen;
+  document.getElementById('nextBlkBody').className='next-blk-body'+(nextOpen?' on':'');
 }
-
-function openBookingModal() {
-  document.getElementById('bookingModal').classList.add('active');
-}
-
-function bookingConfirmed() {
-  document.getElementById('bookingModal').classList.remove('active');
-  document.getElementById('successModal').classList.add('active');
-  document.getElementById('stickyBar').innerHTML = '<strong>Done!</strong> Next block successfully booked';
-}
-
-function resetDemo() {
-  isOpen = false;
-  isForwarded = false;
-  document.getElementById('successModal').classList.remove('active');
-  document.getElementById('toggleBody').classList.remove('open');
-  document.getElementById('chevron').classList.remove('open');
-  document.getElementById('lockedState').style.display = 'block';
-  document.getElementById('openState').style.display = 'none';
-  document.getElementById('toggleIcon').textContent = '📅';
-  updateStep(1);
-  document.getElementById('stickyBar').innerHTML = '<strong>Step 1:</strong> Click the <strong>📅 Next Block</strong> toggle to see the locked state';
-}
-
-function updateStep(n) {
-  document.getElementById('stepCounter').textContent = 'Step ' + n + ' of 3';
-  for (let i = 1; i <= 3; i++) {
-    const pip = document.getElementById('pip' + i);
-    if (!pip) continue;
-    pip.classList.remove('done','active');
-    if (i < n) pip.classList.add('done');
-    else if (i === n) pip.classList.add('active');
-  }
-}
+openNarration(0);
 </script>
 </body>
 </html>

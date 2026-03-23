@@ -3,262 +3,184 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LG Pilates Demo — Refund (Admin)</title>
-<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<title>LG Pilates — Refund Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&family=Open+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --cream:#eef5f5;--warm:#f7fafa;--sage:#3a8a8a;--sage-dk:#2a6b6b;--sage-lt:#b8d8d8;
-  --clay:#e07b4a;--charcoal:#1a2e2e;--mid:#4a6060;--light:#8aabab;--border:#cde0e0;
-  --green:#3a8a6a;--red:#c04040;
-}
-body{font-family:'Open Sans',sans-serif;background:#f0f4f4;min-height:100vh;padding-bottom:80px}
-.topbar{background:var(--charcoal);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.topbar-left{font-family:'Raleway',sans-serif;color:#fff;font-weight:700;font-size:15px;letter-spacing:0.05em}
-.topbar-centre{background:var(--clay);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:4px}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.step-counter{color:rgba(255,255,255,0.6);font-size:12px}
-.pips{display:flex;gap:6px;align-items:center}
-.pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);transition:all 0.3s}
-.pip.done{background:var(--clay);border-color:var(--clay)}
-.pip.active{background:var(--sage-lt);border-color:var(--sage-lt)}
-.page{max-width:920px;margin:0 auto;padding:32px 20px}
-.admin-label{background:var(--sage-dk);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 10px;border-radius:4px;display:inline-block;margin-bottom:16px}
-h1{font-family:'Raleway',sans-serif;color:var(--charcoal);font-size:22px;font-weight:800;margin-bottom:6px}
-.subtitle{color:var(--mid);font-size:14px;margin-bottom:24px}
-
-/* TABLE */
-.bookings-table{width:100%;border-collapse:collapse;background:#fff;border-radius:4px;overflow:hidden;border:1px solid var(--border)}
-.bookings-table th{background:var(--sage-dk);color:#fff;padding:11px 14px;text-align:left;font-family:'Raleway',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.03em}
-.bookings-table td{padding:13px 14px;font-size:13px;color:var(--charcoal);border-bottom:1px solid var(--border);vertical-align:middle}
-.bookings-table tr:last-child td{border-bottom:none}
-.bookings-table tr:hover td{background:var(--warm)}
-.client-name{font-weight:600}
-.client-email{color:var(--mid);font-size:12px;margin-top:2px}
-.amount{font-weight:700}
-
-/* STATUS PILLS */
-.status-pill{display:inline-block;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap;transition:all 0.4s ease}
-.pill-confirmed{background:#e0f5ec;color:var(--green);border:1px solid #a0d5b8}
-.pill-refund-pending{background:#fff5e0;color:#8a5010;border:1px solid #f0d090}
-.pill-refunded{background:#f0f0f0;color:#888;border:1px solid #ddd}
-
-/* BUTTONS */
-.btn{border:none;padding:7px 14px;font-family:'Open Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:all 0.2s;white-space:nowrap}
-.btn-cancel{background:#f5e0e0;color:var(--red);border:1px solid #d0a0a0}
-.btn-cancel:hover{background:var(--red);color:#fff}
-.btn-view{background:var(--cream);color:var(--sage-dk);border:1px solid var(--border)}
-.btn-view:hover{background:var(--sage-lt)}
-.btn-clay{background:var(--clay);color:#fff}
-.btn-charcoal{background:var(--charcoal);color:#fff}
-.btn-large{padding:10px 20px;font-size:13px}
-.btn-red{background:var(--red);color:#fff}
-.btn-red:hover{opacity:0.85}
-
-/* MODAL */
-.overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.55);z-index:200;align-items:center;justify-content:center;padding:20px}
-.overlay.active{display:flex}
-.modal{background:#fff;border-radius:4px;width:100%;max-width:460px;overflow:hidden;animation:slideUp 0.25s ease}
-@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-header{background:var(--red);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
-.modal-header h3{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700}
-.modal-close{background:none;border:none;color:rgba(255,255,255,0.8);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px}
-.modal-close:hover{color:#fff}
-.modal-body{padding:24px}
-.booking-summary{background:var(--cream);border:1px solid var(--border);border-radius:4px;padding:14px;margin-bottom:18px;font-size:13px}
-.booking-summary .row{display:flex;justify-content:space-between;margin-bottom:4px;color:var(--mid)}
-.booking-summary .row strong{color:var(--charcoal)}
-.form-group{margin-bottom:18px}
-.form-group label{display:block;font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:8px}
-.form-group input[type=number]{width:80px;padding:10px 12px;border:1px solid var(--border);border-radius:4px;font-family:'Open Sans',sans-serif;font-size:16px;font-weight:700;color:var(--charcoal);outline:none;text-align:center}
-.form-group input:focus{border-color:var(--sage)}
-
-/* REFUND CALC */
-.refund-calc{background:#fff5e0;border:1px solid #f0d090;border-radius:4px;padding:16px;margin-bottom:18px}
-.refund-calc .refund-amount{font-size:24px;font-weight:800;font-family:'Raleway',sans-serif;color:var(--clay)}
-.refund-calc p{font-size:13px;color:var(--mid);margin-top:4px}
-.modal-footer{display:flex;gap:10px;justify-content:flex-end}
-
-/* NARRATION */
-.narration-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.7);z-index:300;align-items:center;justify-content:center;padding:20px}
-.narration-overlay.active{display:flex}
-.narration-card{background:var(--charcoal);color:#fff;border-radius:4px;width:100%;max-width:480px;padding:28px;animation:slideUp 0.25s ease}
-.narration-card h2{font-family:'Raleway',sans-serif;font-size:20px;font-weight:800;margin-bottom:16px}
-.narration-card ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
-.narration-card ul li{display:flex;gap:10px;font-size:14px;line-height:1.5}
-.narration-card ul li::before{content:"•";color:var(--sage);font-size:18px;line-height:1.2;flex-shrink:0}
-.narration-card ul li span{color:rgba(255,255,255,0.85)}
-.sticky-bar{position:fixed;bottom:0;left:0;right:0;background:var(--charcoal);color:rgba(255,255,255,0.7);font-size:13px;padding:12px 24px;text-align:center;z-index:150}
-.sticky-bar strong{color:var(--clay)}
+:root{--cream:#eef5f5;--warm:#f7fafa;--sage:#3a8a8a;--sage-dk:#2a6b6b;--sage-lt:#b8d8d8;--clay:#e07b4a;--charcoal:#1a2e2e;--mid:#4a6060;--light:#8aabab;--border:#cde0e0;--green:#3a8a6a;--red:#c04040;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Open Sans',sans-serif;background:#0f1e1e;color:var(--charcoal);min-height:100vh;}
+.demo-topbar{background:#0a1414;border-bottom:1px solid #1a3030;padding:12px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:300;}
+.demo-badge{background:var(--clay);color:#fff;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:4px 11px;border-radius:2px;}
+.demo-title{font-family:'Raleway',sans-serif;font-size:16px;font-weight:400;color:var(--sage-lt);}
+.demo-progress{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.dpip{width:8px;height:8px;border-radius:50%;background:#1a3030;border:1px solid #2a4040;transition:all .3s;}
+.dpip.active{background:var(--sage);border-color:var(--sage);}
+.dpip.done{background:var(--sage-dk);border-color:var(--sage-dk);}
+.demo-step-counter{font-size:11px;color:var(--light);margin-left:6px;font-family:'Raleway',sans-serif;}
+.nar-overlay{position:fixed;inset:0;background:rgba(8,16,16,.75);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s;}
+.nar-overlay.open{opacity:1;pointer-events:all;}
+.nar-card{background:#1a2e2e;border:1px solid #2a4040;border-radius:4px;width:100%;max-width:500px;box-shadow:0 24px 60px rgba(0,0,0,.6);transform:translateY(12px);transition:transform .25s ease;overflow:hidden;}
+.nar-overlay.open .nar-card{transform:translateY(0);}
+.nar-card-header{background:#0f1e1e;padding:16px 22px;border-bottom:1px solid #2a4040;}
+.nar-step-pill{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage);font-weight:600;}
+.nar-card-body{padding:24px 22px 20px;}
+.nar-heading{font-family:'Raleway',sans-serif;font-size:24px;font-weight:400;color:#fff;margin-bottom:12px;}
+.nar-text{font-size:13px;color:var(--light);line-height:1.85;margin-bottom:16px;}
+.nar-text strong{color:var(--sage-lt);font-weight:500;}
+.nar-hints{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;}
+.nar-hint{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--light);line-height:1.5;}
+.nar-hint-dot{width:6px;height:6px;border-radius:50%;background:var(--sage);flex-shrink:0;margin-top:4px;}
+.nar-hint strong{color:var(--sage-lt);font-weight:500;}
+.nar-card-footer{padding:0 22px 22px;display:flex;gap:10px;}
+.nar-dismiss-btn{flex:1;padding:13px;background:var(--sage-dk);color:#fff;border:none;border-radius:2px;font-family:'Open Sans',sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;}
+.nar-dismiss-btn:hover{background:var(--sage);}
+.nar-back-btn{padding:13px 18px;background:none;border:1px solid #2a4040;border-radius:2px;color:var(--light);font-family:'Open Sans',sans-serif;font-size:12px;cursor:pointer;}
+.nar-back-btn:disabled{opacity:.3;cursor:not-allowed;}
+.next-strip{background:#0a1414;border-top:1px solid #1a3030;padding:10px 24px;display:flex;align-items:center;gap:10px;cursor:pointer;position:sticky;bottom:0;z-index:200;}
+.next-strip-label{color:var(--sage);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:10px;}
+.next-strip-text{color:var(--light);font-size:12px;}
+.next-strip-arrow{margin-left:auto;color:var(--sage);font-size:16px;}
+.demo-layout{max-width:1000px;margin:0 auto;padding:28px 20px 80px;}
+.site-frame{background:var(--warm);border-radius:4px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+.browser-bar{background:#0a1414;padding:10px 16px;display:flex;align-items:center;gap:8px;}
+.bdot{width:10px;height:10px;border-radius:50%;}.bd-r{background:#ff5f57;}.bd-y{background:#febc2e;}.bd-g{background:#28c840;}
+.burl{flex:1;background:#1a2e2e;border-radius:3px;padding:5px 12px;font-size:11px;color:var(--light);margin-left:10px;}
+.db-wrap{padding:40px;}
+.ph h2{font-family:'Raleway',sans-serif;font-size:44px;font-weight:300;}
+.ph p{font-size:13px;color:var(--mid);margin-top:6px;margin-bottom:28px;}
+.db-tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--border);}
+.db-tab{background:none;border:none;padding:12px 24px;font-family:'Open Sans',sans-serif;font-size:14px;color:var(--mid);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.db-tab.on{color:var(--sage-dk);border-bottom-color:var(--sage-dk);font-weight:600;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--light);padding:0 14px 10px;border-bottom:1px solid var(--border);font-weight:500;}
+td{padding:14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:hover td{background:var(--cream);}
+.pill{display:inline-block;padding:3px 9px;border-radius:100px;font-size:11px;}
+.p-confirmed{background:#e8f0e7;color:var(--green);}
+.p-refund-pending{background:#fde8e8;color:var(--red);font-weight:600;}
+.p-refunded{background:#e8e8fd;color:#5050c0;}
+.act{padding:5px 12px;border:1px solid var(--border);background:none;border-radius:2px;font-size:11px;font-family:'Open Sans',sans-serif;cursor:pointer;color:var(--mid);transition:all .2s;margin-right:4px;}
+.act-refund{border-color:var(--red);color:var(--red);}
+.act-refund:hover{background:var(--red);color:white;}
+.act-confirm{border-color:var(--green);color:var(--green);}
+.act-confirm:hover{background:var(--green);color:white;}
+.refund-panel{background:var(--cream);border:1px solid var(--border);border-radius:4px;padding:18px;margin-top:20px;display:none;}
+.refund-panel.on{display:block;}
+.refund-panel-title{font-family:'Raleway',sans-serif;font-size:18px;font-weight:400;margin-bottom:12px;}
+.refund-row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);}
+.refund-row:last-child{border-bottom:none;}
+.refund-row span:first-child{color:var(--mid);}
+.refund-total{font-size:16px;font-weight:600;color:var(--red);}
+.confirm-btn{padding:13px 24px;background:var(--charcoal);color:white;border:none;border-radius:2px;font-family:'Open Sans',sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;margin-top:14px;}
+.confirm-btn:hover{background:var(--sage-dk);}
+.toast{position:fixed;bottom:80px;right:28px;background:var(--charcoal);color:white;padding:12px 22px;border-radius:3px;font-size:13px;z-index:999;transform:translateY(60px);opacity:0;transition:all .3s;}
+.toast.on{transform:translateY(0);opacity:1;}
+@media(max-width:700px){.db-wrap{padding:24px 18px;}.demo-topbar{padding:10px 14px;}.demo-title{display:none;}}
 </style>
 </head>
 <body>
-
-<div class="topbar">
-  <div class="topbar-left">LG Pilates — Demo</div>
-  <div class="topbar-centre">Interactive Demo</div>
-  <div class="topbar-right">
-    <div class="pips">
-      <div class="pip active" id="pip1"></div>
-      <div class="pip" id="pip2"></div>
-      <div class="pip" id="pip3"></div>
+<div class="demo-topbar">
+  <span class="demo-badge">Interactive Demo</span>
+  <span class="demo-title">LG Pilates — Cancelling &amp; Refund (Admin)</span>
+  <div class="demo-progress" id="demoPips"><div class="dpip active"></div><div class="dpip"></div><div class="dpip"></div><div class="dpip"></div></div>
+  <span class="demo-step-counter" id="stepCounter">1 / 4</span>
+</div>
+<div class="nar-overlay" id="narOverlay">
+  <div class="nar-card">
+    <div class="nar-card-header"><span class="nar-step-pill" id="narPill">Step 1 of 4</span></div>
+    <div class="nar-card-body">
+      <div class="nar-heading" id="narHeading">—</div>
+      <div class="nar-text" id="narText"></div>
+      <div class="nar-hints" id="narHints"></div>
     </div>
-    <div class="step-counter" id="stepCounter">Step 1 of 3</div>
+    <div class="nar-card-footer">
+      <button class="nar-back-btn" id="narBackBtn" onclick="narBack()" disabled>← Back</button>
+      <button class="nar-dismiss-btn" id="narDismissBtn" onclick="dismissNarration()">Got it — show me ›</button>
+    </div>
   </div>
 </div>
-
-<div class="narration-overlay active" id="narration">
-  <div class="narration-card">
-    <h2>Cancelling &amp; Issuing a Refund</h2>
-    <ul>
-      <li><span>Louise can cancel a confirmed booking and the system automatically calculates the refund based on sessions already attended.</span></li>
-      <li><span>She enters the number of sessions attended — the system works out how much to return (remaining sessions × price per session).</span></li>
-      <li><span>The booking status moves from "confirmed" → "refund-pending" → "refunded" in sequence.</span></li>
-    </ul>
-    <button class="btn btn-clay btn-large" onclick="closeNarration()">Got it — show me ›</button>
-  </div>
-</div>
-
-<div class="page">
-  <div class="admin-label">Admin Panel</div>
-  <h1>All Bookings</h1>
-  <p class="subtitle">Review and manage all client bookings.</p>
-
-  <table class="bookings-table">
-    <thead>
-      <tr>
-        <th>Client</th>
-        <th>Class</th>
-        <th>Block</th>
-        <th>Status</th>
-        <th>Amount</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>
-          <div class="client-name">Emma Wilson</div>
-          <div class="client-email">emma.wilson@email.com</div>
-        </td>
-        <td>Beginners</td>
-        <td style="font-size:12px">4 Mar – 8 Apr</td>
-        <td><span class="status-pill pill-confirmed">Confirmed</span></td>
-        <td class="amount">£54.00</td>
-        <td><div style="display:flex;gap:6px"><button class="btn btn-view">View</button><button class="btn btn-cancel">Cancel</button></div></td>
-      </tr>
-      <tr>
-        <td>
-          <div class="client-name">Sarah Mitchell</div>
-          <div class="client-email">sarah.mitchell@email.com</div>
-        </td>
-        <td>Mixed Ability<br><span style="font-size:12px;color:var(--mid)">Mon 9:45am</span></td>
-        <td style="font-size:12px;white-space:nowrap">7 Apr – 12 May</td>
-        <td><span class="status-pill pill-confirmed" id="sarahStatus">Confirmed</span></td>
-        <td class="amount">£54.00</td>
-        <td>
-          <div style="display:flex;gap:6px" id="sarahActions">
-            <button class="btn btn-view">View</button>
-            <button class="btn btn-cancel" id="cancelBtn" onclick="openRefundModal()">Cancel</button>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- REFUND MODAL -->
-<div class="overlay" id="refundModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Cancel &amp; Issue Refund</h3>
-      <button class="modal-close" onclick="document.getElementById('refundModal').classList.remove('active')">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="booking-summary">
-        <div class="row"><span>Client</span><strong>Sarah Mitchell</strong></div>
-        <div class="row"><span>Class</span><strong>Mixed Ability — Mon 9:45am</strong></div>
-        <div class="row"><span>Block</span><strong>7 Apr – 12 May 2026</strong></div>
-        <div class="row"><span>Total paid</span><strong>£54.00</strong></div>
-        <div class="row"><span>Sessions in block</span><strong>6</strong></div>
-        <div class="row"><span>Price per session</span><strong>£9.00</strong></div>
-      </div>
-
-      <div class="form-group">
-        <label>Sessions attended (out of 6):</label>
-        <input type="number" id="sessionsAttended" value="2" min="0" max="6" oninput="calcRefund()">
-      </div>
-
-      <div class="refund-calc" id="refundCalc">
-        <div class="refund-amount" id="refundAmount">£36.00</div>
-        <p id="refundBreakdown">4 remaining sessions × £9.00 per session</p>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn" style="background:#ddd;color:#555" onclick="document.getElementById('refundModal').classList.remove('active')">Cancel</button>
-        <button class="btn btn-red" onclick="processRefund()">Process Refund</button>
+<div class="demo-layout">
+  <div class="site-frame">
+    <div class="browser-bar"><div class="bdot bd-r"></div><div class="bdot bd-y"></div><div class="bdot bd-g"></div><div class="burl">lg-pilates.co.uk/book — Admin Dashboard</div></div>
+    <div class="db-wrap">
+      <div class="ph"><h2>Admin Dashboard</h2><p>Manage bookings and track studio performance.</p></div>
+      <div class="db-tabs"><button class="db-tab on">All Bookings</button><button class="db-tab">By Class</button><button class="db-tab">Clients</button></div>
+      <table>
+        <thead><tr><th>Client</th><th>Class</th><th>Block</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr id="sarahRow">
+            <td>Sarah Mitchell</td><td>Mixed Ability — Mon 9:45am</td><td style="font-size:12px">28 Apr – 2 Jun</td><td>£72</td>
+            <td><span class="pill p-confirmed" id="sarahStatus">confirmed</span></td>
+            <td id="sarahActions"><button class="act">View</button><button class="act act-refund" onclick="initiateRefund()">Refund</button><button class="act">Cancel</button></td>
+          </tr>
+          <tr><td>Emma Thompson</td><td>Mixed Ability — Wed 6:30pm</td><td style="font-size:12px">30 Apr – 4 Jun</td><td>£72</td><td><span class="pill p-confirmed">confirmed</span></td><td><button class="act">View</button><button class="act act-refund">Refund</button><button class="act">Cancel</button></td></tr>
+        </tbody>
+      </table>
+      <div class="refund-panel" id="refundPanel">
+        <div class="refund-panel-title">Refund Calculation — Sarah Mitchell</div>
+        <div class="refund-row"><span>Total paid</span><span>£72.00</span></div>
+        <div class="refund-row"><span>Sessions attended</span><span>2 of 6</span></div>
+        <div class="refund-row"><span>Sessions remaining</span><span>4</span></div>
+        <div class="refund-row"><span>Price per session</span><span>£12.00</span></div>
+        <div class="refund-row"><span>Suggested refund</span><span class="refund-total">£48.00</span></div>
+        <button class="confirm-btn" onclick="markRefundPending()">Mark as Refund Pending — £48.00</button>
       </div>
     </div>
   </div>
 </div>
-
-<div class="sticky-bar" id="stickyBar">
-  <strong>Step 1:</strong> Click <strong>Cancel</strong> on Sarah Mitchell's booking to open the refund modal
+<div class="toast" id="toastEl"></div>
+<div class="next-strip" id="nextStrip" onclick="openNarration(currentStep+1)" style="display:none">
+  <span class="next-strip-label">Next</span><span class="next-strip-text" id="nextStripText">—</span><span class="next-strip-arrow">›</span>
 </div>
-
 <script>
-function closeNarration() {
-  document.getElementById('narration').classList.remove('active');
+var currentStep=0;
+var STEPS=[
+  {label:'Step 1 of 4',heading:'A confirmed booking',text:'Sarah has a confirmed booking on the Monday 9:45am class. She has contacted Louise to say she can no longer attend and would like a partial refund for the sessions she hasn\'t attended.',hints:[{text:'Confirmed bookings show the <strong>Refund</strong> button in the actions column'},{text:'Clicking Refund starts the refund calculation flow'},{text:'The system helps Louise calculate the correct amount to refund'}],nextLabel:'Initiate refund'},
+  {label:'Step 2 of 4',heading:'Refund calculation',text:'Clicking Refund shows the calculation panel below the table. The system works out the suggested refund based on sessions attended versus sessions remaining at £12 per session.',hints:[{text:'Sarah attended <strong>2 of 6 sessions</strong>'},{text:'Suggested refund is <strong>£48</strong> — 4 remaining sessions × £12'},{text:'Louise can adjust the amount before confirming'}],nextLabel:'Mark refund pending'},
+  {label:'Step 3 of 4',heading:'Status — Refund Pending',text:'Louise clicks to mark the refund as pending. The status updates to "Refund Pending" in bold red, reminding Louise that the bank transfer back to Sarah is still outstanding.',hints:[{text:'<strong>Refund Pending</strong> (red) = refund agreed but transfer not yet made'},{text:'The space on the block is freed up automatically'},{text:'Once Louise has transferred the money, she marks it as Refunded'}],nextLabel:'Mark refunded'},
+  {label:'Step 4 of 4',heading:'Status — Refunded',text:'Once Louise has sent the bank transfer to Sarah, she clicks "Mark Refunded". The status updates to purple "Refunded" and the booking is fully resolved.',hints:[{text:'<strong>Refunded</strong> (purple) = refund has been sent'},{text:'The booking history is kept for records'},{text:'The spot on the block remains freed up for another client to book'}],nextLabel:null}
+];
+function openNarration(idx){
+  if(idx<0||idx>=STEPS.length)return;
+  currentStep=idx;
+  var s=STEPS[idx];
+  document.getElementById('narPill').textContent=s.label;
+  document.getElementById('narHeading').textContent=s.heading;
+  document.getElementById('narText').innerHTML=s.text;
+  var h=document.getElementById('narHints');
+  h.innerHTML=(s.hints||[]).map(function(x){return'<div class="nar-hint"><div class="nar-hint-dot"></div><span>'+x.text+'</span></div>';}).join('');
+  document.getElementById('narDismissBtn').textContent=idx===STEPS.length-1?'Got it — close demo ›':'Got it — show me ›';
+  document.getElementById('narBackBtn').disabled=idx===0;
+  var pips=document.querySelectorAll('.dpip');
+  pips.forEach(function(p,i){p.classList.remove('active','done');if(i<idx)p.classList.add('done');if(i===idx)p.classList.add('active');});
+  document.getElementById('stepCounter').textContent=(idx+1)+' / '+STEPS.length;
+  document.getElementById('narOverlay').classList.add('open');
 }
-
-function openRefundModal() {
-  document.getElementById('refundModal').classList.add('active');
-  updateStep(2);
-  document.getElementById('stickyBar').innerHTML = '<strong>Step 2:</strong> Adjust sessions attended (default: 2) — see the refund update live — then click <strong>Process Refund</strong>';
-}
-
-function calcRefund() {
-  const attended = parseInt(document.getElementById('sessionsAttended').value) || 0;
-  const total = 6;
-  const perSession = 9;
-  const remaining = Math.max(0, total - attended);
-  const refund = remaining * perSession;
-  document.getElementById('refundAmount').textContent = '£' + refund.toFixed(2);
-  document.getElementById('refundBreakdown').textContent = remaining + ' remaining session' + (remaining !== 1 ? 's' : '') + ' × £' + perSession.toFixed(2) + ' per session';
-}
-
-function processRefund() {
-  document.getElementById('refundModal').classList.remove('active');
-  updateStep(3);
-
-  // Set to refund-pending
-  const statusPill = document.getElementById('sarahStatus');
-  statusPill.textContent = 'Refund Pending';
-  statusPill.className = 'status-pill pill-refund-pending';
-
-  // Remove cancel button
-  document.getElementById('cancelBtn').style.display = 'none';
-
-  document.getElementById('stickyBar').innerHTML = '<strong>Processing...</strong> Status is <strong style="color:var(--clay)">refund-pending</strong>';
-
-  // After 1.2 seconds, flip to refunded
-  setTimeout(() => {
-    statusPill.textContent = 'Refunded';
-    statusPill.className = 'status-pill pill-refunded';
-    document.getElementById('stickyBar').innerHTML = '<strong>Done!</strong> Status is now <strong style="color:#888">refunded</strong> — booking is closed';
-  }, 1200);
-}
-
-function updateStep(n) {
-  document.getElementById('stepCounter').textContent = 'Step ' + n + ' of 3';
-  for (let i = 1; i <= 3; i++) {
-    const pip = document.getElementById('pip' + i);
-    if (!pip) continue;
-    pip.classList.remove('done','active');
-    if (i < n) pip.classList.add('done');
-    else if (i === n) pip.classList.add('active');
+function dismissNarration(){
+  document.getElementById('narOverlay').classList.remove('open');
+  if(currentStep===1){document.getElementById('refundPanel').className='refund-panel on';}
+  if(currentStep===2){
+    document.getElementById('refundPanel').className='refund-panel';
+    document.getElementById('sarahStatus').className='pill p-refund-pending';
+    document.getElementById('sarahStatus').textContent='refund-pending';
+    document.getElementById('sarahActions').innerHTML='<button class="act">View</button><button class="act act-confirm" onclick="openNarration(3)">Mark Refunded</button>';
+    showToast('Refund pending — £48.00. Spot freed up.');
   }
+  if(currentStep===3){
+    document.getElementById('sarahStatus').className='pill p-refunded';
+    document.getElementById('sarahStatus').textContent='refunded';
+    document.getElementById('sarahActions').innerHTML='<button class="act">View</button>';
+    showToast('Marked as refunded.');
+  }
+  var strip=document.getElementById('nextStrip');
+  if(currentStep===STEPS.length-1){strip.style.display='none';}
+  else{document.getElementById('nextStripText').textContent=STEPS[currentStep+1].heading;strip.style.display='flex';}
 }
+function narBack(){openNarration(currentStep-1);}
+function initiateRefund(){openNarration(1);}
+function markRefundPending(){openNarration(2);}
+function showToast(msg){var el=document.getElementById('toastEl');el.textContent=msg;el.className='toast on';setTimeout(function(){el.className='toast';},3000);}
+openNarration(0);
 </script>
 </body>
 </html>
