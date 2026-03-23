@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LG Pilates — Interactive Booking Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&family=Open+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #eef5f5;
+  --warm: #f7fafa;
+  --sage: #3a8a8a;
+  --sage-dk: #2a6b6b;
+  --sage-lt: #b8d8d8;
+  --clay: #e07b4a;
+  --charcoal: #1a2e2e;
+  --mid: #4a6060;
+  --light: #8aabab;
+  --border: #cde0e0;
+  --green: #3a8a6a;
+  --red: #c04040;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Open Sans',sans-serif; background:#0f1e1e; color:var(--charcoal); min-height:100vh; }
+
+/* ── DEMO TOPBAR ─────────────────────────────────────────────────── */
+.demo-topbar {
+  background:#0a1414;
+  border-bottom:1px solid #1a3030;
+  padding:12px 24px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  position:sticky;
+  top:0;
+  z-index:300;
+}
+.demo-badge {
+  background:var(--clay);
+  color:#fff;
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  padding:4px 11px;
+  border-radius:2px;
+}
+.demo-title {
+  font-family:'Raleway',sans-serif;
+  font-size:16px;
+  font-weight:400;
+  color:var(--sage-lt);
+  letter-spacing:.04em;
+}
+.demo-progress {
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.dpip {
+  width:8px; height:8px;
+  border-radius:50%;
+  background:#1a3030;
+  border:1px solid #2a4040;
+  transition:all .3s;
+}
+.dpip.active { background:var(--sage); border-color:var(--sage); }
+.dpip.done { background:var(--sage-dk); border-color:var(--sage-dk); }
+.demo-step-counter {
+  font-size:11px;
+  color:var(--light);
+  margin-left:6px;
+  font-family:'Raleway',sans-serif;
+  white-space:nowrap;
+}
+
+/* ── NARRATION OVERLAY ───────────────────────────────────────────── */
+.nar-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(8,16,16,.75);
+  z-index:400;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s;
+}
+.nar-overlay.open {
+  opacity:1;
+  pointer-events:all;
+}
+.nar-card {
+  background:#1a2e2e;
+  border:1px solid #2a4040;
+  border-radius:4px;
+  width:100%;
+  max-width:500px;
+  box-shadow:0 24px 60px rgba(0,0,0,.6);
+  transform:translateY(12px);
+  transition:transform .25s ease;
+  overflow:hidden;
+}
+.nar-overlay.open .nar-card {
+  transform:translateY(0);
+}
+.nar-card-header {
+  background:#0f1e1e;
+  padding:16px 22px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid #2a4040;
+}
+.nar-step-pill {
+  font-size:10px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--sage);
+  font-weight:600;
+}
+.nar-step-of {
+  font-size:11px;
+  color:#2a4040;
+}
+.nar-card-body {
+  padding:24px 22px 20px;
+}
+.nar-heading {
+  font-family:'Raleway',sans-serif;
+  font-size:24px;
+  font-weight:400;
+  color:#fff;
+  margin-bottom:12px;
+  line-height:1.25;
+}
+.nar-text {
+  font-size:13px;
+  color:var(--light);
+  line-height:1.85;
+  margin-bottom:16px;
+}
+.nar-text strong { color:var(--sage-lt); font-weight:500; }
+.nar-hints {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-bottom:22px;
+}
+.nar-hint {
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  font-size:12px;
+  color:var(--light);
+  line-height:1.5;
+}
+.nar-hint-dot {
+  width:6px; height:6px;
+  border-radius:50%;
+  background:var(--sage);
+  flex-shrink:0;
+  margin-top:4px;
+}
+.nar-hint strong { color:var(--sage-lt); font-weight:500; }
+.nar-card-footer {
+  padding:0 22px 22px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.nar-dismiss-btn {
+  flex:1;
+  padding:13px;
+  background:var(--sage-dk);
+  color:#fff;
+  border:none;
+  border-radius:2px;
+  font-family:'Open Sans',sans-serif;
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:background .2s;
+}
+.nar-dismiss-btn:hover { background:var(--sage); }
+.nar-back-btn {
+  padding:13px 18px;
+  background:none;
+  border:1px solid #2a4040;
+  border-radius:2px;
+  color:var(--light);
+  font-family:'Open Sans',sans-serif;
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:all .2s;
+}
+.nar-back-btn:hover { border-color:var(--light); color:#fff; }
+.nar-back-btn:disabled { opacity:.3; cursor:not-allowed; }
+
+/* ── "WHAT'S NEXT" STRIP ─────────────────────────────────────────── */
+.next-strip {
+  background:#0a1414;
+  border-top:1px solid #1a3030;
+  border-bottom:1px solid #1a3030;
+  padding:10px 24px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:12px;
+  color:#2a4040;
+  cursor:pointer;
+  transition:background .2s;
+  position:sticky;
+  bottom:0;
+  z-index:200;
+}
+.next-strip:hover { background:#0f1e1e; }
+.next-strip-label { color:var(--sage); font-weight:600; letter-spacing:.08em; text-transform:uppercase; font-size:10px; }
+.next-strip-text { color:var(--light); font-size:12px; }
+.next-strip-arrow { margin-left:auto; color:var(--sage); font-size:16px; }
+
+/* ── MAIN LAYOUT ─────────────────────────────────────────────────── */
+.demo-layout {
+  max-width:1000px;
+  margin:0 auto;
+  padding:28px 20px 80px;
+}
+
+/* ── SITE FRAME ──────────────────────────────────────────────────── */
+.site-frame {
+  background:var(--warm);
+  border-radius:4px;
+  overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.browser-bar {
+  background:#0a1414;
+  padding:10px 16px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.bdot { width:10px; height:10px; border-radius:50%; }
+.bd-r{background:#ff5f57;} .bd-y{background:#febc2e;} .bd-g{background:#28c840;}
+.burl {
+  flex:1;
+  background:#1a2e2e;
+  border-radius:3px;
+  padding:5px 12px;
+  font-size:11px;
+  color:var(--light);
+  margin-left:10px;
+}
+
+/* ── SITE NAV ────────────────────────────────────────────────────── */
+.s-nav {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:20px 40px;
+  border-bottom:1px solid var(--border);
+  background:var(--warm);
+}
+.s-logo { font-family:'Raleway',sans-serif; font-size:28px; letter-spacing:.06em; font-weight:600; }
+.s-logo span { color:var(--sage); font-style:italic; }
+
+/* ── HERO ────────────────────────────────────────────────────────── */
+.s-hero { padding:50px 40px 24px; }
+.s-hero-tag { font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--sage); margin-bottom:14px; }
+.s-hero h1 { font-family:'Raleway',sans-serif; font-size:56px; font-weight:300; line-height:1.1; margin-bottom:10px; }
+.s-hero h1 em { font-style:italic; color:var(--sage); }
+.s-hero p { font-size:16px; color:var(--mid); max-width:380px; line-height:1.7; }
+
+/* ── GRID ────────────────────────────────────────────────────────── */
+.s-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px; padding:0 40px 50px; }
+
+/* ── CARD ────────────────────────────────────────────────────────── */
+.card { background:var(--cream); border:1px solid var(--border); border-radius:4px; padding:26px; transition:all .25s; }
+.card.highlight { box-shadow:0 0 0 2px var(--sage-dk); transform:translateY(-2px); }
+.card-loc-wrap { background:var(--sage-dk); margin:-26px -26px 18px -26px; padding:10px 16px; border-radius:4px 4px 0 0; display:flex; justify-content:space-between; align-items:center; }
+.card-loc { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:white; font-weight:600; }
+.card-when { display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
+.card-when-day { font-family:'Raleway',sans-serif; font-size:26px; font-weight:500; color:var(--charcoal); }
+.card-when-time { font-size:15px; color:var(--mid); }
+.card-venue-name { font-size:15px; font-weight:600; color:var(--charcoal); }
+.card-level { font-size:13px; color:var(--mid); margin-top:2px; margin-bottom:16px; }
+.card-block-section { background:white; border:1px solid var(--border); border-radius:4px; padding:12px 14px; margin-bottom:12px; }
+.card-block-lbl { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--light); margin-bottom:4px; }
+.card-block-range { font-size:14px; font-weight:600; color:var(--charcoal); margin-bottom:4px; }
+.block-dates-pills { display:flex; flex-wrap:wrap; gap:5px; margin:8px 0; }
+.date-pill { font-size:13px; padding:3px 9px; background:white; border:1px solid var(--border); border-radius:100px; color:var(--mid); }
+.cap-bar { height:3px; background:var(--border); border-radius:2px; margin-bottom:5px; overflow:hidden; }
+.cap-fill { height:100%; border-radius:2px; background:var(--sage); }
+.cap-fill.warn { background:var(--clay); }
+.cap-txt { font-size:12px; color:var(--light); }
+.card-price-row { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+.card-price-lbl { font-size:12px; color:#000; font-weight:500; }
+.card-price-val { font-family:'Raleway',sans-serif; font-size:22px; color:var(--sage-dk); font-weight:600; }
+.book-btn { margin-top:18px; width:100%; padding:14px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:13px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; transition:background .2s; }
+.book-btn:hover { background:var(--sage-dk); }
+
+/* ── INLINE MODAL ────────────────────────────────────────────────── */
+.modal-inline-wrap { padding:0 40px 40px; display:none; }
+.modal-inline-wrap.on { display:block; }
+.modal-inline { background:var(--warm); border-radius:6px; border:1px solid var(--border); box-shadow:0 8px 32px rgba(0,0,0,.1); max-width:500px; }
+.mhead { padding:28px 28px 0; border-bottom:1px solid var(--border); }
+.mhead-top { display:flex; justify-content:space-between; align-items:flex-start; width:100%; padding-bottom:16px; }
+.mtitle { font-family:'Raleway',sans-serif; font-size:28px; font-weight:400; }
+.msub { font-size:15px; color:var(--mid); margin-top:3px; }
+.step-progress { display:flex; align-items:center; width:100%; padding:12px 0 14px; }
+.step-pip { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; }
+.step-pip-circle { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; border:2px solid var(--border); background:white; color:var(--light); transition:all .25s; }
+.step-pip-circle.active { background:var(--sage); border-color:var(--sage); color:white; }
+.step-pip-circle.done { background:var(--sage-lt); border-color:var(--sage-lt); color:var(--sage-dk); }
+.step-pip-label { font-size:10px; letter-spacing:.04em; color:var(--light); white-space:nowrap; }
+.step-pip-label.active { color:var(--sage-dk); font-weight:600; }
+.step-pip-label.done { color:var(--sage); }
+.step-connector { flex:1; height:2px; background:var(--border); margin:0 6px 14px; border-radius:2px; transition:background .25s; }
+.step-connector.done { background:var(--sage-lt); }
+.mbody { padding:24px 28px; }
+.msummary { background:var(--cream); border-radius:4px; padding:14px 18px; margin-bottom:22px; display:flex; justify-content:space-between; align-items:center; }
+.msum-info { font-size:16px; color:var(--mid); }
+.msum-info strong { display:block; font-size:18px; color:var(--charcoal); margin-bottom:2px; }
+.msum-price { font-family:'Raleway',sans-serif; font-size:38px; color:var(--charcoal); }
+.step-label { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--sage-dk); font-weight:600; margin-bottom:16px; padding:8px 12px; background:var(--cream); border-radius:3px; border-left:3px solid var(--sage-dk); }
+.flbl { font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--mid); margin-bottom:7px; display:block; }
+.finp { width:100%; padding:14px 17px; border:1px solid var(--border); border-radius:3px; background:white; font-family:'Open Sans',sans-serif; font-size:16px; color:var(--charcoal); outline:none; transition:border-color .2s; margin-bottom:14px; }
+.finp:focus { border-color:var(--sage); }
+.frow { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+.frow .finp { margin-bottom:0; }
+.health-note { font-size:14px; color:var(--mid); background:var(--cream); border-radius:3px; padding:10px 14px; margin-bottom:16px; line-height:1.6; border-left:3px solid var(--sage-lt); }
+.parq-question { display:flex; align-items:flex-start; gap:10px; padding:13px 16px; border-bottom:1px solid var(--border); background:white; font-size:14px; border-left:1px solid var(--border); border-right:1px solid var(--border); }
+.parq-first { border-radius:4px 4px 0 0; border:1px solid var(--border) !important; border-bottom:none !important; }
+.parq-last { border-radius:0 0 4px 4px; border:1px solid var(--border) !important; margin-bottom:12px; }
+.parq-num { font-size:11px; font-weight:600; color:var(--light); min-width:18px; margin-top:2px; }
+.parq-text { flex:1; color:var(--charcoal); line-height:1.5; }
+.parq-radios { display:flex; gap:12px; align-items:center; min-width:80px; }
+.parq-radios label { display:flex; align-items:center; gap:4px; font-size:14px; cursor:pointer; color:var(--mid); }
+.parq-radios input[type="radio"] { accent-color:var(--sage-dk); }
+.parq-declaration { background:var(--cream); border:1px solid var(--border); border-radius:4px; padding:16px; margin-top:4px; }
+.parq-declaration p { font-size:13px; color:var(--mid); line-height:1.7; }
+.parq-section-title { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--charcoal); font-weight:600; margin-bottom:10px; }
+.bank-details-box { background:var(--cream); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:12px; }
+.bank-row { display:flex; justify-content:space-between; align-items:center; padding:11px 16px; border-bottom:1px solid var(--border); }
+.bank-row:last-child { border-bottom:none; }
+.bank-lbl { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--light); }
+.bank-val { font-size:16px; font-weight:600; color:var(--charcoal); font-family:'Raleway',sans-serif; }
+.mfoot { padding:0 28px 28px; }
+.confirm-btn { width:100%; padding:16px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:14px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; transition:background .2s; }
+.confirm-btn:hover:not(:disabled) { background:var(--sage-dk); }
+.confirm-btn:disabled { background:var(--border); color:var(--light); cursor:not-allowed; }
+.step-btn { width:100%; padding:13px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:12px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; transition:background .2s; margin-top:4px; }
+.step-btn:hover { background:var(--sage-dk); }
+.step-btn-back { padding:13px 20px; background:none; border:1px solid var(--border); border-radius:2px; font-family:'Open Sans',sans-serif; font-size:12px; letter-spacing:.08em; color:var(--mid); cursor:pointer; transition:all .2s; }
+.step-btn-back:hover { border-color:var(--charcoal); color:var(--charcoal); }
+.frow-btns { display:flex; gap:10px; align-items:center; margin-top:4px; }
+.frow-btns .step-btn { flex:1; margin-top:0; }
+.req { color:var(--red); }
+.tcs-hint { text-align:center; font-size:12px; color:var(--light); margin-top:8px; }
+.block-summary-box { background:white; border:1px solid var(--border); border-radius:4px; padding:14px 16px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:flex-start; }
+.reserve-notice { background:var(--cream); border-left:4px solid var(--clay); border-radius:3px; padding:16px 18px; margin-bottom:22px; }
+.reserve-notice-title { font-family:'Raleway',sans-serif; font-size:20px; font-weight:500; color:var(--charcoal); margin-bottom:6px; }
+.reserve-notice-text { font-size:14px; color:var(--mid); line-height:1.7; }
+.tcs-scroll-panel { border:1px solid var(--border); border-radius:4px; margin-top:20px; overflow:hidden; }
+.tcs-panel-header { padding:10px 14px; background:var(--cream); border-bottom:1px solid var(--border); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--light); font-weight:600; }
+.tcs-panel-body { height:130px; overflow-y:scroll; padding:12px 14px; font-size:12px; line-height:1.7; color:var(--mid); }
+.tcs-panel-body ul { padding-left:1.1rem; }
+.tcs-panel-body li { margin-bottom:5px; }
+.tcs-agree-row { display:flex; align-items:flex-start; gap:10px; cursor:pointer; margin-top:14px; padding:12px 14px; border-radius:4px; border:1px solid var(--border); background:var(--cream); }
+.tcs-agree-row input { margin-top:3px; accent-color:var(--sage); width:15px; height:15px; flex-shrink:0; }
+.tcs-agree-row span { font-size:13px; color:var(--charcoal); line-height:1.5; }
+.success-view { display:none; text-align:center; padding:44px 28px; }
+.success-view.on { display:block; }
+.sicon { width:60px; height:60px; background:#e8f0e7; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:26px; }
+.stitle { font-family:'Raleway',sans-serif; font-size:30px; font-weight:400; margin-bottom:10px; }
+.ssub { font-size:13px; color:var(--mid); line-height:1.7; margin-bottom:24px; }
+.sdetail { background:var(--cream); border-radius:4px; padding:18px; text-align:left; margin-bottom:24px; }
+.srow { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px solid var(--border); }
+.srow:last-child { border-bottom:none; }
+.srow span:first-child { color:var(--mid); }
+.srow span:last-child { font-weight:500; }
+
+@media(max-width:700px){
+  .s-nav { padding:14px 18px; }
+  .s-hero { padding:30px 18px 16px; }
+  .s-hero h1 { font-size:36px; }
+  .s-grid { grid-template-columns:1fr; padding:0 18px 30px; }
+  .modal-inline-wrap { padding:0 18px 30px; }
+  .demo-topbar { padding:10px 14px; gap:8px; }
+  .demo-title { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="demo-topbar">
+  <span class="demo-badge">Interactive Demo</span>
+  <span class="demo-title">LG Pilates — How to Book</span>
+  <div class="demo-progress" id="demoPips">
+    <div class="dpip active"></div>
+    <div class="dpip"></div>
+    <div class="dpip"></div>
+    <div class="dpip"></div>
+    <div class="dpip"></div>
+  </div>
+  <span class="demo-step-counter" id="stepCounter">1 / 5</span>
+</div>
+
+<!-- NARRATION POP-UP -->
+<div class="nar-overlay" id="narOverlay">
+  <div class="nar-card">
+    <div class="nar-card-header">
+      <span class="nar-step-pill" id="narPill">Step 1 of 5</span>
+      <span class="nar-step-of" id="narStepOf"></span>
+    </div>
+    <div class="nar-card-body">
+      <div class="nar-heading" id="narHeading">—</div>
+      <div class="nar-text" id="narText"></div>
+      <div class="nar-hints" id="narHints"></div>
+    </div>
+    <div class="nar-card-footer">
+      <button class="nar-back-btn" id="narBackBtn" onclick="narBack()" disabled>← Back</button>
+      <button class="nar-dismiss-btn" id="narDismissBtn" onclick="dismissNarration()">Got it — show me ›</button>
+    </div>
+  </div>
+</div>
+
+<!-- SITE FRAME -->
+<div class="demo-layout">
+  <div class="site-frame">
+    <div class="browser-bar">
+      <div class="bdot bd-r"></div><div class="bdot bd-y"></div><div class="bdot bd-g"></div>
+      <div class="burl">lg-pilates.co.uk/book</div>
+    </div>
+
+    <div class="s-nav">
+      <div class="s-logo">LG <span>Pilates</span></div>
+      <div style="display:flex;gap:28px;align-items:center">
+        <span style="font-family:'Open Sans',sans-serif;font-size:16px;color:var(--charcoal);font-weight:500">Schedule</span>
+        <span style="font-family:'Open Sans',sans-serif;font-size:16px;color:var(--mid)">Dashboard</span>
+      </div>
+    </div>
+
+    <div class="s-hero">
+      <div class="s-hero-tag">Baildon &amp; Guiseley</div>
+      <h1>Book your<br><em>Pilates Block</em></h1>
+      <p>Six-week blocks, multiple venues. Find your class and reserve your spot below.</p>
+    </div>
+
+    <!-- CLASS GRID -->
+    <div class="s-grid">
+      <div class="card" id="card1">
+        <div class="card-loc-wrap"><div class="card-loc">📍 Baildon</div></div>
+        <div class="card-when">
+          <span class="card-when-day">Monday</span>
+          <span class="card-when-time">9:45am – 10:45am</span>
+        </div>
+        <div class="card-venue-name">Baildon Moravian Church</div>
+        <div class="card-level">Mixed Ability</div>
+        <div class="card-block-section">
+          <div class="card-block-lbl">Current Block</div>
+          <div class="card-block-range">28 Apr – 2 Jun 2025</div>
+          <div class="block-dates-pills">
+            <span class="date-pill">28 Apr</span><span class="date-pill">5 May</span><span class="date-pill">12 May</span>
+            <span class="date-pill">19 May</span><span class="date-pill">26 May</span><span class="date-pill">2 Jun</span>
+          </div>
+          <div class="cap-bar"><div class="cap-fill" style="width:42%"></div></div>
+          <div class="cap-txt">5 of 12 spots taken</div>
+          <div class="card-price-row">
+            <span class="card-price-lbl">Block price</span>
+            <span class="card-price-val">£72</span>
+          </div>
+        </div>
+        <button class="book-btn" onclick="bookingStepForward()">Book Current Block</button>
+      </div>
+
+      <div class="card" id="card2">
+        <div class="card-loc-wrap"><div class="card-loc">📍 Baildon</div></div>
+        <div class="card-when">
+          <span class="card-when-day">Wednesday</span>
+          <span class="card-when-time">6:30pm – 7:30pm</span>
+        </div>
+        <div class="card-venue-name">DPTA Studio</div>
+        <div class="card-level">Mixed Ability</div>
+        <div class="card-block-section">
+          <div class="card-block-lbl">Current Block</div>
+          <div class="card-block-range">30 Apr – 4 Jun 2025</div>
+          <div class="block-dates-pills">
+            <span class="date-pill">30 Apr</span><span class="date-pill">7 May</span><span class="date-pill">14 May</span>
+            <span class="date-pill">21 May</span><span class="date-pill">28 May</span><span class="date-pill">4 Jun</span>
+          </div>
+          <div class="cap-bar"><div class="cap-fill warn" style="width:83%"></div></div>
+          <div class="cap-txt">10 of 12 spots taken</div>
+          <div class="card-price-row">
+            <span class="card-price-lbl">Block price</span>
+            <span class="card-price-val">£72</span>
+          </div>
+        </div>
+        <button class="book-btn" onclick="bookingStepForward()">Book Current Block</button>
+      </div>
+    </div>
+
+    <!-- INLINE MODAL -->
+    <div class="modal-inline-wrap" id="modalWrap">
+      <div class="modal-inline">
+        <div class="mhead">
+          <div class="mhead-top">
+            <div>
+              <div class="mtitle">Mixed Ability</div>
+              <div class="msub">Baildon Moravian Church, Baildon — Monday 9:45am</div>
+            </div>
+          </div>
+          <div class="step-progress">
+            <div class="step-pip">
+              <div class="step-pip-circle active" id="pip1">1</div>
+              <span class="step-pip-label active" id="pipLbl1">Your details</span>
+            </div>
+            <div class="step-connector" id="conn1"></div>
+            <div class="step-pip">
+              <div class="step-pip-circle" id="pip2">2</div>
+              <span class="step-pip-label" id="pipLbl2">Health form</span>
+            </div>
+            <div class="step-connector" id="conn2"></div>
+            <div class="step-pip">
+              <div class="step-pip-circle" id="pip3">3</div>
+              <span class="step-pip-label" id="pipLbl3">Payment</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mbody">
+
+          <!-- Modal step 1 -->
+          <div id="mStep1">
+            <div class="msummary">
+              <div class="msum-info"><strong>Mixed Ability</strong><span>Monday 9:45am – 10:45am • Baildon</span></div>
+              <div class="msum-price">£72</div>
+            </div>
+            <div class="step-label">Step 1 of 3 — Your Details</div>
+            <div class="frow">
+              <div><label class="flbl">First Name <span class="req">*</span></label><input type="text" class="finp" value="Sarah"></div>
+              <div><label class="flbl">Last Name <span class="req">*</span></label><input type="text" class="finp" value="Mitchell"></div>
+            </div>
+            <label class="flbl">Email Address <span class="req">*</span></label>
+            <input type="email" class="finp" value="sarah.mitchell@email.com">
+            <label class="flbl">Phone Number <span class="req">*</span></label>
+            <input type="text" class="finp" value="07712 345678">
+            <button class="step-btn" onclick="bookingStepForward()">Continue</button>
+          </div>
+
+          <!-- Modal step 2 -->
+          <div id="mStep2" style="display:none">
+            <div style="font-size:14px;padding:14px 16px;border-radius:3px;margin-bottom:14px;font-weight:500;line-height:1.5;background:#f5ede3;color:var(--clay)">
+              👋 Welcome! As a new client please complete the short health form below before booking.
+            </div>
+            <div class="step-label">Step 2 of 3 — Health Form</div>
+            <div class="health-note">This form ensures you are fit to take part in physical activity. Please answer all questions honestly.</div>
+            <div class="parq-section-title">Personal Details</div>
+            <div style="margin-bottom:12px;width:90px">
+              <label class="flbl">Age <span class="req">*</span></label>
+              <input type="text" class="finp" value="38" style="margin-bottom:0">
+            </div>
+            <div style="font-size:13px;color:var(--light);margin-bottom:10px;line-height:1.5">Please provide an emergency contact who can be reached if needed during class.</div>
+            <div class="frow" style="margin-bottom:10px">
+              <div><label class="flbl">Emergency Contact <span class="req">*</span></label><input type="text" class="finp" value="James Mitchell" style="margin-bottom:0"></div>
+              <div><label class="flbl">Relationship <span class="req">*</span></label><input type="text" class="finp" value="Husband" style="margin-bottom:0"></div>
+            </div>
+            <label class="flbl">Emergency Phone <span class="req">*</span></label>
+            <input type="text" class="finp" value="07798 654321">
+            <div class="parq-section-title" style="margin-top:4px">Medical Questions</div>
+            <div style="font-size:14px;color:var(--mid);margin-bottom:10px">Answer YES or NO to each of the following:</div>
+            <div class="parq-question parq-first">
+              <span class="parq-num">1</span><span class="parq-text">Do you currently or have you ever suffered from heart problems?</span>
+              <div class="parq-radios"><label><input type="radio" name="dq1" value="Yes"> Yes</label><label><input type="radio" name="dq1" value="No" checked> No</label></div>
+            </div>
+            <div class="parq-question">
+              <span class="parq-num">2</span><span class="parq-text">Circulatory problems?</span>
+              <div class="parq-radios"><label><input type="radio" name="dq2" value="Yes"> Yes</label><label><input type="radio" name="dq2" value="No" checked> No</label></div>
+            </div>
+            <div class="parq-question">
+              <span class="parq-num">3</span><span class="parq-text">Blood pressure problems (low or high)?</span>
+              <div class="parq-radios"><label><input type="radio" name="dq3" value="Yes"> Yes</label><label><input type="radio" name="dq3" value="No" checked> No</label></div>
+            </div>
+            <div class="parq-question parq-last">
+              <span class="parq-num">4</span><span class="parq-text">Chest pain?</span>
+              <div class="parq-radios"><label><input type="radio" name="dq4" value="Yes"> Yes</label><label><input type="radio" name="dq4" value="No" checked> No</label></div>
+            </div>
+            <div style="color:var(--light);font-size:12px;margin-bottom:14px;font-style:italic">Questions 5–12 continue in the real booking system…</div>
+            <div class="parq-declaration">
+              <div class="parq-section-title">Declaration</div>
+              <p>I have answered all the questions on this form honestly and I am aware that if I answered YES to any question I will need to consult my doctor before taking part in the class.</p>
+              <div class="frow" style="margin-top:14px">
+                <div><label class="flbl">Print Name <span class="req">*</span></label><input type="text" class="finp" value="Sarah Mitchell" style="margin-bottom:0"></div>
+                <div><label class="flbl">Date</label><div class="finp" style="margin-bottom:0;background:#f5f5f5;color:var(--light);cursor:default">22 Mar 2026</div></div>
+              </div>
+              <label style="display:flex;align-items:center;gap:8px;margin-top:14px;cursor:pointer;font-size:14px;color:var(--mid)">
+                <input type="checkbox" checked style="accent-color:var(--sage-dk);width:16px;height:16px">
+                I agree to the declaration above <span class="req">*</span>
+              </label>
+            </div>
+            <div class="frow-btns" style="margin-top:16px">
+              <button class="step-btn-back" onclick="bookingStepBack()">Back</button>
+              <button class="step-btn" onclick="bookingStepForward()">Continue</button>
+            </div>
+          </div>
+
+          <!-- Modal step 3 -->
+          <div id="mStep3" style="display:none">
+            <div class="step-label">Step 3 of 3 — Payment</div>
+            <div class="block-summary-box">
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:3px">6-week block — £12 per session</div>
+                <div style="font-size:13px;color:var(--mid);margin-bottom:8px">Monday 9:45am – 10:45am</div>
+                <div style="display:flex;flex-wrap:wrap;gap:5px">
+                  <span class="date-pill">28 Apr</span><span class="date-pill">5 May</span><span class="date-pill">12 May</span>
+                  <span class="date-pill">19 May</span><span class="date-pill">26 May</span><span class="date-pill">2 Jun</span>
+                </div>
+              </div>
+              <div style="font-family:'Raleway',sans-serif;font-size:28px;color:var(--sage-dk);font-weight:400;margin-left:16px">£72</div>
+            </div>
+            <div class="reserve-notice">
+              <div class="reserve-notice-title">Reserve your space</div>
+              <div class="reserve-notice-text">You are reserving a spot on this block. <strong>Your place is not confirmed until payment is received.</strong> Once Louise has received your payment she will confirm your booking by email.</div>
+            </div>
+            <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);margin-bottom:10px">Pay by Bank Transfer within 48 hours</div>
+            <div class="bank-details-box">
+              <div class="bank-row"><span class="bank-lbl">Name</span><span class="bank-val">LG Pilates</span></div>
+              <div class="bank-row"><span class="bank-lbl">Sort Code</span><span class="bank-val">12-34-56</span></div>
+              <div class="bank-row"><span class="bank-lbl">Account No.</span><span class="bank-val">12345678</span></div>
+              <div class="bank-row"><span class="bank-lbl">Reference</span><span class="bank-val">Sarah Mitchell Monday</span></div>
+            </div>
+            <div class="tcs-scroll-panel">
+              <div class="tcs-panel-header">Terms &amp; Conditions</div>
+              <div class="tcs-panel-body">
+                <ul>
+                  <li>Payment is to be made before the start of a block, no later than 48 hours.</li>
+                  <li>Blocks will run between 4–6 weeks dependent on school holidays, instructor holiday or venue availability.</li>
+                  <li>You pay for your block upfront regardless of how many sessions you attend.</li>
+                  <li>If you cancel your block booking you must give the instructor at least 48 hours notice. Any cancellations after this time will be charged.</li>
+                  <li>Missed classes will not be refunded.</li>
+                  <li>No participants under the age of 18. Participants are not to bring children to class.</li>
+                  <li>Please arrive early for your class. The instructor has the right to refuse late participants.</li>
+                </ul>
+                <p style="margin:10px 0 0;font-size:12px;font-style:italic;color:var(--light)">By booking your block you agree to the terms and conditions for LG Pilates.</p>
+              </div>
+            </div>
+            <label class="tcs-agree-row">
+              <input type="checkbox" id="demoTcs" onchange="toggleReserve()">
+              <span>I have read and agree to the <strong>Terms &amp; Conditions</strong> of LG Pilates</span>
+            </label>
+            <div class="frow-btns" style="margin-top:20px">
+              <button class="step-btn-back" onclick="bookingStepBack()">Back</button>
+            </div>
+          </div>
+
+        </div><!-- /mbody -->
+
+        <!-- Reserve footer -->
+        <div class="mfoot" id="mFoot" style="display:none">
+          <button class="confirm-btn" id="reserveBtn" onclick="bookingStepForward()" disabled>Reserve My Spot — £72 due</button>
+          <div class="tcs-hint" id="tcsHint">Please agree to the Terms &amp; Conditions above to continue</div>
+        </div>
+
+        <!-- Success -->
+        <div class="success-view" id="mSuccess">
+          <div class="sicon">⏳</div>
+          <div class="stitle">Spot Reserved!</div>
+          <div class="ssub">Your spot is currently <strong>reserved but not yet confirmed.</strong> Please transfer £72 to Louise within 48 hours using the details below.</div>
+          <div class="sdetail">
+            <div class="srow"><span>Name</span><span>Sarah Mitchell</span></div>
+            <div class="srow"><span>Class</span><span>Mixed Ability</span></div>
+            <div class="srow"><span>Venue</span><span>Baildon Moravian Church</span></div>
+            <div class="srow"><span>When</span><span>Monday 9:45am – 10:45am</span></div>
+            <div class="srow"><span>Block</span><span>28 Apr – 2 Jun 2025</span></div>
+            <div class="srow"><span>Amount Due</span><span style="font-weight:600;color:var(--charcoal)">£72.00</span></div>
+          </div>
+          <div style="background:var(--cream);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:20px">
+            <div class="bank-row"><span class="bank-lbl">Name</span><span class="bank-val">LG Pilates</span></div>
+            <div class="bank-row"><span class="bank-lbl">Sort Code</span><span class="bank-val">12-34-56</span></div>
+            <div class="bank-row"><span class="bank-lbl">Account No.</span><span class="bank-val">12345678</span></div>
+            <div class="bank-row"><span class="bank-lbl">Reference</span><span class="bank-val">Sarah Mitchell Monday</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /modal-inline-wrap -->
+
+  </div><!-- /site-frame -->
+</div><!-- /demo-layout -->
+
+<!-- STICKY NEXT STRIP -->
+<div class="next-strip" id="nextStrip" onclick="openNarration(currentStep + 1)" style="display:none">
+  <span class="next-strip-label">Next</span>
+  <span class="next-strip-text" id="nextStripText">—</span>
+  <span class="next-strip-arrow">›</span>
+</div>
+
+<script>
+  var currentStep = 0;
+  var narrationDismissed = false;
+
+  var STEPS = [
+    {
+      label: 'Step 1 of 5',
+      heading: 'Browse available classes',
+      text: 'This is the main booking page. All of Louise\'s classes are shown here, with the day, time, venue and level clearly displayed.',
+      hints: [
+        { text: 'The capacity bar turns <strong>orange</strong> when a class is nearly full' },
+        { text: 'Each class shows the exact <strong>session dates</strong> in the block' },
+        { text: 'Click <strong>Book Current Block</strong> when you\'re ready to book' }
+      ],
+      showModal: false,
+      modalStep: null,
+      nextLabel: 'Enter your details'
+    },
+    {
+      label: 'Step 2 of 5',
+      heading: 'Enter your details',
+      text: 'Clicking Book Current Block opens the booking form. First you enter your name, email and phone number. The system checks whether you\'re a returning client — if so, you\'ll skip the health form next time.',
+      hints: [
+        { text: 'Your <strong>email address</strong> is used to identify returning clients' },
+        { text: 'Phone number must be <strong>11 digits</strong>' }
+      ],
+      showModal: true,
+      modalStep: 1,
+      nextLabel: 'Health questionnaire'
+    },
+    {
+      label: 'Step 3 of 5',
+      heading: 'Complete the health questionnaire',
+      text: 'New clients fill in a short PAR-Q health form — a standard requirement for exercise classes. You only ever need to do this once. You\'ll also provide an emergency contact.',
+      hints: [
+        { text: 'Most people answer <strong>No</strong> to all questions' },
+        { text: 'Returning clients <strong>skip this step entirely</strong>' },
+        { text: 'The declaration must be agreed before you can continue' }
+      ],
+      showModal: true,
+      modalStep: 2,
+      nextLabel: 'Review & pay'
+    },
+    {
+      label: 'Step 4 of 5',
+      heading: 'Review payment details',
+      text: 'The payment screen shows a full summary of your booking — class, dates and total cost. You pay by bank transfer. The unique reference code makes it easy for Louise to match your payment.',
+      hints: [
+        { text: 'Scroll through the <strong>Terms & Conditions</strong>, then tick the checkbox' },
+        { text: 'The Reserve button stays <strong>greyed out</strong> until T&Cs are agreed' },
+        { text: 'You have <strong>48 hours</strong> to transfer payment after reserving' }
+      ],
+      showModal: true,
+      modalStep: 3,
+      nextLabel: 'Booking confirmed'
+    },
+    {
+      label: 'Step 5 of 5',
+      heading: 'Booking confirmed!',
+      text: 'Your spot is now reserved. The confirmation screen shows all your booking details and repeats the bank transfer information so you don\'t have to search for it. Louise will confirm your booking once payment arrives.',
+      hints: [
+        { text: 'A <strong>confirmation email</strong> is sent to you automatically' },
+        { text: 'Louise marks the booking as <strong>confirmed</strong> once payment is received' }
+      ],
+      showModal: true,
+      modalStep: 4,
+      nextLabel: null
+    }
+  ];
+
+  // ── Narration pop-up ─────────────────────────────────────────────
+  function openNarration(idx) {
+    if (idx < 0 || idx >= STEPS.length) return;
+    currentStep = idx;
+    var s = STEPS[idx];
+
+    document.getElementById('narPill').textContent = s.label;
+    document.getElementById('narHeading').textContent = s.heading;
+    document.getElementById('narText').innerHTML = s.text;
+
+    var hintsEl = document.getElementById('narHints');
+    hintsEl.innerHTML = (s.hints || []).map(function(h){
+      return '<div class="nar-hint"><div class="nar-hint-dot"></div><span>' + h.text + '</span></div>';
+    }).join('');
+
+    var dismissBtn = document.getElementById('narDismissBtn');
+    var isLast = idx === STEPS.length - 1;
+    dismissBtn.textContent = isLast ? 'Got it — close demo ›' : 'Got it — show me ›';
+
+    document.getElementById('narBackBtn').disabled = idx === 0;
+
+    // Update top pips
+    var pips = document.querySelectorAll('.dpip');
+    pips.forEach(function(p, i){
+      p.classList.remove('active','done');
+      if (i < idx) p.classList.add('done');
+      if (i === idx) p.classList.add('active');
+    });
+    document.getElementById('stepCounter').textContent = (idx+1) + ' / ' + STEPS.length;
+
+    // Show overlay
+    document.getElementById('narOverlay').classList.add('open');
+    narrationDismissed = false;
+  }
+
+  function dismissNarration() {
+    document.getElementById('narOverlay').classList.remove('open');
+    narrationDismissed = true;
+
+    var s = STEPS[currentStep];
+
+    // Update demo content for this step
+    document.getElementById('card1').classList.toggle('highlight', currentStep === 0);
+
+    if (s.showModal) {
+      document.getElementById('modalWrap').classList.add('on');
+      showModalStep(s.modalStep);
+      setTimeout(function(){
+        document.getElementById('modalWrap').scrollIntoView({behavior:'smooth', block:'start'});
+      }, 100);
+    } else {
+      document.getElementById('modalWrap').classList.remove('on');
+    }
+
+    // Show / hide next strip
+    var strip = document.getElementById('nextStrip');
+    var isLast = currentStep === STEPS.length - 1;
+    if (isLast) {
+      strip.style.display = 'none';
+    } else {
+      document.getElementById('nextStripText').textContent = STEPS[currentStep + 1].heading;
+      strip.style.display = 'flex';
+    }
+  }
+
+  function narBack() {
+    openNarration(currentStep - 1);
+  }
+
+  // ── Modal step rendering ─────────────────────────────────────────
+  function showModalStep(ms) {
+    document.getElementById('mStep1').style.display = 'none';
+    document.getElementById('mStep2').style.display = 'none';
+    document.getElementById('mStep3').style.display = 'none';
+    document.getElementById('mFoot').style.display = 'none';
+    document.getElementById('mSuccess').className = 'success-view';
+
+    if (ms === 1) {
+      document.getElementById('mStep1').style.display = 'block';
+      setPips(1, false);
+    } else if (ms === 2) {
+      document.getElementById('mStep2').style.display = 'block';
+      setPips(2, false);
+    } else if (ms === 3) {
+      document.getElementById('mStep3').style.display = 'block';
+      document.getElementById('mFoot').style.display = 'block';
+      document.getElementById('demoTcs').checked = false;
+      document.getElementById('reserveBtn').disabled = true;
+      document.getElementById('tcsHint').style.display = 'block';
+      setPips(3, false);
+    } else if (ms === 4) {
+      document.getElementById('mSuccess').className = 'success-view on';
+      setPips(3, true);
+    }
+  }
+
+  function setPips(active, allDone) {
+    for (var i = 1; i <= 3; i++) {
+      var c = document.getElementById('pip' + i);
+      var l = document.getElementById('pipLbl' + i);
+      var conn = document.getElementById('conn' + i);
+      c.classList.remove('active','done');
+      l.classList.remove('active','done');
+      if (allDone) {
+        c.classList.add('done'); c.textContent = '✓'; l.classList.add('done');
+      } else if (i < active) {
+        c.classList.add('done'); c.textContent = '✓'; l.classList.add('done');
+      } else if (i === active) {
+        c.classList.add('active'); c.textContent = i; l.classList.add('active');
+      } else {
+        c.textContent = i;
+      }
+      if (conn) conn.classList.toggle('done', allDone || active > i);
+    }
+  }
+
+  // ── Booking demo forward/back (buttons inside the form) ──────────
+  // Maps modal step → demo step index
+  var modalToDemoStep = { 1:1, 2:2, 3:3, 4:4 };
+  var demoToModalStep = { 1:1, 2:2, 3:3, 4:4 };
+
+  function bookingStepForward() {
+    openNarration(currentStep + 1);
+  }
+
+  function bookingStepBack() {
+    openNarration(currentStep - 1);
+  }
+
+  function toggleReserve() {
+    var checked = document.getElementById('demoTcs').checked;
+    document.getElementById('reserveBtn').disabled = !checked;
+    document.getElementById('tcsHint').style.display = checked ? 'none' : 'block';
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  openNarration(0);
+</script>
+</body>
+</html>

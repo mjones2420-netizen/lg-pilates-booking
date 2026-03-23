@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LG Pilates Demo — Priority Booking</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#eef5f5;--warm:#f7fafa;--sage:#3a8a8a;--sage-dk:#2a6b6b;--sage-lt:#b8d8d8;
+  --clay:#e07b4a;--charcoal:#1a2e2e;--mid:#4a6060;--light:#8aabab;--border:#cde0e0;
+  --green:#3a8a6a;--red:#c04040;
+}
+body{font-family:'Open Sans',sans-serif;background:#f0f4f4;min-height:100vh;padding-bottom:80px}
+.topbar{background:var(--charcoal);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-left{font-family:'Raleway',sans-serif;color:#fff;font-weight:700;font-size:15px;letter-spacing:0.05em}
+.topbar-centre{background:var(--clay);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:4px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.step-counter{color:rgba(255,255,255,0.6);font-size:12px}
+.pips{display:flex;gap:6px;align-items:center}
+.pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);transition:all 0.3s}
+.pip.done{background:var(--clay);border-color:var(--clay)}
+.pip.active{background:var(--sage-lt);border-color:var(--sage-lt)}
+.page{max-width:760px;margin:0 auto;padding:32px 20px}
+h1{font-family:'Raleway',sans-serif;color:var(--charcoal);font-size:22px;font-weight:800;margin-bottom:6px}
+.subtitle{color:var(--mid);font-size:14px;margin-bottom:28px}
+
+/* CLASS CARD */
+.class-card{background:var(--cream);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:16px}
+.card-header{background:var(--sage-dk);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.card-header h3{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700}
+.card-header span{font-size:12px;opacity:0.8}
+.card-body{padding:18px 20px}
+.card-info{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.info-row{display:flex;align-items:center;gap:8px;color:var(--mid);font-size:14px}
+
+/* COLLAPSIBLE BLOCK TOGGLE */
+.block-toggle{border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-top:4px}
+.toggle-header{background:#fff;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:background 0.2s}
+.toggle-header:hover{background:var(--warm)}
+.toggle-left{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--charcoal)}
+.toggle-left .star{font-size:16px}
+.priority-label{background:#fff8e8;color:#8a6010;border:1px solid #e8d090;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.05em;text-transform:uppercase}
+.chevron{color:var(--light);transition:transform 0.3s;font-size:12px}
+.chevron.open{transform:rotate(180deg)}
+.toggle-body{display:none;padding:18px 16px;background:#fafefe;border-top:1px solid var(--border)}
+.toggle-body.open{display:block;animation:fadeIn 0.2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* PRIORITY FORM */
+.priority-intro{font-size:13px;color:var(--mid);margin-bottom:14px;line-height:1.5}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:6px}
+.form-group input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:4px;font-family:'Open Sans',sans-serif;font-size:14px;color:var(--charcoal);outline:none;transition:border-color 0.2s}
+.form-group input:focus{border-color:var(--sage)}
+.check-btn{background:var(--charcoal);color:#fff;border:none;padding:10px 20px;font-family:'Open Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.2s}
+.check-btn:hover{opacity:0.85}
+
+/* RESULT MESSAGES */
+.result-msg{border-radius:4px;padding:13px 16px;margin:14px 0;font-size:14px;font-weight:600;display:none;animation:fadeIn 0.25s ease}
+.result-msg.success{background:#e8f5ee;border:1px solid #a8d5b8;color:var(--green);display:block}
+.result-msg.denied{background:#fff5e8;border:1px solid #f0c898;color:#8a5010;display:block}
+
+/* BOOKING FORM (hidden until priority confirmed) */
+.booking-form-section{display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;animation:fadeIn 0.3s ease}
+.booking-form-section.visible{display:block}
+.btn{background:var(--charcoal);color:#fff;border:none;padding:11px 24px;font-family:'Open Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.2s}
+.btn:hover{opacity:0.85}
+.btn-clay{background:var(--clay)}
+.btn-sm{padding:7px 14px;font-size:12px}
+
+/* NARRATION */
+.narration-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.7);z-index:300;align-items:center;justify-content:center;padding:20px}
+.narration-overlay.active{display:flex}
+.narration-card{background:var(--charcoal);color:#fff;border-radius:4px;width:100%;max-width:480px;padding:28px;animation:slideUp 0.25s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.narration-card h2{font-family:'Raleway',sans-serif;font-size:20px;font-weight:800;margin-bottom:16px}
+.narration-card ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.narration-card ul li{display:flex;gap:10px;font-size:14px;line-height:1.5}
+.narration-card ul li::before{content:"•";color:var(--sage);font-size:18px;line-height:1.2;flex-shrink:0}
+.narration-card ul li span{color:rgba(255,255,255,0.85)}
+.sticky-bar{position:fixed;bottom:0;left:0;right:0;background:var(--charcoal);color:rgba(255,255,255,0.7);font-size:13px;padding:12px 24px;text-align:center;z-index:150}
+.sticky-bar strong{color:var(--clay)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">LG Pilates — Demo</div>
+  <div class="topbar-centre">Interactive Demo</div>
+  <div class="topbar-right">
+    <div class="pips">
+      <div class="pip active" id="pip1"></div>
+      <div class="pip" id="pip2"></div>
+      <div class="pip" id="pip3"></div>
+    </div>
+    <div class="step-counter" id="stepCounter">Step 1 of 3</div>
+  </div>
+</div>
+
+<div class="narration-overlay active" id="narration">
+  <div class="narration-card">
+    <h2>Priority Booking Window</h2>
+    <ul>
+      <li><span>Priority booking opens 8–14 days before a block starts — only for clients Louise has marked as priority.</span></li>
+      <li><span>Clients enter their email to check access. If recognised, they can book immediately.</span></li>
+      <li><span>If not a priority client, they're told when standard booking opens. Try both paths in this demo.</span></li>
+    </ul>
+    <button class="btn btn-clay" onclick="closeNarration()">Got it — show me ›</button>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Book a Class</h1>
+  <p class="subtitle">Select a class to book your place on the next block.</p>
+
+  <div class="class-card">
+    <div class="card-header">
+      <h3>Mixed Ability</h3>
+      <span>Baildon Moravian Church</span>
+    </div>
+    <div class="card-body">
+      <div class="card-info">
+        <div class="info-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Monday 9:45am
+        </div>
+        <div class="info-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Baildon Moravian Church
+        </div>
+      </div>
+
+      <!-- COLLAPSIBLE NEXT BLOCK TOGGLE -->
+      <div class="block-toggle">
+        <div class="toggle-header" onclick="toggleBlock()" id="toggleHeader">
+          <div class="toggle-left">
+            <span class="star">⭐</span>
+            <span>Next Block · 7 Apr – 12 May 2026</span>
+            <span class="priority-label">Priority window open</span>
+          </div>
+          <span class="chevron" id="chevron">▼</span>
+        </div>
+
+        <div class="toggle-body" id="toggleBody">
+          <p class="priority-intro">Priority booking is currently open for returning clients. Enter your email below to check your access.</p>
+
+          <div class="form-group">
+            <label>Enter your email to check priority access</label>
+            <input type="email" id="priorityEmail" placeholder="your@email.com" oninput="clearResult()">
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button class="check-btn" onclick="checkPriority()">Check Access</button>
+            <button class="check-btn btn-clay" id="tryOtherBtn" style="display:none" onclick="tryOther()">Try other email</button>
+          </div>
+
+          <!-- Result: Priority confirmed -->
+          <div class="result-msg success" id="resultSuccess">
+            ✓ Priority confirmed — you can book now.
+          </div>
+
+          <!-- Result: Priority denied -->
+          <div class="result-msg denied" id="resultDenied">
+            ⏳ Standard booking opens 31 March 2026.
+          </div>
+
+          <!-- Booking form (shown on priority confirmed) -->
+          <div class="booking-form-section" id="bookingForm">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" value="Sarah" readonly style="background:#f5f5f5">
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" value="Mitchell" readonly style="background:#f5f5f5">
+            </div>
+            <button class="btn" onclick="confirmBooking()">Continue to Payment →</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div style="display:none;position:fixed;inset:0;background:rgba(10,20,20,0.55);z-index:200;align-items:center;justify-content:center;padding:20px" id="successOverlay">
+  <div style="background:#fff;border-radius:4px;width:100%;max-width:400px;overflow:hidden;animation:slideUp 0.25s ease">
+    <div style="background:var(--green);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-family:'Raleway',sans-serif;font-size:16px;font-weight:700">🎉 Booking Reserved</span>
+      <button style="background:none;border:none;color:rgba(255,255,255,0.8);font-size:20px;cursor:pointer" onclick="resetDemo()">×</button>
+    </div>
+    <div style="padding:28px;text-align:center">
+      <div style="font-size:40px;margin-bottom:12px">✅</div>
+      <p style="color:var(--mid);font-size:14px;margin-bottom:16px">Sarah Mitchell has been reserved on the next block using priority access.</p>
+      <button class="btn" onclick="resetDemo()">↺ Restart Demo</button>
+    </div>
+  </div>
+</div>
+
+<div class="sticky-bar" id="stickyBar">
+  <strong>Step 1:</strong> Click the <strong>⭐ Next Block</strong> toggle to open the priority check
+</div>
+
+<script>
+let isOpen = false;
+
+function closeNarration() {
+  document.getElementById('narration').classList.remove('active');
+}
+
+function toggleBlock() {
+  isOpen = !isOpen;
+  document.getElementById('toggleBody').classList.toggle('open', isOpen);
+  document.getElementById('chevron').classList.toggle('open', isOpen);
+  if (isOpen) {
+    updateStep(2);
+    document.getElementById('stickyBar').innerHTML = '<strong>Step 2:</strong> Try <strong>sarah.mitchell@email.com</strong> for priority access, or <strong>anon@example.com</strong> to see denial';
+  } else {
+    updateStep(1);
+  }
+}
+
+function checkPriority() {
+  const email = document.getElementById('priorityEmail').value.trim().toLowerCase();
+  clearResult();
+
+  if (email === 'sarah.mitchell@email.com') {
+    document.getElementById('resultSuccess').style.display = 'block';
+    document.getElementById('bookingForm').classList.add('visible');
+    document.getElementById('tryOtherBtn').style.display = 'inline-block';
+    updateStep(3);
+    document.getElementById('stickyBar').innerHTML = '<strong>Step 3:</strong> Priority confirmed! Fill in details and click <strong>Continue to Payment</strong>';
+  } else if (email) {
+    document.getElementById('resultDenied').style.display = 'block';
+    document.getElementById('tryOtherBtn').style.display = 'inline-block';
+    document.getElementById('bookingForm').classList.remove('visible');
+    updateStep(3);
+    document.getElementById('stickyBar').innerHTML = '<strong>Step 3:</strong> Access denied — try <strong>sarah.mitchell@email.com</strong> to see priority path';
+  } else {
+    alert('Please enter an email address');
+  }
+}
+
+function clearResult() {
+  document.getElementById('resultSuccess').style.display = 'none';
+  document.getElementById('resultDenied').style.display = 'none';
+  document.getElementById('bookingForm').classList.remove('visible');
+  document.getElementById('tryOtherBtn').style.display = 'none';
+}
+
+function tryOther() {
+  document.getElementById('priorityEmail').value = '';
+  clearResult();
+  document.getElementById('priorityEmail').focus();
+  updateStep(2);
+  document.getElementById('stickyBar').innerHTML = '<strong>Step 2:</strong> Try the other email to see the opposite path';
+}
+
+function confirmBooking() {
+  document.getElementById('successOverlay').style.display = 'flex';
+}
+
+function resetDemo() {
+  document.getElementById('successOverlay').style.display = 'none';
+  isOpen = false;
+  document.getElementById('toggleBody').classList.remove('open');
+  document.getElementById('chevron').classList.remove('open');
+  clearResult();
+  document.getElementById('priorityEmail').value = '';
+  updateStep(1);
+  document.getElementById('stickyBar').innerHTML = '<strong>Step 1:</strong> Click the <strong>⭐ Next Block</strong> toggle to open the priority check';
+}
+
+function updateStep(n) {
+  document.getElementById('stepCounter').textContent = 'Step ' + n + ' of 3';
+  for (let i = 1; i <= 3; i++) {
+    const pip = document.getElementById('pip' + i);
+    if (!pip) continue;
+    pip.classList.remove('done', 'active');
+    if (i < n) pip.classList.add('done');
+    else if (i === n) pip.classList.add('active');
+  }
+}
+</script>
+</body>
+</html>

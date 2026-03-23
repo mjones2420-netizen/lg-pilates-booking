@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LG Pilates Demo — Returning Client</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#eef5f5;--warm:#f7fafa;--sage:#3a8a8a;--sage-dk:#2a6b6b;--sage-lt:#b8d8d8;
+  --clay:#e07b4a;--charcoal:#1a2e2e;--mid:#4a6060;--light:#8aabab;--border:#cde0e0;
+  --green:#3a8a6a;--red:#c04040;
+}
+body{font-family:'Open Sans',sans-serif;background:#f0f4f4;min-height:100vh;padding-bottom:80px}
+
+/* TOPBAR */
+.topbar{background:var(--charcoal);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-left{font-family:'Raleway',sans-serif;color:#fff;font-weight:700;font-size:15px;letter-spacing:0.05em}
+.topbar-centre{background:var(--clay);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:4px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.step-counter{color:rgba(255,255,255,0.6);font-size:12px;font-family:'Open Sans',sans-serif}
+.pips{display:flex;gap:6px;align-items:center}
+.pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);transition:all 0.3s}
+.pip.done{background:var(--clay);border-color:var(--clay)}
+.pip.active{background:var(--sage-lt);border-color:var(--sage-lt)}
+
+/* LAYOUT */
+.page{max-width:760px;margin:0 auto;padding:32px 20px}
+h1{font-family:'Raleway',sans-serif;color:var(--charcoal);font-size:22px;font-weight:800;margin-bottom:6px}
+.subtitle{color:var(--mid);font-size:14px;margin-bottom:28px}
+
+/* CLASS CARD */
+.class-card{background:var(--cream);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:24px}
+.card-header{background:var(--sage-dk);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.card-header h3{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700}
+.card-header span{font-size:12px;opacity:0.8}
+.card-body{padding:18px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.card-info{display:flex;flex-direction:column;gap:6px}
+.info-row{display:flex;align-items:center;gap:8px;color:var(--mid);font-size:14px}
+.info-row svg{flex-shrink:0}
+
+/* BUTTON */
+.btn{background:var(--charcoal);color:#fff;border:none;padding:11px 24px;font-family:'Open Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.2s}
+.btn:hover{opacity:0.85}
+.btn-sage{background:var(--sage)}
+.btn-clay{background:var(--clay)}
+.btn-outline{background:transparent;color:var(--charcoal);border:2px solid var(--charcoal)}
+
+/* MODAL OVERLAY */
+.overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.55);z-index:200;align-items:center;justify-content:center;padding:20px}
+.overlay.active{display:flex}
+.modal{background:#fff;border-radius:4px;width:100%;max-width:500px;overflow:hidden;animation:slideUp 0.25s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-header{background:var(--sage-dk);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;color:rgba(255,255,255,0.7);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px}
+.modal-close:hover{color:#fff}
+.modal-body{padding:24px}
+
+/* FORM */
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:6px}
+.form-group input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:4px;font-family:'Open Sans',sans-serif;font-size:14px;color:var(--charcoal);outline:none;transition:border-color 0.2s}
+.form-group input:focus{border-color:var(--sage)}
+.form-group input:disabled{background:#f5f5f5;color:#999}
+
+/* WELCOME BANNER */
+.welcome-banner{background:#e8f5ee;border:1px solid #a8d5b8;border-radius:4px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.welcome-banner .check{color:var(--green);font-size:22px;line-height:1}
+.welcome-banner-text strong{font-family:'Raleway',sans-serif;font-size:15px;color:var(--charcoal)}
+.welcome-banner-text p{font-size:13px;color:var(--mid);margin-top:2px}
+
+/* STEP PROGRESS */
+.step-progress{display:flex;align-items:center;margin-bottom:24px}
+.step-item{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.step-item .step-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.step-item.done .step-num{background:var(--green);color:#fff}
+.step-item.active .step-num{background:var(--sage-dk);color:#fff}
+.step-item.upcoming .step-num{background:var(--border);color:var(--mid)}
+.step-item.done .step-label,.step-item.active .step-label{color:var(--charcoal)}
+.step-item.upcoming .step-label{color:var(--light)}
+.step-divider{flex:1;height:2px;background:var(--border);margin:0 10px}
+.step-divider.done{background:var(--green)}
+
+/* SKIPPED SECTION */
+.skipped-section{background:#f5f5f5;border:1px dashed #ccc;border-radius:4px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.skipped-section span{color:#aaa;font-size:13px;font-style:italic}
+
+/* BLOCK SUMMARY */
+.block-summary{background:var(--cream);border:1px solid var(--border);border-radius:4px;padding:18px;margin-bottom:18px}
+.block-summary h4{font-family:'Raleway',sans-serif;font-size:14px;font-weight:700;color:var(--charcoal);margin-bottom:12px}
+.summary-row{display:flex;justify-content:space-between;font-size:13px;color:var(--mid);margin-bottom:6px}
+.summary-row.total{font-weight:700;color:var(--charcoal);font-size:15px;border-top:1px solid var(--border);padding-top:10px;margin-top:6px}
+.date-pills{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.date-pill{background:var(--sage-lt);color:var(--sage-dk);font-size:12px;font-weight:600;padding:4px 10px;border-radius:4px}
+.date-pill.skip{background:#f5e8df;color:#9a5030;text-decoration:line-through;opacity:0.7}
+
+/* BANK DETAILS */
+.bank-details{background:#fffbf7;border:1px solid #f0dcc8;border-radius:4px;padding:16px;font-size:13px;color:var(--mid)}
+.bank-details h4{font-family:'Raleway',sans-serif;font-size:13px;font-weight:700;color:var(--charcoal);margin-bottom:10px}
+.bank-row{display:flex;gap:8px;margin-bottom:6px}
+.bank-row .bank-label{font-weight:600;min-width:110px;color:var(--charcoal)}
+
+/* NARRATION CARD */
+.narration-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.7);z-index:300;align-items:center;justify-content:center;padding:20px}
+.narration-overlay.active{display:flex}
+.narration-card{background:var(--charcoal);color:#fff;border-radius:4px;width:100%;max-width:480px;padding:28px;animation:slideUp 0.25s ease}
+.narration-card h2{font-family:'Raleway',sans-serif;font-size:20px;font-weight:800;margin-bottom:16px}
+.narration-card ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.narration-card ul li{display:flex;gap:10px;font-size:14px;line-height:1.5}
+.narration-card ul li::before{content:"•";color:var(--sage);font-size:18px;line-height:1.2;flex-shrink:0}
+.narration-card ul li span{color:rgba(255,255,255,0.85)}
+
+/* STICKY NEXT BAR */
+.sticky-bar{position:fixed;bottom:0;left:0;right:0;background:var(--charcoal);color:rgba(255,255,255,0.7);font-size:13px;padding:12px 24px;text-align:center;z-index:150}
+.sticky-bar strong{color:var(--clay)}
+
+/* HIDDEN */
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">LG Pilates — Demo</div>
+  <div class="topbar-centre">Interactive Demo</div>
+  <div class="topbar-right">
+    <div class="pips" id="pips">
+      <div class="pip active" id="pip1"></div>
+      <div class="pip" id="pip2"></div>
+      <div class="pip" id="pip3"></div>
+      <div class="pip" id="pip4"></div>
+    </div>
+    <div class="step-counter" id="stepCounter">Step 1 of 4</div>
+  </div>
+</div>
+
+<!-- NARRATION -->
+<div class="narration-overlay active" id="narration">
+  <div class="narration-card">
+    <h2>Returning Client Booking</h2>
+    <ul>
+      <li><span>Returning clients are recognised by their email address — no need to fill in everything again.</span></li>
+      <li><span>The system skips the health form entirely for returning clients and jumps straight to payment.</span></li>
+      <li><span>Watch how Sarah's details are pre-filled and the booking flow is streamlined to just 2 steps.</span></li>
+    </ul>
+    <button class="btn btn-clay" onclick="closeNarration()">Got it — show me ›</button>
+  </div>
+</div>
+
+<!-- PAGE CONTENT -->
+<div class="page">
+  <h1>Book a Class</h1>
+  <p class="subtitle">Select a class to book your place on the next block.</p>
+
+  <!-- CLASS CARD -->
+  <div class="class-card">
+    <div class="card-header">
+      <h3>Mixed Ability</h3>
+      <span>Baildon Moravian Church</span>
+    </div>
+    <div class="card-body">
+      <div class="card-info">
+        <div class="info-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Monday 9:45am
+        </div>
+        <div class="info-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Baildon Moravian Church
+        </div>
+        <div class="info-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          6-week block · starts 7 April 2026
+        </div>
+      </div>
+      <button class="btn" onclick="openEmailModal()">Book</button>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 1: EMAIL MODAL -->
+<div class="overlay" id="emailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Book — Mixed Ability</h3>
+      <button class="modal-close" onclick="closeEmailModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Your email address</label>
+        <input type="email" id="emailInput" value="sarah.mitchell@email.com" placeholder="Enter your email">
+      </div>
+      <p style="font-size:13px;color:var(--mid);margin-bottom:18px">We'll use this to check if you've booked with us before.</p>
+      <button class="btn" style="width:100%" onclick="checkEmail()">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 2: DETAILS MODAL (returning client) -->
+<div class="overlay" id="detailsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Your Details</h3>
+      <button class="modal-close" onclick="closeDetailsModal()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Welcome back banner -->
+      <div class="welcome-banner">
+        <div class="check">✓</div>
+        <div class="welcome-banner-text">
+          <strong>Welcome back, Sarah!</strong>
+          <p>We've filled in your details — just check and continue.</p>
+        </div>
+      </div>
+
+      <!-- 2-step progress -->
+      <div class="step-progress">
+        <div class="step-item active">
+          <div class="step-num">1</div>
+          <div class="step-label">Your details</div>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step-item upcoming">
+          <div class="step-num">2</div>
+          <div class="step-label">Payment</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>First Name</label>
+        <input type="text" value="Sarah" readonly>
+      </div>
+      <div class="form-group">
+        <label>Last Name</label>
+        <input type="text" value="Mitchell" readonly>
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="text" value="07712 345678" readonly>
+      </div>
+
+      <!-- Health form skipped -->
+      <div class="skipped-section">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Health form skipped — already on file from your previous booking.</span>
+      </div>
+
+      <button class="btn" style="width:100%" onclick="goToPayment()">Continue to Payment →</button>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 3: PAYMENT MODAL -->
+<div class="overlay" id="paymentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Payment</h3>
+      <button class="modal-close" onclick="closePaymentModal()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- 2-step progress — step 2 active -->
+      <div class="step-progress">
+        <div class="step-item done">
+          <div class="step-num">✓</div>
+          <div class="step-label">Your details</div>
+        </div>
+        <div class="step-divider done"></div>
+        <div class="step-item active">
+          <div class="step-num">2</div>
+          <div class="step-label">Payment</div>
+        </div>
+      </div>
+
+      <div class="block-summary">
+        <h4>Block Summary</h4>
+        <div class="summary-row"><span>Class</span><span>Mixed Ability — Mon 9:45am</span></div>
+        <div class="summary-row"><span>Location</span><span>Baildon Moravian Church</span></div>
+        <div class="summary-row"><span>Block</span><span>6 weeks · 7 Apr – 12 May 2026</span></div>
+        <div class="date-pills">
+          <span class="date-pill">7 Apr</span>
+          <span class="date-pill">14 Apr</span>
+          <span class="date-pill skip">21 Apr ❌ Easter</span>
+          <span class="date-pill">28 Apr</span>
+          <span class="date-pill">5 May</span>
+          <span class="date-pill">12 May</span>
+        </div>
+        <div class="summary-row total"><span>Total</span><span>£54.00</span></div>
+      </div>
+
+      <div class="bank-details">
+        <h4>Pay by bank transfer</h4>
+        <div class="bank-row"><span class="bank-label">Account name:</span><span>LG Pilates</span></div>
+        <div class="bank-row"><span class="bank-label">Sort code:</span><span>12-34-56</span></div>
+        <div class="bank-row"><span class="bank-label">Account no:</span><span>12345678</span></div>
+        <div class="bank-row"><span class="bank-label">Reference:</span><span>SARAH-MITCHELL</span></div>
+        <p style="margin-top:10px;color:#9a6040;font-size:12px">Your place will be reserved once Louise confirms receipt.</p>
+      </div>
+
+      <button class="btn btn-sage" style="width:100%;margin-top:8px" onclick="completeBooking()">Reserve My Place →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS STATE -->
+<div class="overlay" id="successModal">
+  <div class="modal">
+    <div class="modal-header" style="background:var(--green)">
+      <h3>🎉 You're booked in!</h3>
+      <button class="modal-close" onclick="closeSuccessModal()">×</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:32px 24px">
+      <div style="font-size:48px;margin-bottom:16px">✅</div>
+      <h3 style="font-family:'Raleway',sans-serif;font-size:18px;color:var(--charcoal);margin-bottom:8px">Booking Reserved</h3>
+      <p style="color:var(--mid);font-size:14px;margin-bottom:6px">Sarah Mitchell — Mixed Ability, Mon 9:45am</p>
+      <p style="color:var(--mid);font-size:14px;margin-bottom:20px">7 April – 12 May 2026 · £54.00</p>
+      <p style="color:var(--mid);font-size:13px">A confirmation has been sent to <strong>sarah.mitchell@email.com</strong></p>
+      <button class="btn" style="margin-top:20px" onclick="resetDemo()">↺ Restart Demo</button>
+    </div>
+  </div>
+</div>
+
+<!-- STICKY BAR -->
+<div class="sticky-bar" id="stickyBar">
+  <strong>Next:</strong> Enter email → system recognises Sarah as a returning client
+</div>
+
+<script>
+let currentStep = 1;
+
+function updateTopbar(step) {
+  currentStep = step;
+  document.getElementById('stepCounter').textContent = 'Step ' + step + ' of 4';
+  const pips = document.querySelectorAll('.pip');
+  pips.forEach((p, i) => {
+    p.classList.remove('done', 'active');
+    if (i + 1 < step) p.classList.add('done');
+    else if (i + 1 === step) p.classList.add('active');
+  });
+}
+
+function updateSticky(text) {
+  document.getElementById('stickyBar').innerHTML = text;
+}
+
+function closeNarration() {
+  document.getElementById('narration').classList.remove('active');
+  updateSticky('<strong>Step 1:</strong> Click <strong>Book</strong> on the class card');
+}
+
+function openEmailModal() {
+  document.getElementById('emailModal').classList.add('active');
+  updateTopbar(1);
+  updateSticky('<strong>Step 1:</strong> Email is pre-filled — click <strong>Continue</strong>');
+}
+
+function closeEmailModal() {
+  document.getElementById('emailModal').classList.remove('active');
+}
+
+function checkEmail() {
+  const email = document.getElementById('emailInput').value;
+  if (!email) { alert('Please enter an email'); return; }
+  closeEmailModal();
+  updateTopbar(2);
+  document.getElementById('detailsModal').classList.add('active');
+  updateSticky('<strong>Step 2:</strong> Details pre-filled, health form skipped — click <strong>Continue to Payment</strong>');
+}
+
+function closeDetailsModal() {
+  document.getElementById('detailsModal').classList.remove('active');
+}
+
+function goToPayment() {
+  closeDetailsModal();
+  updateTopbar(3);
+  document.getElementById('paymentModal').classList.add('active');
+  updateSticky('<strong>Step 3:</strong> Review block summary and bank details — click <strong>Reserve My Place</strong>');
+}
+
+function closePaymentModal() {
+  document.getElementById('paymentModal').classList.remove('active');
+}
+
+function completeBooking() {
+  closePaymentModal();
+  updateTopbar(4);
+  document.getElementById('successModal').classList.add('active');
+  updateSticky('<strong>Done!</strong> Booking complete — <strong style="color:var(--clay)">Sarah is reserved on the block</strong>');
+}
+
+function closeSuccessModal() {
+  document.getElementById('successModal').classList.remove('active');
+  resetDemo();
+}
+
+function resetDemo() {
+  document.getElementById('successModal').classList.remove('active');
+  updateTopbar(1);
+  updateSticky('<strong>Step 1:</strong> Click <strong>Book</strong> on the class card to restart');
+}
+</script>
+</body>
+</html>

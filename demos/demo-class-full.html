@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LG Pilates Demo — Class Full</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#eef5f5;--warm:#f7fafa;--sage:#3a8a8a;--sage-dk:#2a6b6b;--sage-lt:#b8d8d8;
+  --clay:#e07b4a;--charcoal:#1a2e2e;--mid:#4a6060;--light:#8aabab;--border:#cde0e0;
+  --green:#3a8a6a;--red:#c04040;
+}
+body{font-family:'Open Sans',sans-serif;background:#f0f4f4;min-height:100vh;padding-bottom:80px}
+.topbar{background:var(--charcoal);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-left{font-family:'Raleway',sans-serif;color:#fff;font-weight:700;font-size:15px;letter-spacing:0.05em}
+.topbar-centre{background:var(--clay);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:4px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.step-counter{color:rgba(255,255,255,0.6);font-size:12px}
+.pips{display:flex;gap:6px;align-items:center}
+.pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);transition:all 0.3s}
+.pip.active{background:var(--sage-lt);border-color:var(--sage-lt)}
+.page{max-width:760px;margin:0 auto;padding:32px 20px}
+h1{font-family:'Raleway',sans-serif;color:var(--charcoal);font-size:22px;font-weight:800;margin-bottom:6px}
+.subtitle{color:var(--mid);font-size:14px;margin-bottom:28px}
+
+/* CLASS CARD */
+.class-card{background:var(--cream);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:24px;position:relative}
+.class-card.full{border-color:#d0a0a0}
+.card-header{background:var(--sage-dk);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.card-header h3{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700}
+.full-badge{background:var(--red);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:4px 12px;border-radius:4px}
+.card-body{padding:18px 20px}
+.card-info{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.info-row{display:flex;align-items:center;gap:8px;color:var(--mid);font-size:14px}
+
+/* CAPACITY */
+.capacity-section{margin-bottom:16px}
+.capacity-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.capacity-text{font-size:13px;font-weight:600;color:var(--mid)}
+.capacity-count{font-size:13px;font-weight:700;color:var(--red)}
+.capacity-bar-track{height:8px;background:#dde8e8;border-radius:4px;overflow:hidden}
+.capacity-bar-fill{height:100%;background:var(--red);border-radius:4px;transition:width 1s ease;width:0}
+.capacity-bar-fill.loaded{width:100%}
+.full-note{margin-top:8px;font-size:13px;color:var(--red);font-weight:600}
+
+/* FULL OVERLAY ON CARD */
+.card-full-overlay{position:absolute;inset:0;background:rgba(238,245,245,0.6);display:flex;align-items:center;justify-content:center;pointer-events:none}
+.card-full-banner{background:var(--red);color:#fff;font-family:'Raleway',sans-serif;font-size:18px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;padding:10px 28px;border-radius:4px;transform:rotate(-3deg);box-shadow:0 4px 16px rgba(192,64,64,0.3)}
+
+/* DISABLED BUTTON */
+.btn{background:var(--charcoal);color:#fff;border:none;padding:11px 24px;font-family:'Open Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;border-radius:4px}
+.btn-disabled{background:#ccc;color:#999;cursor:not-allowed;opacity:0.7}
+.card-action{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.full-note-inline{font-size:13px;color:var(--red);font-weight:600}
+
+/* OTHER CLASS CARDS (available) */
+.other-cards{margin-top:8px}
+.other-cards .class-card{opacity:0.9}
+
+/* SUGGESTION BOX */
+.suggestion-box{background:#fff;border:1px solid var(--border);border-radius:4px;padding:16px;margin-top:4px;font-size:13px}
+.suggestion-box h4{font-family:'Raleway',sans-serif;font-size:14px;font-weight:700;color:var(--charcoal);margin-bottom:10px}
+.suggestion-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:16px;flex-wrap:wrap}
+.suggestion-item:last-child{border-bottom:none}
+.suggestion-info{display:flex;flex-direction:column;gap:3px}
+.suggestion-info .sname{font-weight:600;color:var(--charcoal)}
+.suggestion-info .sdetail{font-size:12px;color:var(--mid)}
+.btn-sm{padding:7px 14px;font-size:12px;cursor:pointer}
+.btn-sm:hover{opacity:0.85}
+
+/* NARRATION */
+.narration-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.7);z-index:300;align-items:center;justify-content:center;padding:20px}
+.narration-overlay.active{display:flex}
+.narration-card{background:var(--charcoal);color:#fff;border-radius:4px;width:100%;max-width:480px;padding:28px;animation:slideUp 0.25s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.narration-card h2{font-family:'Raleway',sans-serif;font-size:20px;font-weight:800;margin-bottom:16px}
+.narration-card ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.narration-card ul li{display:flex;gap:10px;font-size:14px;line-height:1.5}
+.narration-card ul li::before{content:"•";color:var(--sage);font-size:18px;line-height:1.2;flex-shrink:0}
+.narration-card ul li span{color:rgba(255,255,255,0.85)}
+.btn-clay{background:var(--clay);color:#fff}
+.sticky-bar{position:fixed;bottom:0;left:0;right:0;background:var(--charcoal);color:rgba(255,255,255,0.7);font-size:13px;padding:12px 24px;text-align:center;z-index:150}
+.sticky-bar strong{color:var(--clay)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">LG Pilates — Demo</div>
+  <div class="topbar-centre">Interactive Demo</div>
+  <div class="topbar-right">
+    <div class="pips">
+      <div class="pip active" id="pip1"></div>
+    </div>
+    <div class="step-counter">Step 1 of 1</div>
+  </div>
+</div>
+
+<div class="narration-overlay active" id="narration">
+  <div class="narration-card">
+    <h2>Class Full State</h2>
+    <ul>
+      <li><span>When a class reaches 100% capacity, the Book button is disabled — clients cannot book this class.</span></li>
+      <li><span>The capacity bar turns red and a prominent "Full" badge is shown on the card.</span></li>
+      <li><span>Clients are shown other available classes or told to check the next block below.</span></li>
+    </ul>
+    <button class="btn btn-clay" style="padding:10px 20px;cursor:pointer" onclick="closeNarration()">Got it — show me ›</button>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Book a Class</h1>
+  <p class="subtitle">Select a class to book your place on the next block.</p>
+
+  <!-- FULL CLASS CARD -->
+  <div class="class-card full">
+    <div class="card-header">
+      <h3>Mixed Ability</h3>
+      <span class="full-badge">Full</span>
+    </div>
+    <div class="card-body">
+      <div class="card-info">
+        <div class="info-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Monday 9:45am
+        </div>
+        <div class="info-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Baildon Moravian Church
+        </div>
+        <div class="info-row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          6-week block · starts 7 April 2026
+        </div>
+      </div>
+
+      <!-- CAPACITY BAR (100%, red) -->
+      <div class="capacity-section">
+        <div class="capacity-label">
+          <span class="capacity-text">Availability</span>
+          <span class="capacity-count">12 of 12 spots taken</span>
+        </div>
+        <div class="capacity-bar-track">
+          <div class="capacity-bar-fill" id="capacityBar"></div>
+        </div>
+        <div class="full-note">⛔ This class is full — no spaces available</div>
+      </div>
+
+      <!-- DISABLED BUTTON -->
+      <div class="card-action">
+        <button class="btn btn-disabled" disabled title="Class is full — no spaces available">Book</button>
+        <span class="full-note-inline">No spots available on this block</span>
+      </div>
+    </div>
+    <!-- FULL OVERLAY -->
+    <div class="card-full-overlay">
+      <div class="card-full-banner">Class Full</div>
+    </div>
+  </div>
+
+  <!-- SUGGESTIONS -->
+  <div class="suggestion-box">
+    <h4>Other options for you</h4>
+    <div class="suggestion-item">
+      <div class="suggestion-info">
+        <div class="sname">Mixed Ability — Monday 9:45am</div>
+        <div class="sdetail">Next block opens 31 March 2026 · Baildon Moravian Church</div>
+      </div>
+      <button class="btn btn-sm" style="background:var(--sage-dk);color:#fff">Next Block</button>
+    </div>
+    <div class="suggestion-item">
+      <div class="suggestion-info">
+        <div class="sname">Beginners — Wednesday 10:00am</div>
+        <div class="sdetail">4 spaces left · Guiseley Methodist</div>
+      </div>
+      <button class="btn btn-sm" style="background:var(--charcoal);color:#fff">Book</button>
+    </div>
+    <div class="suggestion-item">
+      <div class="suggestion-info">
+        <div class="sname">Intermediate — Thursday 6:30pm</div>
+        <div class="sdetail">6 spaces left · Guiseley Methodist</div>
+      </div>
+      <button class="btn btn-sm" style="background:var(--charcoal);color:#fff">Book</button>
+    </div>
+  </div>
+</div>
+
+<div class="sticky-bar">
+  <strong>This class is full.</strong> The Book button is disabled — no action is possible until the next block opens
+</div>
+
+<script>
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('capacityBar').classList.add('loaded');
+  }, 400);
+});
+
+function closeNarration() {
+  document.getElementById('narration').classList.remove('active');
+}
+</script>
+</body>
+</html>

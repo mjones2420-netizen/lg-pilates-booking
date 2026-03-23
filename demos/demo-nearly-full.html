@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LG Pilates Demo — Nearly Full</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#eef5f5;--warm:#f7fafa;--sage:#3a8a8a;--sage-dk:#2a6b6b;--sage-lt:#b8d8d8;
+  --clay:#e07b4a;--charcoal:#1a2e2e;--mid:#4a6060;--light:#8aabab;--border:#cde0e0;
+  --green:#3a8a6a;--red:#c04040;
+}
+body{font-family:'Open Sans',sans-serif;background:#f0f4f4;min-height:100vh;padding-bottom:80px}
+.topbar{background:var(--charcoal);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-left{font-family:'Raleway',sans-serif;color:#fff;font-weight:700;font-size:15px;letter-spacing:0.05em}
+.topbar-centre{background:var(--clay);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:4px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.step-counter{color:rgba(255,255,255,0.6);font-size:12px}
+.pips{display:flex;gap:6px;align-items:center}
+.pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);transition:all 0.3s}
+.pip.done{background:var(--clay);border-color:var(--clay)}
+.pip.active{background:var(--sage-lt);border-color:var(--sage-lt)}
+.page{max-width:760px;margin:0 auto;padding:32px 20px}
+h1{font-family:'Raleway',sans-serif;color:var(--charcoal);font-size:22px;font-weight:800;margin-bottom:6px}
+.subtitle{color:var(--mid);font-size:14px;margin-bottom:28px}
+
+/* CLASS CARD */
+.class-card{background:var(--cream);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:24px;transition:box-shadow 0.2s}
+.class-card:hover{box-shadow:0 4px 16px rgba(58,138,138,0.12)}
+.card-header{background:var(--sage-dk);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.card-header h3{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700}
+.card-header .urgency-badge{background:var(--clay);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.08em;padding:3px 10px;border-radius:4px;text-transform:uppercase}
+.card-body{padding:18px 20px}
+.card-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.card-info{display:flex;flex-direction:column;gap:6px}
+.info-row{display:flex;align-items:center;gap:8px;color:var(--mid);font-size:14px}
+
+/* CAPACITY */
+.capacity-section{margin-top:16px}
+.capacity-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.capacity-text{font-size:13px;font-weight:600;color:var(--mid)}
+.capacity-count{font-size:13px;font-weight:700;color:var(--clay)}
+.capacity-bar-track{height:8px;background:#dde8e8;border-radius:4px;overflow:hidden}
+.capacity-bar-fill{height:100%;background:var(--clay);border-radius:4px;transition:width 1s ease;width:0}
+.capacity-bar-fill.loaded{width:85%}
+.capacity-note{margin-top:8px;font-size:12px;color:var(--clay);font-weight:600}
+
+/* BUTTON */
+.btn{background:var(--charcoal);color:#fff;border:none;padding:11px 24px;font-family:'Open Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.2s}
+.btn:hover{opacity:0.85}
+.btn-clay{background:var(--clay)}
+.card-action{margin-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.spots-left{background:#fff3ed;border:1px solid #f0c8a0;border-radius:4px;padding:8px 14px;font-size:13px;color:#9a4a1a;font-weight:600}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.55);z-index:200;align-items:center;justify-content:center;padding:20px}
+.overlay.active{display:flex}
+.modal{background:#fff;border-radius:4px;width:100%;max-width:460px;overflow:hidden;animation:slideUp 0.25s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-header{background:var(--clay);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;color:rgba(255,255,255,0.8);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px}
+.modal-close:hover{color:#fff}
+.modal-body{padding:24px}
+.urgency-panel{background:#fff5f0;border:1px solid #f0c8a0;border-radius:4px;padding:16px;margin-bottom:18px}
+.urgency-panel h4{font-family:'Raleway',sans-serif;font-size:15px;font-weight:700;color:var(--charcoal);margin-bottom:8px}
+.urgency-panel p{font-size:13px;color:var(--mid);line-height:1.5}
+.urgency-panel .spots-num{font-size:28px;font-weight:800;color:var(--clay);font-family:'Raleway',sans-serif;display:block;margin:8px 0}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:6px}
+.form-group input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:4px;font-family:'Open Sans',sans-serif;font-size:14px;color:var(--charcoal);outline:none;transition:border-color 0.2s}
+.form-group input:focus{border-color:var(--sage)}
+
+/* NARRATION */
+.narration-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.7);z-index:300;align-items:center;justify-content:center;padding:20px}
+.narration-overlay.active{display:flex}
+.narration-card{background:var(--charcoal);color:#fff;border-radius:4px;width:100%;max-width:480px;padding:28px;animation:slideUp 0.25s ease}
+.narration-card h2{font-family:'Raleway',sans-serif;font-size:20px;font-weight:800;margin-bottom:16px}
+.narration-card ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.narration-card ul li{display:flex;gap:10px;font-size:14px;line-height:1.5}
+.narration-card ul li::before{content:"•";color:var(--sage);font-size:18px;line-height:1.2;flex-shrink:0}
+.narration-card ul li span{color:rgba(255,255,255,0.85)}
+.sticky-bar{position:fixed;bottom:0;left:0;right:0;background:var(--charcoal);color:rgba(255,255,255,0.7);font-size:13px;padding:12px 24px;text-align:center;z-index:150}
+.sticky-bar strong{color:var(--clay)}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">LG Pilates — Demo</div>
+  <div class="topbar-centre">Interactive Demo</div>
+  <div class="topbar-right">
+    <div class="pips">
+      <div class="pip active" id="pip1"></div>
+      <div class="pip" id="pip2"></div>
+    </div>
+    <div class="step-counter" id="stepCounter">Step 1 of 2</div>
+  </div>
+</div>
+
+<!-- NARRATION -->
+<div class="narration-overlay active" id="narration">
+  <div class="narration-card">
+    <h2>Nearly Full Class</h2>
+    <ul>
+      <li><span>The capacity bar shows how full a class is — orange means it's filling up fast.</span></li>
+      <li><span>When a class is at 85% capacity or more, an urgency badge appears on the card.</span></li>
+      <li><span>The Book button stays active — clients are encouraged to book promptly before the last spaces go.</span></li>
+    </ul>
+    <button class="btn btn-clay" onclick="closeNarration()">Got it — show me ›</button>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Book a Class</h1>
+  <p class="subtitle">Select a class to book your place on the next block.</p>
+
+  <div class="class-card">
+    <div class="card-header">
+      <h3>Mixed Ability</h3>
+      <span class="urgency-badge">⚡ Filling fast</span>
+    </div>
+    <div class="card-body">
+      <div class="card-row">
+        <div class="card-info">
+          <div class="info-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Monday 9:45am
+          </div>
+          <div class="info-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Baildon Moravian Church
+          </div>
+          <div class="info-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            6-week block · starts 7 April 2026
+          </div>
+        </div>
+      </div>
+
+      <!-- CAPACITY BAR -->
+      <div class="capacity-section">
+        <div class="capacity-label">
+          <span class="capacity-text">Availability</span>
+          <span class="capacity-count">10 of 12 spots taken</span>
+        </div>
+        <div class="capacity-bar-track">
+          <div class="capacity-bar-fill" id="capacityBar"></div>
+        </div>
+        <div class="capacity-note">⚠ Only 2 spots remaining — book soon!</div>
+      </div>
+
+      <div class="card-action">
+        <button class="btn" onclick="openBookingModal()">Book</button>
+        <div class="spots-left">2 spots left</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOOKING MODAL -->
+<div class="overlay" id="bookingModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Book — Mixed Ability</h3>
+      <button class="modal-close" onclick="document.getElementById('bookingModal').classList.remove('active')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="urgency-panel">
+        <h4>⚡ Moving quickly</h4>
+        <span class="spots-num">2</span>
+        <p>spots remaining on this block. Enter your email to secure your place now.</p>
+      </div>
+      <div class="form-group">
+        <label>Email address</label>
+        <input type="email" placeholder="your@email.com">
+      </div>
+      <button class="btn" style="width:100%" onclick="confirmUrgency()">Secure My Spot →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div class="overlay" id="successModal">
+  <div class="modal">
+    <div class="modal-header" style="background:var(--green)">
+      <h3>🎉 Spot reserved!</h3>
+      <button class="modal-close" onclick="resetDemo()">×</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:32px 24px">
+      <div style="font-size:48px;margin-bottom:16px">✅</div>
+      <p style="color:var(--mid);font-size:14px;margin-bottom:20px">You've secured one of the last spots on this block.</p>
+      <button class="btn" onclick="resetDemo()">↺ Restart Demo</button>
+    </div>
+  </div>
+</div>
+
+<div class="sticky-bar" id="stickyBar">
+  <strong>Step 1:</strong> See how the capacity bar shows 85% full — click <strong>Book</strong> to continue
+</div>
+
+<script>
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('capacityBar').classList.add('loaded');
+  }, 300);
+});
+
+function closeNarration() {
+  document.getElementById('narration').classList.remove('active');
+}
+
+function openBookingModal() {
+  document.getElementById('bookingModal').classList.add('active');
+  document.getElementById('pip1').classList.remove('active');
+  document.getElementById('pip1').classList.add('done');
+  document.getElementById('pip2').classList.add('active');
+  document.getElementById('stepCounter').textContent = 'Step 2 of 2';
+  document.getElementById('stickyBar').innerHTML = '<strong>Step 2:</strong> Urgency is reinforced — limited spots highlighted in the booking modal';
+}
+
+function confirmUrgency() {
+  document.getElementById('bookingModal').classList.remove('active');
+  document.getElementById('successModal').classList.add('active');
+  document.getElementById('stickyBar').innerHTML = '<strong>Done!</strong> Spot secured before the class fills up';
+}
+
+function resetDemo() {
+  document.getElementById('successModal').classList.remove('active');
+  document.getElementById('pip1').classList.add('active');
+  document.getElementById('pip1').classList.remove('done');
+  document.getElementById('pip2').classList.remove('active');
+  document.getElementById('stepCounter').textContent = 'Step 1 of 2';
+  document.getElementById('stickyBar').innerHTML = '<strong>Step 1:</strong> See how the capacity bar shows 85% full — click <strong>Book</strong> to continue';
+}
+</script>
+</body>
+</html>

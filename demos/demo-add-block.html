@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LG Pilates Demo — Add Block (Admin)</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#eef5f5;--warm:#f7fafa;--sage:#3a8a8a;--sage-dk:#2a6b6b;--sage-lt:#b8d8d8;
+  --clay:#e07b4a;--charcoal:#1a2e2e;--mid:#4a6060;--light:#8aabab;--border:#cde0e0;
+  --green:#3a8a6a;--red:#c04040;
+}
+body{font-family:'Open Sans',sans-serif;background:#f0f4f4;min-height:100vh;padding-bottom:80px}
+.topbar{background:var(--charcoal);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-left{font-family:'Raleway',sans-serif;color:#fff;font-weight:700;font-size:15px;letter-spacing:0.05em}
+.topbar-centre{background:var(--clay);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:4px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.step-counter{color:rgba(255,255,255,0.6);font-size:12px}
+.pips{display:flex;gap:6px;align-items:center}
+.pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);transition:all 0.3s}
+.pip.done{background:var(--clay);border-color:var(--clay)}
+.pip.active{background:var(--sage-lt);border-color:var(--sage-lt)}
+.page{max-width:860px;margin:0 auto;padding:32px 20px}
+.admin-label{background:var(--sage-dk);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:4px 10px;border-radius:4px;display:inline-block;margin-bottom:16px}
+h1{font-family:'Raleway',sans-serif;color:var(--charcoal);font-size:22px;font-weight:800;margin-bottom:6px}
+.subtitle{color:var(--mid);font-size:14px;margin-bottom:24px}
+
+/* WARNING BANNER */
+.warning-banner{background:#fff3e0;border:1px solid #f0c060;border-radius:4px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.warning-text{display:flex;align-items:center;gap:10px}
+.warning-text span{font-size:14px;font-weight:600;color:#7a4010}
+.btn{background:var(--charcoal);color:#fff;border:none;padding:10px 20px;font-family:'Open Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:opacity 0.2s}
+.btn:hover{opacity:0.85}
+.btn-clay{background:var(--clay)}
+.btn-sage{background:var(--sage)}
+.btn-green{background:var(--green)}
+.btn-sm{padding:7px 14px;font-size:12px}
+
+/* SECTIONS */
+.section-title{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700;color:var(--charcoal);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+
+/* CLASS TABLE */
+.classes-table{width:100%;border-collapse:collapse;background:#fff;border-radius:4px;overflow:hidden;border:1px solid var(--border);margin-bottom:28px}
+.classes-table th{background:var(--sage-dk);color:#fff;padding:11px 16px;text-align:left;font-family:'Raleway',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.04em}
+.classes-table td{padding:12px 16px;font-size:13px;color:var(--charcoal);border-bottom:1px solid var(--border)}
+.classes-table tr:last-child td{border-bottom:none}
+.classes-table tr:hover td{background:var(--warm)}
+.status-pill{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase}
+.pill-active{background:#e0f5ec;color:var(--green)}
+.pill-none{background:#fee;color:var(--red)}
+
+/* UPCOMING CLASSES */
+.upcoming-section{display:none;animation:fadeIn 0.4s ease}
+.upcoming-section.visible{display:block}
+.class-card{background:var(--cream);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.card-header{background:var(--sage-dk);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center}
+.card-header h3{font-family:'Raleway',sans-serif;font-size:15px;font-weight:700}
+.card-body{padding:16px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.card-info{display:flex;flex-direction:column;gap:5px}
+.info-row{display:flex;align-items:center;gap:8px;color:var(--mid);font-size:13px}
+.new-badge{background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.06em}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.55);z-index:200;align-items:center;justify-content:center;padding:20px}
+.overlay.active{display:flex}
+.modal{background:#fff;border-radius:4px;width:100%;max-width:480px;overflow:hidden;animation:slideUp 0.25s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-header{background:var(--sage-dk);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{font-family:'Raleway',sans-serif;font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;color:rgba(255,255,255,0.8);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px}
+.modal-body{padding:24px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:6px}
+.form-group input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:4px;font-family:'Open Sans',sans-serif;font-size:14px;color:var(--charcoal);outline:none;transition:border-color 0.2s}
+.form-group input:focus{border-color:var(--sage)}
+.form-group .hint{font-size:12px;color:var(--light);margin-top:4px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;padding-top:8px}
+
+/* NARRATION */
+.narration-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,20,0.7);z-index:300;align-items:center;justify-content:center;padding:20px}
+.narration-overlay.active{display:flex}
+.narration-card{background:var(--charcoal);color:#fff;border-radius:4px;width:100%;max-width:480px;padding:28px;animation:slideUp 0.25s ease}
+.narration-card h2{font-family:'Raleway',sans-serif;font-size:20px;font-weight:800;margin-bottom:16px}
+.narration-card ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.narration-card ul li{display:flex;gap:10px;font-size:14px;line-height:1.5}
+.narration-card ul li::before{content:"•";color:var(--sage);font-size:18px;line-height:1.2;flex-shrink:0}
+.narration-card ul li span{color:rgba(255,255,255,0.85)}
+.sticky-bar{position:fixed;bottom:0;left:0;right:0;background:var(--charcoal);color:rgba(255,255,255,0.7);font-size:13px;padding:12px 24px;text-align:center;z-index:150}
+.sticky-bar strong{color:var(--clay)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">LG Pilates — Demo</div>
+  <div class="topbar-centre">Interactive Demo</div>
+  <div class="topbar-right">
+    <div class="pips">
+      <div class="pip active" id="pip1"></div>
+      <div class="pip" id="pip2"></div>
+      <div class="pip" id="pip3"></div>
+    </div>
+    <div class="step-counter" id="stepCounter">Step 1 of 3</div>
+  </div>
+</div>
+
+<div class="narration-overlay active" id="narration">
+  <div class="narration-card">
+    <h2>Adding a New Block (Admin)</h2>
+    <ul>
+      <li><span>If a class has no active or upcoming block, clients can't book it. Louise gets a red warning banner to prompt action.</span></li>
+      <li><span>She clicks "+ Add Block", fills in the details, and saves. The block appears immediately in the upcoming section.</span></li>
+      <li><span>Clients can then see and book the new block straight away.</span></li>
+    </ul>
+    <button class="btn btn-clay" onclick="closeNarration()">Got it — show me ›</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="admin-label">Admin Panel</div>
+  <h1>Class Management</h1>
+  <p class="subtitle">Manage your classes and their upcoming blocks.</p>
+
+  <!-- WARNING BANNER -->
+  <div class="warning-banner" id="warningBanner">
+    <div class="warning-text">
+      <span>⚠</span>
+      <span>1 class has no active or upcoming block — <strong>Mixed Ability Monday 9:45am</strong></span>
+    </div>
+    <button class="btn btn-clay btn-sm" onclick="openAddBlock()">+ Add Block</button>
+  </div>
+
+  <!-- CLASSES TABLE -->
+  <div class="section-title">All Classes</div>
+  <table class="classes-table">
+    <thead>
+      <tr>
+        <th>Class</th>
+        <th>Day &amp; Time</th>
+        <th>Location</th>
+        <th>Capacity</th>
+        <th>Next Block</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Beginners</strong></td>
+        <td>Wednesday 10:00am</td>
+        <td>Guiseley Methodist</td>
+        <td>10</td>
+        <td><span class="status-pill pill-active">Active</span></td>
+        <td><button class="btn btn-sm" style="background:var(--sage)">View</button></td>
+      </tr>
+      <tr>
+        <td><strong>Mixed Ability</strong></td>
+        <td>Monday 9:45am</td>
+        <td>Baildon Moravian Church</td>
+        <td>12</td>
+        <td><span class="status-pill pill-none" id="blockStatus">None</span></td>
+        <td><button class="btn btn-clay btn-sm" onclick="openAddBlock()">+ Add Block</button></td>
+      </tr>
+      <tr>
+        <td><strong>Intermediate</strong></td>
+        <td>Thursday 6:30pm</td>
+        <td>Guiseley Methodist</td>
+        <td>10</td>
+        <td><span class="status-pill pill-active">Upcoming</span></td>
+        <td><button class="btn btn-sm" style="background:var(--sage)">View</button></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- UPCOMING CLASSES SECTION -->
+  <div class="section-title">Upcoming Blocks</div>
+  <div id="upcomingSection">
+    <p style="color:var(--light);font-size:14px;font-style:italic">No upcoming blocks for Mixed Ability — add one using the button above.</p>
+  </div>
+
+  <div class="upcoming-section" id="newBlockCard">
+    <div class="class-card">
+      <div class="card-header">
+        <h3>Mixed Ability <span class="new-badge" style="margin-left:8px">New</span></h3>
+        <span>Baildon Moravian Church</span>
+      </div>
+      <div class="card-body">
+        <div class="card-info">
+          <div class="info-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Monday 9:45am
+          </div>
+          <div class="info-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            7 April – 12 May 2026 · 6 weeks
+          </div>
+          <div class="info-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            £54.00 · Capacity: 12
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="background:#e0f5ec;color:var(--green);padding:4px 12px;border-radius:4px;font-size:12px;font-weight:700">0 booked</span>
+          <span style="background:var(--cream);color:var(--sage-dk);border:1px solid var(--border);padding:4px 12px;border-radius:4px;font-size:12px;font-weight:700">12 spaces</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD BLOCK MODAL -->
+<div class="overlay" id="addBlockModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Block — Mixed Ability</h3>
+      <button class="modal-close" onclick="document.getElementById('addBlockModal').classList.remove('active')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--mid);margin-bottom:18px">Monday 9:45am · Baildon Moravian Church</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="text" value="7 April 2026" id="startDate">
+          <div class="hint">First session date</div>
+        </div>
+        <div class="form-group">
+          <label>Number of Weeks</label>
+          <input type="number" value="6" id="numWeeks" min="1" max="12">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Price (£)</label>
+          <input type="text" value="54.00" id="price">
+        </div>
+        <div class="form-group">
+          <label>Capacity</label>
+          <input type="number" value="12" id="capacity" min="1" max="20">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes (optional)</label>
+        <input type="text" placeholder="e.g. No class Easter Monday" id="notes">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-sm" style="background:#ccc;color:#333" onclick="document.getElementById('addBlockModal').classList.remove('active')">Cancel</button>
+        <button class="btn btn-green btn-sm" onclick="saveBlock()">Save Block</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS TOAST -->
+<div id="successToast" style="display:none;position:fixed;top:70px;right:20px;background:var(--green);color:#fff;padding:14px 20px;border-radius:4px;font-size:14px;font-weight:600;z-index:500;animation:slideUp 0.25s ease;box-shadow:0 4px 16px rgba(0,0,0,0.2)">
+  ✓ Block saved — Mixed Ability is now bookable
+</div>
+
+<div class="sticky-bar" id="stickyBar">
+  <strong>Step 1:</strong> See the warning banner — click <strong>+ Add Block</strong> to fix it
+</div>
+
+<script>
+function closeNarration() {
+  document.getElementById('narration').classList.remove('active');
+}
+
+function openAddBlock() {
+  document.getElementById('addBlockModal').classList.add('active');
+  updateStep(2);
+  document.getElementById('stickyBar').innerHTML = '<strong>Step 2:</strong> Fill in block details — then click <strong>Save Block</strong>';
+}
+
+function saveBlock() {
+  document.getElementById('addBlockModal').classList.remove('active');
+
+  // Remove warning banner
+  const banner = document.getElementById('warningBanner');
+  banner.style.transition = 'opacity 0.4s ease';
+  banner.style.opacity = '0';
+  setTimeout(() => { banner.style.display = 'none'; }, 400);
+
+  // Update table status
+  document.getElementById('blockStatus').textContent = 'Upcoming';
+  document.getElementById('blockStatus').className = 'status-pill pill-active';
+
+  // Show upcoming block card
+  document.getElementById('upcomingSection').style.display = 'none';
+  document.getElementById('newBlockCard').classList.add('visible');
+
+  // Show toast
+  const toast = document.getElementById('successToast');
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 3000);
+
+  updateStep(3);
+  document.getElementById('stickyBar').innerHTML = '<strong>Done!</strong> Warning banner gone — Mixed Ability now has an upcoming block and is <strong style="color:var(--clay)">open for bookings</strong>';
+}
+
+function updateStep(n) {
+  document.getElementById('stepCounter').textContent = 'Step ' + n + ' of 3';
+  for (let i = 1; i <= 3; i++) {
+    const pip = document.getElementById('pip' + i);
+    if (!pip) continue;
+    pip.classList.remove('done','active');
+    if (i < n) pip.classList.add('done');
+    else if (i === n) pip.classList.add('active');
+  }
+}
+</script>
+</body>
+</html>
