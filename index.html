@@ -1487,7 +1487,7 @@ function renderDashboard(){
           var cancelBtn=(b.status!=="cancelled"&&b.status!=="refunded")?"<button class=\"act\" onclick=\"cancelBooking("+i+")\">Cancel</button>":"";
           var refundBtn=(b.status==="confirmed"||b.status==="cancelled")?"<button class=\"act act-refund\" onclick=\"initiateRefund("+i+")\">Refund</button>":"";
           var markRefundedBtn=b.status==="refund-pending"?"<button class=\"act act-confirm\" onclick=\"markRefunded("+i+")\">Mark Refunded</button>":"";
-          bhtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button>"+confirmBtn+cancelBtn+refundBtn+markRefundedBtn+"<button class=\"act act-delete\" onclick=\"deleteBookingOnly("+i+")\">Remove from Block</button><button class=\"act act-delete\" onclick=\"deleteCustomer("+i+")\">Permanently Delete Customer</button></td></tr>";
+          bhtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button>"+confirmBtn+cancelBtn+refundBtn+markRefundedBtn+"<button class=\"act act-delete\" onclick=\"deleteBookingOnly("+b.dbId+","+b.blockId+")\">Remove from Block</button><button class=\"act act-delete\" onclick=\"deleteCustomer("+b.customerId+","+b.blockId+")\">Permanently Delete Customer</button></td></tr>";
         }
       }
       document.getElementById("btbody").innerHTML=bhtml;
@@ -2062,31 +2062,29 @@ function markRefunded(idx){
   })();
 }
 
-function deleteBookingOnly(idx){
+function deleteBookingOnly(bookingId, blockId){
   if(!confirm("Remove this client from the block? Their personal details and health form will be kept. This cannot be undone.")) return;
-  var b=bookings[idx];
   (async function(){
     try{
-      var{error:e1}=await sb.from("bookings").delete().eq("id",b.dbId).select();
+      var{error:e1}=await sb.from("bookings").delete().eq("id",bookingId).select();
       if(e1) throw e1;
-      var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
+      var blk=blocks.find(function(bl){ return bl.id===blockId; });
       if(blk){ blk.booked=Math.max(0,blk.booked-1); var{error:e2}=await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); if(e2) throw e2; }
       showToast("Client removed from block."); renderDashboard();
     }catch(err){ console.error(err); showToast("Error removing booking — check you are logged in."); }
   })();
 }
 
-function deleteCustomer(idx){
+function deleteCustomer(customerId, blockId){
   if(!confirm("Permanently delete this customer and ALL their data? This includes their bookings and health form. This cannot be undone.")) return;
-  var b=bookings[idx];
   (async function(){
     try{
-      var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
-      var{error:e1}=await sb.from("parq").delete().eq("customer_id",b.customerId).select();
+      var blk=blocks.find(function(bl){ return bl.id===blockId; });
+      var{error:e1}=await sb.from("parq").delete().eq("customer_id",customerId).select();
       if(e1) throw e1;
-      var{error:e2}=await sb.from("bookings").delete().eq("customer_id",b.customerId).select();
+      var{error:e2}=await sb.from("bookings").delete().eq("customer_id",customerId).select();
       if(e2) throw e2;
-      var{error:e3}=await sb.from("customers").delete().eq("id",b.customerId).select();
+      var{error:e3}=await sb.from("customers").delete().eq("id",customerId).select();
       if(e3) throw e3;
       if(blk){ blk.booked=Math.max(0,blk.booked-1); var{error:e4}=await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); if(e4) throw e4; }
       showToast("Customer permanently deleted."); renderDashboard();
