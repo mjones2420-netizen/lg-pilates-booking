@@ -2067,11 +2067,12 @@ function deleteBookingOnly(idx){
   var b=bookings[idx];
   (async function(){
     try{
-      await sb.from("bookings").delete().eq("id",b.dbId);
+      var{error:e1}=await sb.from("bookings").delete().eq("id",b.dbId);
+      if(e1) throw e1;
       var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
-      if(blk){ blk.booked=Math.max(0,blk.booked-1); await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); }
+      if(blk){ blk.booked=Math.max(0,blk.booked-1); var{error:e2}=await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); if(e2) throw e2; }
       showToast("Client removed from block."); renderDashboard();
-    }catch(err){ console.error(err); showToast("Error removing booking."); }
+    }catch(err){ console.error(err); showToast("Error removing booking — check you are logged in."); }
   })();
 }
 
@@ -2081,12 +2082,15 @@ function deleteCustomer(idx){
   (async function(){
     try{
       var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
-      await sb.from("parq").delete().eq("customer_id",b.customerId);
-      await sb.from("bookings").delete().eq("customer_id",b.customerId);
-      await sb.from("customers").delete().eq("id",b.customerId);
-      if(blk){ blk.booked=Math.max(0,blk.booked-1); await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); }
+      var{error:e1}=await sb.from("parq").delete().eq("customer_id",b.customerId);
+      if(e1) throw e1;
+      var{error:e2}=await sb.from("bookings").delete().eq("customer_id",b.customerId);
+      if(e2) throw e2;
+      var{error:e3}=await sb.from("customers").delete().eq("id",b.customerId);
+      if(e3) throw e3;
+      if(blk){ blk.booked=Math.max(0,blk.booked-1); var{error:e4}=await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); if(e4) throw e4; }
       showToast("Customer permanently deleted."); renderDashboard();
-    }catch(err){ console.error(err); showToast("Error deleting customer."); }
+    }catch(err){ console.error(err); showToast("Error deleting customer — check you are logged in."); }
   })();
 }
 
