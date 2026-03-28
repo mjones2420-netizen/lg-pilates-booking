@@ -333,7 +333,7 @@ tr:hover td { background:var(--cream); }
 
     <div style="display:flex; align-items:center; justify-content:space-between; margin-top:40px; margin-bottom:12px;">
       <div class="sec-title" style="margin-top:0">Upcoming Classes</div>
-      <button class="step-btn" onclick="openAddClassModal()" style="padding:8px 18px; font-size:12px;">+ Add New Class</button>
+      <button class="step-btn" onclick="openAddClassModal()" style="width:auto; padding:8px 18px; font-size:12px;">+ Add New Class</button>
     </div>
     <table><thead><tr><th>Class</th><th>Location</th><th>Day and Time</th><th>Active Block</th><th>Upcoming Block</th><th>Actions</th></tr></thead><tbody id="ctbody"></tbody></table>
 
@@ -697,6 +697,65 @@ tr:hover td { background:var(--cream); }
   </div>
 </div>
 
+<div class="overlay" id="refund-overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div>
+        <div class="mtitle">Process Refund</div>
+        <div class="msub" id="refund-sub"></div>
+      </div>
+      <button class="mclose" onclick="closeRefundModal()">x</button>
+    </div>
+    <div class="mbody">
+
+      <div id="refund-step-1">
+        <div class="parq-section-title">Booking details</div>
+        <div class="sdetail" id="refund-booking-info" style="margin-bottom:20px"></div>
+        <div style="font-size:14px;color:var(--charcoal);margin-bottom:12px;line-height:1.5" id="refund-question"></div>
+        <input type="number" id="refund-sessions-input" min="0" placeholder="0" style="width:100px;padding:10px 13px;border:1px solid var(--border);border-radius:3px;font-size:15px;font-family:inherit;margin-bottom:8px;">
+        <div style="font-size:12px;color:var(--light);margin-bottom:20px">Enter 0 if they haven't attended any sessions.</div>
+        <button class="confirm-btn" onclick="refundGoStep2()">Calculate Refund</button>
+      </div>
+
+      <div id="refund-step-2" style="display:none">
+        <div class="parq-section-title">Refund calculation</div>
+        <div class="sdetail" style="margin-bottom:16px">
+          <div class="srow"><span>Sessions attended</span><span id="refund-calc-attended"></span></div>
+          <div class="srow"><span>Sessions remaining</span><span id="refund-calc-remaining"></span></div>
+          <div class="srow"><span>Price per session</span><span id="refund-calc-pps"></span></div>
+          <div class="srow"><span style="color:var(--charcoal);font-weight:600">Suggested refund</span><span id="refund-calc-suggested" style="color:var(--sage-dk);font-size:16px"></span></div>
+        </div>
+        <div style="font-size:12px;color:var(--mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Override amount (optional)</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:15px;color:var(--mid)">£</span>
+          <input type="number" id="refund-override-input" step="0.01" min="0" placeholder="" style="width:130px;padding:10px 13px;border:1px solid var(--border);border-radius:3px;font-size:15px;font-family:inherit;">
+          <span style="font-size:12px;color:var(--sage);cursor:pointer;text-decoration:underline" onclick="refundResetOverride()">Reset to suggested</span>
+        </div>
+        <div style="font-size:12px;color:var(--light);margin-bottom:20px">Leave blank to use the suggested amount.</div>
+        <div style="display:flex;gap:10px">
+          <button class="confirm-btn" style="background:none;border:1px solid var(--border);color:var(--mid);flex:0 0 auto;width:auto;padding:14px 20px" onmouseover="this.style.borderColor='var(--charcoal)';this.style.color='var(--charcoal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--mid)'" onclick="refundGoStep1()">Back</button>
+          <button class="confirm-btn" onclick="refundGoStep3()">Review &amp; Confirm</button>
+        </div>
+      </div>
+
+      <div id="refund-step-3" style="display:none">
+        <div class="parq-section-title">Confirm refund</div>
+        <div style="background:#fff8f5;border:1px solid #f0c8b0;border-left:4px solid var(--clay);border-radius:4px;padding:16px 18px;margin-bottom:16px">
+          <div class="srow"><span>Client</span><span id="refund-conf-client"></span></div>
+          <div class="srow"><span>Sessions attended</span><span id="refund-conf-attended"></span></div>
+          <div class="srow" style="border-bottom:none"><span>Refund amount</span><span id="refund-conf-amount" style="color:var(--clay);font-size:17px;font-family:'Raleway',sans-serif;font-weight:600"></span></div>
+        </div>
+        <div style="font-size:12px;color:var(--light);margin-bottom:20px">This will mark the booking as <strong>Refund Pending</strong>. Once you've sent the payment, click Mark Refunded on the booking.</div>
+        <div style="display:flex;gap:10px">
+          <button class="confirm-btn" style="background:none;border:1px solid var(--border);color:var(--mid);flex:0 0 auto;width:auto;padding:14px 20px" onmouseover="this.style.borderColor='var(--charcoal)';this.style.color='var(--charcoal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--mid)'" onclick="refundGoStep2Back()">Back</button>
+          <button class="confirm-btn" onclick="refundSubmit()">Mark as Refund Pending</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toastEl"></div>
 
 <script>
@@ -999,6 +1058,7 @@ document.getElementById("overlay").addEventListener("click",function(e){ if(e.ta
 document.getElementById("view-overlay").addEventListener("click",function(e){ if(e.target===this) closeViewModal(); });
 document.getElementById("add-class-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddClassModal(); });
 document.getElementById("add-block-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddBlockModal(); });
+document.getElementById("refund-overlay").addEventListener("click",function(e){ if(e.target===this) closeRefundModal(); });
 
 function scrollModalTop(){
   var modal=document.querySelector(".overlay.on .modal");
@@ -1427,7 +1487,7 @@ function renderDashboard(){
           var cancelBtn=(b.status!=="cancelled"&&b.status!=="refunded")?"<button class=\"act\" onclick=\"cancelBooking("+i+")\">Cancel</button>":"";
           var refundBtn=(b.status==="confirmed"||b.status==="cancelled")?"<button class=\"act act-refund\" onclick=\"initiateRefund("+i+")\">Refund</button>":"";
           var markRefundedBtn=b.status==="refund-pending"?"<button class=\"act act-confirm\" onclick=\"markRefunded("+i+")\">Mark Refunded</button>":"";
-          bhtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button>"+confirmBtn+cancelBtn+refundBtn+markRefundedBtn+"<button class=\"act act-delete\" onclick=\"deleteBookingOnly("+i+")\">Remove</button><button class=\"act act-delete\" onclick=\"deleteCustomer("+i+")\">Del Customer</button></td></tr>";
+          bhtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button>"+confirmBtn+cancelBtn+refundBtn+markRefundedBtn+"<button class=\"act act-delete\" onclick=\"deleteBookingOnly("+i+")\">Remove from Block</button><button class=\"act act-delete\" onclick=\"deleteCustomer("+i+")\">Permanently Delete Customer</button></td></tr>";
         }
       }
       document.getElementById("btbody").innerHTML=bhtml;
@@ -1891,32 +1951,105 @@ function cancelBooking(idx){
   })();
 }
 
+// ─── Refund modal ─────────────────────────────────────────────────────────────
+var refundIdx=null;
+var refundSuggested=0;
+var refundTotalSessions=0;
+
 function initiateRefund(idx){
+  refundIdx=idx;
   var b=bookings[idx];
   var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
-  var leavingBlock=confirm("Is "+b.client+" leaving the block entirely?\n\nOK = Yes (spot freed up)\nCancel = No (partial refund only)");
-  var sessionsAttended=0;
-  if(leavingBlock){ var a=prompt("How many sessions did they attend?","0"); if(a===null) return; sessionsAttended=parseInt(a)||0; }
-  var totalSessions=blk.weeks||6;
-  var pricePerSession=blk.price||0;
-  var remaining=totalSessions-sessionsAttended;
-  var suggested=remaining*pricePerSession;
-  var refundAmt=prompt("Refund amount:\n\nSessions attended: "+sessionsAttended+" of "+totalSessions+"\nSuggested refund: \u00a3"+suggested+"\n\nEnter amount:",suggested);
-  if(refundAmt===null) return;
-  var amount=parseFloat(refundAmt)||suggested;
-  if(!confirm("Mark as Refund Pending?\n\nCustomer: "+b.client+"\nRefund: \u00a3"+amount+(leavingBlock?"\nSpot will be freed up":""))) return;
+  refundTotalSessions=blk.weeks||6;
+  var pps=blk.price||0;
+  // Populate booking info panel
+  document.getElementById("refund-sub").textContent=b.client+" \u2014 "+b.cls;
+  document.getElementById("refund-question").textContent="How many sessions did "+b.client+" attend before leaving?";
+  var infoHtml="";
+  infoHtml+="<div class=\"srow\"><span>Block</span><span>"+sanitise(b.blockDates||"")+"</span></div>";
+  infoHtml+="<div class=\"srow\"><span>Sessions</span><span>"+refundTotalSessions+" total</span></div>";
+  infoHtml+="<div class=\"srow\"><span>Amount paid</span><span>\u00a3"+sanitise(String(b.paid||0))+"</span></div>";
+  infoHtml+="<div class=\"srow\" style=\"border-bottom:none\"><span>Status</span><span><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></span></div>";
+  document.getElementById("refund-booking-info").innerHTML=infoHtml;
+  document.getElementById("refund-sessions-input").value="";
+  document.getElementById("refund-sessions-input").max=refundTotalSessions;
+  // Show step 1
+  refundShowStep(1);
+  document.getElementById("refund-overlay").className="overlay on";
+}
+
+function refundGoStep2(){
+  var idx=refundIdx;
+  var b=bookings[idx];
+  var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
+  var pps=blk.price||0;
+  var attended=parseInt(document.getElementById("refund-sessions-input").value)||0;
+  if(attended<0) attended=0;
+  if(attended>refundTotalSessions) attended=refundTotalSessions;
+  var remaining=refundTotalSessions-attended;
+  refundSuggested=parseFloat((remaining*pps).toFixed(2));
+  document.getElementById("refund-calc-attended").textContent=attended+" of "+refundTotalSessions;
+  document.getElementById("refund-calc-remaining").textContent=remaining;
+  document.getElementById("refund-calc-pps").textContent="\u00a3"+pps.toFixed(2);
+  document.getElementById("refund-calc-suggested").textContent="\u00a3"+refundSuggested.toFixed(2);
+  document.getElementById("refund-override-input").value="";
+  document.getElementById("refund-override-input").placeholder=refundSuggested.toFixed(2);
+  refundShowStep(2);
+}
+
+function refundGoStep1(){
+  refundShowStep(1);
+}
+
+function refundResetOverride(){
+  document.getElementById("refund-override-input").value="";
+  document.getElementById("refund-override-input").placeholder=refundSuggested.toFixed(2);
+}
+
+function refundGoStep3(){
+  var override=parseFloat(document.getElementById("refund-override-input").value);
+  var finalAmount=isNaN(override)?refundSuggested:parseFloat(override.toFixed(2));
+  var b=bookings[refundIdx];
+  var attended=document.getElementById("refund-calc-attended").textContent;
+  document.getElementById("refund-conf-client").textContent=b.client;
+  document.getElementById("refund-conf-attended").textContent=attended;
+  document.getElementById("refund-conf-amount").textContent="\u00a3"+finalAmount.toFixed(2);
+  refundShowStep(3);
+}
+
+function refundGoStep2Back(){
+  refundShowStep(2);
+}
+
+function refundSubmit(){
+  var b=bookings[refundIdx];
+  var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
+  var amountText=document.getElementById("refund-conf-amount").textContent.replace("\u00a3","");
+  var amount=parseFloat(amountText)||0;
   showToast("Saving...");
+  document.getElementById("refund-overlay").className="overlay";
   (async function(){
     try{
       await sb.from("bookings").update({status:"refund-pending",refund_amount:amount}).eq("id",b.dbId);
-      if(leavingBlock&&blk.id){
+      if(blk.id){
         blk.booked=Math.max(0,blk.booked-1);
         await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id);
       }
-      showToast("Refund pending \u2014 \u00a3"+amount+(leavingBlock?". Spot freed up.":""));
+      showToast("Refund pending \u2014 \u00a3"+amount.toFixed(2)+". Spot freed up.");
       renderDashboard(); renderGrid();
     }catch(err){ console.error(err); showToast("Error saving refund."); }
   })();
+}
+
+function refundShowStep(n){
+  document.getElementById("refund-step-1").style.display=n===1?"block":"none";
+  document.getElementById("refund-step-2").style.display=n===2?"block":"none";
+  document.getElementById("refund-step-3").style.display=n===3?"block":"none";
+}
+
+function closeRefundModal(){
+  document.getElementById("refund-overlay").className="overlay";
+  refundIdx=null;
 }
 
 function markRefunded(idx){
@@ -1930,28 +2063,29 @@ function markRefunded(idx){
 }
 
 function deleteBookingOnly(idx){
-  if(!confirm("Remove this booking? Customer record will be kept.")) return;
+  if(!confirm("Remove this client from the block? Their personal details and health form will be kept. This cannot be undone.")) return;
   var b=bookings[idx];
   (async function(){
     try{
-      await sb.from("parq").delete().eq("booking_id",b.dbId);
       await sb.from("bookings").delete().eq("id",b.dbId);
       var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
       if(blk){ blk.booked=Math.max(0,blk.booked-1); await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); }
-      showToast("Booking removed."); renderDashboard();
+      showToast("Client removed from block."); renderDashboard();
     }catch(err){ console.error(err); showToast("Error removing booking."); }
   })();
 }
 
 function deleteCustomer(idx){
-  if(!confirm("Delete customer and ALL their bookings? This cannot be undone.")) return;
+  if(!confirm("Permanently delete this customer and ALL their data? This includes their bookings and health form. This cannot be undone.")) return;
   var b=bookings[idx];
   (async function(){
     try{
+      var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
       await sb.from("parq").delete().eq("customer_id",b.customerId);
       await sb.from("bookings").delete().eq("customer_id",b.customerId);
       await sb.from("customers").delete().eq("id",b.customerId);
-      showToast("Customer deleted."); renderDashboard();
+      if(blk){ blk.booked=Math.max(0,blk.booked-1); await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); }
+      showToast("Customer permanently deleted."); renderDashboard();
     }catch(err){ console.error(err); showToast("Error deleting customer."); }
   })();
 }
