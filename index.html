@@ -1889,10 +1889,10 @@ function deleteBlock(blockId){
       var{data:blockBookings}=await sb.from("bookings").select("id").eq("block_id",blockId);
       if(blockBookings&&blockBookings.length>0){
         var bookingIds=blockBookings.map(function(b){ return b.id; });
-        await sb.from("parq").delete().in("booking_id",bookingIds);
+        await sb.from("parq").delete().in("booking_id",bookingIds).select();
       }
-      await sb.from("bookings").delete().eq("block_id",blockId);
-      await sb.from("blocks").delete().eq("id",blockId);
+      await sb.from("bookings").delete().eq("block_id",blockId).select();
+      await sb.from("blocks").delete().eq("id",blockId).select();
       blocks=blocks.filter(function(b){ return b.id!==blockId; });
       buildFilters(); renderGrid(); renderDashboard();
       showToast("Block deleted.");
@@ -1915,11 +1915,11 @@ function deleteClass(id){
       var{data:classBookings}=await sb.from("bookings").select("id").eq("class_id",id);
       if(classBookings&&classBookings.length>0){
         var bookingIds=classBookings.map(function(b){ return b.id; });
-        await sb.from("parq").delete().in("booking_id",bookingIds);
+        await sb.from("parq").delete().in("booking_id",bookingIds).select();
       }
-      await sb.from("bookings").delete().eq("class_id",id);
-      await sb.from("blocks").delete().eq("class_id",id);
-      await sb.from("classes").delete().eq("id",id);
+      await sb.from("bookings").delete().eq("class_id",id).select();
+      await sb.from("blocks").delete().eq("class_id",id).select();
+      await sb.from("classes").delete().eq("id",id).select();
       classes=classes.filter(function(c){ return c.id!==id; });
       blocks=blocks.filter(function(b){ return b.class_id!==id; });
       buildFilters(); renderGrid(); renderDashboard();
@@ -2067,7 +2067,7 @@ function deleteBookingOnly(idx){
   var b=bookings[idx];
   (async function(){
     try{
-      var{error:e1}=await sb.from("bookings").delete().eq("id",b.dbId);
+      var{error:e1}=await sb.from("bookings").delete().eq("id",b.dbId).select();
       if(e1) throw e1;
       var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
       if(blk){ blk.booked=Math.max(0,blk.booked-1); var{error:e2}=await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); if(e2) throw e2; }
@@ -2082,11 +2082,11 @@ function deleteCustomer(idx){
   (async function(){
     try{
       var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
-      var{error:e1}=await sb.from("parq").delete().eq("customer_id",b.customerId);
+      var{error:e1}=await sb.from("parq").delete().eq("customer_id",b.customerId).select();
       if(e1) throw e1;
-      var{error:e2}=await sb.from("bookings").delete().eq("customer_id",b.customerId);
+      var{error:e2}=await sb.from("bookings").delete().eq("customer_id",b.customerId).select();
       if(e2) throw e2;
-      var{error:e3}=await sb.from("customers").delete().eq("id",b.customerId);
+      var{error:e3}=await sb.from("customers").delete().eq("id",b.customerId).select();
       if(e3) throw e3;
       if(blk){ blk.booked=Math.max(0,blk.booked-1); var{error:e4}=await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); if(e4) throw e4; }
       showToast("Customer permanently deleted."); renderDashboard();
