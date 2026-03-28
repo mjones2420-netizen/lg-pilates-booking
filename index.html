@@ -2063,9 +2063,11 @@ function markRefunded(idx){
 }
 
 function deleteBookingOnly(bookingId, blockId){
-  if(!confirm("Remove this client from the block? Their personal details and health form will be kept. This cannot be undone.")) return;
+  if(!confirm("Remove this client from the block? Their personal details will be kept but their health form will be removed. This cannot be undone.")) return;
   (async function(){
     try{
+      var{error:e0}=await sb.from("parq").delete().eq("booking_id",bookingId).select();
+      if(e0) throw e0;
       var{error:e1}=await sb.from("bookings").delete().eq("id",bookingId).select();
       if(e1) throw e1;
       var blk=blocks.find(function(bl){ return bl.id===blockId; });
