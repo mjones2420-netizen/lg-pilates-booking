@@ -111,9 +111,9 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .book-btn:disabled { background:var(--border); color:var(--light); cursor:not-allowed; }
 .overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:200; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:20px; }
 .overlay.on { display:flex; animation:fadeup 0.2s ease; }
-.modal { background:var(--warm); border-radius:6px; width:100%; max-width:500px; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; touch-action:pan-y; }
-#form-view { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
-.mhead { padding:22px 28px 0; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--warm); }
+.modal { background:var(--warm); border-radius:6px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; }
+#form-view { display:block; }
+.mhead { padding:22px 28px 0; border-bottom:1px solid var(--border); background:var(--warm); position:sticky; top:0; z-index:10; }
 .mhead-top { display:flex; justify-content:space-between; align-items:flex-start; width:100%; padding-bottom:14px; }
 .mtitle { font-family:'Raleway',sans-serif; font-size:24px; font-weight:400; }
 .msub { font-size:14px; color:var(--mid); margin-top:3px; }
@@ -129,7 +129,7 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .step-pip-label.done { color:var(--sage); }
 .step-connector { flex:1; height:2px; background:var(--border); margin:0 6px 14px; border-radius:2px; transition:background 0.25s; }
 .step-connector.done { background:var(--sage-lt); }
-.mbody { padding:20px 28px; overflow-y:auto; flex:1; min-height:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+.mbody { padding:20px 28px; }
 .msummary { background:var(--cream); border-radius:4px; padding:12px 16px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; }
 .msum-info { font-size:15px; color:var(--mid); }
 .msum-info strong { display:block; font-size:17px; color:var(--charcoal); margin-bottom:2px; }
@@ -176,7 +176,7 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .bank-row:last-child { border-bottom:none; }
 .bank-lbl { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--light); }
 .bank-val { font-size:16px; font-weight:600; color:var(--charcoal); font-family:'Raleway',sans-serif; letter-spacing:0.03em; }
-.mfoot { padding:0 28px 28px; flex-shrink:0; }
+.mfoot { padding:0 28px 28px; }
 .confirm-btn { width:100%; padding:16px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:14px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:background 0.2s; }
 .confirm-btn:hover { background:var(--sage-dk); }
 .terms { font-size:11px; color:var(--light); text-align:center; margin-top:10px; line-height:1.5; }
@@ -971,7 +971,6 @@ function openModal(classId, blockId) {
   document.getElementById("form-view").style.display="block";
   document.getElementById("success-view").className="success";
   document.getElementById("overlay").className="overlay on";
-  document.body.style.overflow="hidden";
   document.getElementById("step-1").style.display="block";
   document.getElementById("step-2a").style.display="none";
   document.getElementById("step-2b").style.display="none";
@@ -996,7 +995,7 @@ function openModal(classId, blockId) {
   document.querySelectorAll(".field-err").forEach(function(e){ e.className="field-err"; });
 }
 
-function closeModal(){ document.getElementById("overlay").className="overlay"; document.body.style.overflow=""; }
+function closeModal(){ document.getElementById("overlay").className="overlay"; }
 function closeViewModal(){ document.getElementById("view-overlay").className="overlay"; }
 
 document.getElementById("overlay").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
@@ -1005,8 +1004,8 @@ document.getElementById("add-class-overlay").addEventListener("click",function(e
 document.getElementById("add-block-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddBlockModal(); });
 
 function scrollModalTop(){
-  var body=document.querySelector(".overlay.on .mbody");
-  if(body) body.scrollTo({top:0, behavior:"smooth"});
+  var modal=document.querySelector(".overlay.on .modal");
+  if(modal) modal.scrollTo({top:0, behavior:"smooth"});
 }
 
 function updateStepIndicator(activeStep, isReturning){
