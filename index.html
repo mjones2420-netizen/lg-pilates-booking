@@ -358,7 +358,7 @@ tr:hover td { background:var(--cream); }
       <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
         <button class="step-btn" onclick="exportCancellations()" style="padding:9px 20px;font-size:12px;background:var(--sage-dk)">&#8659; Export CSV</button>
       </div>
-      <table><thead><tr><th>Client</th><th>Class &amp; Venue</th><th>Block Dates</th><th>Sessions Attended</th><th>Refund</th><th>Removed On</th></tr></thead><tbody id="cancellations-tbody"><tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr></tbody></table>
+      <table><thead><tr><th>Client</th><th>Class &amp; Venue</th><th>Block Dates</th><th>Sessions Attended</th><th>Refund</th><th>Removed On</th><th>Actions</th></tr></thead><tbody id="cancellations-tbody"><tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr></tbody></table>
     </div>
 
     <div style="display:flex; align-items:center; justify-content:space-between; margin-top:40px; margin-bottom:12px;">
@@ -1954,7 +1954,8 @@ function openRfbModal(idx){
     sessionsAttended:0,
     totalSessions:blk.weeks||6,
     pricePerSession:blk.price||0,
-    refundOverride:null
+    refundOverride:null,
+    hasPaid:null
   };
   document.getElementById("rfb-sub").textContent=sanitise(b.client)+" \u2014 "+sanitise(b.cls);
   document.getElementById("rfb-overlay").style.display="flex";
@@ -1979,14 +1980,18 @@ function rfbSetLine(n,done){
 
 function rfbCalcRefund(){
   if(rfbState.refundOverride!==null) return rfbState.refundOverride;
+  // If 0 sessions attended and client hasn't paid, no refund owed
+  if(rfbState.sessionsAttended===0&&rfbState.hasPaid===false) return 0;
   return (rfbState.totalSessions-rfbState.sessionsAttended)*rfbState.pricePerSession;
 }
 
 function renderRfbStep(){
   var s=rfbState;
-  // Update pips
-  if(s.step===1){ rfbSetPip(1,"active"); rfbSetPip(2,""); rfbSetPip(3,""); rfbSetLine(1,false); rfbSetLine(2,false); }
-  else if(s.step===2){ rfbSetPip(1,"done"); rfbSetPip(2,"active"); rfbSetPip(3,""); rfbSetLine(1,true); rfbSetLine(2,false); }
+  // Pip states: step 1 = sessions, step 2 = review, step 3 = done
+  // step "1b" (paid question) sits between 1 and 2 — pips show 1 active, others inactive
+  var pipStep=s.step==="1b"?1:s.step;
+  if(pipStep===1){ rfbSetPip(1,"active"); rfbSetPip(2,""); rfbSetPip(3,""); rfbSetLine(1,false); rfbSetLine(2,false); }
+  else if(pipStep===2){ rfbSetPip(1,"done"); rfbSetPip(2,"active"); rfbSetPip(3,""); rfbSetLine(1,true); rfbSetLine(2,false); }
   else { rfbSetPip(1,"done"); rfbSetPip(2,"done"); rfbSetPip(3,"active"); rfbSetLine(1,true); rfbSetLine(2,true); }
 
   var body=document.getElementById("rfb-body");
@@ -2005,39 +2010,60 @@ function renderRfbStep(){
       +"<div style=\"display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:14px 0\">"+btns+"</div>"
       +"<p style=\"font-size:11px;color:var(--light);margin-top:6px\">0 = not yet started &nbsp;&middot;&nbsp; "+s.totalSessions+" = completed all sessions</p>";
     footer.innerHTML="<button class=\"step-btn\" onclick=\"closeRfbModal()\" style=\"background:none;border:1px solid var(--border);color:var(--mid);padding:12px 22px;font-size:12px\">Cancel</button>"
-      +"<button class=\"step-btn\" onclick=\"rfbGoStep2()\" style=\"padding:12px 22px;font-size:12px\">Next</button>";
+      +"<button class=\"step-btn\" onclick=\"rfbGoNext()\" style=\"padding:12px 22px;font-size:12px\">Next</button>";
+
+  } else if(s.step==="1b"){
+    // Has the client paid? Only shown when sessions attended = 0
+    var yesStyle=s.hasPaid===true?"background:var(--charcoal);color:white;border-color:var(--charcoal)":"background:white;color:var(--charcoal)";
+    var noStyle=s.hasPaid===false?"background:var(--charcoal);color:white;border-color:var(--charcoal)":"background:white;color:var(--charcoal)";
+    body.innerHTML="<div style=\"background:var(--cream);border-radius:4px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--mid)\">"
+      +"<strong style=\"color:var(--charcoal)\">"+sanitise(s.b.client)+"</strong> has attended 0 sessions."
+      +"</div>"
+      +"<p style=\"font-size:13px;color:var(--mid);margin-bottom:14px\">Has this client already paid for the block?</p>"
+      +"<div style=\"display:flex;gap:12px\">"
+      +"<button onclick=\"rfbSetPaid(true)\" style=\"flex:1;border:1px solid var(--border);border-radius:4px;padding:14px;font-size:13px;cursor:pointer;font-family:'Open Sans',sans-serif;"+yesStyle+"\">Yes &mdash; paid &pound;"+(s.totalSessions*s.pricePerSession).toFixed(2)+"</button>"
+      +"<button onclick=\"rfbSetPaid(false)\" style=\"flex:1;border:1px solid var(--border);border-radius:4px;padding:14px;font-size:13px;cursor:pointer;font-family:'Open Sans',sans-serif;"+noStyle+"\">No &mdash; not paid</button>"
+      +"</div>"
+      +(s.hasPaid===true?"<p style=\"font-size:12px;color:var(--clay);margin-top:12px\">Full refund of &pound;"+(s.totalSessions*s.pricePerSession).toFixed(2)+" will be recorded.</p>":"")
+      +(s.hasPaid===false?"<p style=\"font-size:12px;color:var(--green);margin-top:12px\">No refund needed &mdash; nothing has been paid.</p>":"");
+    footer.innerHTML="<button class=\"step-btn\" onclick=\"rfbGoStep(1)\" style=\"background:none;border:1px solid var(--border);color:var(--mid);padding:12px 22px;font-size:12px\">Back</button>"
+      +"<button class=\"step-btn\" onclick=\"rfbGoStep(2)\" style=\"padding:12px 22px;font-size:12px\""+(s.hasPaid===null?" disabled":"\">")+">Next</button>";
 
   } else if(s.step===2){
     var refund=rfbCalcRefund();
     var remaining=s.totalSessions-s.sessionsAttended;
     var refundHtml;
-    if(s.sessionsAttended===0){
+    if(refund<=0){
       refundHtml="<div style=\"background:#e8f0e7;border-left:3px solid var(--green);border-radius:0 4px 4px 0;padding:14px 16px;margin:14px 0\">"
-        +"<p style=\"font-size:13px;color:var(--green);font-weight:500\">No refund needed \u2014 this client has not attended any sessions.</p></div>";
+        +"<p style=\"font-size:13px;color:var(--green);font-weight:500\">No refund needed \u2014 this client has not paid for the block.</p></div>";
     } else {
       refundHtml="<div style=\"background:#fef3e8;border-left:3px solid var(--clay);border-radius:0 4px 4px 0;padding:14px 16px;margin:14px 0\">"
-        +"<div style=\"font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--light);margin-bottom:4px\">Calculated refund</div>"
+        +"<div style=\"font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--light);margin-bottom:4px\">Refund owed</div>"
         +"<div style=\"font-family:'Raleway',sans-serif;font-size:26px;font-weight:600;color:var(--clay)\">&pound;"+refund.toFixed(2)+"</div>"
-        +"<p style=\"font-size:12px;color:var(--mid);margin-top:6px\">"+remaining+" remaining sessions &times; &pound;"+s.pricePerSession+"</p>"
+        +(s.sessionsAttended===0
+          ?"<p style=\"font-size:12px;color:var(--mid);margin-top:6px\">Full block refund &mdash; no sessions attended</p>"
+          :"<p style=\"font-size:12px;color:var(--mid);margin-top:6px\">"+remaining+" remaining sessions &times; &pound;"+s.pricePerSession+"</p>")
         +"</div>"
         +"<div style=\"display:flex;align-items:center;gap:10px;margin-top:10px\">"
         +"<label style=\"font-size:12px;color:var(--mid);flex-shrink:0\">Override amount &nbsp;&pound;</label>"
-        +"<input id=\"rfb-override\" type=\"number\" min=\"0\" step=\"0.01\" placeholder=\""+refund+"\" style=\"border:1px solid var(--border);border-radius:3px;padding:7px 10px;font-size:14px;width:100px;font-family:'Open Sans',sans-serif\" oninput=\"rfbState.refundOverride=this.value===''?null:parseFloat(this.value)||0\">"
+        +"<input id=\"rfb-override\" type=\"number\" min=\"0\" step=\"0.01\" placeholder=\""+refund.toFixed(2)+"\" style=\"border:1px solid var(--border);border-radius:3px;padding:7px 10px;font-size:14px;width:100px;font-family:'Open Sans',sans-serif\" oninput=\"rfbState.refundOverride=this.value===''?null:parseFloat(this.value)||0\">"
         +"</div>";
     }
+    var backStep=s.sessionsAttended===0?"\"1b\"":1;
     body.innerHTML="<div style=\"font-size:13px\">"
       +"<div style=\"display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)\"><span style=\"color:var(--mid)\">Client</span><span style=\"font-weight:500\">"+sanitise(s.b.client)+"</span></div>"
       +"<div style=\"display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)\"><span style=\"color:var(--mid)\">Sessions attended</span><span style=\"font-weight:500\">"+s.sessionsAttended+" of "+s.totalSessions+"</span></div>"
       +"<div style=\"display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)\"><span style=\"color:var(--mid)\">Sessions remaining</span><span style=\"font-weight:500\">"+remaining+"</span></div>"
       +"</div>"+refundHtml;
-    footer.innerHTML="<button class=\"step-btn\" onclick=\"rfbGoStep(1)\" style=\"background:none;border:1px solid var(--border);color:var(--mid);padding:12px 22px;font-size:12px\">Back</button>"
+    footer.innerHTML="<button class=\"step-btn\" onclick=\"rfbGoStep("+backStep+")\" style=\"background:none;border:1px solid var(--border);color:var(--mid);padding:12px 22px;font-size:12px\">Back</button>"
       +"<button class=\"step-btn\" onclick=\"rfbConfirm()\" style=\"padding:12px 22px;font-size:12px\">Confirm Removal</button>";
 
   } else {
-    var refund=rfbCalcRefund();
+    // Step 3 — use the stored finalRefund set during rfbConfirm, not rfbCalcRefund()
+    var refund=s.finalRefund||0;
     var hasRefund=refund>0;
     var msg=hasRefund
-      ?"<strong>"+sanitise(s.b.client)+"</strong> has been removed from the block. A refund of <strong>&pound;"+refund.toFixed(2)+"</strong> is owed \u2014 mark as paid once transferred."
+      ?"<strong>"+sanitise(s.b.client)+"</strong> has been removed from the block. A refund of <strong>&pound;"+refund.toFixed(2)+"</strong> is owed \u2014 use the Cancellations report to mark it as paid once transferred."
       :"<strong>"+sanitise(s.b.client)+"</strong> has been removed from the block. No refund is owed.";
     body.innerHTML="<div style=\"text-align:center;padding:10px 0 16px\">"
       +"<div style=\"width:52px;height:52px;border-radius:50%;background:#e8f0e7;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 14px;color:var(--green)\">\u2713</div>"
@@ -2051,6 +2077,22 @@ function renderRfbStep(){
 function rfbSelectSessions(n){
   rfbState.sessionsAttended=n;
   rfbState.refundOverride=null;
+  rfbState.hasPaid=null;
+  renderRfbStep();
+}
+
+function rfbSetPaid(val){
+  rfbState.hasPaid=val;
+  renderRfbStep();
+}
+
+function rfbGoNext(){
+  // If 0 sessions, ask about payment before review
+  if(rfbState.sessionsAttended===0){
+    rfbState.step="1b";
+  } else {
+    rfbState.step=2;
+  }
   renderRfbStep();
 }
 
@@ -2060,10 +2102,10 @@ function rfbGoStep2(){ rfbState.step=2; renderRfbStep(); }
 function rfbConfirm(){
   var s=rfbState;
   var refund=rfbCalcRefund();
+  rfbState.finalRefund=refund;
   showToast("Removing...");
   (async function(){
     try{
-      // Write cancellation record first
       var cls=classes.find(function(c){ return c.id===s.b.classId; })||{};
       var blkObj=blocks.find(function(bl){ return bl.id===s.b.blockId; })||{};
       var {error:cErr}=await sb.from("cancellations").insert({
@@ -2080,10 +2122,10 @@ function rfbConfirm(){
         sessions_attended:s.sessionsAttended,
         sessions_remaining:s.totalSessions-s.sessionsAttended,
         price_per_session:s.pricePerSession,
-        refund_amount:refund
+        refund_amount:refund,
+        refunded:false
       }).select();
       if(cErr) throw cErr;
-      // Delete PAR-Q then booking
       await sb.from("parq").delete().eq("booking_id",s.b.dbId).select();
       var {error:bErr}=await sb.from("bookings").delete().eq("id",s.b.dbId).select();
       if(bErr) throw bErr;
@@ -2098,26 +2140,37 @@ function rfbConfirm(){
 // ─── Cancellations Tab ────────────────────────────────────────────────────────
 function renderCancellationsTab(){
   var tbody=document.getElementById("cancellations-tbody");
-  tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>';
+  tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>';
   (async function(){
     try{
       var {data,error}=await sb.from("cancellations").select("*").order("cancelled_at",{ascending:false});
       if(error) throw error;
       if(!data||data.length===0){
-        tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">No cancellations yet.</td></tr>';
+        tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">No cancellations yet.</td></tr>';
         return;
       }
       var html="";
       data.forEach(function(r){
-        var refundDisplay=r.refund_amount>0
-          ?"<span style=\"color:var(--clay);font-weight:500\">&pound;"+parseFloat(r.refund_amount).toFixed(2)+"</span>"
-          :"<span style=\"color:var(--light)\">No refund</span>";
+        var refundDisplay;
+        if(r.refund_amount>0){
+          if(r.refunded){
+            refundDisplay="<span style=\"color:var(--green);font-weight:500\">&pound;"+parseFloat(r.refund_amount).toFixed(2)+"</span>"
+              +"<br><span style=\"font-size:11px;color:var(--light)\">Refunded</span>";
+          } else {
+            refundDisplay="<span style=\"color:var(--clay);font-weight:500\">&pound;"+parseFloat(r.refund_amount).toFixed(2)+"</span>";
+          }
+        } else {
+          refundDisplay="<span style=\"color:var(--light)\">No refund</span>";
+        }
         var cancelledDate=r.cancelled_at?new Date(r.cancelled_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}):"—";
         var blockDates="—";
         if(r.block_start_date&&r.block_end_date){
           blockDates=new Date(r.block_start_date).toLocaleDateString("en-GB",{day:"numeric",month:"short"})
             +" \u2013 "+new Date(r.block_end_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
         }
+        var actionBtn=(r.refund_amount>0&&!r.refunded)
+          ?"<button class=\"act act-confirm\" onclick=\"markCancellationRefunded("+r.id+")\">Mark Refunded</button>"
+          :"";
         html+="<tr>"
           +"<td><strong>"+sanitise(r.first_name+" "+r.last_name)+"</strong><br><span style=\"font-size:11px;color:var(--light)\">"+sanitise(r.email)+"</span></td>"
           +"<td>"+sanitise(r.class_name||"—")+"<br><span style=\"font-size:11px;color:var(--light)\">"+sanitise(r.venue||"")+"</span></td>"
@@ -2125,10 +2178,24 @@ function renderCancellationsTab(){
           +"<td style=\"text-align:center\">"+sanitise(String(r.sessions_attended))+" of "+sanitise(String(r.sessions_attended+(r.sessions_remaining||0)))+"</td>"
           +"<td>"+refundDisplay+"</td>"
           +"<td style=\"font-size:12px;color:var(--mid)\">"+sanitise(cancelledDate)+"</td>"
+          +"<td>"+actionBtn+"</td>"
           +"</tr>";
       });
       tbody.innerHTML=html;
-    }catch(err){ console.error(err); tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading cancellations.</td></tr>'; }
+    }catch(err){ console.error(err); tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">Error loading cancellations.</td></tr>'; }
+  })();
+}
+
+function markCancellationRefunded(id){
+  if(!confirm("Confirm refund has been sent?")) return;
+  showToast("Updating...");
+  (async function(){
+    try{
+      var {error}=await sb.from("cancellations").update({refunded:true,refunded_at:new Date().toISOString()}).eq("id",id).select();
+      if(error) throw error;
+      showToast("Marked as refunded.");
+      renderCancellationsTab();
+    }catch(err){ console.error(err); showToast("Error updating. See console."); }
   })();
 }
 
