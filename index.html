@@ -111,14 +111,14 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .book-btn:disabled { background:var(--border); color:var(--light); cursor:not-allowed; }
 .overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:200; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:20px; }
 .overlay.on { display:flex; animation:fadeup 0.2s ease; }
-.modal { background:var(--warm); border-radius:6px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; }
-.mhead { padding:28px 28px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; }
-.mhead-top { display:flex; justify-content:space-between; align-items:flex-start; width:100%; padding-bottom:16px; }
-.mtitle { font-family:'Raleway',sans-serif; font-size:28px; font-weight:400; }
-.msub { font-size:15px; color:var(--mid); margin-top:3px; }
+.modal { background:var(--warm); border-radius:6px; width:100%; max-width:500px; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; }
+.mhead { padding:22px 28px 0; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--warm); }
+.mhead-top { display:flex; justify-content:space-between; align-items:flex-start; width:100%; padding-bottom:14px; }
+.mtitle { font-family:'Raleway',sans-serif; font-size:24px; font-weight:400; }
+.msub { font-size:14px; color:var(--mid); margin-top:3px; }
 .mclose { background:none; border:none; font-size:22px; cursor:pointer; color:var(--light); transition:color 0.2s; line-height:1; }
 .mclose:hover { color:var(--charcoal); }
-.step-progress { display:flex; align-items:center; width:100%; padding:12px 0 14px; }
+.step-progress { display:flex; align-items:center; width:100%; padding:10px 0 12px; }
 .step-pip { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; }
 .step-pip-circle { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; border:2px solid var(--border); background:white; color:var(--light); transition:all 0.25s; }
 .step-pip-circle.active { background:var(--sage); border-color:var(--sage); color:white; }
@@ -128,13 +128,13 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .step-pip-label.done { color:var(--sage); }
 .step-connector { flex:1; height:2px; background:var(--border); margin:0 6px 14px; border-radius:2px; transition:background 0.25s; }
 .step-connector.done { background:var(--sage-lt); }
-.mbody { padding:24px 28px; }
-.msummary { background:var(--cream); border-radius:4px; padding:14px 18px; margin-bottom:22px; display:flex; justify-content:space-between; align-items:center; }
-.msum-info { font-size:16px; color:var(--mid); }
-.msum-info strong { display:block; font-size:18px; color:var(--charcoal); margin-bottom:2px; }
-.msum-price { font-family:'Raleway',sans-serif; font-size:38px; color:var(--charcoal); }
-.flbl { font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mid); margin-bottom:7px; display:block; }
-.finp { width:100%; padding:14px 17px; border:1px solid var(--border); border-radius:3px; background:white; font-family:'Open Sans',sans-serif; font-size:16px; color:var(--charcoal); outline:none; transition:border-color 0.2s; margin-bottom:14px; }
+.mbody { padding:20px 28px; overflow-y:auto; flex:1; }
+.msummary { background:var(--cream); border-radius:4px; padding:12px 16px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; }
+.msum-info { font-size:15px; color:var(--mid); }
+.msum-info strong { display:block; font-size:17px; color:var(--charcoal); margin-bottom:2px; }
+.msum-price { font-family:'Raleway',sans-serif; font-size:34px; color:var(--charcoal); }
+.flbl { font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mid); margin-bottom:6px; display:block; }
+.finp { width:100%; padding:11px 14px; border:1px solid var(--border); border-radius:3px; background:white; font-family:'Open Sans',sans-serif; font-size:15px; color:var(--charcoal); outline:none; transition:border-color 0.2s; margin-bottom:12px; }
 .finp:focus { border-color:var(--sage); }
 .frow { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
 .frow .finp { margin-bottom:0; }
@@ -419,12 +419,17 @@ tr:hover td { background:var(--cream); }
           <div class="step-connector" id="conn-1"></div>
           <div class="step-pip" id="pip-wrap-2">
             <div class="step-pip-circle" id="pip-2">2</div>
-            <span class="step-pip-label" id="pip-lbl-2">Health form</span>
+            <span class="step-pip-label" id="pip-lbl-2">Personal</span>
           </div>
           <div class="step-connector" id="conn-2"></div>
           <div class="step-pip" id="pip-wrap-3">
             <div class="step-pip-circle" id="pip-3">3</div>
-            <span class="step-pip-label" id="pip-lbl-3">Payment</span>
+            <span class="step-pip-label" id="pip-lbl-3">Medical</span>
+          </div>
+          <div class="step-connector" id="conn-3"></div>
+          <div class="step-pip" id="pip-wrap-4">
+            <div class="step-pip-circle" id="pip-4">4</div>
+            <span class="step-pip-label" id="pip-lbl-4">Payment</span>
           </div>
         </div>
       </div>
@@ -459,12 +464,11 @@ tr:hover td { background:var(--cream); }
           <button class="step-btn" onclick="goStep2()">Continue</button>
         </div>
 
-        <!-- STEP 2: Health Form (new students only) -->
-        <div id="step-2" style="display:none">
-          <div class="step-label">Step 2 of 3 &mdash; Health Form</div>
+        <!-- STEP 2a: Personal Details (new clients only) -->
+        <div id="step-2a" style="display:none">
+          <div class="step-label">Step 2 of 4 &mdash; Personal Details</div>
           <div class="health-note">This form ensures you are fit and well enough to take part in physical activity. Please answer all questions honestly. If you answer YES to any question, you will need to consult your doctor before joining the class.</div>
 
-          <div class="parq-section-title">Personal Details</div>
           <div style="margin-bottom:12px;width:90px">
             <label class="flbl">Age <span class="req">*</span></label>
             <input type="text" class="finp" id="b-age" placeholder="e.g. 34" style="margin-bottom:0">
@@ -479,9 +483,16 @@ tr:hover td { background:var(--cream); }
           <input type="text" class="finp" id="b-emergency-phone" placeholder="07700 000000">
           <div class="field-err" id="err-emergency">Please fill in all emergency contact details.</div>
 
-          <div class="parq-section-title" style="margin-top:16px">Medical Questions</div>
+          <div class="frow-btns" style="margin-top:8px">
+            <button class="step-btn-back" onclick="goStep1()">Back</button>
+            <button class="step-btn" onclick="goStep2b()">Continue</button>
+          </div>
+        </div>
 
-          <div class="parq-intro">Answer YES or NO to each of the following:</div>
+        <!-- STEP 2b: Medical Questions (new clients only) -->
+        <div id="step-2b" style="display:none">
+          <div class="step-label">Step 3 of 4 &mdash; Medical Questions</div>
+          <div class="parq-intro" style="font-size:13px;color:var(--mid);margin-bottom:10px">Answer YES or NO to each of the following:</div>
 
           <div class="parq-question"><span class="parq-num">1</span><span class="parq-text">Do you currently or have you ever suffered from heart problems?</span><div class="parq-radios"><label><input type="radio" name="q1" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q1" value="No" checked onchange="updateYesSection()"> No</label></div></div>
           <div class="parq-question"><span class="parq-num">2</span><span class="parq-text">Circulatory problems?</span><div class="parq-radios"><label><input type="radio" name="q2" value="Yes" onchange="updateYesSection()"> Yes</label><label><input type="radio" name="q2" value="No" checked onchange="updateYesSection()"> No</label></div></div>
@@ -522,14 +533,14 @@ tr:hover td { background:var(--cream); }
           </div>
 
           <div class="frow-btns" style="margin-top:16px">
-            <button class="step-btn-back" onclick="goStep1()">Back</button>
+            <button class="step-btn-back" onclick="goStep2a()">Back</button>
             <button class="step-btn" onclick="goStep3()">Continue</button>
           </div>
         </div>
 
         <!-- STEP 3: Payment -->
         <div id="step-3" style="display:none">
-          <div class="step-label" id="step-3-label" style="font-size:13px; margin-bottom:20px;">Step 3 of 3 &mdash; Payment</div>
+          <div class="step-label" id="step-3-label" style="font-size:13px; margin-bottom:20px;">Step 4 of 4 &mdash; Payment</div>
 
           <div style="background:white;border:1px solid var(--border);border-radius:4px;padding:14px 16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start">
             <div style="flex:1">
@@ -557,7 +568,7 @@ tr:hover td { background:var(--cream); }
             <div style="padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border);">
               <span style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:var(--light);font-weight:600;">Terms &amp; Conditions</span>
             </div>
-            <div style="height:160px;overflow-y:scroll;padding:12px 14px;font-size:12px;line-height:1.7;color:var(--mid);">
+            <div style="padding:12px 14px;font-size:12px;line-height:1.7;color:var(--mid);">
               <ul style="margin:0;padding-left:1.1rem;">
                 <li style="margin-bottom:5px">Payment is to be made before the start of a block, no later than 48 hours.</li>
                 <li style="margin-bottom:5px">Blocks will run between 4&ndash;6 weeks dependent on school holidays, instructor holiday or venue availability.</li>
@@ -959,7 +970,8 @@ function openModal(classId, blockId) {
   document.getElementById("success-view").className="success";
   document.getElementById("overlay").className="overlay on";
   document.getElementById("step-1").style.display="block";
-  document.getElementById("step-2").style.display="none";
+  document.getElementById("step-2a").style.display="none";
+  document.getElementById("step-2b").style.display="none";
   document.getElementById("step-3").style.display="none";
   document.getElementById("mfoot-confirm").style.display="none";
   updateStepIndicator(1, false);
@@ -990,44 +1002,51 @@ document.getElementById("add-class-overlay").addEventListener("click",function(e
 document.getElementById("add-block-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddBlockModal(); });
 
 function scrollModalTop(){
-  var modal=document.querySelector(".overlay.on .modal");
-  if(modal) modal.scrollTo({top:0, behavior:"smooth"});
+  var body=document.querySelector(".overlay.on .mbody");
+  if(body) body.scrollTo({top:0, behavior:"smooth"});
 }
 
 function updateStepIndicator(activeStep, isReturning){
-  var totalSteps=isReturning?2:3;
-  // Update pip 2 label for returning clients
-  var pip2lbl=document.getElementById("pip-lbl-2");
+  // Returning clients: 2 steps (Your details, Payment) — hide pips 3 & 4 and connectors 2 & 3
+  // New clients: 4 steps (Your details, Personal, Medical, Payment) — show all
+  var pip3wrap=document.getElementById("pip-wrap-3");
+  var pip4wrap=document.getElementById("pip-wrap-4");
   var conn2=document.getElementById("conn-2");
-  var pipWrap3=document.getElementById("pip-wrap-3");
+  var conn3=document.getElementById("conn-3");
   if(isReturning){
-    pip2lbl.textContent="Payment";
-    conn2.style.display="none";
-    pipWrap3.style.display="none";
+    document.getElementById("pip-lbl-2").textContent="Payment";
+    if(conn2) conn2.style.display="none";
+    if(pip3wrap) pip3wrap.style.display="none";
+    if(conn3) conn3.style.display="none";
+    if(pip4wrap) pip4wrap.style.display="none";
   } else {
-    pip2lbl.textContent="Health form";
-    conn2.style.display="";
-    pipWrap3.style.display="";
+    document.getElementById("pip-lbl-2").textContent="Personal";
+    if(conn2) conn2.style.display="";
+    if(pip3wrap) pip3wrap.style.display="";
+    if(conn3) conn3.style.display="";
+    if(pip4wrap) pip4wrap.style.display="";
   }
-  var steps=isReturning?[1,2]:[1,2,3];
-  steps.forEach(function(s){
+  var pipCount=isReturning?2:4;
+  for(var s=1;s<=pipCount;s++){
     var circle=document.getElementById("pip-"+s);
     var label=document.getElementById("pip-lbl-"+s);
-    if(!circle) return;
+    if(!circle) continue;
     circle.classList.remove("active","done");
     label.classList.remove("active","done");
-    if(s<activeStep){ circle.classList.add("done"); circle.textContent="✓"; label.classList.add("done"); }
+    if(s<activeStep){ circle.classList.add("done"); circle.textContent="\u2713"; label.classList.add("done"); }
     else if(s===activeStep){ circle.classList.add("active"); circle.textContent=s; label.classList.add("active"); }
     else { circle.textContent=s; }
-  });
+  }
   var conn1=document.getElementById("conn-1");
   if(conn1) conn1.classList.toggle("done", activeStep>1);
-  if(conn2) conn2.classList.toggle("done", activeStep>2);
+  if(conn2&&!isReturning) conn2.classList.toggle("done", activeStep>2);
+  if(conn3&&!isReturning) conn3.classList.toggle("done", activeStep>3);
 }
 
 function goStep1(){
   document.getElementById("step-1").style.display="block";
-  document.getElementById("step-2").style.display="none";
+  document.getElementById("step-2a").style.display="none";
+  document.getElementById("step-2b").style.display="none";
   document.getElementById("step-3").style.display="none";
   document.getElementById("mfoot-confirm").style.display="none";
   updateStepIndicator(1, window._customerIsReturning||false);
@@ -1067,42 +1086,54 @@ function goStep2(){
         msgEl.textContent="👋 Welcome! As a new customer please complete the short health form below before booking.";
         setTimeout(function(){
           document.getElementById("step-1").style.display="none";
-          document.getElementById("step-2").style.display="block";
-          var step2=document.getElementById("step-2");
-          step2.insertBefore(msgEl,step2.firstChild);
+          document.getElementById("step-2a").style.display="block";
+          var step2a=document.getElementById("step-2a");
+          step2a.insertBefore(msgEl,step2a.firstChild);
           updateStepIndicator(2, false);
           scrollModalTop();
         }, 2500);
       }
-    }catch(err){ console.error(err); window._customerIsReturning=false; document.getElementById("step-1").style.display="none"; document.getElementById("step-2").style.display="block"; updateStepIndicator(2, false); scrollModalTop(); }
+    }catch(err){ console.error(err); window._customerIsReturning=false; document.getElementById("step-1").style.display="none"; document.getElementById("step-2a").style.display="block"; updateStepIndicator(2, false); scrollModalTop(); }
     finally{ btn.textContent="Continue"; btn.disabled=false; }
   })();
+}
+
+function goStep2a(){
+  document.getElementById("step-2b").style.display="none";
+  document.getElementById("step-2a").style.display="block";
+  updateStepIndicator(2, false);
+  scrollModalTop();
+}
+
+function goStep2b(){
+  var age=document.getElementById("b-age").value.trim();
+  var ename=document.getElementById("b-emergency-name").value.trim();
+  var erel=document.getElementById("b-emergency-relationship").value.trim();
+  var ephone=document.getElementById("b-emergency-phone").value.trim();
+  var ageNum=parseInt(age);
+  var ephDigits=ephone.replace(/[\s\-\+\(\)]/g,"");
+  var ephoneOk=ephDigits.length>=11&&/^\d+$/.test(ephDigits);
+  var errors=[];
+  if(!age) errors.push("Age is required");
+  else if(isNaN(ageNum)) errors.push("Age must be a number");
+  else if(ageNum<18) errors.push("You must be at least 18 years old to book a class");
+  if(!ename) errors.push("Emergency contact name is required");
+  if(!erel) errors.push("Emergency contact relationship is required");
+  if(!ephone) errors.push("Emergency contact phone number is required");
+  else if(!ephoneOk) errors.push("Emergency contact phone must be 11 digits (e.g. 07700 123456)");
+  if(errors.length>0){ showValidationToast(errors); return; }
+  document.getElementById("step-2a").style.display="none";
+  document.getElementById("step-2b").style.display="block";
+  updateStepIndicator(3, false);
+  scrollModalTop();
 }
 
 function goStep3(){
   var isNew=!window._customerIsReturning;
   if(isNew){
-    var age=document.getElementById("b-age").value.trim();
-    var ename=document.getElementById("b-emergency-name").value.trim();
-    var erel=document.getElementById("b-emergency-relationship").value.trim();
-    var ephone=document.getElementById("b-emergency-phone").value.trim();
     var pn=document.getElementById("b-print-name").value.trim();
     var ag=document.getElementById("b-declaration").checked;
-    // Validate age
-    var ageNum=parseInt(age);
-    var ageOk=age&&!isNaN(ageNum)&&ageNum>=18;
-    // Validate emergency phone
-    var ephDigits=ephone.replace(/[\s\-\+\(\)]/g,"");
-    var ephoneOk=ephDigits.length>=11&&/^\d+$/.test(ephDigits);
-    // Build errors
     var errors=[];
-    if(!age) errors.push("Age is required");
-    else if(isNaN(ageNum)) errors.push("Age must be a number");
-    else if(ageNum<18) errors.push("You must be at least 18 years old to book a class");
-    if(!ename) errors.push("Emergency contact name is required");
-    if(!erel) errors.push("Emergency contact relationship is required");
-    if(!ephone) errors.push("Emergency contact phone number is required");
-    else if(!ephoneOk) errors.push("Emergency contact phone must be 11 digits (e.g. 07700 123456)");
     if(hasAnyYes()){
       var hc=document.getElementById("b-health-conditions").value.trim();
       if(!hc) errors.push("Please provide details for any YES answers");
@@ -1112,7 +1143,8 @@ function goStep3(){
     if(errors.length>0){ showValidationToast(errors); return; }
   }
   document.getElementById("step-1").style.display="none";
-  document.getElementById("step-2").style.display="none";
+  document.getElementById("step-2a").style.display="none";
+  document.getElementById("step-2b").style.display="none";
   document.getElementById("step-3").style.display="block";
   document.getElementById("mfoot-confirm").style.display="block";
   document.getElementById("msummary-bar").style.display="none";
@@ -1123,19 +1155,18 @@ function goStep3(){
   if(tcsChk){ tcsChk.checked=false; }
   if(reserveBtn){ reserveBtn.disabled=true; reserveBtn.style.opacity="0.5"; reserveBtn.style.cursor="not-allowed"; }
   if(tcsHint){ tcsHint.style.display="block"; }
-  document.getElementById("step-3-label").textContent=(window._customerIsReturning?"Step 2 of 2":"Step 3 of 3")+" \u2014 Payment";
+  var isRet=!!window._customerIsReturning;
+  document.getElementById("step-3-label").textContent=(isRet?"Step 2 of 2":"Step 4 of 4")+" \u2014 Payment";
   var fn=document.getElementById("b-firstname").value.trim();
   var ln=document.getElementById("b-lastname").value.trim();
   document.getElementById("m-reference").textContent=fn+" "+ln+" "+selected.day;
-  // Populate block summary
   var blk=selectedBlock;
   var totalPrice=blk.price*blk.weeks;
   document.getElementById("m-block-summary-title").textContent=blk.weeks+"-week block \u2014 \u00a3"+blk.price+" per session";
   document.getElementById("m-block-summary-time").textContent=selected.day+" "+selected.time+" \u2013 "+selected.end_time;
   document.getElementById("m-block-summary-price").textContent="\u00a3"+totalPrice;
   document.getElementById("m-block-summary-pills").innerHTML=(blk.dates||[]).map(function(d){ return '<span style="font-size:12px;padding:3px 9px;background:#eef5f5;border:1px solid #cde0e0;border-radius:100px;color:#4a6060">'+d+'</span>'; }).join("");
-  var isRet=!!window._customerIsReturning;
-  updateStepIndicator(isRet?2:3, isRet);
+  updateStepIndicator(isRet?2:4, isRet);
   scrollModalTop();
 }
 
@@ -1145,7 +1176,7 @@ function goStepBack3(){
   document.getElementById("msummary-bar").style.display="flex";
   var isRet=!!window._customerIsReturning;
   if(isRet){ document.getElementById("step-1").style.display="block"; updateStepIndicator(1, true); }
-  else { document.getElementById("step-2").style.display="block"; updateStepIndicator(2, false); }
+  else { document.getElementById("step-2b").style.display="block"; updateStepIndicator(3, false); }
   scrollModalTop();
 }
 
