@@ -140,6 +140,9 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .frow .finp { margin-bottom:0; }
 .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
 .pay-lbl { font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mid); margin-bottom:12px; }
+.card-icons { display:flex; gap:6px; margin-bottom:14px; }
+.ci { background:var(--cream); border:1px solid var(--border); border-radius:3px; padding:5px 9px; font-size:11px; color:var(--mid); font-weight:500; }
+.stripe-note { font-size:14px; color:var(--light); margin-top:8px; }
 .step-label { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--sage-dk); font-weight:600; margin-bottom:16px; padding:8px 12px; background:var(--cream); border-radius:3px; border-left:3px solid var(--sage-dk); }
 .req { color:var(--red); }
 .field-err { font-size:11px; color:var(--red); margin-top:-10px; margin-bottom:10px; display:none; }
@@ -226,6 +229,19 @@ tr:hover td { background:var(--cream); }
 .act-refund { border-color:#c04040; color:#c04040; }
 .act-refund:hover { background:#c04040; color:white; }
 .act:hover { border-color:var(--charcoal); color:var(--charcoal); }
+.acc-wrap { max-width:600px; margin:0 auto; padding:50px 40px; }
+.av { width:72px; height:72px; background:var(--sage-lt); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Raleway',sans-serif; font-size:28px; color:var(--sage-dk); margin-bottom:18px; }
+.acc-name { font-family:'Raleway',sans-serif; font-size:32px; font-weight:300; }
+.acc-sub { font-size:13px; color:var(--mid); margin-top:4px; margin-bottom:36px; }
+.acc-sec { margin-bottom:32px; }
+.acc-sec-title { font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--light); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.acc-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.acc-row span:first-child { color:var(--mid); }
+.my-booking { display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--border); }
+.mb-name { font-size:14px; font-weight:400; }
+.mb-meta { font-size:12px; color:var(--mid); margin-top:2px; }
+.cancel-lnk { font-size:12px; color:var(--light); cursor:pointer; text-decoration:underline; }
+.cancel-lnk:hover { color:var(--red); }
 .auth-wrap { min-height:calc(100vh - 70px); display:flex; align-items:center; justify-content:center; padding:40px; }
 .auth-box { background:var(--cream); border:1px solid var(--border); border-radius:6px; padding:44px; width:100%; max-width:420px; }
 .auth-logo { font-family:'Raleway',sans-serif; font-size:18px; margin-bottom:28px; }
@@ -234,6 +250,11 @@ tr:hover td { background:var(--cream); }
 .auth-sub { font-size:13px; color:var(--mid); margin-bottom:28px; }
 .auth-btn { width:100%; padding:13px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; margin-top:6px; transition:background 0.2s; }
 .auth-btn:hover { background:var(--sage-dk); }
+.auth-switch { font-size:13px; color:var(--mid); text-align:center; margin-top:18px; }
+.auth-switch a { color:var(--sage-dk); cursor:pointer; text-decoration:underline; }
+.or { display:flex; align-items:center; gap:10px; margin:16px 0; }
+.or hr { flex:1; border:none; border-top:1px solid var(--border); }
+.or span { font-size:12px; color:var(--light); }
 .toast { position:fixed; bottom:28px; right:28px; background:var(--charcoal); color:white; padding:12px 22px; border-radius:3px; font-size:13px; z-index:999; transform:translateY(60px); opacity:0; transition:all 0.3s; }
 .toast.on { transform:translateY(0); opacity:1; }
 .block-warning { background:#fff8ec; border:1px solid #f0d080; border-left:4px solid var(--clay); border-radius:4px; padding:16px 18px; margin-bottom:28px; }
@@ -255,7 +276,7 @@ tr:hover td { background:var(--cream); }
   .hero { padding:40px 18px 28px; }
   .filters { padding:0 18px 28px; } .filter-prompt { padding:14px 18px; font-size:14px; } .filter-loc-row { gap:8px; } .fb-all, .loc-pill { padding:12px 20px; font-size:15px; } .fb { padding:10px 16px; font-size:14px; }
   .grid { padding:0 18px 40px; grid-template-columns:1fr; }
-  .db-wrap { padding:36px 18px; }
+  .db-wrap, .acc-wrap { padding:36px 18px; }
   .stats { grid-template-columns:1fr 1fr; }
   .hero h1 { font-size:38px; }
 }
@@ -311,6 +332,7 @@ tr:hover td { background:var(--cream); }
       <button class="db-tab on" id="tab-bookings" onclick="switchTab('bookings')">All Bookings</button>
       <button class="db-tab" id="tab-classes" onclick="switchTab('classes')">By Class</button>
       <button class="db-tab" id="tab-customers" onclick="switchTab('customers')">Clients</button>
+      <button class="db-tab" id="tab-cancellations" onclick="switchTab('cancellations')">Cancellations</button>
     </div>
 
     <!-- All Bookings Tab -->
@@ -331,9 +353,17 @@ tr:hover td { background:var(--cream); }
       <table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Type</th><th>Priority</th><th>Actions</th></tr></thead><tbody id="customers-tbody"></tbody></table>
     </div>
 
+    <!-- Cancellations Tab -->
+    <div id="tab-panel-cancellations" style="display:none">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+        <button class="step-btn" onclick="exportCancellations()" style="padding:9px 20px;font-size:12px;background:var(--sage-dk)">&#8659; Export CSV</button>
+      </div>
+      <table><thead><tr><th>Client</th><th>Class &amp; Venue</th><th>Block Dates</th><th>Sessions Attended</th><th>Refund</th><th>Removed On</th></tr></thead><tbody id="cancellations-tbody"><tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr></tbody></table>
+    </div>
+
     <div style="display:flex; align-items:center; justify-content:space-between; margin-top:40px; margin-bottom:12px;">
       <div class="sec-title" style="margin-top:0">Upcoming Classes</div>
-      <button class="step-btn" onclick="openAddClassModal()" style="width:auto; padding:8px 18px; font-size:12px;">+ Add New Class</button>
+      <button class="step-btn" onclick="openAddClassModal()" style="padding:8px 18px; font-size:12px;">+ Add New Class</button>
     </div>
     <table><thead><tr><th>Class</th><th>Location</th><th>Day and Time</th><th>Active Block</th><th>Upcoming Block</th><th>Actions</th></tr></thead><tbody id="ctbody"></tbody></table>
 
@@ -697,65 +727,6 @@ tr:hover td { background:var(--cream); }
   </div>
 </div>
 
-<div class="overlay" id="refund-overlay">
-  <div class="modal">
-    <div class="mhead">
-      <div>
-        <div class="mtitle">Process Refund</div>
-        <div class="msub" id="refund-sub"></div>
-      </div>
-      <button class="mclose" onclick="closeRefundModal()">x</button>
-    </div>
-    <div class="mbody">
-
-      <div id="refund-step-1">
-        <div class="parq-section-title">Booking details</div>
-        <div class="sdetail" id="refund-booking-info" style="margin-bottom:20px"></div>
-        <div style="font-size:14px;color:var(--charcoal);margin-bottom:12px;line-height:1.5" id="refund-question"></div>
-        <input type="number" id="refund-sessions-input" min="0" placeholder="0" style="width:100px;padding:10px 13px;border:1px solid var(--border);border-radius:3px;font-size:15px;font-family:inherit;margin-bottom:8px;">
-        <div style="font-size:12px;color:var(--light);margin-bottom:20px">Enter 0 if they haven't attended any sessions.</div>
-        <button class="confirm-btn" onclick="refundGoStep2()">Calculate Refund</button>
-      </div>
-
-      <div id="refund-step-2" style="display:none">
-        <div class="parq-section-title">Refund calculation</div>
-        <div class="sdetail" style="margin-bottom:16px">
-          <div class="srow"><span>Sessions attended</span><span id="refund-calc-attended"></span></div>
-          <div class="srow"><span>Sessions remaining</span><span id="refund-calc-remaining"></span></div>
-          <div class="srow"><span>Price per session</span><span id="refund-calc-pps"></span></div>
-          <div class="srow"><span style="color:var(--charcoal);font-weight:600">Suggested refund</span><span id="refund-calc-suggested" style="color:var(--sage-dk);font-size:16px"></span></div>
-        </div>
-        <div style="font-size:12px;color:var(--mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Override amount (optional)</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:15px;color:var(--mid)">£</span>
-          <input type="number" id="refund-override-input" step="0.01" min="0" placeholder="" style="width:130px;padding:10px 13px;border:1px solid var(--border);border-radius:3px;font-size:15px;font-family:inherit;">
-          <span style="font-size:12px;color:var(--sage);cursor:pointer;text-decoration:underline" onclick="refundResetOverride()">Reset to suggested</span>
-        </div>
-        <div style="font-size:12px;color:var(--light);margin-bottom:20px">Leave blank to use the suggested amount.</div>
-        <div style="display:flex;gap:10px">
-          <button class="confirm-btn" style="background:none;border:1px solid var(--border);color:var(--mid);flex:0 0 auto;width:auto;padding:14px 20px" onmouseover="this.style.borderColor='var(--charcoal)';this.style.color='var(--charcoal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--mid)'" onclick="refundGoStep1()">Back</button>
-          <button class="confirm-btn" onclick="refundGoStep3()">Review &amp; Confirm</button>
-        </div>
-      </div>
-
-      <div id="refund-step-3" style="display:none">
-        <div class="parq-section-title">Confirm refund</div>
-        <div style="background:#fff8f5;border:1px solid #f0c8b0;border-left:4px solid var(--clay);border-radius:4px;padding:16px 18px;margin-bottom:16px">
-          <div class="srow"><span>Client</span><span id="refund-conf-client"></span></div>
-          <div class="srow"><span>Sessions attended</span><span id="refund-conf-attended"></span></div>
-          <div class="srow" style="border-bottom:none"><span>Refund amount</span><span id="refund-conf-amount" style="color:var(--clay);font-size:17px;font-family:'Raleway',sans-serif;font-weight:600"></span></div>
-        </div>
-        <div style="font-size:12px;color:var(--light);margin-bottom:20px">This will mark the booking as <strong>Refund Pending</strong>. Once you've sent the payment, click Mark Refunded on the booking.</div>
-        <div style="display:flex;gap:10px">
-          <button class="confirm-btn" style="background:none;border:1px solid var(--border);color:var(--mid);flex:0 0 auto;width:auto;padding:14px 20px" onmouseover="this.style.borderColor='var(--charcoal)';this.style.color='var(--charcoal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--mid)'" onclick="refundGoStep2Back()">Back</button>
-          <button class="confirm-btn" onclick="refundSubmit()">Mark as Refund Pending</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toastEl"></div>
 
 <script>
@@ -779,47 +750,6 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 function sanitise(str) {
   if (!str) return "";
   return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#x27;").replace(/\//g,"&#x2F;");
-}
-
-// ─── Shared Constants ────────────────────────────────────────────────────────
-var PARQ_LABELS = ["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
-var PARQ_KEYS = ["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
-
-// ─── Shared Helpers ──────────────────────────────────────────────────────────
-function mapBlock(b) {
-  return {id:b.id, class_id:b.class_id, start_date:b.start_date, end_date:b.end_date, weeks:b.weeks, dates:b.dates||[], price:b.price, cap:b.cap, booked:b.booked||0, visible:b.visible!==false, status:b.status};
-}
-
-function mapClass(c) {
-  return {id:c.id, name:c.name, level:c.level||c.name, day:c.day, time:c.time, end_time:c.end_time, venue:c.venue, loc:c.loc};
-}
-
-function renderDatePills(dates) {
-  return (dates||[]).map(function(d){ return '<span class="date-pill">'+sanitise(d)+'</span>'; }).join("");
-}
-
-function populateBankDetails(bn, bs, ba) {
-  ["bank-name-1","bank-name-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bn; });
-  ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
-  ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
-}
-
-function validateBlockOverlap(classId, startStr, weeks, excludeBlockId) {
-  var newStart=new Date(startStr+"T00:00:00");
-  var newEnd=new Date(startStr+"T00:00:00"); newEnd.setDate(newEnd.getDate()+(weeks-1)*7);
-  var existing=blocks.filter(function(b){ return b.class_id===classId && (!excludeBlockId || b.id!==excludeBlockId); });
-  for(var i=0;i<existing.length;i++){
-    var eb=existing[i];
-    var ebStart=new Date(eb.start_date+"T00:00:00");
-    var ebEnd=new Date(eb.end_date+"T00:00:00");
-    if(newStart.getTime()===ebEnd.getTime()){
-      return "This block cannot start on "+startStr.split("-").reverse().join(" ")+" — that is the same day an existing block ends. Please choose a later date.";
-    }
-    if(newStart<=ebEnd && newEnd>=ebStart){
-      return "These dates overlap with an existing block ("+(eb.dates&&eb.dates.length>0?eb.dates[0]+" to "+eb.dates[eb.dates.length-1]:eb.start_date+" to "+eb.end_date)+"). Please choose dates that do not clash with an existing block.";
-    }
-  }
-  return null;
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
@@ -952,7 +882,7 @@ function renderGrid() {
     html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:600;color:var(--charcoal)">'+c.venue+'</div><div style="font-size:13px;color:var(--mid);margin-top:2px">'+c.level+'</div></div>';
 
     // Current block panel
-    var dpills=renderDatePills(blk.dates);
+    var dpills=(blk.dates||[]).map(function(d){ return '<span class="date-pill">'+sanitise(d)+'</span>'; }).join("");
     html+='<div class="card-block-section">';
     html+='<div class="card-block-lbl">Current Block</div>';
     html+='<div class="card-block-range">'+(blk.dates&&blk.dates.length>0?blk.dates[0]+' &ndash; '+blk.dates[blk.dates.length-1]:'')+'</div>';
@@ -969,7 +899,7 @@ function renderGrid() {
       var nextFull=nextBlk.booked>=nextBlk.cap;
       var nextPct=Math.min(100,Math.round(nextBlk.booked/nextBlk.cap*100));
       var nextWarn=nextPct>=80?" warn":"";
-      var nextpills=renderDatePills(nextBlk.dates);
+      var nextpills=(nextBlk.dates||[]).map(function(d){ return '<span class="date-pill">'+sanitise(d)+'</span>'; }).join("");
       var today=new Date(); today.setHours(0,0,0,0);
       var nextStart=new Date(nextBlk.start_date+"T00:00:00");
       var daysUntil=Math.round((nextStart-today)/(1000*60*60*24));
@@ -1058,7 +988,6 @@ document.getElementById("overlay").addEventListener("click",function(e){ if(e.ta
 document.getElementById("view-overlay").addEventListener("click",function(e){ if(e.target===this) closeViewModal(); });
 document.getElementById("add-class-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddClassModal(); });
 document.getElementById("add-block-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddBlockModal(); });
-document.getElementById("refund-overlay").addEventListener("click",function(e){ if(e.target===this) closeRefundModal(); });
 
 function scrollModalTop(){
   var modal=document.querySelector(".overlay.on .modal");
@@ -1204,7 +1133,7 @@ function goStep3(){
   document.getElementById("m-block-summary-title").textContent=blk.weeks+"-week block \u2014 \u00a3"+blk.price+" per session";
   document.getElementById("m-block-summary-time").textContent=selected.day+" "+selected.time+" \u2013 "+selected.end_time;
   document.getElementById("m-block-summary-price").textContent="\u00a3"+totalPrice;
-  document.getElementById("m-block-summary-pills").innerHTML=(blk.dates||[]).map(function(d){ return '<span style="font-size:12px;padding:3px 9px;background:#eef5f5;border:1px solid #cde0e0;border-radius:100px;color:#4a6060">'+sanitise(d)+'</span>'; }).join("");
+  document.getElementById("m-block-summary-pills").innerHTML=(blk.dates||[]).map(function(d){ return '<span style="font-size:12px;padding:3px 9px;background:#eef5f5;border:1px solid #cde0e0;border-radius:100px;color:#4a6060">'+d+'</span>'; }).join("");
   var isRet=!!window._customerIsReturning;
   updateStepIndicator(isRet?2:3, isRet);
   scrollModalTop();
@@ -1250,6 +1179,7 @@ function getParqAnswers(){
 }
 
 function updateYesSection(){ document.getElementById("parq-yes-section").style.display=hasAnyYes()?"block":"none"; }
+function toggleHealthForm(){}
 
 function confirmBooking(){
   var c=selected, blk=selectedBlock;
@@ -1271,11 +1201,12 @@ function confirmBooking(){
       printName:document.getElementById("b-print-name").value.trim(),
       signDate:document.getElementById("b-sign-date").textContent
     };
+    var qLabels=["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
     for(var qi=1;qi<=12;qi++){
       var radios=document.querySelectorAll("input[name=\"q"+qi+"\"]");
       var val="No";
       for(var ri=0;ri<radios.length;ri++){ if(radios[ri].checked){ val=radios[ri].value; break; } }
-      parqData.questions.push({q:PARQ_LABELS[qi-1],a:val});
+      parqData.questions.push({q:qLabels[qi-1],a:val});
     }
   }
 
@@ -1330,7 +1261,8 @@ function confirmBooking(){
           var dateParts=parqData.signDate.split(" ");
           var signDateFormatted=dateParts.length===3?(dateParts[2]+"-"+(monthMap[dateParts[1]]||"01")+"-"+(dateParts[0].length===1?"0":"")+dateParts[0]):parqData.signDate;
           var answers={};
-          for(var qi=0;qi<parqData.questions.length;qi++){ answers[PARQ_KEYS[qi]]=parqData.questions[qi].a; }
+          var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
+          for(var qi=0;qi<parqData.questions.length;qi++){ answers[qKeys[qi]]=parqData.questions[qi].a; }
           await sb.from("parq").insert(Object.assign({
             booking_id:savedBookingId, customer_id:customerId, age:parqData.age,
             emergency_name:parqData.emergencyName, emergency_relationship:parqData.emergencyRelationship,
@@ -1484,10 +1416,7 @@ function renderDashboard(){
           bhtml+="<tr><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.cls)+"</td><td style=\"font-size:12px\">"+sanitise(b.when)+"</td><td style=\"font-size:12px\">"+blockCell+"</td><td>&pound;"+sanitise(String(b.paid))+"</td>";
           bhtml+="<td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
           var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+i+")\">Confirm</button>":"";
-          var cancelBtn=(b.status!=="cancelled"&&b.status!=="refunded")?"<button class=\"act\" onclick=\"cancelBooking("+i+")\">Cancel</button>":"";
-          var refundBtn=(b.status==="confirmed"||b.status==="cancelled")?"<button class=\"act act-refund\" onclick=\"initiateRefund("+i+")\">Refund</button>":"";
-          var markRefundedBtn=b.status==="refund-pending"?"<button class=\"act act-confirm\" onclick=\"markRefunded("+i+")\">Mark Refunded</button>":"";
-          bhtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button>"+confirmBtn+cancelBtn+refundBtn+markRefundedBtn+"<button class=\"act act-delete\" onclick=\"deleteBookingOnly("+b.dbId+","+b.blockId+")\">Remove from Block</button><button class=\"act act-delete\" onclick=\"deleteCustomer("+b.customerId+","+b.blockId+")\">Permanently Delete Customer</button></td></tr>";
+          bhtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button>"+confirmBtn+"<button class=\"act act-delete\" onclick=\"openRfbModal("+i+")\">Remove from Block</button><button class=\"act act-delete\" onclick=\"deleteCustomer("+i+")\">Del Customer</button></td></tr>";
         }
       }
       document.getElementById("btbody").innerHTML=bhtml;
@@ -1505,7 +1434,7 @@ function renderDashboard(){
 
       // Reload blocks fully from DB — ensures deleted/added blocks are reflected
       var{data:freshBlocks}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
-      if(freshBlocks) blocks=freshBlocks.map(mapBlock);
+      if(freshBlocks) blocks=freshBlocks.map(function(b){ return {id:b.id,class_id:b.class_id,start_date:b.start_date,end_date:b.end_date,weeks:b.weeks,dates:b.dates||[],price:b.price,cap:b.cap,booked:b.booked||0,wait:b.wait||0,visible:b.visible!==false,status:b.status}; });
 
       // Classes table — each class shows its active and upcoming block
       var chtml="";
@@ -1537,11 +1466,12 @@ function renderDashboard(){
 }
 
 function switchTab(tab){
-  ["bookings","classes","customers"].forEach(function(t){
+  ["bookings","classes","customers","cancellations"].forEach(function(t){
     document.getElementById("tab-"+t).className="db-tab"+(t===tab?" on":"");
     document.getElementById("tab-panel-"+t).style.display=t===tab?"block":"none";
   });
   if(tab==="customers") renderCustomersTab();
+  if(tab==="cancellations") renderCancellationsTab();
 }
 
 // ─── Clients tab ──────────────────────────────────────────────────────────────
@@ -1609,13 +1539,58 @@ function checkPriority(classId, blockId){
 
   (async function(){
     try{
-      var res=await sb.rpc("check_priority_access", {p_email: email, p_block_id: blockId});
-      if(res.error) throw new Error(res.error.message);
-      if(res.data===true){
+      // Check if customer exists and is manually flagged as priority
+      var{data:custs}=await sb.from("customers").select("id,priority").eq("email",email).limit(1);
+      var customer=custs&&custs.length>0?custs[0]:null;
+
+      if(customer&&customer.priority===true){
+        // Manually granted priority — let them book
+        grantPriorityAccess(classId, blockId, email, msgEl);
+        return;
+      }
+
+      // Check if they booked the previous block for this class
+      // Previous block = the most recently ended block for this class before this one
+      var thisBlk=blocks.find(function(b){ return b.id===blockId; });
+      var prevBlk=null;
+      if(thisBlk){
+        var classBlocks=blocks.filter(function(b){
+          return b.class_id===thisBlk.class_id && b.id!==blockId;
+        });
+        // Find the block whose end_date is closest before this block's start_date
+        classBlocks.sort(function(a,b){ return new Date(b.end_date)-new Date(a.end_date); });
+        var prevCandidates=classBlocks.filter(function(b){
+          return new Date(b.end_date+"T00:00:00") < new Date(thisBlk.start_date+"T00:00:00");
+        });
+        prevBlk=prevCandidates.length>0?prevCandidates[0]:null;
+      }
+
+      if(!customer){
+        // Not in system at all — no priority
+        denyPriorityAccess(blockId, msgEl, btn);
+        return;
+      }
+
+      if(!prevBlk){
+        // No previous block exists — can't have booked it
+        denyPriorityAccess(blockId, msgEl, btn);
+        return;
+      }
+
+      // Check if this customer has a booking on the previous block
+      var{data:prevBookings}=await sb.from("bookings")
+        .select("id,status")
+        .eq("customer_id",customer.id)
+        .eq("block_id",prevBlk.id)
+        .not("status","eq","cancelled")
+        .limit(1);
+
+      if(prevBookings&&prevBookings.length>0){
         grantPriorityAccess(classId, blockId, email, msgEl);
       } else {
         denyPriorityAccess(blockId, msgEl, btn);
       }
+
     }catch(err){
       console.error(err);
       msgEl.style.display="block";
@@ -1646,7 +1621,7 @@ function denyPriorityAccess(blockId, msgEl, btn){
   var stdOpenStr=stdOpenDate?stdOpenDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"soon";
   msgEl.style.display="block";
   msgEl.style.background="#fef3e8"; msgEl.style.color="var(--clay)";
-  msgEl.textContent="You don\u2019t have priority booking for this block. Standard booking opens on "+stdOpenStr+" \u2014 we look forward to seeing you then!";
+  msgEl.innerHTML="You don't have priority booking for this block. Standard booking opens on <strong>"+stdOpenStr+"</strong> &mdash; we look forward to seeing you then!";
 }
 
 function renderClassesView(){
@@ -1681,7 +1656,7 @@ function renderClassesView(){
             var idx=bookings.indexOf(b);
             var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+idx+")\">Confirm</button>":"";
             html+="<tr><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.email)+"</td><td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
-            html+="<td><button class=\"act\" onclick=\"viewBooking("+idx+")\">View</button>"+confirmBtn+"<button class=\"act\" onclick=\"cancelBooking("+idx+")\">Cancel</button></td></tr>";
+            html+="<td><button class=\"act\" onclick=\"viewBooking("+idx+")\">View</button>"+confirmBtn+"<button class=\"act act-delete\" onclick=\"openRfbModal("+idx+")\">Remove from Block</button></td></tr>";
           });
           html+="</tbody></table>";
         } else {
@@ -1756,7 +1731,7 @@ function saveNewClass(){
         // Insert new
         var{data:nc,error}=await sb.from("classes").insert({name:level,level:level,day:day,time:time,end_time:end,venue:venue,loc:loc}).select().single();
         if(error) throw error;
-        classes.push(mapClass(nc));
+        classes.push({id:nc.id,name:level,level:level,day:day,time:time,end_time:end,venue:venue,loc:loc});
         showToast("Class created! Now add a block to make it bookable.");
       }
       closeAddClassModal();
@@ -1810,10 +1785,29 @@ function saveNewBlock(){
   var price=parseInt(document.getElementById("ab-price").value);
   var cap=parseInt(document.getElementById("ab-cap").value);
   if(!start||!weeks||!price||!cap){ document.getElementById("ab-err").style.display="block"; return; }
-  if(price<=0||cap<=0){ document.getElementById("ab-err").textContent="Price and capacity must be greater than zero."; document.getElementById("ab-err").style.display="block"; return; }
   if(!validateAbDate()){ document.getElementById("ab-err").textContent="Please fix the start date."; document.getElementById("ab-err").style.display="block"; return; }
-  var overlapMsg=validateBlockOverlap(addingBlockClassId, start, weeks, null);
-  if(overlapMsg){ document.getElementById("ab-err").textContent=overlapMsg; document.getElementById("ab-err").style.display="block"; return; }
+  // Change 3 & 4: Check for overlapping dates or same-day start/end with existing blocks
+  var newStart=new Date(start+"T00:00:00");
+  var newEnd=new Date(start+"T00:00:00"); newEnd.setDate(newEnd.getDate()+(weeks-1)*7);
+  var existingBlocks=blocks.filter(function(b){ return b.class_id===addingBlockClassId; });
+  for(var bi=0;bi<existingBlocks.length;bi++){
+    var eb=existingBlocks[bi];
+    var ebStart=new Date(eb.start_date+"T00:00:00");
+    var ebEnd=new Date(eb.end_date+"T00:00:00");
+    // Same-day: new block starts on day existing block ends
+    if(newStart.getTime()===ebEnd.getTime()){
+      document.getElementById("ab-err").textContent="This block cannot start on "+start.split("-").reverse().join(" ")+
+        " — that is the same day an existing block ends. Please choose a later date.";
+      document.getElementById("ab-err").style.display="block"; return;
+    }
+    // Overlap: new block dates overlap with existing block dates
+    if(newStart<=ebEnd && newEnd>=ebStart){
+      document.getElementById("ab-err").textContent="These dates overlap with an existing block ("+
+        (eb.dates&&eb.dates.length>0?eb.dates[0]+" to "+eb.dates[eb.dates.length-1]:eb.start_date+" to "+eb.end_date)+
+        "). Please choose dates that do not clash with an existing block.";
+      document.getElementById("ab-err").style.display="block"; return;
+    }
+  }
   document.getElementById("ab-err").style.display="none";
   var btn=document.getElementById("ab-btn"); btn.disabled=true;
   var dates=calcBlockDates(start,weeks);
@@ -1826,7 +1820,7 @@ function saveNewBlock(){
         weeks:weeks,dates:dates,price:price,cap:cap,booked:0,wait:0,visible:true,status:"upcoming"
       }).select().single();
       if(error) throw error;
-      blocks.push(mapBlock(nb));
+      blocks.push({id:nb.id,class_id:addingBlockClassId,start_date:start,end_date:endStr,weeks:weeks,dates:dates,price:price,cap:cap,booked:0,wait:0,visible:true,status:"upcoming"});
       closeAddBlockModal();
       buildFilters(); renderGrid(); renderDashboard();
       showToast("Block added!");
@@ -1859,11 +1853,27 @@ function saveEditBlock(blockId){
   var price=parseInt(document.getElementById("ab-price").value);
   var cap=parseInt(document.getElementById("ab-cap").value);
   if(!start||!weeks||!price||!cap){ document.getElementById("ab-err").style.display="block"; return; }
-  if(price<=0||cap<=0){ document.getElementById("ab-err").textContent="Price and capacity must be greater than zero."; document.getElementById("ab-err").style.display="block"; return; }
   if(!validateAbDate()){ document.getElementById("ab-err").textContent="Please fix the start date."; document.getElementById("ab-err").style.display="block"; return; }
-  var overlapMsg=validateBlockOverlap(addingBlockClassId, start, weeks, blockId);
-  if(overlapMsg){ document.getElementById("ab-err").textContent=overlapMsg; document.getElementById("ab-err").style.display="block"; return; }
-  document.getElementById("ab-err").style.display="none";
+  // Change 3 & 4: Check for overlapping dates or same-day start/end (exclude the block being edited)
+  var newStart=new Date(start+"T00:00:00");
+  var newEnd=new Date(start+"T00:00:00"); newEnd.setDate(newEnd.getDate()+(weeks-1)*7);
+  var existingBlocks=blocks.filter(function(b){ return b.class_id===addingBlockClassId && b.id!==blockId; });
+  for(var bi=0;bi<existingBlocks.length;bi++){
+    var eb=existingBlocks[bi];
+    var ebStart=new Date(eb.start_date+"T00:00:00");
+    var ebEnd=new Date(eb.end_date+"T00:00:00");
+    if(newStart.getTime()===ebEnd.getTime()){
+      document.getElementById("ab-err").textContent="This block cannot start on "+start.split("-").reverse().join(" ")+
+        " — that is the same day an existing block ends. Please choose a later date.";
+      document.getElementById("ab-err").style.display="block"; return;
+    }
+    if(newStart<=ebEnd && newEnd>=ebStart){
+      document.getElementById("ab-err").textContent="These dates overlap with an existing block ("+
+        (eb.dates&&eb.dates.length>0?eb.dates[0]+" to "+eb.dates[eb.dates.length-1]:eb.start_date+" to "+eb.end_date)+
+        "). Please choose dates that do not clash with an existing block.";
+      document.getElementById("ab-err").style.display="block"; return;
+    }
+  }
   var btn=document.getElementById("ab-btn"); btn.disabled=true;
   var dates=calcBlockDates(start,weeks);
   var endDate=new Date(start+"T00:00:00"); endDate.setDate(endDate.getDate()+(weeks-1)*7);
@@ -1889,10 +1899,10 @@ function deleteBlock(blockId){
       var{data:blockBookings}=await sb.from("bookings").select("id").eq("block_id",blockId);
       if(blockBookings&&blockBookings.length>0){
         var bookingIds=blockBookings.map(function(b){ return b.id; });
-        await sb.from("parq").delete().in("booking_id",bookingIds).select();
+        await sb.from("parq").delete().in("booking_id",bookingIds);
       }
-      await sb.from("bookings").delete().eq("block_id",blockId).select();
-      await sb.from("blocks").delete().eq("id",blockId).select();
+      await sb.from("bookings").delete().eq("block_id",blockId);
+      await sb.from("blocks").delete().eq("id",blockId);
       blocks=blocks.filter(function(b){ return b.id!==blockId; });
       buildFilters(); renderGrid(); renderDashboard();
       showToast("Block deleted.");
@@ -1911,15 +1921,9 @@ function deleteClass(id){
   if(!confirm(msg)) return;
   (async function(){
     try{
-      // Clean up PAR-Q records before deleting bookings to avoid orphaned health data
-      var{data:classBookings}=await sb.from("bookings").select("id").eq("class_id",id);
-      if(classBookings&&classBookings.length>0){
-        var bookingIds=classBookings.map(function(b){ return b.id; });
-        await sb.from("parq").delete().in("booking_id",bookingIds).select();
-      }
-      await sb.from("bookings").delete().eq("class_id",id).select();
-      await sb.from("blocks").delete().eq("class_id",id).select();
-      await sb.from("classes").delete().eq("id",id).select();
+      await sb.from("bookings").delete().eq("class_id",id);
+      await sb.from("blocks").delete().eq("class_id",id);
+      await sb.from("classes").delete().eq("id",id);
       classes=classes.filter(function(c){ return c.id!==id; });
       blocks=blocks.filter(function(b){ return b.class_id!==id; });
       buildFilters(); renderGrid(); renderDashboard();
@@ -1938,159 +1942,219 @@ function confirmBookingAdmin(idx){
   })();
 }
 
-function cancelBooking(idx){
+// ─── Remove from Block Modal ───────────────────────────────────────────────────
+var rfbState={};
+
+function openRfbModal(idx){
   var b=bookings[idx];
-  showToast("Cancelling...");
+  var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
+  rfbState={
+    idx:idx, b:b, blk:blk,
+    step:1,
+    sessionsAttended:0,
+    totalSessions:blk.weeks||6,
+    pricePerSession:blk.price||0,
+    refundOverride:null
+  };
+  document.getElementById("rfb-sub").textContent=sanitise(b.client)+" \u2014 "+sanitise(b.cls);
+  document.getElementById("rfb-overlay").style.display="flex";
+  renderRfbStep();
+}
+
+function closeRfbModal(){
+  document.getElementById("rfb-overlay").style.display="none";
+}
+
+function rfbSetPip(n,state){
+  var el=document.getElementById("rfb-pip"+n);
+  if(!el) return;
+  if(state==="active"){ el.style.background="var(--sage)"; el.style.borderColor="var(--sage)"; el.style.color="white"; el.textContent=n; }
+  else if(state==="done"){ el.style.background="var(--sage-lt)"; el.style.borderColor="var(--sage-lt)"; el.style.color="var(--sage-dk)"; el.textContent="\u2713"; }
+  else { el.style.background="white"; el.style.borderColor="var(--border)"; el.style.color="var(--light)"; el.textContent=n; }
+}
+function rfbSetLine(n,done){
+  var el=document.getElementById("rfb-line"+n);
+  if(el) el.style.background=done?"var(--sage-lt)":"var(--border)";
+}
+
+function rfbCalcRefund(){
+  if(rfbState.refundOverride!==null) return rfbState.refundOverride;
+  return (rfbState.totalSessions-rfbState.sessionsAttended)*rfbState.pricePerSession;
+}
+
+function renderRfbStep(){
+  var s=rfbState;
+  // Update pips
+  if(s.step===1){ rfbSetPip(1,"active"); rfbSetPip(2,""); rfbSetPip(3,""); rfbSetLine(1,false); rfbSetLine(2,false); }
+  else if(s.step===2){ rfbSetPip(1,"done"); rfbSetPip(2,"active"); rfbSetPip(3,""); rfbSetLine(1,true); rfbSetLine(2,false); }
+  else { rfbSetPip(1,"done"); rfbSetPip(2,"done"); rfbSetPip(3,"active"); rfbSetLine(1,true); rfbSetLine(2,true); }
+
+  var body=document.getElementById("rfb-body");
+  var footer=document.getElementById("rfb-footer");
+
+  if(s.step===1){
+    var btns=[0,1,2,3,4,5,6].map(function(n){
+      var sel=n===s.sessionsAttended?"background:var(--charcoal);color:white;border-color:var(--charcoal)":"background:white;color:var(--charcoal)";
+      return "<button onclick=\"rfbSelectSessions("+n+")\" style=\"border:1px solid var(--border);border-radius:4px;padding:10px 6px;font-size:13px;cursor:pointer;font-family:'Open Sans',sans-serif;"+sel+"\">"+n+"</button>";
+    }).join("");
+    body.innerHTML="<div style=\"background:var(--cream);border-radius:4px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--mid)\">"
+      +"<strong style=\"color:var(--charcoal)\">"+sanitise(s.b.client)+"</strong><br>"
+      +"Block: "+sanitise(s.b.blockDates||"")+" &nbsp;&middot;&nbsp; "+s.totalSessions+" sessions &nbsp;&middot;&nbsp; &pound;"+s.pricePerSession+" per session"
+      +"</div>"
+      +"<p style=\"font-size:13px;color:var(--mid);margin-bottom:10px\">How many sessions has this client attended?</p>"
+      +"<div style=\"display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:14px 0\">"+btns+"</div>"
+      +"<p style=\"font-size:11px;color:var(--light);margin-top:6px\">0 = not yet started &nbsp;&middot;&nbsp; "+s.totalSessions+" = completed all sessions</p>";
+    footer.innerHTML="<button class=\"step-btn\" onclick=\"closeRfbModal()\" style=\"background:none;border:1px solid var(--border);color:var(--mid);padding:12px 22px;font-size:12px\">Cancel</button>"
+      +"<button class=\"step-btn\" onclick=\"rfbGoStep2()\" style=\"padding:12px 22px;font-size:12px\">Next</button>";
+
+  } else if(s.step===2){
+    var refund=rfbCalcRefund();
+    var remaining=s.totalSessions-s.sessionsAttended;
+    var refundHtml;
+    if(s.sessionsAttended===0){
+      refundHtml="<div style=\"background:#e8f0e7;border-left:3px solid var(--green);border-radius:0 4px 4px 0;padding:14px 16px;margin:14px 0\">"
+        +"<p style=\"font-size:13px;color:var(--green);font-weight:500\">No refund needed \u2014 this client has not attended any sessions.</p></div>";
+    } else {
+      refundHtml="<div style=\"background:#fef3e8;border-left:3px solid var(--clay);border-radius:0 4px 4px 0;padding:14px 16px;margin:14px 0\">"
+        +"<div style=\"font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--light);margin-bottom:4px\">Calculated refund</div>"
+        +"<div style=\"font-family:'Raleway',sans-serif;font-size:26px;font-weight:600;color:var(--clay)\">&pound;"+refund.toFixed(2)+"</div>"
+        +"<p style=\"font-size:12px;color:var(--mid);margin-top:6px\">"+remaining+" remaining sessions &times; &pound;"+s.pricePerSession+"</p>"
+        +"</div>"
+        +"<div style=\"display:flex;align-items:center;gap:10px;margin-top:10px\">"
+        +"<label style=\"font-size:12px;color:var(--mid);flex-shrink:0\">Override amount &nbsp;&pound;</label>"
+        +"<input id=\"rfb-override\" type=\"number\" min=\"0\" step=\"0.01\" placeholder=\""+refund+"\" style=\"border:1px solid var(--border);border-radius:3px;padding:7px 10px;font-size:14px;width:100px;font-family:'Open Sans',sans-serif\" oninput=\"rfbState.refundOverride=this.value===''?null:parseFloat(this.value)||0\">"
+        +"</div>";
+    }
+    body.innerHTML="<div style=\"font-size:13px\">"
+      +"<div style=\"display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)\"><span style=\"color:var(--mid)\">Client</span><span style=\"font-weight:500\">"+sanitise(s.b.client)+"</span></div>"
+      +"<div style=\"display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)\"><span style=\"color:var(--mid)\">Sessions attended</span><span style=\"font-weight:500\">"+s.sessionsAttended+" of "+s.totalSessions+"</span></div>"
+      +"<div style=\"display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)\"><span style=\"color:var(--mid)\">Sessions remaining</span><span style=\"font-weight:500\">"+remaining+"</span></div>"
+      +"</div>"+refundHtml;
+    footer.innerHTML="<button class=\"step-btn\" onclick=\"rfbGoStep(1)\" style=\"background:none;border:1px solid var(--border);color:var(--mid);padding:12px 22px;font-size:12px\">Back</button>"
+      +"<button class=\"step-btn\" onclick=\"rfbConfirm()\" style=\"padding:12px 22px;font-size:12px\">Confirm Removal</button>";
+
+  } else {
+    var refund=rfbCalcRefund();
+    var hasRefund=refund>0;
+    var msg=hasRefund
+      ?"<strong>"+sanitise(s.b.client)+"</strong> has been removed from the block. A refund of <strong>&pound;"+refund.toFixed(2)+"</strong> is owed \u2014 mark as paid once transferred."
+      :"<strong>"+sanitise(s.b.client)+"</strong> has been removed from the block. No refund is owed.";
+    body.innerHTML="<div style=\"text-align:center;padding:10px 0 16px\">"
+      +"<div style=\"width:52px;height:52px;border-radius:50%;background:#e8f0e7;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 14px;color:var(--green)\">\u2713</div>"
+      +"<p style=\"font-size:14px;color:var(--mid);line-height:1.6\">"+msg+"</p>"
+      +"<p style=\"font-size:12px;color:var(--light);margin-top:12px\">This removal has been recorded in the Cancellations report.</p>"
+      +"</div>";
+    footer.innerHTML="<button class=\"step-btn\" onclick=\"closeRfbModal()\" style=\"padding:12px 22px;font-size:12px\">Done</button>";
+  }
+}
+
+function rfbSelectSessions(n){
+  rfbState.sessionsAttended=n;
+  rfbState.refundOverride=null;
+  renderRfbStep();
+}
+
+function rfbGoStep(n){ rfbState.step=n; renderRfbStep(); }
+function rfbGoStep2(){ rfbState.step=2; renderRfbStep(); }
+
+function rfbConfirm(){
+  var s=rfbState;
+  var refund=rfbCalcRefund();
+  showToast("Removing...");
   (async function(){
     try{
-      await sb.from("bookings").update({status:"cancelled"}).eq("id",b.dbId);
-      var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
-      if(blk){ blk.booked=Math.max(0,blk.booked-1); await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); }
-      showToast("Booking cancelled."); renderDashboard();
-    }catch(err){ console.error(err); showToast("Error cancelling."); }
+      // Write cancellation record first
+      var cls=classes.find(function(c){ return c.id===s.b.classId; })||{};
+      var blkObj=blocks.find(function(bl){ return bl.id===s.b.blockId; })||{};
+      var {error:cErr}=await sb.from("cancellations").insert({
+        customer_id:s.b.customerId,
+        class_id:s.b.classId,
+        block_id:s.b.blockId,
+        first_name:s.b.client.split(" ")[0]||"",
+        last_name:s.b.client.split(" ").slice(1).join(" ")||"",
+        email:s.b.email||"",
+        class_name:sanitise(s.b.cls)||"",
+        venue:sanitise(cls.venue||cls.loc||""),
+        block_start_date:blkObj.start_date||null,
+        block_end_date:blkObj.end_date||null,
+        sessions_attended:s.sessionsAttended,
+        sessions_remaining:s.totalSessions-s.sessionsAttended,
+        price_per_session:s.pricePerSession,
+        refund_amount:refund
+      }).select();
+      if(cErr) throw cErr;
+      // Delete PAR-Q then booking
+      await sb.from("parq").delete().eq("booking_id",s.b.dbId).select();
+      var {error:bErr}=await sb.from("bookings").delete().eq("id",s.b.dbId).select();
+      if(bErr) throw bErr;
+      rfbState.step=3;
+      renderRfbStep();
+      renderDashboard();
+      renderGrid();
+    }catch(err){ console.error(err); showToast("Error removing booking. See console."); }
   })();
 }
 
-// ─── Refund modal ─────────────────────────────────────────────────────────────
-var refundIdx=null;
-var refundSuggested=0;
-var refundTotalSessions=0;
-
-function initiateRefund(idx){
-  refundIdx=idx;
-  var b=bookings[idx];
-  var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
-  refundTotalSessions=blk.weeks||6;
-  var pps=blk.price||0;
-  // Populate booking info panel
-  document.getElementById("refund-sub").textContent=b.client+" \u2014 "+b.cls;
-  document.getElementById("refund-question").textContent="How many sessions did "+b.client+" attend before leaving?";
-  var infoHtml="";
-  infoHtml+="<div class=\"srow\"><span>Block</span><span>"+sanitise(b.blockDates||"")+"</span></div>";
-  infoHtml+="<div class=\"srow\"><span>Sessions</span><span>"+refundTotalSessions+" total</span></div>";
-  infoHtml+="<div class=\"srow\"><span>Amount paid</span><span>\u00a3"+sanitise(String(b.paid||0))+"</span></div>";
-  infoHtml+="<div class=\"srow\" style=\"border-bottom:none\"><span>Status</span><span><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></span></div>";
-  document.getElementById("refund-booking-info").innerHTML=infoHtml;
-  document.getElementById("refund-sessions-input").value="";
-  document.getElementById("refund-sessions-input").max=refundTotalSessions;
-  // Show step 1
-  refundShowStep(1);
-  document.getElementById("refund-overlay").className="overlay on";
-}
-
-function refundGoStep2(){
-  var idx=refundIdx;
-  var b=bookings[idx];
-  var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
-  var pps=blk.price||0;
-  var attended=parseInt(document.getElementById("refund-sessions-input").value)||0;
-  if(attended<0) attended=0;
-  if(attended>refundTotalSessions) attended=refundTotalSessions;
-  var remaining=refundTotalSessions-attended;
-  refundSuggested=parseFloat((remaining*pps).toFixed(2));
-  document.getElementById("refund-calc-attended").textContent=attended+" of "+refundTotalSessions;
-  document.getElementById("refund-calc-remaining").textContent=remaining;
-  document.getElementById("refund-calc-pps").textContent="\u00a3"+pps.toFixed(2);
-  document.getElementById("refund-calc-suggested").textContent="\u00a3"+refundSuggested.toFixed(2);
-  document.getElementById("refund-override-input").value="";
-  document.getElementById("refund-override-input").placeholder=refundSuggested.toFixed(2);
-  refundShowStep(2);
-}
-
-function refundGoStep1(){
-  refundShowStep(1);
-}
-
-function refundResetOverride(){
-  document.getElementById("refund-override-input").value="";
-  document.getElementById("refund-override-input").placeholder=refundSuggested.toFixed(2);
-}
-
-function refundGoStep3(){
-  var override=parseFloat(document.getElementById("refund-override-input").value);
-  var finalAmount=isNaN(override)?refundSuggested:parseFloat(override.toFixed(2));
-  var b=bookings[refundIdx];
-  var attended=document.getElementById("refund-calc-attended").textContent;
-  document.getElementById("refund-conf-client").textContent=b.client;
-  document.getElementById("refund-conf-attended").textContent=attended;
-  document.getElementById("refund-conf-amount").textContent="\u00a3"+finalAmount.toFixed(2);
-  refundShowStep(3);
-}
-
-function refundGoStep2Back(){
-  refundShowStep(2);
-}
-
-function refundSubmit(){
-  var b=bookings[refundIdx];
-  var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
-  var amountText=document.getElementById("refund-conf-amount").textContent.replace("\u00a3","");
-  var amount=parseFloat(amountText)||0;
-  showToast("Saving...");
-  document.getElementById("refund-overlay").className="overlay";
+// ─── Cancellations Tab ────────────────────────────────────────────────────────
+function renderCancellationsTab(){
+  var tbody=document.getElementById("cancellations-tbody");
+  tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>';
   (async function(){
     try{
-      await sb.from("bookings").update({status:"refund-pending",refund_amount:amount}).eq("id",b.dbId);
-      if(blk.id){
-        blk.booked=Math.max(0,blk.booked-1);
-        await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id);
+      var {data,error}=await sb.from("cancellations").select("*").order("cancelled_at",{ascending:false});
+      if(error) throw error;
+      if(!data||data.length===0){
+        tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">No cancellations yet.</td></tr>';
+        return;
       }
-      showToast("Refund pending \u2014 \u00a3"+amount.toFixed(2)+". Spot freed up.");
-      renderDashboard(); renderGrid();
-    }catch(err){ console.error(err); showToast("Error saving refund."); }
+      var html="";
+      data.forEach(function(r){
+        var refundDisplay=r.refund_amount>0
+          ?"<span style=\"color:var(--clay);font-weight:500\">&pound;"+parseFloat(r.refund_amount).toFixed(2)+"</span>"
+          :"<span style=\"color:var(--light)\">No refund</span>";
+        var cancelledDate=r.cancelled_at?new Date(r.cancelled_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}):"—";
+        var blockDates="—";
+        if(r.block_start_date&&r.block_end_date){
+          blockDates=new Date(r.block_start_date).toLocaleDateString("en-GB",{day:"numeric",month:"short"})
+            +" \u2013 "+new Date(r.block_end_date).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+        }
+        html+="<tr>"
+          +"<td><strong>"+sanitise(r.first_name+" "+r.last_name)+"</strong><br><span style=\"font-size:11px;color:var(--light)\">"+sanitise(r.email)+"</span></td>"
+          +"<td>"+sanitise(r.class_name||"—")+"<br><span style=\"font-size:11px;color:var(--light)\">"+sanitise(r.venue||"")+"</span></td>"
+          +"<td style=\"font-size:12px\">"+sanitise(blockDates)+"</td>"
+          +"<td style=\"text-align:center\">"+sanitise(String(r.sessions_attended))+" of "+sanitise(String(r.sessions_attended+(r.sessions_remaining||0)))+"</td>"
+          +"<td>"+refundDisplay+"</td>"
+          +"<td style=\"font-size:12px;color:var(--mid)\">"+sanitise(cancelledDate)+"</td>"
+          +"</tr>";
+      });
+      tbody.innerHTML=html;
+    }catch(err){ console.error(err); tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading cancellations.</td></tr>'; }
   })();
 }
 
-function refundShowStep(n){
-  document.getElementById("refund-step-1").style.display=n===1?"block":"none";
-  document.getElementById("refund-step-2").style.display=n===2?"block":"none";
-  document.getElementById("refund-step-3").style.display=n===3?"block":"none";
+function exportCancellations(){
+  (async function(){
+    try{
+      var {data,error}=await sb.from("cancellations").select("*").order("cancelled_at",{ascending:false});
+      if(error) throw error;
+      if(!data||data.length===0){ showToast("No cancellations to export."); return; }
+      var dateStr=new Date().toISOString().slice(0,10);
+      downloadCsv("lgpilates-cancellations-"+dateStr+".csv", rowsToCsv(data));
+      showToast("Cancellations exported.");
+    }catch(err){ console.error(err); showToast("Error exporting cancellations."); }
+  })();
 }
 
-function closeRefundModal(){
-  document.getElementById("refund-overlay").className="overlay";
-  refundIdx=null;
-}
-
-function markRefunded(idx){
+function deleteCustomer(idx){
+  if(!confirm("Delete customer and ALL their bookings? This cannot be undone.")) return;
   var b=bookings[idx];
-  if(!confirm("Confirm refund sent to "+b.client+"?")) return;
-  showToast("Updating...");
-  (async function(){
-    try{ await sb.from("bookings").update({status:"refunded"}).eq("id",b.dbId); showToast("Marked as refunded."); renderDashboard(); }
-    catch(err){ console.error(err); showToast("Error updating."); }
-  })();
-}
-
-function deleteBookingOnly(bookingId, blockId){
-  if(!confirm("Remove this client from the block? Their personal details will be kept but their health form will be removed. This cannot be undone.")) return;
   (async function(){
     try{
-      var{error:e0}=await sb.from("parq").delete().eq("booking_id",bookingId).select();
-      if(e0) throw e0;
-      var{error:e1}=await sb.from("bookings").delete().eq("id",bookingId).select();
-      if(e1) throw e1;
-      var blk=blocks.find(function(bl){ return bl.id===blockId; });
-      if(blk){ blk.booked=Math.max(0,blk.booked-1); var{error:e2}=await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); if(e2) throw e2; }
-      showToast("Client removed from block."); renderDashboard();
-    }catch(err){ console.error(err); showToast("Error removing booking — check you are logged in."); }
-  })();
-}
-
-function deleteCustomer(customerId, blockId){
-  if(!confirm("Permanently delete this customer and ALL their data? This includes their bookings and health form. This cannot be undone.")) return;
-  (async function(){
-    try{
-      var blk=blocks.find(function(bl){ return bl.id===blockId; });
-      var{error:e1}=await sb.from("parq").delete().eq("customer_id",customerId).select();
-      if(e1) throw e1;
-      var{error:e2}=await sb.from("bookings").delete().eq("customer_id",customerId).select();
-      if(e2) throw e2;
-      var{error:e3}=await sb.from("customers").delete().eq("id",customerId).select();
-      if(e3) throw e3;
-      if(blk){ blk.booked=Math.max(0,blk.booked-1); var{error:e4}=await sb.from("blocks").update({booked:blk.booked}).eq("id",blk.id); if(e4) throw e4; }
-      showToast("Customer permanently deleted."); renderDashboard();
-    }catch(err){ console.error(err); showToast("Error deleting customer — check you are logged in."); }
+      await sb.from("parq").delete().eq("customer_id",b.customerId);
+      await sb.from("bookings").delete().eq("customer_id",b.customerId);
+      await sb.from("customers").delete().eq("id",b.customerId);
+      showToast("Customer deleted."); renderDashboard();
+    }catch(err){ console.error(err); showToast("Error deleting customer."); }
   })();
 }
 
@@ -2115,15 +2179,17 @@ function viewBooking(idx){
       if(b.refundAmount) html+="<div class=\"srow\"><span>Refund Amount</span><span style=\"color:var(--red);font-weight:600\">&pound;"+sanitise(String(b.refundAmount))+"</span></div>";
       html+="</div>";
       if(p){
+        var qLabels=["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
+        var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
         html+="<div class=\"parq-section-title\" style=\"margin-top:20px\">Health Form</div><div class=\"sdetail\">";
         html+="<div class=\"srow\"><span>Age</span><span>"+sanitise(p.age)+"</span></div>";
         html+="<div class=\"srow\"><span>Emergency Contact</span><span>"+sanitise(p.emergency_name||"")+(p.emergency_relationship?" ("+sanitise(p.emergency_relationship)+")":"")+"</span></div>";
         html+="<div class=\"srow\"><span>Emergency Phone</span><span>"+sanitise(p.emergency_phone||"")+"</span></div></div>";
         html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Medical Questions</div><div class=\"sdetail\">";
-        for(var i=0;i<PARQ_KEYS.length;i++){
-          var ans=p[PARQ_KEYS[i]]||"No";
+        for(var i=0;i<qKeys.length;i++){
+          var ans=p[qKeys[i]]||"No";
           var col=ans==="Yes"?"color:var(--red);font-weight:600":"color:var(--green)";
-          html+="<div class=\"srow\"><span>"+(i+1)+". "+sanitise(PARQ_LABELS[i])+"</span><span style=\""+col+"\">"+sanitise(ans)+"</span></div>";
+          html+="<div class=\"srow\"><span>"+(i+1)+". "+sanitise(qLabels[i])+"</span><span style=\""+col+"\">"+sanitise(ans)+"</span></div>";
         }
         html+="</div>";
         if(p.yes_details) html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Yes Details</div><div class=\"health-note\">"+sanitise(p.yes_details)+"</div>";
@@ -2174,7 +2240,9 @@ function saveSettings(){
   (async function(){
     try{
       await sb.from("settings").upsert([{key:"bank_name",value:bn},{key:"bank_sort_code",value:bs},{key:"bank_account_no",value:ba}]);
-      populateBankDetails(bn, bs, ba);
+      ["bank-name-1","bank-name-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bn; });
+      ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
+      ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
       showToast("Bank details saved!");
     }catch(err){ console.error(err); showToast("Error saving settings."); }
   })();
@@ -2309,7 +2377,9 @@ function onTimeBlur(fieldId){
     if(settingsRows){
       var s={}; settingsRows.forEach(function(r){ s[r.key]=r.value; });
       var bn=s.bank_name||"", bs=s.bank_sort_code||"", ba=s.bank_account_no||"";
-      populateBankDetails(bn, bs, ba);
+      ["bank-name-1","bank-name-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bn; });
+      ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
+      ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
       var e;
       e=document.getElementById("setting-bank-name"); if(e) e.value=bn;
       e=document.getElementById("setting-bank-sort"); if(e) e.value=bs;
@@ -2320,13 +2390,13 @@ function onTimeBlur(fieldId){
   try{
     // Load classes
     var{data:dbClasses}=await sb.from("classes").select("*").order("id",{ascending:true});
-    if(dbClasses) classes=dbClasses.map(mapClass);
+    if(dbClasses) classes=dbClasses.map(function(c){ return {id:c.id,name:c.name,level:c.level||c.name,day:c.day,time:c.time,end_time:c.end_time,venue:c.venue,loc:c.loc}; });
   }catch(err){ console.error("Classes error:",err); }
 
   try{
     // Load blocks
     var{data:dbBlocks}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
-    if(dbBlocks) blocks=dbBlocks.map(mapBlock);
+    if(dbBlocks) blocks=dbBlocks.map(function(b){ return {id:b.id,class_id:b.class_id,start_date:b.start_date,end_date:b.end_date,weeks:b.weeks,dates:b.dates||[],price:b.price,cap:b.cap,booked:b.booked||0,wait:b.wait||0,visible:b.visible!==false,status:b.status}; });
   }catch(err){ console.error("Blocks error:",err); }
 
   buildFilters();
@@ -2334,5 +2404,24 @@ function onTimeBlur(fieldId){
 })();
 
 </script>
+
+<!-- Remove from Block Modal -->
+<div class="overlay" id="rfb-overlay" style="display:none" onclick="if(event.target===this)closeRfbModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 style="font-family:'Raleway',sans-serif;font-size:20px;font-weight:500;margin-bottom:4px">Remove from Block</h3>
+      <p id="rfb-sub" style="font-size:13px;color:var(--mid)"></p>
+      <div style="display:flex;align-items:center;gap:0;margin-top:14px;">
+        <div class="step-pip" id="rfb-pip1" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--light);background:white;flex-shrink:0;">1</div>
+        <div id="rfb-line1" style="flex:1;height:2px;background:var(--border);"></div>
+        <div class="step-pip" id="rfb-pip2" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--light);background:white;flex-shrink:0;">2</div>
+        <div id="rfb-line2" style="flex:1;height:2px;background:var(--border);"></div>
+        <div class="step-pip" id="rfb-pip3" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--light);background:white;flex-shrink:0;">3</div>
+      </div>
+    </div>
+    <div class="modal-body" id="rfb-body" style="padding:20px 28px;"></div>
+    <div style="padding:14px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;" id="rfb-footer"></div>
+  </div>
+</div>
 </body>
 </html>
