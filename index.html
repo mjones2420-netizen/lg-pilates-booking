@@ -22,7 +22,7 @@
   --red: #c04040;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-html, body { width:100%; margin:0; padding:0; font-family:'Open Sans',sans-serif; background:var(--warm); color:var(--charcoal); min-height:100vh; }
+html, body { width:100%; margin:0; padding:0; font-family:'Open Sans',sans-serif; background:var(--warm); color:var(--charcoal); min-height:100vh; overflow-x:hidden; }
 nav { display:flex; align-items:center; justify-content:space-between; padding:20px 40px; border-bottom:1px solid var(--border); background:var(--warm); position:sticky; top:0; z-index:100; }
 .logo { font-family:'Raleway',sans-serif; font-size:28px; letter-spacing:0.06em; font-weight:600; }
 .logo span { color:var(--sage); font-style:italic; }
@@ -765,6 +765,14 @@ function sanitise(str) {
   return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#x27;").replace(/\//g,"&#x2F;");
 }
 
+// ─── Body scroll lock helpers ─────────────────────────────────────────────────
+function lockBodyScroll() {
+  document.body.style.overflow = 'hidden';
+}
+function unlockBodyScroll() {
+  document.body.style.overflow = '';
+}
+
 // ─── Navigation ──────────────────────────────────────────────────────────────
 function show(pg) {
   ["schedule","dashboard","dash-login"].forEach(function(p){ document.getElementById("pg-"+p).className="page"; });
@@ -971,6 +979,7 @@ function openModal(classId, blockId) {
   document.getElementById("form-view").style.display="block";
   document.getElementById("success-view").className="success";
   document.getElementById("overlay").className="overlay on";
+  lockBodyScroll();
   document.getElementById("step-1").style.display="block";
   document.getElementById("step-2a").style.display="none";
   document.getElementById("step-2b").style.display="none";
@@ -995,8 +1004,14 @@ function openModal(classId, blockId) {
   document.querySelectorAll(".field-err").forEach(function(e){ e.className="field-err"; });
 }
 
-function closeModal(){ document.getElementById("overlay").className="overlay"; }
-function closeViewModal(){ document.getElementById("view-overlay").className="overlay"; }
+function closeModal(){
+  document.getElementById("overlay").className="overlay";
+  unlockBodyScroll();
+}
+function closeViewModal(){
+  document.getElementById("view-overlay").className="overlay";
+  unlockBodyScroll();
+}
 
 document.getElementById("overlay").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
 document.getElementById("view-overlay").addEventListener("click",function(e){ if(e.target===this) closeViewModal(); });
@@ -1720,9 +1735,13 @@ function openAddClassModal(){
   document.getElementById("ac-btn").disabled=false;
   editingClassId=null;
   document.getElementById("add-class-overlay").className="overlay on";
+  lockBodyScroll();
 }
 
-function closeAddClassModal(){ document.getElementById("add-class-overlay").className="overlay"; }
+function closeAddClassModal(){
+  document.getElementById("add-class-overlay").className="overlay";
+  unlockBodyScroll();
+}
 
 function openEditClassModal(id){
   var c=classes.find(function(x){ return x.id===id; });
@@ -1739,6 +1758,7 @@ function openEditClassModal(id){
   document.getElementById("ac-btn").disabled=false;
   document.querySelector("#add-class-overlay .mtitle").textContent="Edit Class";
   document.getElementById("add-class-overlay").className="overlay on";
+  lockBodyScroll();
 }
 
 function saveNewClass(){
@@ -1790,10 +1810,14 @@ function openAddBlockModal(classId, prefillDate){
   document.getElementById("ab-btn").disabled=false;
   document.getElementById("ab-btn").onclick=function(){ saveNewBlock(); };
   document.getElementById("add-block-overlay").className="overlay on";
+  lockBodyScroll();
   if(prefillDate){ validateAbDate(); }
 }
 
-function closeAddBlockModal(){ document.getElementById("add-block-overlay").className="overlay"; }
+function closeAddBlockModal(){
+  document.getElementById("add-block-overlay").className="overlay";
+  unlockBodyScroll();
+}
 
 function validateAbDate(){
   var val=document.getElementById("ab-start").value;
@@ -1878,6 +1902,7 @@ function openEditBlockModal(blockId){
   document.getElementById("ab-btn").disabled=false;
   document.getElementById("ab-btn").onclick=function(){ saveEditBlock(blockId); };
   document.getElementById("add-block-overlay").className="overlay on";
+  lockBodyScroll();
 }
 
 function saveEditBlock(blockId){
@@ -1992,11 +2017,13 @@ function openRfbModal(idx){
   };
   document.getElementById("rfb-sub").textContent=sanitise(b.client)+" \u2014 "+sanitise(b.cls);
   document.getElementById("rfb-overlay").style.display="flex";
+  lockBodyScroll();
   renderRfbStep();
 }
 
 function closeRfbModal(){
   document.getElementById("rfb-overlay").style.display="none";
+  unlockBodyScroll();
 }
 
 function rfbSetPip(n,state){
@@ -2264,6 +2291,7 @@ function viewBooking(idx){
   document.getElementById("view-sub").textContent=b.cls+" - "+b.when;
   document.getElementById("view-body").innerHTML="<div style='text-align:center;padding:20px;color:var(--light)'>Loading...</div>";
   document.getElementById("view-overlay").className="overlay on";
+  lockBodyScroll();
   (async function(){
     try{
       var{data:parqData}=await sb.from("parq").select("*").eq("booking_id",b.dbId).limit(1);
@@ -2448,7 +2476,7 @@ function showToast(msg){
   setTimeout(function(){ el.className="toast"; },3000);
 }
 
-// ─── Change 5: Auto am/pm formatting for time inputs ─────────────────────────
+// ─── Auto am/pm formatting for time inputs ────────────────────────────────────
 function formatTimeInput(val){
   if(!val) return val;
   val=val.trim().toLowerCase();
