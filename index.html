@@ -109,9 +109,9 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .next-blk-body { display:none; }
 .next-blk-body.on { display:block; }
 .book-btn:disabled { background:var(--border); color:var(--light); cursor:not-allowed; }
-.overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:200; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:20px; }
+.overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:200; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:20px; overflow:hidden; }
 .overlay.on { display:flex; animation:fadeup 0.2s ease; }
-.modal { background:var(--warm); border-radius:6px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; }
+.modal { background:var(--warm); border-radius:6px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; overflow-x:hidden; }
 #form-view { display:block; }
 .mhead { padding:22px 28px 0; border-bottom:1px solid var(--border); background:var(--warm); position:sticky; top:0; z-index:10; }
 .mhead-top { display:flex; justify-content:space-between; align-items:flex-start; width:100%; padding-bottom:14px; }
@@ -280,6 +280,7 @@ tr:hover td { background:var(--cream); }
   .db-wrap, .acc-wrap { padding:36px 18px; }
   .stats { grid-template-columns:1fr 1fr; }
   .hero h1 { font-size:38px; }
+  .overlay { padding:10px; }
 }
 </style>
 </head>
