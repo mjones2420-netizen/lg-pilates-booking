@@ -934,7 +934,7 @@ function renderGrid() {
     }
     html+='</div>';
 
-    if(pr.sessionsRemaining<2&&!full){
+    if(pr.sessionsRemaining<1&&!full){
       html+='<button class="book-btn" disabled>Booking Closed</button>';
     } else {
       html+='<button class="book-btn"'+(full?' disabled':'')+' onclick="openModal('+c.id+','+blk.id+')">'+(full?'Current Block Full':'Book Current Block')+'</button>';
@@ -1262,7 +1262,22 @@ function goStep3(){
   document.getElementById("m-block-summary-title").textContent=blk.weeks+"-week block \u2014 \u00a3"+blk.price+" per session";
   document.getElementById("m-block-summary-time").textContent=selected.day+" "+selected.time+" \u2013 "+selected.end_time;
   document.getElementById("m-block-summary-price").textContent="\u00a3"+totalPrice;
-  document.getElementById("m-block-summary-pills").innerHTML=(blk.dates||[]).map(function(d){ return '<span style="font-size:12px;padding:3px 9px;background:#eef5f5;border:1px solid #cde0e0;border-radius:100px;color:#4a6060">'+d+'</span>'; }).join("");
+  var _mtoday=new Date(); _mtoday.setHours(0,0,0,0);
+  var _mmmap={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  document.getElementById("m-block-summary-pills").innerHTML=(blk.dates||[]).map(function(d){
+    var parts=d.trim().split(" "); var isPast=false; var isToday=false;
+    if(parts.length>=2){ var day=parseInt(parts[0],10),mon=_mmmap[parts[1]];
+      if(!isNaN(day)&&mon!==undefined){
+        var dt=new Date(_mtoday.getFullYear(),mon,day);
+        if(dt<_mtoday) isPast=true; else if(dt.getTime()===_mtoday.getTime()) isToday=true;
+      }
+    }
+    var style="font-size:12px;padding:3px 9px;border-radius:100px;";
+    if(isPast) style+="background:#f7f7f7;border:1px solid #e0e0e0;color:#b0b0b0;text-decoration:line-through;";
+    else if(isToday) style+="background:var(--cream);border:1px solid var(--sage);color:var(--sage-dk);font-weight:600;";
+    else style+="background:#eef5f5;border:1px solid #cde0e0;color:#4a6060;";
+    return '<span style="'+style+'">'+d+'</span>';
+  }).join("");
   var prorataNote=document.getElementById("prorata-note");
   if(prorataNote){
     if(pr.isProrata){
