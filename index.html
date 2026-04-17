@@ -87,6 +87,8 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .block-dates-lbl { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); margin-bottom:8px; }
 .block-dates-pills { display:flex; flex-wrap:wrap; gap:5px; }
 .date-pill { font-size:13px; padding:3px 9px; background:white; border:1px solid var(--border); border-radius:100px; color:var(--mid); }
+.date-pill.past { background:#f7f7f7; border-color:#e0e0e0; color:#b0b0b0; text-decoration:line-through; }
+.date-pill.today { background:var(--cream); border-color:var(--sage); color:var(--sage-dk); font-weight:600; }
 .cap-bar { height:3px; background:var(--border); border-radius:2px; margin-bottom:5px; overflow:hidden; }
 .cap-fill { height:100%; border-radius:2px; background:var(--sage); }
 .cap-fill.warn { background:var(--clay); }
@@ -554,6 +556,8 @@ tr:hover td { background:var(--cream); }
             <div style="font-family:'Raleway',sans-serif;font-size:28px;color:var(--sage-dk);font-weight:400;margin-left:16px;white-space:nowrap" id="m-block-summary-price"></div>
           </div>
 
+          <div id="prorata-note" style="display:none;font-size:13px;color:var(--mid);background:#fff8ec;border:1px solid #f0e0a0;border-radius:3px;padding:10px 12px;margin-bottom:14px;line-height:1.6;"></div>
+
           <div style="background:var(--cream); border-left:4px solid var(--clay); border-radius:3px; padding:16px 18px; margin-bottom:22px;">
             <div style="font-family:'Raleway',sans-serif; font-size:20px; font-weight:500; color:var(--charcoal); margin-bottom:6px;">Reserve your space</div>
             <div style="font-size:14px; color:var(--mid); line-height:1.7;">You are reserving a spot on this block. <strong>Your place is not confirmed until payment is received.</strong> Once Louise has received your payment she will confirm your booking by email.</div>
@@ -904,17 +908,37 @@ function renderGrid() {
     html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:600;color:var(--charcoal)">'+c.venue+'</div><div style="font-size:13px;color:var(--mid);margin-top:2px">'+c.level+'</div></div>';
 
     // Current block panel
-    var dpills=(blk.dates||[]).map(function(d){ return '<span class="date-pill">'+sanitise(d)+'</span>'; }).join("");
+    var _today=new Date(); _today.setHours(0,0,0,0);
+    var _mmap={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+    var dpills=(blk.dates||[]).map(function(d){
+      var parts=d.trim().split(" "); var cls="date-pill";
+      if(parts.length>=2){ var day=parseInt(parts[0],10),mon=_mmap[parts[1]];
+        if(!isNaN(day)&&mon!==undefined){
+          var dt=new Date(_today.getFullYear(),mon,day);
+          if(dt<_today) cls+=" past"; else if(dt.getTime()===_today.getTime()) cls+=" today";
+        }
+      }
+      return '<span class="'+cls+'">'+sanitise(d)+'</span>';
+    }).join("");
     html+='<div class="card-block-section">';
     html+='<div class="card-block-lbl">Current Block</div>';
     html+='<div class="card-block-range">'+(blk.dates&&blk.dates.length>0?blk.dates[0]+' &ndash; '+blk.dates[blk.dates.length-1]:'')+'</div>';
     html+='<div class="block-dates-pills" style="margin:8px 0">'+dpills+'</div>';
     html+='<div class="cap-bar"><div class="cap-fill'+warn+'" style="width:'+pct+'%"></div></div>';
     html+='<div class="cap-txt">'+blk.booked+' of '+blk.cap+' spots taken</div>';
-    html+='<div class="card-price-row"><span class="card-price-lbl">Block price</span><span class="card-price-val">&pound;'+(blk.price*blk.weeks)+'</span></div>';
+    var pr=calcProrata(blk);
+    html+='<div class="card-price-row"><span class="card-price-lbl">Block price</span><span class="card-price-val">&pound;'+pr.totalPrice+'</span></div>';
+    if(pr.isProrata){
+      html+='<div style="font-size:11px;color:var(--light);text-align:right;margin-top:2px;text-decoration:line-through;">&pound;'+pr.fullPrice+' full block</div>';
+      html+='<div style="font-size:11px;color:var(--mid);background:#fff8ec;border:1px solid #f0e0a0;border-radius:3px;padding:5px 9px;margin-top:4px;">'+pr.sessionsRemaining+' session'+(pr.sessionsRemaining===1?'':'s')+' remaining in this block</div>';
+    }
     html+='</div>';
 
-    html+='<button class="book-btn"'+(full?' disabled':'')+' onclick="openModal('+c.id+','+blk.id+')">'+(full?'Current Block Full':'Book Current Block')+'</button>';
+    if(pr.sessionsRemaining<2&&!full){
+      html+='<button class="book-btn" disabled>Booking Closed</button>';
+    } else {
+      html+='<button class="book-btn"'+(full?' disabled':'')+' onclick="openModal('+c.id+','+blk.id+')">'+(full?'Current Block Full':'Book Current Block')+'</button>';
+    }
 
     // Next block — collapsible
     if(nextBlk){
@@ -991,7 +1015,8 @@ function openModal(classId, blockId) {
   document.getElementById("m-sub").textContent=c.venue+", "+c.loc+" \u2014 "+c.day+" "+c.time;
   document.getElementById("m-sname").textContent=c.name;
   document.getElementById("m-sdetail").textContent=c.day+" "+c.time+" \u2013 "+c.end_time+" \u2022 "+c.loc;
-  var totalPrice=blk.price*blk.weeks;
+  var pr=calcProrata(blk);
+  var totalPrice=pr.totalPrice;
   document.getElementById("m-price").textContent="\u00a3"+totalPrice;
   document.getElementById("m-btnprice").textContent="\u00a3"+totalPrice;
   document.getElementById("msummary-bar").style.display="flex";
@@ -1049,6 +1074,28 @@ document.getElementById("overlay").addEventListener("click",function(e){ if(e.ta
 document.getElementById("view-overlay").addEventListener("click",function(e){ if(e.target===this) closeViewModal(); });
 document.getElementById("add-class-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddClassModal(); });
 document.getElementById("add-block-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddBlockModal(); });
+
+// ─── Pro-rata pricing helper ────────────────────────────────────────────────────────────────────────────────
+function calcProrata(blk){
+  var today=new Date(); today.setHours(0,0,0,0);
+  var dates=blk.dates||[];
+  var fullPrice=blk.price*blk.weeks;
+  var monthMap={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  var remaining=dates.filter(function(d){
+    var parts=d.trim().split(" ");
+    if(parts.length<2) return true;
+    var day=parseInt(parts[0],10);
+    var mon=monthMap[parts[1]];
+    if(isNaN(day)||mon===undefined) return true;
+    var yr=today.getFullYear();
+    var dt=new Date(yr,mon,day);
+    if(dt<new Date(yr,0,1)) dt.setFullYear(yr+1);
+    return dt>=today;
+  }).length;
+  var isProrata=remaining<dates.length&&remaining>0;
+  var totalPrice=isProrata?blk.price*remaining:fullPrice;
+  return {sessionsRemaining:remaining,totalSessions:dates.length,totalPrice:totalPrice,fullPrice:fullPrice,isProrata:isProrata};
+}
 
 function scrollModalTop(){
   var modal=document.querySelector(".overlay.on .modal");
@@ -1210,11 +1257,20 @@ function goStep3(){
   var ln=document.getElementById("b-lastname").value.trim();
   document.getElementById("m-reference").textContent=fn+" "+ln+" "+selected.day;
   var blk=selectedBlock;
-  var totalPrice=blk.price*blk.weeks;
+  var pr=calcProrata(blk);
+  var totalPrice=pr.totalPrice;
   document.getElementById("m-block-summary-title").textContent=blk.weeks+"-week block \u2014 \u00a3"+blk.price+" per session";
   document.getElementById("m-block-summary-time").textContent=selected.day+" "+selected.time+" \u2013 "+selected.end_time;
   document.getElementById("m-block-summary-price").textContent="\u00a3"+totalPrice;
   document.getElementById("m-block-summary-pills").innerHTML=(blk.dates||[]).map(function(d){ return '<span style="font-size:12px;padding:3px 9px;background:#eef5f5;border:1px solid #cde0e0;border-radius:100px;color:#4a6060">'+d+'</span>'; }).join("");
+  var prorataNote=document.getElementById("prorata-note");
+  if(prorataNote){
+    if(pr.isProrata){
+      prorataNote.style.display="block";
+      prorataNote.textContent="As there are only "+pr.sessionsRemaining+" session"+(pr.sessionsRemaining===1?"":"s")+" left in this block, the price has been reduced accordingly. Full block price is \u00a3"+pr.fullPrice+".";
+    } else { prorataNote.style.display="none"; }
+  }
+  document.getElementById("m-btnprice").textContent="\u00a3"+totalPrice;
   updateStepIndicator(isRet?2:4, isRet);
   scrollModalTop();
 }
@@ -1312,7 +1368,7 @@ function confirmBooking(){
         p_block_id: blk.id,
         p_class_id: c.id,
         p_customer_id: customerId,
-        p_amount_due: blk.price*blk.weeks
+        p_amount_due: calcProrata(blk).totalPrice
       });
       if(bookRes.error){
         var msg=bookRes.error.message||"";
@@ -1359,7 +1415,7 @@ function confirmBooking(){
       html+="<div class=\"srow\"><span>Venue</span><span>"+sanitise(c.venue)+", "+sanitise(c.loc)+"</span></div>";
       html+="<div class=\"srow\"><span>When</span><span>"+sanitise(c.day)+" "+sanitise(c.time)+" &ndash; "+sanitise(c.end_time)+"</span></div>";
       html+="<div class=\"srow\"><span>Block</span><span>"+sanitise((blk.dates||[])[0]||"")+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||"")+"</span></div>";
-      html+="<div class=\"srow\"><span>Amount Due</span><span style=\"font-weight:600;color:var(--charcoal)\">&pound;"+sanitise(String(blk.price*blk.weeks))+"</span></div>";
+      html+="<div class=\"srow\"><span>Amount Due</span><span style=\"font-weight:600;color:var(--charcoal)\">&pound;"+sanitise(String(calcProrata(blk).totalPrice))+"</span></div>";
       document.getElementById("sdetail").innerHTML=html;
       document.getElementById("s-reference").textContent=fn+" "+ln+" "+c.day;
       document.getElementById("form-view").style.display="none";
@@ -1368,7 +1424,7 @@ function confirmBooking(){
     }catch(err){
       console.error("Booking error:",err);
       showToast("Something went wrong. Please try again.");
-      if(confirmBtn){ confirmBtn.disabled=false; confirmBtn.textContent="Reserve My Spot \u2014 \u00a3"+sanitise(String(blk.price*blk.weeks))+" due"; }
+      if(confirmBtn){ confirmBtn.disabled=false; confirmBtn.textContent="Reserve My Spot \u2014 \u00a3"+sanitise(String(calcProrata(blk).totalPrice))+" due"; }
     }
   })();
 }
