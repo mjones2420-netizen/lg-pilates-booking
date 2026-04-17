@@ -1021,6 +1021,19 @@ function openModal(classId, blockId) {
     document.querySelectorAll("input[name=\"q"+qi+"\"][value=\"No\"]").forEach(function(r){ r.checked=true; });
   }
   document.querySelectorAll(".field-err").forEach(function(e){ e.className="field-err"; });
+  // Reset T&Cs checkbox and reserve button
+  var tcsBox=document.getElementById("tcs-agree");
+  if(tcsBox) tcsBox.checked=false;
+  var tcsHint=document.getElementById("tcs-hint");
+  if(tcsHint) tcsHint.style.display="block";
+  var reserveBtn=document.getElementById("reserve-btn");
+  if(reserveBtn){ reserveBtn.disabled=true; reserveBtn.style.opacity="0.5"; reserveBtn.style.cursor="not-allowed"; }
+  // Reset customer check message
+  var ccMsg=document.getElementById("customer-check-msg");
+  if(ccMsg){ ccMsg.style.display="none"; ccMsg.textContent=""; }
+  // Reset success view back to form view
+  document.getElementById("success-view").style.display="none";
+  document.getElementById("form-view").style.display="block";
 }
 
 function closeModal(){
