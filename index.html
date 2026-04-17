@@ -350,7 +350,7 @@ tr:hover td { background:var(--cream); }
     <!-- Clients Tab -->
     <div id="tab-panel-customers" style="display:none">
       <div style="margin-bottom:16px;font-size:13px;color:var(--mid);line-height:1.7;background:var(--cream);padding:14px 18px;border-radius:4px;border-left:3px solid var(--sage-dk)">
-        <strong>Priority clients</strong> can book the next block up to 2 weeks before it starts. Standard clients can book 1 week before. Priority is granted automatically to anyone who booked the previous block, or you can set it manually here.
+        Priority clients can book the next block 2 weeks early. <strong>Auto priority</strong> is earned per class by having a confirmed booking on the current block. <strong>Manual priority</strong> is granted by you per class using the Per-class detail button below.
       </div>
       <table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Type</th><th>Priority</th><th>Actions</th></tr></thead><tbody id="customers-tbody"></tbody></table>
     </div>
@@ -1553,22 +1553,49 @@ function renderCustomersTab(){
         tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">No clients yet.</td></tr>';
         return;
       }
+      var{data:allManual}=await sb.from("customer_class_priority").select("customer_id,class_id");
+      var manualMap={};
+      (allManual||[]).forEach(function(r){ manualMap[r.customer_id+"_"+r.class_id]=true; });
+      var{data:confirmedBks}=await sb.from("bookings").select("customer_id,class_id").eq("status","confirmed");
+      var autoMap={};
+      (confirmedBks||[]).forEach(function(bk){ autoMap[bk.customer_id+"_"+bk.class_id]=true; });
       var html="";
       custs.forEach(function(cu){
-        var isPriority=cu.priority===true;
-        var badge=isPriority
-          ?'<span class="priority-badge on">&#11088; Priority</span>'
+        var hasAnyManual=classes.some(function(cl){ return manualMap[cu.id+"_"+cl.id]; });
+        var hasAnyAuto=!hasAnyManual&&classes.some(function(cl){ return autoMap[cu.id+"_"+cl.id]; });
+        var overallBadge=hasAnyManual
+          ?'<span class="priority-badge on">&#11088; Manual priority</span>'
+          :hasAnyAuto
+          ?'<span class="priority-badge" style="background:#eef5f5;color:var(--sage-dk);border-color:var(--sage-lt);">&#11088; Auto priority</span>'
           :'<span class="priority-badge">Standard</span>';
-        var toggleLbl=isPriority?"Remove Priority":"Grant Priority";
-        var toggleCls=isPriority?"act act-delete":"act act-confirm";
-        html+="<tr>";
-        html+="<td><strong>"+sanitise(cu.first_name)+" "+sanitise(cu.last_name)+"</strong></td>";
-        html+="<td>"+sanitise(cu.email)+"</td>";
-        html+="<td>"+sanitise(cu.phone||"—")+"</td>";
-        html+="<td>"+sanitise(cu.customer_type||"—")+"</td>";
-        html+="<td>"+badge+"</td>";
-        html+="<td><button class='"+toggleCls+"' onclick='togglePriority("+cu.id+","+isPriority+")'>"+toggleLbl+"</button></td>";
-        html+="</tr>";
+        html+='<tr id="cust-row-'+cu.id+'">';
+        html+='<td><strong>'+sanitise(cu.first_name)+' '+sanitise(cu.last_name)+'</strong></td>';
+        html+='<td>'+sanitise(cu.email)+'</td>';
+        html+='<td>'+sanitise(cu.phone||'—')+'</td>';
+        html+='<td>'+sanitise(cu.customer_type||'—')+'</td>';
+        html+='<td>'+overallBadge+'</td>';
+        html+='<td><button class="act" style="font-size:11px;" onclick="toggleCustPriorityPanel('+cu.id+')">Per-class &#8964;</button></td>';
+        html+='</tr>';
+        html+='<tr id="cust-panel-'+cu.id+'" style="display:none;"><td colspan="6" style="padding:0 14px 14px;background:var(--warm);">';
+        html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-top:10px;">';
+        classes.forEach(function(cl){
+          var isManual=manualMap[cu.id+"_"+cl.id]||false;
+          var isAuto=autoMap[cu.id+"_"+cl.id]||false;
+          var statusBadge=isManual
+            ?'<span class="priority-badge on" style="font-size:10px;">&#11088; Manual</span>'
+            :isAuto
+            ?'<span class="priority-badge" style="font-size:10px;background:#eef5f5;color:var(--sage-dk);border-color:var(--sage-lt);">&#11088; Auto</span>'
+            :'<span class="priority-badge" style="font-size:10px;">Standard</span>';
+          var actionBtn=isManual
+            ?'<button class="act act-delete" style="font-size:10px;padding:4px 8px;" onclick="toggleClassPriority('+cu.id+','+cl.id+',true)">Remove</button>'
+            :'<button class="act act-confirm" style="font-size:10px;padding:4px 8px;" onclick="toggleClassPriority('+cu.id+','+cl.id+',false)">Grant</button>';
+          html+='<div style="background:white;border:1px solid var(--border);border-radius:4px;padding:10px 12px;">';
+          html+='<div style="font-size:12px;font-weight:600;color:var(--charcoal);margin-bottom:2px;">'+sanitise(cl.day)+' '+sanitise(cl.time)+'</div>';
+          html+='<div style="font-size:11px;color:var(--light);margin-bottom:8px;">'+sanitise(cl.venue)+'</div>';
+          html+='<div style="display:flex;justify-content:space-between;align-items:center;">'+statusBadge+actionBtn+'</div>';
+          html+='</div>';
+        });
+        html+='</div></td></tr>';
       });
       tbody.innerHTML=html;
     }catch(err){
@@ -1578,12 +1605,22 @@ function renderCustomersTab(){
   })();
 }
 
-function togglePriority(customerId, currentlyPriority){
-  var newVal=!currentlyPriority;
+function toggleCustPriorityPanel(customerId){
+  var panel=document.getElementById("cust-panel-"+customerId);
+  panel.style.display=panel.style.display==="none"?"":"none";
+}
+
+function toggleClassPriority(customerId, classId, currentlyGranted){
   (async function(){
     try{
-      await sb.from("customers").update({priority:newVal}).eq("id",customerId);
-      showToast(newVal?"Priority granted.":"Priority removed.");
+      if(currentlyGranted){
+        await sb.from("customer_class_priority").delete().select()
+          .eq("customer_id",customerId).eq("class_id",classId);
+        showToast("Manual priority removed.");
+      } else {
+        await sb.from("customer_class_priority").insert({customer_id:customerId,class_id:classId}).select();
+        showToast("Manual priority granted.");
+      }
       renderCustomersTab();
     }catch(err){ console.error(err); showToast("Error updating priority."); }
   })();
@@ -1606,14 +1643,21 @@ function checkPriority(classId, blockId){
 
   (async function(){
     try{
-      // Check if customer exists and is manually flagged as priority
-      var{data:custs}=await sb.from("customers").select("id,priority").eq("email",email).limit(1);
+      // Check if customer exists
+      var{data:custs}=await sb.from("customers").select("id").eq("email",email).limit(1);
       var customer=custs&&custs.length>0?custs[0]:null;
 
-      if(customer&&customer.priority===true){
-        // Manually granted priority — let them book
-        grantPriorityAccess(classId, blockId, email, msgEl);
-        return;
+      if(customer){
+        // Check per-class manual priority
+        var{data:manualPriority}=await sb.from("customer_class_priority")
+          .select("id")
+          .eq("customer_id",customer.id)
+          .eq("class_id",classId)
+          .limit(1);
+        if(manualPriority&&manualPriority.length>0){
+          grantPriorityAccess(classId, blockId, email, msgEl);
+          return;
+        }
       }
 
       // Check if they booked the previous block for this class
