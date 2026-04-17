@@ -943,7 +943,16 @@ function renderGrid() {
       if(nextFull){
         html+='<button class="book-btn" disabled>Next Block Full</button>';
       } else if(tooEarly){
-        html+='<div class="priority-info">&#128274; Booking opens '+stdOpenStr+'. <span class="tooltip-wrap">Priority clients<span class="tooltip-box">Priority clients are returning members who booked the previous block. They get early access to book the next block.</span></span> may book earlier.</div>';
+        var priorityOpenDate=new Date(nextStart); priorityOpenDate.setDate(priorityOpenDate.getDate()-14);
+        var priorityOpenStr=priorityOpenDate.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+        var blockStartStr=nextStart.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+        html+='<div class="priority-info" style="padding:10px 14px;">';
+        html+='<div style="font-size:11px;letter-spacing:0.08em;color:var(--light);margin-bottom:7px;">&#128274; Not open yet</div>';
+        html+='<div style="border-top:1px solid var(--border);margin-bottom:7px;"></div>';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;"><span style="font-size:11px;color:var(--light);">&#11088; Priority booking opens</span><span style="font-size:12px;font-weight:600;color:var(--sage-dk);">'+priorityOpenStr+'</span></div>';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;"><span style="font-size:11px;color:var(--light);">&#128197; Standard booking opens</span><span style="font-size:12px;font-weight:600;color:var(--charcoal);">'+stdOpenStr+'</span></div>';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:var(--light);">&#127939; Block starts</span><span style="font-size:12px;font-weight:600;color:var(--charcoal);">'+blockStartStr+'</span></div>';
+        html+='</div>';
         html+='<button class="book-btn" disabled>Not Open Yet</button>';
       } else if(inPriorityWindow){
         html+='<div class="priority-info">&#11088; <span class="tooltip-wrap">Priority booking<span class="tooltip-box">Priority clients are returning members who booked the previous block. They get early access to book the next block.</span></span> is open. Returning clients from the current block can book now &mdash; all other spaces open on '+stdOpenStr+'.</div>';
