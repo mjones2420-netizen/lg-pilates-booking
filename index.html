@@ -955,7 +955,16 @@ function renderGrid() {
         html+='</div>';
         html+='<button class="book-btn" disabled>Not Open Yet</button>';
       } else if(inPriorityWindow){
-        html+='<div class="priority-info">&#11088; <span class="tooltip-wrap">Priority booking<span class="tooltip-box">Priority clients are returning members who booked the previous block. They get early access to book the next block.</span></span> is open. Returning clients from the current block can book now &mdash; all other spaces open on '+stdOpenStr+'.</div>';
+        var priorityOpenDate2=new Date(nextStart); priorityOpenDate2.setDate(priorityOpenDate2.getDate()-14);
+        var priorityOpenStr2=priorityOpenDate2.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+        var blockStartStr2=nextStart.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+        html+='<div class="priority-info" style="padding:11px 14px;">';
+        html+='<div style="font-size:12px;font-weight:600;color:var(--charcoal);margin-bottom:6px;">&#11088; Priority booking is open</div>';
+        html+='<div style="font-size:12px;color:var(--mid);line-height:1.7;margin-bottom:8px;">Priority booking opened on '+priorityOpenStr2+' &mdash; two weeks before this block starts. If you booked the current block, enter your email below to claim your spot.</div>';
+        html+='<div style="border-top:1px solid #e8d898;margin-bottom:8px;"></div>';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="font-size:11px;color:var(--light);">&#128197; Standard booking opens</span><span style="font-size:12px;font-weight:600;color:var(--charcoal);">'+stdOpenStr+'</span></div>';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:var(--light);">&#127939; Block starts</span><span style="font-size:12px;font-weight:600;color:var(--charcoal);">'+blockStartStr2+'</span></div>';
+        html+='</div>';
         html+='<div class="priority-check" id="pcheck-'+nextBlk.id+'">';
         html+='<input type="text" class="finp" id="pemail-'+nextBlk.id+'" placeholder="Enter your email to check priority" style="margin-bottom:8px">';
         html+='<button class="book-btn" onclick="checkPriority('+c.id+','+nextBlk.id+')">Check My Priority</button>';
