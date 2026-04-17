@@ -1626,12 +1626,13 @@ function checkPriority(classId, blockId){
         return;
       }
 
-      // Check if this customer has a booking on the previous block
+      // Check if this customer has a CONFIRMED booking on the previous block
+      // Reserved bookings do not qualify — payment must be confirmed
       var{data:prevBookings}=await sb.from("bookings")
         .select("id,status")
         .eq("customer_id",customer.id)
         .eq("block_id",prevBlk.id)
-        .not("status","eq","cancelled")
+        .eq("status","confirmed")
         .limit(1);
 
       if(prevBookings&&prevBookings.length>0){
