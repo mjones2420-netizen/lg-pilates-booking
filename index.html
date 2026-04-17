@@ -1559,6 +1559,13 @@ function renderCustomersTab(){
       var{data:confirmedBks}=await sb.from("bookings").select("customer_id,class_id").eq("status","confirmed");
       var autoMap={};
       (confirmedBks||[]).forEach(function(bk){ autoMap[bk.customer_id+"_"+bk.class_id]=true; });
+      // Fetch all active bookings (any non-cancelled status) to know which classes each client is on
+      var{data:activeBks}=await sb.from("bookings").select("customer_id,class_id").not("status","eq","cancelled");
+      var activeClassMap={};
+      (activeBks||[]).forEach(function(bk){
+        if(!activeClassMap[bk.customer_id]) activeClassMap[bk.customer_id]=[];
+        if(activeClassMap[bk.customer_id].indexOf(bk.class_id)<0) activeClassMap[bk.customer_id].push(bk.class_id);
+      });
       var html="";
       custs.forEach(function(cu){
         var hasAnyManual=classes.some(function(cl){ return manualMap[cu.id+"_"+cl.id]; });
@@ -1568,17 +1575,26 @@ function renderCustomersTab(){
           :hasAnyAuto
           ?'<span class="priority-badge" style="background:#eef5f5;color:var(--sage-dk);border-color:var(--sage-lt);">&#11088; Auto priority</span>'
           :'<span class="priority-badge">Standard</span>';
+        // Only show classes this client is booked on (plus any with manual priority granted)
+        var clientClassIds=activeClassMap[cu.id]||[];
+        var relevantClasses=classes.filter(function(cl){
+          return clientClassIds.indexOf(cl.id)>=0 || manualMap[cu.id+"_"+cl.id];
+        });
         html+='<tr id="cust-row-'+cu.id+'">';
         html+='<td><strong>'+sanitise(cu.first_name)+' '+sanitise(cu.last_name)+'</strong></td>';
         html+='<td>'+sanitise(cu.email)+'</td>';
         html+='<td>'+sanitise(cu.phone||'—')+'</td>';
         html+='<td>'+sanitise(cu.customer_type||'—')+'</td>';
         html+='<td>'+overallBadge+'</td>';
-        html+='<td><button class="act" style="font-size:11px;" onclick="toggleCustPriorityPanel('+cu.id+')">Per-class &#8964;</button></td>';
+        var detailBtn=relevantClasses.length>0
+          ?'<button class="act" style="font-size:11px;" onclick="toggleCustPriorityPanel('+cu.id+')">Per-class &#8964;</button>'
+          :'—';
+        html+='<td>'+detailBtn+'</td>';
         html+='</tr>';
-        html+='<tr id="cust-panel-'+cu.id+'" style="display:none;"><td colspan="6" style="padding:0 14px 14px;background:var(--warm);">';
-        html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-top:10px;">';
-        classes.forEach(function(cl){
+        if(relevantClasses.length>0){
+          html+='<tr id="cust-panel-'+cu.id+'" style="display:none;"><td colspan="6" style="padding:0 14px 14px;background:var(--warm);">';
+          html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-top:10px;">';
+          relevantClasses.forEach(function(cl){
           var isManual=manualMap[cu.id+"_"+cl.id]||false;
           var isAuto=autoMap[cu.id+"_"+cl.id]||false;
           var statusBadge=isManual
@@ -1594,8 +1610,9 @@ function renderCustomersTab(){
           html+='<div style="font-size:11px;color:var(--light);margin-bottom:8px;">'+sanitise(cl.venue)+'</div>';
           html+='<div style="display:flex;justify-content:space-between;align-items:center;">'+statusBadge+actionBtn+'</div>';
           html+='</div>';
-        });
-        html+='</div></td></tr>';
+          });
+          html+='</div></td></tr>';
+        }
       });
       tbody.innerHTML=html;
     }catch(err){
