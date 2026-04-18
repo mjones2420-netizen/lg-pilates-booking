@@ -266,6 +266,16 @@ tr:hover td { background:var(--cream); }
 .block-warning-row:last-child { border-bottom:none; padding-bottom:0; }
 .block-warning-class { color:var(--charcoal); font-weight:500; }
 .block-warning-meta { color:var(--mid); font-size:12px; margin-top:1px; }
+.parq-warn { background:#fff8ec; border-left:4px solid var(--clay); border-radius:3px; padding:14px 18px; margin-bottom:18px; cursor:pointer; transition:background 0.15s; align-items:center; gap:14px; }
+.parq-warn.on { display:flex; }
+.parq-warn:hover { background:#fff3dc; }
+.parq-warn-icon { width:28px; height:28px; flex-shrink:0; background:var(--clay); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:16px; }
+.parq-warn-text { flex:1; line-height:1.5; font-size:14px; }
+.parq-warn-text strong { font-weight:600; color:var(--charcoal); }
+.parq-warn-text small { display:block; color:var(--mid); font-size:12.5px; margin-top:2px; }
+.parq-warn-chev { color:var(--clay); font-size:22px; font-weight:500; }
+tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-out 2; }
+@keyframes parqPulse { 0% { background:#ffe4c7; } 100% { background:#fff8ec; } }
 .priority-info { font-size:12px; color:var(--mid); background:#fef9ec; border:1px solid #f0e0a0; border-radius:3px; padding:9px 12px; margin-bottom:10px; line-height:1.6; }
 .priority-check .finp { font-size:14px; padding:11px 14px; }
 .priority-badge { display:inline-flex; align-items:center; gap:5px; background:#fef3e8; color:var(--clay); border:1px solid #f0d0a0; border-radius:100px; font-size:11px; padding:3px 10px; font-weight:600; }
@@ -341,6 +351,14 @@ tr:hover td { background:var(--cream); }
 
     <!-- All Bookings Tab -->
     <div id="tab-panel-bookings">
+      <div id="parq-warn" class="parq-warn" onclick="scrollToFirstMissingParq()" style="display:none">
+        <div class="parq-warn-icon">!</div>
+        <div class="parq-warn-text">
+          <strong id="parq-warn-count">1 booking is missing a health form</strong>
+          <small>New clients must complete a PAR-Q. Click to view affected bookings.</small>
+        </div>
+        <div class="parq-warn-chev">&rsaquo;</div>
+      </div>
       <table><thead><tr><th>Client</th><th>Class</th><th>When</th><th>Block</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead><tbody id="btbody"></tbody></table>
     </div>
 
@@ -1422,7 +1440,7 @@ function confirmBooking(){
             emergency_name:parqData.emergencyName, emergency_relationship:parqData.emergencyRelationship,
             emergency_phone:parqData.emergencyPhone, yes_details:parqData.details,
             additional_notes:parqData.other, print_name:parqData.printName, sign_date:signDateFormatted
-          },answers));
+          },answers)).select();
         }catch(parqErr){ console.error("PAR-Q save error (booking still saved):",parqErr); }
       }
 
@@ -1559,6 +1577,40 @@ function renderDashboard(){
         };
       });
 
+      // Item 15: Detect bookings that should have a PAR-Q on file but don't.
+      // A missing PAR-Q is a safety issue (no emergency contact / medical declaration).
+      // We flag any non-cancelled booking whose customer_type is 'new' and whose booking_id
+      // has no row in the parq table.
+      var parqMissingIds={};
+      try{
+        var parqRes=await sb.from("parq").select("booking_id");
+        var parqBookingIds={};
+        if(parqRes.data) parqRes.data.forEach(function(p){ if(p.booking_id) parqBookingIds[p.booking_id]=true; });
+        bookings.forEach(function(b){
+          if(b.customerType==="new" && b.status!=="cancelled" && !parqBookingIds[b.dbId]){
+            parqMissingIds[b.dbId]=true;
+            b.parqMissing=true;
+          }
+        });
+      }catch(parqCheckErr){
+        console.error("PAR-Q presence check failed (non-fatal):",parqCheckErr);
+      }
+      var missingCount=Object.keys(parqMissingIds).length;
+      var warnEl=document.getElementById("parq-warn");
+      var warnCntEl=document.getElementById("parq-warn-count");
+      if(warnEl){
+        if(missingCount>0){
+          warnEl.classList.add("on");
+          warnEl.style.display="flex";
+          if(warnCntEl) warnCntEl.textContent=missingCount===1
+            ?"1 booking is missing a health form"
+            :missingCount+" bookings are missing health forms";
+        } else {
+          warnEl.classList.remove("on");
+          warnEl.style.display="none";
+        }
+      }
+
       // All Bookings tab
       var bhtml="";
       if(bookings.length===0){
@@ -1567,7 +1619,8 @@ function renderDashboard(){
         for(var i=0;i<bookings.length;i++){
           var b=bookings[i];
           var blockCell=b.blockDates?sanitise(b.blockDates):'<span style="color:var(--light)">—</span>';
-          bhtml+="<tr><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.cls)+"</td><td style=\"font-size:12px\">"+sanitise(b.when)+"</td><td style=\"font-size:12px\">"+blockCell+"</td><td>&pound;"+sanitise(String(b.paid))+"</td>";
+          var rowAttrs=b.parqMissing?' data-parq-missing="true"':'';
+          bhtml+="<tr"+rowAttrs+"><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.cls)+"</td><td style=\"font-size:12px\">"+sanitise(b.when)+"</td><td style=\"font-size:12px\">"+blockCell+"</td><td>&pound;"+sanitise(String(b.paid))+"</td>";
           bhtml+="<td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
           var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+i+")\">Confirm</button>":"";
           bhtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button>"+confirmBtn+"<button class=\"act act-delete\" onclick=\"openRfbModal("+i+")\">Remove from Block</button><button class=\"act act-delete\" onclick=\"deleteCustomer("+i+")\">Del Customer</button></td></tr>";
@@ -1617,6 +1670,19 @@ function renderDashboard(){
       document.getElementById("btbody").innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading. Please refresh.</td></tr>';
     }
   })();
+}
+
+function scrollToFirstMissingParq(){
+  // Ensure the All Bookings tab is showing (in case Louise clicks while on a different tab)
+  switchTab("bookings");
+  // Remove any previous highlight
+  document.querySelectorAll(".parq-missing-highlight").forEach(function(r){ r.classList.remove("parq-missing-highlight"); });
+  // Highlight all missing rows
+  var rows=document.querySelectorAll('tr[data-parq-missing="true"]');
+  if(rows.length===0) return;
+  rows.forEach(function(r){ r.classList.add("parq-missing-highlight"); });
+  // Scroll the first one into view
+  rows[0].scrollIntoView({behavior:"smooth",block:"center"});
 }
 
 function switchTab(tab){
