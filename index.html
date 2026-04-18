@@ -1371,7 +1371,7 @@ function confirmBooking(){
       var lookupRes=await sb.rpc("lookup_customer", {p_email: em});
       if(lookupRes.error) throw new Error("Customer lookup failed: "+lookupRes.error.message);
       var existing=lookupRes.data;
-      var customerType=(existing&&existing.length>0)?"Returning":"New";
+      var customerType=(existing&&existing.length>0)?"returning":"new";
       var upsertRes=await sb.rpc("upsert_customer", {
         p_first_name: fn, p_last_name: ln, p_email: em, p_phone: ph, p_customer_type: customerType
       });
