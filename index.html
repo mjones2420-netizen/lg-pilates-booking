@@ -276,6 +276,16 @@ tr:hover td { background:var(--cream); }
 .parq-warn-chev { color:var(--clay); font-size:22px; font-weight:500; }
 tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-out 2; }
 @keyframes parqPulse { 0% { background:#ffe4c7; } 100% { background:#fff8ec; } }
+.already-booked-view { display:none; text-align:center; padding:8px 8px 18px; }
+.ab-icon { width:64px; height:64px; border-radius:50%; background:#e8f0e7; color:var(--green); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:32px; font-weight:500; }
+.ab-title { font-family:'Raleway',sans-serif; font-size:22px; font-weight:500; color:var(--charcoal); margin:0 0 10px; }
+.ab-lead { font-size:14px; color:var(--mid); line-height:1.65; margin:0 auto 18px; max-width:360px; }
+.ab-details { background:#fff; border:1px solid var(--border); border-radius:4px; padding:14px 18px; text-align:left; margin-bottom:18px; font-size:13.5px; }
+.ab-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed var(--border); color:var(--charcoal); }
+.ab-row:last-child { border-bottom:none; }
+.ab-row-label { color:var(--mid); font-size:12.5px; }
+.ab-row-val { font-weight:500; }
+.ab-hint { font-size:12px; color:var(--light); margin-top:14px; line-height:1.6; }
 .priority-info { font-size:12px; color:var(--mid); background:#fef9ec; border:1px solid #f0e0a0; border-radius:3px; padding:9px 12px; margin-bottom:10px; line-height:1.6; }
 .priority-check .finp { font-size:14px; padding:11px 14px; }
 .priority-badge { display:inline-flex; align-items:center; gap:5px; background:#fef3e8; color:var(--clay); border:1px solid #f0d0a0; border-radius:100px; font-size:11px; padding:3px 10px; font-weight:600; }
@@ -622,6 +632,16 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
           <div class="frow-btns" style="margin-top:20px">
             <button class="step-btn-back" onclick="goStepBack3()">Back</button>
           </div>
+        </div>
+
+        <!-- Already-booked view: shown at step 1 when a returning customer is already on this block -->
+        <div id="already-booked-view" class="already-booked-view">
+          <div class="ab-icon">&#10003;</div>
+          <div class="ab-title">You're already booked!</div>
+          <p class="ab-lead">Our records show you already have a booking on this block. No need to book again &mdash; Louise will see you there.</p>
+          <div class="ab-details" id="ab-details"></div>
+          <button class="step-btn" onclick="closeModal()">Close</button>
+          <div class="ab-hint">If you think this is a mistake, please contact Louise directly.</div>
         </div>
       </div>
       <div class="mfoot" id="mfoot-confirm" style="display:none">
@@ -1074,6 +1094,11 @@ function openModal(classId, blockId) {
   // Reset customer check message
   var ccMsg=document.getElementById("customer-check-msg");
   if(ccMsg){ ccMsg.style.display="none"; ccMsg.textContent=""; }
+  // Item 17b: Reset already-booked view so a subsequent modal open (e.g. different block) starts clean
+  var abView=document.getElementById("already-booked-view");
+  if(abView) abView.style.display="none";
+  var pipsWrap=document.getElementById("step-progress");
+  if(pipsWrap) pipsWrap.style.opacity="1";
   // Reset success view back to form view
   document.getElementById("success-view").className="success";
   document.getElementById("form-view").style.display="block";
@@ -1192,12 +1217,27 @@ function goStep2(){
       window._customerIsReturning=isReturning;
       var msgEl=document.getElementById("customer-check-msg");
       if(isReturning){
+        // Item 17b: before showing returning-client flow, check if this customer is already
+        // booked on this specific block. If so, show the "already booked" screen instead of
+        // letting them go through the whole booking flow only to fail at the Reserve step.
+        var existingCustomerId=lookupRes.data[0].id;
+        var dupRes=await sb.rpc("has_active_booking_on_block",{
+          p_customer_id: existingCustomerId, p_block_id: selectedBlock.id
+        });
+        if(dupRes.error) throw dupRes.error;
+        if(dupRes.data===true){
+          // Show the already-booked view
+          msgEl.style.display="block"; msgEl.style.background="#e8f0e7"; msgEl.style.color="var(--green)";
+          msgEl.textContent="\u2713 Welcome back! Checking your bookings...";
+          setTimeout(function(){ showAlreadyBookedView(); }, 1200);
+          return;
+        }
         msgEl.style.display="block"; msgEl.style.background="#e8f0e7"; msgEl.style.color="var(--green)";
-        msgEl.textContent="✓ Welcome back! As a returning customer you can skip the health form.";
+        msgEl.textContent="\u2713 Welcome back! As a returning customer you can skip the health form.";
         setTimeout(function(){ goStep3(); }, 2500);
       } else {
         msgEl.style.display="block"; msgEl.style.background="#f5ede3"; msgEl.style.color="var(--clay)";
-        msgEl.textContent="👋 Welcome! As a new customer please complete the short health form below before booking.";
+        msgEl.textContent="\ud83d\udc4b Welcome! As a new customer please complete the short health form below before booking.";
         setTimeout(function(){
           document.getElementById("step-1").style.display="none";
           document.getElementById("step-2a").style.display="block";
@@ -1210,6 +1250,36 @@ function goStep2(){
     }catch(err){ console.error(err); window._customerIsReturning=false; document.getElementById("step-1").style.display="none"; document.getElementById("step-2a").style.display="block"; updateStepIndicator(2, false); scrollModalTop(); }
     finally{ btn.textContent="Continue"; btn.disabled=false; }
   })();
+}
+
+// Item 17b: Render and show the "already booked" screen inside the booking modal.
+// Called when step 1 detects a returning client who already has an active booking
+// on the selected block. Hides all other step panels, dims the step pips, populates
+// the details panel from the current class + block, and updates the step label.
+function showAlreadyBookedView(){
+  var c=selected, blk=selectedBlock;
+  if(!c||!blk) return;
+  // Hide all step panels
+  document.getElementById("step-1").style.display="none";
+  document.getElementById("step-2a").style.display="none";
+  document.getElementById("step-2b").style.display="none";
+  document.getElementById("step-3").style.display="none";
+  // Populate details
+  var firstDate=(blk.dates&&blk.dates.length>0)?blk.dates[0]:"";
+  var lastDate=(blk.dates&&blk.dates.length>0)?blk.dates[blk.dates.length-1]:"";
+  var blockRange=firstDate&&lastDate?firstDate+" \u2013 "+lastDate:"";
+  var html="";
+  html+='<div class="ab-row"><span class="ab-row-label">Class</span><span class="ab-row-val">'+sanitise(c.name||"")+'</span></div>';
+  html+='<div class="ab-row"><span class="ab-row-label">When</span><span class="ab-row-val">'+sanitise((c.day||"")+" "+(c.time||""))+'</span></div>';
+  html+='<div class="ab-row"><span class="ab-row-label">Venue</span><span class="ab-row-val">'+sanitise((c.venue||"")+(c.loc?", "+c.loc:""))+'</span></div>';
+  if(blockRange) html+='<div class="ab-row"><span class="ab-row-label">Block</span><span class="ab-row-val">'+sanitise(blockRange)+'</span></div>';
+  document.getElementById("ab-details").innerHTML=html;
+  // Show the already-booked view
+  document.getElementById("already-booked-view").style.display="block";
+  // Dim step pips so header doesn't confusingly imply we're mid-flow
+  var pipsWrap=document.getElementById("step-progress");
+  if(pipsWrap) pipsWrap.style.opacity="0.3";
+  scrollModalTop();
 }
 
 function goStep2a(){
