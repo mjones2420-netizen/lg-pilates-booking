@@ -376,15 +376,15 @@ tr:hover td { background:var(--cream); }
       <div style="font-size:13px; color:var(--mid); margin-bottom:18px;">Bank details shown to customers on the payment and confirmation screens.</div>
       <div style="margin-bottom:14px;">
         <label class="flbl">Account Name</label>
-        <input type="text" class="finp" id="setting-bank-name" style="margin-bottom:0">
+        <input type="text" class="finp" id="setting-bank-name" maxlength="100" style="margin-bottom:0">
       </div>
       <div style="margin-bottom:14px;">
         <label class="flbl">Sort Code</label>
-        <input type="text" class="finp" id="setting-bank-sort" placeholder="00-00-00" style="margin-bottom:0">
+        <input type="text" class="finp" id="setting-bank-sort" placeholder="00-00-00" maxlength="10" style="margin-bottom:0">
       </div>
       <div style="margin-bottom:20px;">
         <label class="flbl">Account Number</label>
-        <input type="text" class="finp" id="setting-bank-acc" placeholder="00000000" style="margin-bottom:0">
+        <input type="text" class="finp" id="setting-bank-acc" placeholder="00000000" maxlength="15" style="margin-bottom:0">
       </div>
       <button class="step-btn" onclick="saveSettings()" style="width:auto;padding:10px 24px;">Save Bank Details</button>
     </div>
@@ -449,20 +449,20 @@ tr:hover td { background:var(--cream); }
           <div class="frow">
             <div>
               <label class="flbl">First Name <span class="req">*</span></label>
-              <input type="text" class="finp" id="b-firstname" placeholder="First name">
+              <input type="text" class="finp" id="b-firstname" placeholder="First name" maxlength="50">
               <div class="field-err" id="err-firstname">Please enter your first name.</div>
             </div>
             <div>
               <label class="flbl">Last Name <span class="req">*</span></label>
-              <input type="text" class="finp" id="b-lastname" placeholder="Last name">
+              <input type="text" class="finp" id="b-lastname" placeholder="Last name" maxlength="50">
               <div class="field-err" id="err-lastname">Please enter your last name.</div>
             </div>
           </div>
           <label class="flbl">Email Address <span class="req">*</span></label>
-          <input type="text" class="finp" id="b-email" placeholder="your@email.com">
+          <input type="text" class="finp" id="b-email" placeholder="your@email.com" maxlength="100">
           <div class="field-err" id="err-email">Please enter a valid email address.</div>
           <label class="flbl">Phone Number <span class="req">*</span></label>
-          <input type="text" class="finp" id="b-phone" placeholder="+44 7700 000000">
+          <input type="text" class="finp" id="b-phone" placeholder="+44 7700 000000" maxlength="20">
           <div class="field-err" id="err-phone">Please enter your phone number.</div>
           <div id="customer-check-msg" style="display:none; font-size:14px; padding:14px 16px; border-radius:3px; margin-bottom:14px; font-weight:500; line-height:1.5;"></div>
           <button class="step-btn" onclick="goStep2()">Continue</button>
@@ -475,7 +475,7 @@ tr:hover td { background:var(--cream); }
 
           <div style="margin-bottom:12px;width:90px">
             <label class="flbl">Age <span class="req">*</span></label>
-            <input type="text" class="finp" id="b-age" placeholder="e.g. 34" style="margin-bottom:0">
+            <input type="text" class="finp" id="b-age" placeholder="e.g. 34" maxlength="3" style="margin-bottom:0">
           </div>
           <div class="field-err" id="err-age" style="margin-top:0;margin-bottom:10px">Please enter your age.</div>
 
@@ -496,19 +496,19 @@ tr:hover td { background:var(--cream); }
 
           <div id="parq-yes-section" style="display:none;margin-top:4px">
             <label class="flbl">You answered YES to one or more questions &mdash; please provide details below <span class="req">*</span></label>
-            <textarea class="finp" id="b-health-conditions" placeholder="Please give details here..." rows="3" style="resize:vertical;margin-bottom:0"></textarea>
+            <textarea class="finp" id="b-health-conditions" placeholder="Please give details here..." rows="3" maxlength="2000" style="resize:vertical;margin-bottom:0"></textarea>
             <div class="field-err" id="err-health">Please provide details for any YES answers.</div>
           </div>
           <div style="margin-top:12px">
             <label class="flbl">Additional information (optional)</label>
-            <textarea class="finp" id="b-health-other" placeholder="Anything else Louise should know?" rows="2" style="resize:vertical"></textarea>
+            <textarea class="finp" id="b-health-other" placeholder="Anything else Louise should know?" rows="2" maxlength="2000" style="resize:vertical"></textarea>
           </div>
 
           <div class="parq-declaration">
             <div class="parq-section-title">Declaration</div>
             <p>I have answered all the questions on this form honestly and I am aware that if I answered YES to any of the questions I will need to consult my doctor before taking part in the class. I am aware that if my circumstances in health or medical conditions change I must notify my instructor, and it is my responsibility to do so.</p>
             <div class="frow" style="margin-top:14px">
-              <div><label class="flbl">Print Name <span class="req">*</span></label><input type="text" class="finp" id="b-print-name" placeholder="Full name" style="margin-bottom:0"></div>
+              <div><label class="flbl">Print Name <span class="req">*</span></label><input type="text" class="finp" id="b-print-name" placeholder="Full name" maxlength="100" style="margin-bottom:0"></div>
               <div><label class="flbl">Date</label><div class="finp" id="b-sign-date" style="margin-bottom:0;background:#f5f5f5;color:var(--light);cursor:default"></div></div>
             </div>
             <div class="field-err" id="err-declaration">Please enter your name and date to sign the declaration.</div>
@@ -530,11 +530,11 @@ tr:hover td { background:var(--cream); }
           <div class="step-label">Step 3 of 4 &mdash; Emergency Contact</div>
           <div style="font-size:13px;color:var(--mid);margin-bottom:16px;line-height:1.6">Please provide an emergency contact who can be reached if needed during class.</div>
           <div class="frow" style="margin-bottom:10px">
-            <div><label class="flbl">Contact Name <span class="req">*</span></label><input type="text" class="finp" id="b-emergency-name" placeholder="Full name" style="margin-bottom:0"></div>
-            <div><label class="flbl">Relationship <span class="req">*</span></label><input type="text" class="finp" id="b-emergency-relationship" placeholder="e.g. Husband" style="margin-bottom:0"></div>
+            <div><label class="flbl">Contact Name <span class="req">*</span></label><input type="text" class="finp" id="b-emergency-name" placeholder="Full name" maxlength="100" style="margin-bottom:0"></div>
+            <div><label class="flbl">Relationship <span class="req">*</span></label><input type="text" class="finp" id="b-emergency-relationship" placeholder="e.g. Husband" maxlength="50" style="margin-bottom:0"></div>
           </div>
           <label class="flbl">Emergency Contact Phone <span class="req">*</span></label>
-          <input type="text" class="finp" id="b-emergency-phone" placeholder="07700 000000">
+          <input type="text" class="finp" id="b-emergency-phone" placeholder="07700 000000" maxlength="20">
           <div class="field-err" id="err-emergency">Please fill in all emergency contact details.</div>
 
           <div class="frow-btns" style="margin-top:8px">
@@ -637,7 +637,7 @@ tr:hover td { background:var(--cream); }
       <div class="auth-logo">LG <span>Pilates</span></div>
       <div class="auth-title">Dashboard</div>
       <div class="auth-sub">Sign in with your email and password to access the admin dashboard.</div>
-      <input type="email" class="finp" id="dash-email" placeholder="Email address">
+      <input type="email" class="finp" id="dash-email" placeholder="Email address" maxlength="100">
       <input type="password" class="finp" id="dash-password" placeholder="Password" onkeydown="if(event.key==='Enter')checkDashLogin()">
       <div id="dash-error" style="color:var(--red);font-size:12px;margin-top:-8px;margin-bottom:10px;display:none">Incorrect email or password. Please try again.</div>
       <button class="auth-btn" id="dash-login-btn" onclick="checkDashLogin()">Sign In</button>
@@ -665,14 +665,14 @@ tr:hover td { background:var(--cream); }
             <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
           </select>
         </div>
-        <div><label class="flbl">Level</label><input type="text" class="finp" id="ac-level" placeholder="e.g. Mixed Ability" style="margin-bottom:0"></div>
+        <div><label class="flbl">Level</label><input type="text" class="finp" id="ac-level" placeholder="e.g. Mixed Ability" maxlength="50" style="margin-bottom:0"></div>
       </div>
       <div class="frow" style="margin-top:14px">
-        <div><label class="flbl">Start Time</label><input type="text" class="finp" id="ac-time" placeholder="e.g. 9:45am" style="margin-bottom:0" onblur="onTimeBlur('ac-time')"></div>
-        <div><label class="flbl">End Time</label><input type="text" class="finp" id="ac-end" placeholder="e.g. 10:30am" style="margin-bottom:0" onblur="onTimeBlur('ac-end')"></div>
+        <div><label class="flbl">Start Time</label><input type="text" class="finp" id="ac-time" placeholder="e.g. 9:45am" maxlength="10" style="margin-bottom:0" onblur="onTimeBlur('ac-time')"></div>
+        <div><label class="flbl">End Time</label><input type="text" class="finp" id="ac-end" placeholder="e.g. 10:30am" maxlength="10" style="margin-bottom:0" onblur="onTimeBlur('ac-end')"></div>
       </div>
       <label class="flbl" style="margin-top:14px">Venue</label>
-      <input type="text" class="finp" id="ac-venue" placeholder="e.g. St Johns Parish Church">
+      <input type="text" class="finp" id="ac-venue" placeholder="e.g. St Johns Parish Church" maxlength="100">
       <div class="frow">
         <div><label class="flbl">Location</label>
           <select class="finp" id="ac-loc" style="margin-bottom:0">
@@ -990,7 +990,7 @@ function renderGrid() {
         html+='<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;color:var(--charcoal);">&#127939; Block starts</span><span style="font-size:12px;font-weight:600;color:var(--charcoal);">'+blockStartStr2+'</span></div>';
         html+='</div>';
         html+='<div class="priority-check" id="pcheck-'+nextBlk.id+'">';
-        html+='<input type="text" class="finp" id="pemail-'+nextBlk.id+'" placeholder="Enter your email to check priority" style="margin-bottom:8px">';
+        html+='<input type="text" class="finp" id="pemail-'+nextBlk.id+'" placeholder="Enter your email to check priority" maxlength="100" style="margin-bottom:8px">';
         html+='<button class="book-btn" onclick="checkPriority('+c.id+','+nextBlk.id+')">Check My Priority</button>';
         html+='<div id="pmsg-'+nextBlk.id+'" style="display:none;font-size:13px;margin-top:8px;padding:10px 12px;border-radius:3px;line-height:1.6"></div>';
         html+='</div>';
@@ -1402,8 +1402,11 @@ function confirmBooking(){
       }
       var savedBookingId=bookRes.data;
 
-      // Update local booked count to keep UI in sync
-      blk.booked=blk.booked+1;
+      // Refetch booked count from DB to avoid drift (trg_sync_block_booked_count has just run)
+      try{
+        var {data:blkRef}=await sb.from("blocks").select("booked").eq("id",blk.id).single();
+        if(blkRef && typeof blkRef.booked==="number") blk.booked=blkRef.booked;
+      }catch(e){ /* non-fatal — local UI will resync on next grid render */ }
 
       // Step 3: Save PAR-Q — failure here does not affect the booking
       if(isNew&&parqData&&savedBookingId){
@@ -1941,7 +1944,7 @@ function saveNewClass(){
     try{
       if(editingClassId){
         // Update existing
-        await sb.from("classes").update({name:level,level:level,day:day,time:time,end_time:end,venue:venue,loc:loc}).eq("id",editingClassId);
+        await sb.from("classes").update({name:level,level:level,day:day,time:time,end_time:end,venue:venue,loc:loc}).eq("id",editingClassId).select();
         var c=classes.find(function(x){ return x.id===editingClassId; });
         if(c){ c.name=level; c.level=level; c.day=day; c.time=time; c.end_time=end; c.venue=venue; c.loc=loc; }
         showToast("Class updated!");
@@ -2006,7 +2009,10 @@ function saveNewBlock(){
   var weeks=parseInt(document.getElementById("ab-weeks").value);
   var price=parseInt(document.getElementById("ab-price").value);
   var cap=parseInt(document.getElementById("ab-cap").value);
-  if(!start||!weeks||!price||!cap){ document.getElementById("ab-err").style.display="block"; return; }
+  if(!start||isNaN(weeks)||weeks<1||isNaN(price)||price<0||isNaN(cap)||cap<1){
+    document.getElementById("ab-err").textContent="Please enter a valid start date, weeks (min 1), price (non-negative), and capacity (min 1).";
+    document.getElementById("ab-err").style.display="block"; return;
+  }
   if(!validateAbDate()){ document.getElementById("ab-err").textContent="Please fix the start date."; document.getElementById("ab-err").style.display="block"; return; }
   // Change 3 & 4: Check for overlapping dates or same-day start/end with existing blocks
   var newStart=new Date(start+"T00:00:00");
@@ -2042,7 +2048,7 @@ function saveNewBlock(){
         weeks:weeks,dates:dates,price:price,cap:cap,booked:0,wait:0,visible:true,status:"upcoming"
       }).select().single();
       if(error) throw error;
-      blocks.push({id:nb.id,class_id:addingBlockClassId,start_date:start,end_date:endStr,weeks:weeks,dates:dates,price:price,cap:cap,booked:0,wait:0,visible:true,status:"upcoming"});
+      blocks.push({id:nb.id,class_id:nb.class_id,start_date:nb.start_date,end_date:nb.end_date,weeks:nb.weeks,dates:nb.dates||[],price:nb.price,cap:nb.cap,booked:nb.booked||0,wait:nb.wait||0,visible:nb.visible!==false,status:nb.status});
       closeAddBlockModal();
       buildFilters(); renderGrid(); renderDashboard();
       showToast("Block added!");
@@ -2075,7 +2081,10 @@ function saveEditBlock(blockId){
   var weeks=parseInt(document.getElementById("ab-weeks").value);
   var price=parseInt(document.getElementById("ab-price").value);
   var cap=parseInt(document.getElementById("ab-cap").value);
-  if(!start||!weeks||!price||!cap){ document.getElementById("ab-err").style.display="block"; return; }
+  if(!start||isNaN(weeks)||weeks<1||isNaN(price)||price<0||isNaN(cap)||cap<1){
+    document.getElementById("ab-err").textContent="Please enter a valid start date, weeks (min 1), price (non-negative), and capacity (min 1).";
+    document.getElementById("ab-err").style.display="block"; return;
+  }
   if(!validateAbDate()){ document.getElementById("ab-err").textContent="Please fix the start date."; document.getElementById("ab-err").style.display="block"; return; }
   // Change 3 & 4: Check for overlapping dates or same-day start/end (exclude the block being edited)
   var newStart=new Date(start+"T00:00:00");
@@ -2103,7 +2112,7 @@ function saveEditBlock(blockId){
   var endStr=endDate.getFullYear()+"-"+String(endDate.getMonth()+1).padStart(2,"0")+"-"+String(endDate.getDate()).padStart(2,"0");
   (async function(){
     try{
-      await sb.from("blocks").update({start_date:start,end_date:endStr,weeks:weeks,dates:dates,price:price,cap:cap}).eq("id",blockId);
+      await sb.from("blocks").update({start_date:start,end_date:endStr,weeks:weeks,dates:dates,price:price,cap:cap}).eq("id",blockId).select();
       var blk=blocks.find(function(b){ return b.id===blockId; });
       if(blk){ blk.start_date=start; blk.end_date=endStr; blk.weeks=weeks; blk.dates=dates; blk.price=price; blk.cap=cap; }
       closeAddBlockModal();
@@ -2122,10 +2131,10 @@ function deleteBlock(blockId){
       var{data:blockBookings}=await sb.from("bookings").select("id").eq("block_id",blockId);
       if(blockBookings&&blockBookings.length>0){
         var bookingIds=blockBookings.map(function(b){ return b.id; });
-        await sb.from("parq").delete().in("booking_id",bookingIds);
+        await sb.from("parq").delete().in("booking_id",bookingIds).select();
       }
-      await sb.from("bookings").delete().eq("block_id",blockId);
-      await sb.from("blocks").delete().eq("id",blockId);
+      await sb.from("bookings").delete().eq("block_id",blockId).select();
+      await sb.from("blocks").delete().eq("id",blockId).select();
       blocks=blocks.filter(function(b){ return b.id!==blockId; });
       buildFilters(); renderGrid(); renderDashboard();
       showToast("Block deleted.");
@@ -2144,9 +2153,9 @@ function deleteClass(id){
   if(!confirm(msg)) return;
   (async function(){
     try{
-      await sb.from("bookings").delete().eq("class_id",id);
-      await sb.from("blocks").delete().eq("class_id",id);
-      await sb.from("classes").delete().eq("id",id);
+      await sb.from("bookings").delete().eq("class_id",id).select();
+      await sb.from("blocks").delete().eq("class_id",id).select();
+      await sb.from("classes").delete().eq("id",id).select();
       classes=classes.filter(function(c){ return c.id!==id; });
       blocks=blocks.filter(function(b){ return b.class_id!==id; });
       buildFilters(); renderGrid(); renderDashboard();
@@ -2160,7 +2169,7 @@ function confirmBookingAdmin(idx){
   var b=bookings[idx];
   showToast("Confirming...");
   (async function(){
-    try{ await sb.from("bookings").update({status:"confirmed"}).eq("id",b.dbId); showToast("Booking confirmed for "+b.client+"!"); renderDashboard(); }
+    try{ await sb.from("bookings").update({status:"confirmed"}).eq("id",b.dbId).select(); showToast("Booking confirmed for "+b.client+"!"); renderDashboard(); }
     catch(err){ console.error(err); showToast("Error confirming booking."); }
   })();
 }
@@ -2340,8 +2349,8 @@ function rfbConfirm(){
         first_name:s.b.client.split(" ")[0]||"",
         last_name:s.b.client.split(" ").slice(1).join(" ")||"",
         email:s.b.email||"",
-        class_name:sanitise(s.b.cls)||"",
-        venue:sanitise(cls.venue||cls.loc||""),
+        class_name:s.b.cls||"",
+        venue:(cls.venue||cls.loc||""),
         block_start_date:blkObj.start_date||null,
         block_end_date:blkObj.end_date||null,
         sessions_attended:s.sessionsAttended,
@@ -2442,9 +2451,9 @@ function deleteCustomer(idx){
   var b=bookings[idx];
   (async function(){
     try{
-      await sb.from("parq").delete().eq("customer_id",b.customerId);
-      await sb.from("bookings").delete().eq("customer_id",b.customerId);
-      await sb.from("customers").delete().eq("id",b.customerId);
+      await sb.from("parq").delete().eq("customer_id",b.customerId).select();
+      await sb.from("bookings").delete().eq("customer_id",b.customerId).select();
+      await sb.from("customers").delete().eq("id",b.customerId).select();
       showToast("Customer deleted."); renderDashboard();
     }catch(err){ console.error(err); showToast("Error deleting customer."); }
   })();
@@ -2514,7 +2523,11 @@ async function checkDashLogin(){
   document.getElementById("dash-error").style.display="none";
   var{data,error}=await sb.auth.signInWithPassword({email:em,password:pw});
   if(error){ document.getElementById("dash-error").style.display="block"; btn.textContent="Sign In"; btn.disabled=false; }
-  else { show("dashboard"); }
+  else {
+    btn.textContent="Sign In";
+    btn.disabled=false;
+    show("dashboard");
+  }
 }
 
 async function signOut(){
@@ -2551,6 +2564,10 @@ function rowsToCsv(rows){
       var v=row[h];
       if(v===null||v===undefined) return "";
       v=String(v);
+      // Prevent CSV formula injection: prefix an apostrophe to any value starting with =, +, -, @, tab, or CR
+      if(v.length>0 && /^[=+\-@\t\r]/.test(v)){
+        v = "'" + v;
+      }
       // Wrap in quotes if contains comma, quote, or newline
       if(v.indexOf(",")>-1||v.indexOf('"')>-1||v.indexOf("\n")>-1){
         return '"'+v.replace(/"/g,'""')+'"';
