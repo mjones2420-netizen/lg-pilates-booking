@@ -1747,61 +1747,16 @@ function checkPriority(classId, blockId){
 
   (async function(){
     try{
-      // Check if customer exists
-      var{data:custs}=await sb.from("customers").select("id").eq("email",email).limit(1);
-      var customer=custs&&custs.length>0?custs[0]:null;
+      // Single SECURITY DEFINER RPC call — checks both manual per-class priority
+      // and confirmed previous-block booking. Returns boolean only, no data leak.
+      // Replaces three direct SELECTs on customers / customer_class_priority / bookings
+      // that silently returned [] because anon has no SELECT policy on those tables.
+      var{data:hasPriority,error}=await sb.rpc("check_priority_access",{
+        p_email: email, p_block_id: blockId
+      });
+      if(error) throw error;
 
-      if(customer){
-        // Check per-class manual priority
-        var{data:manualPriority}=await sb.from("customer_class_priority")
-          .select("id")
-          .eq("customer_id",customer.id)
-          .eq("class_id",classId)
-          .limit(1);
-        if(manualPriority&&manualPriority.length>0){
-          grantPriorityAccess(classId, blockId, email, msgEl);
-          return;
-        }
-      }
-
-      // Check if they booked the previous block for this class
-      // Previous block = the most recently ended block for this class before this one
-      var thisBlk=blocks.find(function(b){ return b.id===blockId; });
-      var prevBlk=null;
-      if(thisBlk){
-        var classBlocks=blocks.filter(function(b){
-          return b.class_id===thisBlk.class_id && b.id!==blockId;
-        });
-        // Find the block whose end_date is closest before this block's start_date
-        classBlocks.sort(function(a,b){ return new Date(b.end_date)-new Date(a.end_date); });
-        var prevCandidates=classBlocks.filter(function(b){
-          return new Date(b.end_date+"T00:00:00") < new Date(thisBlk.start_date+"T00:00:00");
-        });
-        prevBlk=prevCandidates.length>0?prevCandidates[0]:null;
-      }
-
-      if(!customer){
-        // Not in system at all — no priority
-        denyPriorityAccess(blockId, msgEl, btn);
-        return;
-      }
-
-      if(!prevBlk){
-        // No previous block exists — can't have booked it
-        denyPriorityAccess(blockId, msgEl, btn);
-        return;
-      }
-
-      // Check if this customer has a CONFIRMED booking on the previous block
-      // Reserved bookings do not qualify — payment must be confirmed
-      var{data:prevBookings}=await sb.from("bookings")
-        .select("id,status")
-        .eq("customer_id",customer.id)
-        .eq("block_id",prevBlk.id)
-        .eq("status","confirmed")
-        .limit(1);
-
-      if(prevBookings&&prevBookings.length>0){
+      if(hasPriority){
         grantPriorityAccess(classId, blockId, email, msgEl);
       } else {
         denyPriorityAccess(blockId, msgEl, btn);
