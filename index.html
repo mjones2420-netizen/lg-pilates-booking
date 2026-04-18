@@ -2108,6 +2108,17 @@ function deleteClass(id){
   if(!confirm(msg)) return;
   (async function(){
     try{
+      // Fetch booking IDs for this class first, then delete PAR-Q records by booking_id
+      // (parq.booking_id is ON DELETE NO ACTION — we must clear it explicitly)
+      var{data:classBookings}=await sb.from("bookings").select("id").eq("class_id",id);
+      if(classBookings&&classBookings.length>0){
+        var bookingIds=classBookings.map(function(b){ return b.id; });
+        await sb.from("parq").delete().in("booking_id",bookingIds).select();
+      }
+      // Clear per-class manual priority grants (CASCADE would handle this on class delete
+      // but explicit delete makes the intent clear and surfaces permission issues early)
+      await sb.from("customer_class_priority").delete().eq("class_id",id).select();
+      // Then bookings, blocks, class itself
       await sb.from("bookings").delete().eq("class_id",id).select();
       await sb.from("blocks").delete().eq("class_id",id).select();
       await sb.from("classes").delete().eq("id",id).select();
