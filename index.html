@@ -808,6 +808,20 @@ function sanitise(str) {
   return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#x27;").replace(/\//g,"&#x2F;");
 }
 
+// Format a YYYY-MM-DD ISO date string for friendly display (e.g. "18 Apr 2026").
+// Returns empty string for falsy input. Returns the raw value unchanged if it
+// doesn't look like an ISO date, so legacy values never break the UI.
+function formatDateDisplay(isoStr) {
+  if (!isoStr) return "";
+  var s = String(isoStr);
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return s;
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var mi = parseInt(m[2], 10) - 1;
+  if (mi < 0 || mi > 11) return s;
+  return parseInt(m[3], 10) + " " + months[mi] + " " + m[1];
+}
+
 // ─── Body scroll lock helpers ─────────────────────────────────────────────────
 function lockBodyScroll() {
   document.body.style.overflow = 'hidden';
@@ -1073,11 +1087,19 @@ function openModal(classId, blockId) {
   window._customerIsReturning=false;
   if(document.getElementById("b-health-conditions")) document.getElementById("b-health-conditions").value="";
   ["b-age","b-emergency-name","b-emergency-relationship","b-emergency-phone","b-print-name"].forEach(function(id){ if(document.getElementById(id)) document.getElementById(id).value=""; });
-  // Auto-populate today's date on sign date display
+  // Auto-populate today's date on sign date display.
+  // Human-readable text stays the same ("18 Apr 2026"); ISO value rides along
+  // in data-iso so the DB write uses a proper DATE string.
   var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var now=new Date();
   var signDateEl=document.getElementById("b-sign-date");
-  if(signDateEl) signDateEl.textContent=now.getDate()+" "+months[now.getMonth()]+" "+now.getFullYear();
+  if(signDateEl){
+    signDateEl.textContent=now.getDate()+" "+months[now.getMonth()]+" "+now.getFullYear();
+    var y=now.getFullYear();
+    var mo=String(now.getMonth()+1).padStart(2,"0");
+    var d=String(now.getDate()).padStart(2,"0");
+    signDateEl.setAttribute("data-iso",y+"-"+mo+"-"+d);
+  }
   if(document.getElementById("b-declaration")) document.getElementById("b-declaration").checked=false;
   if(document.getElementById("parq-yes-section")) document.getElementById("parq-yes-section").style.display="none";
   for(var qi=1;qi<=12;qi++){
@@ -1438,7 +1460,7 @@ function confirmBooking(){
       details:document.getElementById("b-health-conditions")?document.getElementById("b-health-conditions").value.trim():"",
       other:document.getElementById("b-health-other").value.trim(),
       printName:document.getElementById("b-print-name").value.trim(),
-      signDate:document.getElementById("b-sign-date").textContent
+      signDate:(document.getElementById("b-sign-date").getAttribute("data-iso")||"")
     };
     var qLabels=["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
     for(var qi=1;qi<=12;qi++){
@@ -1499,9 +1521,6 @@ function confirmBooking(){
       // Step 3: Save PAR-Q — failure here does not affect the booking
       if(isNew&&parqData&&savedBookingId){
         try{
-          var monthMap={"Jan":"01","Feb":"02","Mar":"03","Apr":"04","May":"05","Jun":"06","Jul":"07","Aug":"08","Sep":"09","Oct":"10","Nov":"11","Dec":"12"};
-          var dateParts=parqData.signDate.split(" ");
-          var signDateFormatted=dateParts.length===3?(dateParts[2]+"-"+(monthMap[dateParts[1]]||"01")+"-"+(dateParts[0].length===1?"0":"")+dateParts[0]):parqData.signDate;
           var answers={};
           var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
           for(var qi=0;qi<parqData.questions.length;qi++){ answers[qKeys[qi]]=parqData.questions[qi].a; }
@@ -1509,7 +1528,7 @@ function confirmBooking(){
             booking_id:savedBookingId, customer_id:customerId, age:parqData.age,
             emergency_name:parqData.emergencyName, emergency_relationship:parqData.emergencyRelationship,
             emergency_phone:parqData.emergencyPhone, yes_details:parqData.details,
-            additional_notes:parqData.other, print_name:parqData.printName, sign_date:signDateFormatted
+            additional_notes:parqData.other, print_name:parqData.printName, sign_date:parqData.signDate
           },answers)).select();
         }catch(parqErr){ console.error("PAR-Q save error (booking still saved):",parqErr); }
       }
@@ -2600,7 +2619,7 @@ function viewBooking(idx){
         if(p.additional_notes) html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Additional Notes</div><div class=\"health-note\">"+sanitise(p.additional_notes)+"</div>";
         html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Declaration</div><div class=\"sdetail\">";
         html+="<div class=\"srow\"><span>Signed by</span><span>"+sanitise(p.print_name)+"</span></div>";
-        html+="<div class=\"srow\"><span>Date</span><span>"+sanitise(p.sign_date)+"</span></div></div>";
+        html+="<div class=\"srow\"><span>Date</span><span>"+sanitise(formatDateDisplay(p.sign_date))+"</span></div></div>";
       } else {
         html+="<div class=\"health-note\" style=\"margin-top:16px\">Returning customer \u2014 no health form required.</div>";
       }
