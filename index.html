@@ -304,9 +304,25 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
   .hero h1 { font-size:38px; }
   .overlay { padding:10px; }
 }
+
+/* Test-mode banner — only visible when URL contains ?env=test */
+#test-mode-banner { display:none; background:var(--red); color:#fff; padding:10px 18px; font-family:'Open Sans',sans-serif; font-size:13px; font-weight:500; text-align:center; border-bottom:2px solid #8b2020; line-height:1.4; }
+#test-mode-banner.on { display:block; }
+.tmb-inner { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center; }
+.tmb-label { text-transform:uppercase; letter-spacing:0.1em; }
+.tmb-explain { opacity:0.85; font-weight:400; }
+.tmb-icon { display:inline-block; width:16px; height:16px; background:#fff; color:var(--red); border-radius:50%; font-size:11px; font-weight:700; line-height:16px; text-align:center; flex-shrink:0; }
 </style>
 </head>
 <body>
+
+<div id="test-mode-banner" role="status" aria-live="polite">
+  <span class="tmb-inner">
+    <span class="tmb-icon" aria-hidden="true">!</span>
+    <span class="tmb-label">Test mode</span>
+    <span class="tmb-explain">&mdash; connected to test database, not real client data</span>
+  </span>
+</div>
 
 <nav>
   <div class="logo">LG <span>Pilates</span></div>
@@ -798,9 +814,24 @@ var editingClassId = null;
 var addingBlockClassId = null;
 
 // ─── Supabase ────────────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://mrlooyixnlxzcfmvnqme.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ybG9veWl4bmx4emNmbXZucW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM2MDAsImV4cCI6MjA4ODQ4OTYwMH0.k1LbLenXS29NosaayGnQn3SR2G1xXVDBICeH7w7bD_c";
+// Environment switch: ?env=test in the URL points at the test Supabase project.
+// Default (no param) hits production. See also: test-mode banner (shown if IS_TEST_MODE).
+const IS_TEST_MODE = new URLSearchParams(window.location.search).get("env") === "test";
+
+const SUPABASE_URL = IS_TEST_MODE
+  ? "https://ngzfhamjuviwfwuncrjo.supabase.co"
+  : "https://mrlooyixnlxzcfmvnqme.supabase.co";
+
+const SUPABASE_KEY = IS_TEST_MODE
+  ? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nemZoYW1qdXZpd2Z3dW5jcmpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1OTM1ODksImV4cCI6MjA5MjE2OTU4OX0.okVYL1VLSDd3I7nD5VPuUCOZmY_G7mzC4o3Y3lx16Pg"
+  : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ybG9veWl4bmx4emNmbXZucW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM2MDAsImV4cCI6MjA4ODQ4OTYwMH0.k1LbLenXS29NosaayGnQn3SR2G1xXVDBICeH7w7bD_c";
+
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+if (IS_TEST_MODE) {
+  var _tmb = document.getElementById("test-mode-banner");
+  if (_tmb) _tmb.classList.add("on");
+}
 
 // ─── Sanitise ─────────────────────────────────────────────────────────────────
 function sanitise(str) {
