@@ -55,29 +55,36 @@ test.describe('Smoke 02 — anon RPCs', () => {
   });
 
   test('has_active_booking_on_block returns FALSE for a non-existent booking', async () => {
-    // returning-one has no booking on the current Mon block (id 2 in seed)
+    // returning-one has NO booking on the Friday locked block (id 6 in seed).
+    // Previously this test used the current Mon block, but migration 08 added
+    // returning-one as booked on that block to support CB-31 (duplicate-booking
+    // detection). The Friday locked block is a stable "no booking" target —
+    // far enough in the future to survive date rollovers and clearly unrelated
+    // to any other seed setup.
     const { data: ret } = await sb.rpc('lookup_customer', {
       p_email: 'returning-one@test.example'
     });
     const customerId = ret[0].id;
 
-    const { data: monBlocks } = await sb
+    const { data: allBlocks } = await sb
       .from('blocks')
       .select('id, start_date, class_id')
       .order('start_date', { ascending: true });
 
-    // Current Mon block: start_date is in the past but not -48 days ago
-    const currentBlock = monBlocks.find(b => {
+    // Pick the Friday upcoming block — furthest in the future among non-full
+    // blocks on which returning-one has no booking.
+    // We identify it as the block with start_date ~25 days in the future.
+    const fridayLocked = allBlocks.find(b => {
       const start = new Date(b.start_date);
       const today = new Date();
       const diffDays = (start - today) / (1000 * 60 * 60 * 24);
-      return diffDays < 0 && diffDays > -30;  // past but recent
+      return diffDays > 14 && diffDays < 40;  // locked window
     });
-    expect(currentBlock).toBeDefined();
+    expect(fridayLocked, 'expected a block ~15-40 days in the future').toBeDefined();
 
     const { data, error } = await sb.rpc('has_active_booking_on_block', {
       p_customer_id: customerId,
-      p_block_id: currentBlock.id
+      p_block_id: fridayLocked.id
     });
 
     expect(error).toBeNull();
