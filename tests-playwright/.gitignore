@@ -1,0 +1,14 @@
+node_modules/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Environment secrets — NEVER commit
+.env
+.env.test
+.env.local
+.env.*.local
+
+# OS noise
+.DS_Store
+Thumbs.db
