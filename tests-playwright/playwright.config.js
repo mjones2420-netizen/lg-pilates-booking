@@ -11,6 +11,19 @@ assertNotProduction();
 
 const { defineConfig, devices } = require('@playwright/test');
 
+// Derive the origin (e.g. "http://localhost:8000") from TEST_APP_URL so
+// page.goto('/') resolves against the correct server. The path+query
+// (e.g. "/?env=test") is consumed separately via tests/helpers/app-url.js.
+//
+// This split is necessary because Playwright's baseURL strips the query
+// string — without it, page.goto('/') would load "http://localhost:8000/"
+// with no env switch, defaulting the app to PRODUCTION Supabase.
+let baseURL;
+if (process.env.TEST_APP_URL) {
+  try { baseURL = new URL(process.env.TEST_APP_URL).origin; }
+  catch (e) { baseURL = undefined; }
+}
+
 module.exports = defineConfig({
   testDir: './tests',
   testIgnore: ['safety-check.js', 'helpers/**'],
@@ -27,10 +40,7 @@ module.exports = defineConfig({
   ],
 
   use: {
-    // Only use baseURL if TEST_APP_URL is set — tests that need a served page
-    // will skip cleanly if it's blank.
-    baseURL: process.env.TEST_APP_URL || undefined,
-
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
