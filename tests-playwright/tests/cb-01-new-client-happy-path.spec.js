@@ -11,8 +11,11 @@
 //   CB-28: Payment step shows as "Step 4 of 4"
 //   CB-33: PAR-Q record created for new client booking
 //
-// Canonical bookable class for new-client flow tests: Monday (block 2, active).
-// Wednesday (block 3) is used for CB-04 because it has both current + next block.
+// Canonical bookable class for new-client flow tests: Monday (mon-current role, active).
+// Wednesday (wed-upcoming role) is used for CB-04.
+//
+// These specs navigate by day name via openBookingModal(), so they're
+// resilient to block-ID regeneration by migration 09. No hardcoded IDs.
 
 const { test, expect } = require('@playwright/test');
 const { sb } = require('./helpers/supabase');

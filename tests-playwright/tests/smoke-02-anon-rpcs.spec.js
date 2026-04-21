@@ -2,9 +2,15 @@
 //
 // Smoke test: prove the anon role can call the 5 public-facing RPCs and that they
 // return the expected results against our seeded fixtures.
+//
+// Session 10: switched from hardcoded block IDs and fragile date-window
+// heuristics to role-based lookup via getBlockByRole(). Block IDs are
+// regenerated on every reseed (migration 09) so role lookup is the only
+// stable way to target specific blocks.
 
 const { test, expect } = require('@playwright/test');
 const { sb } = require('./helpers/supabase');
+const { getBlockByRole } = require('./helpers/fixture-lookup');
 
 test.describe('Smoke 02 — anon RPCs', () => {
 
@@ -31,23 +37,15 @@ test.describe('Smoke 02 — anon RPCs', () => {
   });
 
   test('check_priority_access returns TRUE for manual priority grant', async () => {
-    // returning-one has manual priority on the Wednesday class.
-    // Find the upcoming Wed block (days_until_start +3, not the full block).
-    const { data: blocks } = await sb
-      .from('blocks')
-      .select('id, start_date, cap, booked')
-      .order('start_date', { ascending: true });
-
-    // First Wednesday upcoming block that isn't the full one
-    const wedBlock = blocks.find(b =>
-      b.booked < b.cap &&
-      new Date(b.start_date) > new Date()
-    );
-    expect(wedBlock).toBeDefined();
+    // returning-one has a manual priority grant on the Wednesday class
+    // (customer_class_priority row seeded by migration 09). The wed-upcoming
+    // block is the only block on that class in the upcoming state, so it's
+    // the correct target for verifying the manual-priority path.
+    const wedUpcoming = await getBlockByRole('wed-upcoming');
 
     const { data, error } = await sb.rpc('check_priority_access', {
       p_email: 'returning-one@test.example',
-      p_block_id: wedBlock.id
+      p_block_id: wedUpcoming.id
     });
 
     expect(error).toBeNull();
@@ -55,36 +53,20 @@ test.describe('Smoke 02 — anon RPCs', () => {
   });
 
   test('has_active_booking_on_block returns FALSE for a non-existent booking', async () => {
-    // returning-one has NO booking on the Friday locked block (id 6 in seed).
-    // Previously this test used the current Mon block, but migration 08 added
-    // returning-one as booked on that block to support CB-31 (duplicate-booking
-    // detection). The Friday locked block is a stable "no booking" target —
-    // far enough in the future to survive date rollovers and clearly unrelated
-    // to any other seed setup.
+    // returning-one has NO booking on the fri-upcoming block (seed migration 09
+    // only gives them bookings on mon-past, mon-current, and wed-past).
+    // This is the stable "no booking" target — role-based lookup means it
+    // stays correct across reseeds regardless of date rollovers.
     const { data: ret } = await sb.rpc('lookup_customer', {
       p_email: 'returning-one@test.example'
     });
     const customerId = ret[0].id;
 
-    const { data: allBlocks } = await sb
-      .from('blocks')
-      .select('id, start_date, class_id')
-      .order('start_date', { ascending: true });
-
-    // Pick the Friday upcoming block — furthest in the future among non-full
-    // blocks on which returning-one has no booking.
-    // We identify it as the block with start_date ~25 days in the future.
-    const fridayLocked = allBlocks.find(b => {
-      const start = new Date(b.start_date);
-      const today = new Date();
-      const diffDays = (start - today) / (1000 * 60 * 60 * 24);
-      return diffDays > 14 && diffDays < 40;  // locked window
-    });
-    expect(fridayLocked, 'expected a block ~15-40 days in the future').toBeDefined();
+    const friUpcoming = await getBlockByRole('fri-upcoming');
 
     const { data, error } = await sb.rpc('has_active_booking_on_block', {
       p_customer_id: customerId,
-      p_block_id: fridayLocked.id
+      p_block_id: friUpcoming.id
     });
 
     expect(error).toBeNull();

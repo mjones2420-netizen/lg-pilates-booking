@@ -39,11 +39,11 @@ module.exports = defineConfig({
     ['html', { open: 'never' }]
   ],
 
-  use: {
+use: {
     baseURL,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    trace: 'on',
+    screenshot: 'on',
+    video: 'on',
   },
 
   projects: [

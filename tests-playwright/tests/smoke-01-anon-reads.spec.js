@@ -19,11 +19,11 @@ test.describe('Smoke 01 — anon reads', () => {
     expect(days).toEqual(['Friday', 'Monday', 'Wednesday']);
   });
 
-  test('anon can SELECT from blocks and sees 6 seed blocks', async () => {
+  test('anon can SELECT from blocks and sees 9 seed blocks', async () => {
     const { data, error } = await sb.from('blocks').select('id, class_id, status, cap, booked');
 
     expect(error).toBeNull();
-    expect(data.length).toBe(6);
+    expect(data.length).toBe(9);
 
     // One block should be at capacity (the "full" fixture)
     const fullBlocks = data.filter(b => b.booked >= b.cap);
