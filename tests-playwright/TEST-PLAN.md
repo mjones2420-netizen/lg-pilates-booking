@@ -1,9 +1,31 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 21 April 2026 (Session 10)
-**Total tests:** 21 (all passing)
+**Last updated:** 21 April 2026 (Session 11 — Batch 1 CB tests added)
+**Total tests:** 28 (21 pre-existing + 7 new in Batch 1)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
+
+---
+
+## Coverage Tracker — Client Booking (CB) scenarios
+
+The 33 Client Booking scenarios from `LG-Pilates-Test-Scenarios.xlsx` are being automated in batches. This tracker shows what's done and what's outstanding.
+
+| Status | Scenarios |
+|---|---|
+| ✅ Automated | CB-01, CB-02, CB-04, CB-05, CB-06, CB-07, CB-12, CB-21, CB-22, CB-23, CB-24, CB-28, CB-29, CB-30, CB-33 (15 of 33) |
+| ⬜ Not started | CB-03, CB-08, CB-09, CB-10, CB-11, CB-13, CB-14, CB-15, CB-16, CB-17, CB-18, CB-19, CB-20, CB-25, CB-26, CB-27, CB-31, CB-32 (18 of 33) |
+
+**Batch plan for remaining CB work:**
+
+- **Batch 2 — T&Cs checkbox:** CB-08, CB-09, CB-10, CB-11, CB-13 (5 tests)
+- **Batch 3 — Step indicator behaviour:** CB-14, CB-15, CB-16, CB-17, CB-18, CB-19, CB-20 (7 tests)
+- **Batch 4 — Emergency contact + back nav:** CB-25, CB-26, CB-27 (3 tests)
+- **Batch 5 — Returning client flows:** CB-03, CB-31, CB-32 (3 tests)
+
+**Other tabs (not started):** Priority Booking (15), Booking Windows (10), Admin Bookings (24), Admin Classes (26), Admin Clients (6), Schedule Display (8), Settings Export (11), Edge Cases (16), Block Warnings (11), Security (9).
+
+Coverage trackers for those tabs will be added here as each area begins automation.
 
 ---
 
@@ -546,21 +568,202 @@ Either the database trigger is broken (capacity counts drift from reality), or t
 **What a fail would mean:**
 New clients would be booking without their health questionnaire being saved. Compliance risk for Louise and a safety concern for classes.
 
+> **Note (Session 11):** CB-33 currently verifies PAR-Q creation *indirectly* via the `customer_type='new'` check. A direct check against the `parq` table would be stronger — but anon can't SELECT from `parq` (by design), so this needs an authenticated test client first. Earmarked for when admin-login helpers are added.
+
+---
+
+### CB-02 — PAR-Q "Yes" answer reveals the details textarea
+
+**What this proves:** When a new client answers "Yes" to any of the 12 medical questions, the "Please provide details" textarea appears so they can explain. Without this, answering Yes leaves them with no way to add context.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Opens the booking modal as a new client and advances to Step 2 (Medical)
+2. Checks that the details textarea is initially hidden
+3. Answers "Yes" to question 5 (joint/movement problems)
+
+**What the test verifies:**
+- The `#parq-yes-section` container is hidden on arrival at Step 2
+- After a single Yes answer, `#parq-yes-section` becomes visible
+- The `#b-health-conditions` textarea inside it is visible and reachable
+
+**What a fail would mean:**
+A new client answers "Yes" to a health question and has no way to add detail — they'd be forced to either answer "No" (lie on their PAR-Q) or abandon the booking entirely. Compliance and UX issue.
+
+---
+
+### CB-06 — Required fields validation on Step 1
+
+**What this proves:** Clicking Continue on Step 1 with nothing filled in doesn't advance the form and surfaces validation errors for the user. Without this, someone could skip the whole of Step 1 and proceed with an empty customer record.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Opens the booking modal
+2. Clicks Continue without entering any details
+
+**What the test verifies:**
+- The `#validation-toast` appears with errors for all four required fields (first name, last name, email, phone)
+- Step 1 remains visible
+- Step 2 (Medical) does NOT become visible
+
+**What a fail would mean:**
+Empty customer rows could be created in the database, or the booking flow could advance into Step 2 with no client details — leading to data integrity problems and confused admin views.
+
+---
+
+### CB-22 — Medical step layout
+
+**What this proves:** When a new client reaches Step 2 (Medical), they see the expected form structure: age field at the top, 12 Yes/No questions with "No" pre-selected, and the declaration section at the bottom. This guards against the form being accidentally restructured in a way that hides critical fields.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Advances a new client to Step 2
+2. Inspects each element in turn
+
+**What the test verifies:**
+- The age input is visible and empty
+- All 12 PAR-Q questions (q1–q12) are present, each with both Yes and No radio options
+- The "No" radio is pre-checked for each question
+- The print name input and declaration checkbox are visible at the bottom
+- The declaration checkbox is un-checked by default
+- The Continue button is visible
+
+**What a fail would mean:**
+One or more medical questions or the declaration would be missing or rearranged, leading to incomplete PAR-Qs or a booking flow that accidentally skips Step 2.
+
+---
+
+### CB-23 — Medical step age validation
+
+**What this proves:** The age field enforces two rules: it must be filled, and the customer must be at least 18. Under-18s can't book Pilates classes (insurance requirement).
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+*Covered by two `test()` blocks in the same spec:*
+
+**Sub-case A — Blank age:**
+1. Advances a new client to Step 2
+2. Fills the declaration and print name but leaves age blank
+3. Clicks Continue
+
+**Sub-case B — Age under 18:**
+1. Advances a new client to Step 2
+2. Fills age = "17", plus declaration and print name
+3. Clicks Continue
+
+**What the test verifies:**
+- Sub-case A: `#validation-toast` shows "Age is required" and Step 2 stays visible
+- Sub-case B: `#validation-toast` shows "at least 18" and Step 2 stays visible
+- Neither case advances to Step 2b (Emergency contact) or Step 3 (Payment)
+
+**What a fail would mean:**
+An under-18 could book a class, creating an insurance/liability issue. Or a customer could sidestep the age field entirely, leaving a mandatory safety field blank on their PAR-Q.
+
+---
+
+### CB-24 — Declaration must be ticked before advancing
+
+**What this proves:** The declaration checkbox is mandatory — a new client cannot continue past Step 2 without agreeing to the PAR-Q declaration. This is a legal/safety requirement (acknowledgement of responsibility).
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Advances a new client to Step 2
+2. Fills age, all-No answers, and print name
+3. Leaves the `#b-declaration` checkbox un-ticked
+4. Clicks Continue
+
+**What the test verifies:**
+- `#validation-toast` shows "agree to the declaration" error text
+- Step 2 remains visible
+- Step 2b (Emergency contact) and Step 3 (Payment) both remain hidden
+
+**What a fail would mean:**
+Clients could bypass the legal declaration, meaning Louise would not have a signed acknowledgement of risk on file. Real liability risk in the event of an incident.
+
+---
+
+### CB-29 — Sticky header stays visible while scrolling
+
+**What this proves:** When the medical form is scrolled, the modal header (class name, venue, step progress pips) stays pinned at the top of the modal — it doesn't scroll away. Without this, on smaller screens the user loses track of which class they're booking and which step they're on.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Advances a new client to Step 2
+2. Shrinks the viewport to 480×700 so the medical form exceeds the visible area
+3. Records the Y position of the `.mhead` element
+4. Scrolls the `.modal` element to the bottom
+5. Re-checks the `.mhead` position
+
+**What the test verifies:**
+- `.mhead` remains visible after scroll
+- `.mhead` Y position has NOT moved off-screen (within 5px of its starting position)
+- The declaration checkbox at the bottom of the form is now in the viewport
+
+**What a fail would mean:**
+The modal header would scroll out of view as the form scrolls — users would lose context of which class/step they're on. On mobile, this is a major UX regression.
+
+> **Follow-up:** This test runs in a shrunken desktop viewport as a proxy for mobile. A dedicated Mobile Safari Playwright project would give true mobile coverage — tracked in context.txt as a follow-up.
+
+---
+
+### CB-30 — Medical form is fully scrollable end-to-end
+
+**What this proves:** On narrow viewports, every part of the medical form is reachable — all 12 questions, the declaration, and the Continue button. If any of these are cut off below the viewport with no scroll path to them, the form becomes unusable on mobile.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Shrinks the viewport to 480×700 before opening the modal
+2. Advances a new client to Step 2
+3. Uses Playwright's `scrollIntoViewIfNeeded()` to reach question 12, the declaration, and the Continue button
+4. Confirms each is in the viewport after scrolling
+
+**What the test verifies:**
+- The age field (top) is visible immediately
+- Question 12 (near bottom) is reachable by scrolling
+- The declaration checkbox is reachable
+- The Continue button is reachable
+
+**What a fail would mean:**
+Mobile users might be physically unable to complete the PAR-Q — they could answer the first few questions but not reach the Continue button. Silent failure mode where new bookings would just stop working on mobile.
+
+> **Follow-up:** Like CB-29, this uses a shrunken desktop viewport. True mobile coverage is a separate item in context.txt.
+
 ---
 
 # Appendix — What's NOT yet covered
 
-The following scenarios are in the test plan but not yet automated. Listed in rough priority order for future sessions:
+The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary below describes the main areas remaining.
 
-### Customer booking (CB-02 to CB-33, 25 scenarios remaining)
-- **CB-02:** Returning customer books — 2-step flow (no PAR-Q repeat)
-- **CB-06:** Customer tries to book a full block — blocked with friendly error
-- **CB-08:** Standard customer tries to book during priority window — blocked
-- **CB-09:** Priority customer can book during priority window
-- **CB-10:** Customer tries to book outside any window (too early) — blocked
-- **CB-31:** Customer tries to book a class they're already on — sees "already booked" screen
-- Various validation scenarios (bad email, missing fields, invalid phone)
-- Pro-rata pricing scenarios (partially-started blocks)
+### Client Booking (CB) — 18 scenarios remaining
+See the Coverage Tracker above. Grouped into 4 batches by shared scaffold (T&Cs, step indicator, emergency contact, returning-client flows).
 
 ### Admin bookings (AB)
 - Louise adding/editing/cancelling bookings
@@ -575,6 +778,7 @@ The following scenarios are in the test plan but not yet automated. Listed in ro
 
 ### Infrastructure
 - GitHub Actions CI (run tests automatically on every code push)
+- Mobile Safari project for proper mobile coverage (currently CB-29/CB-30 use shrunken desktop viewports as a proxy)
 
 ---
 
