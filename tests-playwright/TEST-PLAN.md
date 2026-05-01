@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 21 April 2026 (Session 11 — Batch 1 CB tests added)
-**Total tests:** 28 (21 pre-existing + 7 new in Batch 1)
+**Last updated:** 1 May 2026 (Session 12 — Batch 2 CB tests added)
+**Total tests:** 34 (14 smoke + 20 CB)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -13,12 +13,12 @@ The 33 Client Booking scenarios from `LG-Pilates-Test-Scenarios.xlsx` are being 
 
 | Status | Scenarios |
 |---|---|
-| ✅ Automated | CB-01, CB-02, CB-04, CB-05, CB-06, CB-07, CB-12, CB-21, CB-22, CB-23, CB-24, CB-28, CB-29, CB-30, CB-33 (15 of 33) |
-| ⬜ Not started | CB-03, CB-08, CB-09, CB-10, CB-11, CB-13, CB-14, CB-15, CB-16, CB-17, CB-18, CB-19, CB-20, CB-25, CB-26, CB-27, CB-31, CB-32 (18 of 33) |
+| ✅ Automated | CB-01, CB-02, CB-04, CB-05, CB-06, CB-07, CB-08, CB-09, CB-10, CB-11, CB-12, CB-13, CB-21, CB-22, CB-23, CB-24, CB-28, CB-29, CB-30, CB-33 (20 of 33) |
+| ⬜ Not started | CB-03, CB-14, CB-15, CB-16, CB-17, CB-18, CB-19, CB-20, CB-25, CB-26, CB-27, CB-31, CB-32 (13 of 33) |
 
 **Batch plan for remaining CB work:**
 
-- **Batch 2 — T&Cs checkbox:** CB-08, CB-09, CB-10, CB-11, CB-13 (5 tests)
+- ~~**Batch 2 — T&Cs checkbox:** CB-08, CB-09, CB-10, CB-11, CB-13~~ ✅ Done (Session 12)
 - **Batch 3 — Step indicator behaviour:** CB-14, CB-15, CB-16, CB-17, CB-18, CB-19, CB-20 (7 tests)
 - **Batch 4 — Emergency contact + back nav:** CB-25, CB-26, CB-27 (3 tests)
 - **Batch 5 — Returning client flows:** CB-03, CB-31, CB-32 (3 tests)
@@ -758,12 +758,147 @@ Mobile users might be physically unable to complete the PAR-Q — they could ans
 
 ---
 
+### CB-08 — Reserve button is disabled by default at Step 3
+
+**What this proves:** When a new client lands on Step 3 (the payment screen), the Reserve button starts disabled and the hint text is visible. The customer cannot accidentally submit a booking before agreeing to the Terms & Conditions.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Drives a new client through Step 1, Step 2 (medical), and Step 2b (emergency contact) to reach Step 3
+2. Inspects the initial state of the T&Cs checkbox, the Reserve button, and the hint text
+
+**What the test verifies:**
+- The `#tcs-agree` checkbox is unticked
+- The `#reserve-btn` button is disabled
+- The `#tcs-hint` text is visible and contains the "Please agree to the Terms" prompt
+
+**What a fail would mean:**
+A customer could submit a booking without agreeing to the T&Cs. Louise would have no record of consent, creating a legal/compliance issue if a dispute arose.
+
+---
+
+### CB-09 — Ticking T&Cs enables the Reserve button
+
+**What this proves:** Ticking the T&Cs checkbox flips the Reserve button to enabled and hides the hint text. This is the positive case of the T&Cs gate — once the customer agrees, they can proceed.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Drives a new client to Step 3
+2. Confirms the starting disabled state
+3. Ticks the `#tcs-agree` checkbox
+
+**What the test verifies:**
+- The checkbox is now ticked
+- The Reserve button is enabled
+- The hint text is hidden
+
+**What a fail would mean:**
+The customer ticks the T&Cs but the Reserve button stays disabled — they get stuck on the payment screen with no way to complete the booking.
+
+---
+
+### CB-10 — Unticking T&Cs disables the button again
+
+**What this proves:** The T&Cs gate works in both directions. If a customer ticks the box and then unticks it (intentionally or by accident), the Reserve button returns to disabled and the hint text reappears. The gate doesn't just check the box once — it monitors continuously.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Drives a new client to Step 3
+2. Ticks the T&Cs checkbox and confirms the button is enabled
+3. Unticks the checkbox
+
+**What the test verifies:**
+- The checkbox is now unticked
+- The Reserve button is disabled again
+- The hint text is visible again
+
+**What a fail would mean:**
+A customer could untick the T&Cs after ticking them and still submit the booking. The "I agree" record would be inconsistent with what they actually clicked.
+
+---
+
+### CB-11 — T&Cs checkbox resets on Back-and-Return navigation
+
+**What this proves:** If a customer ticks the T&Cs, clicks Back to amend their emergency contact, then clicks Continue to return to Step 3, the checkbox is unticked and the Reserve button is disabled. The customer must explicitly re-agree — agreement does not persist across navigation.
+
+This guards against a customer agreeing once early in the flow, then editing their details, and submitting under terms they may have read days earlier.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Drives a new client to Step 3
+2. Ticks the T&Cs checkbox to confirm we're starting from a "ticked" state
+3. Clicks the Back button on Step 3, landing on Step 2b (Emergency Contact)
+4. Clicks Continue from Step 2b to return to Step 3
+
+**What the test verifies:**
+- After returning, the `#tcs-agree` checkbox is unticked
+- The Reserve button is disabled
+- The hint text is visible
+
+**What a fail would mean:**
+A customer who navigates back and forth could submit a booking with stale T&Cs agreement state — undermining the audit trail of consent.
+
+---
+
+### CB-13 — Returning client completes booking after agreeing to T&Cs
+
+**What this proves:** A returning customer can complete an end-to-end booking. They enter their email on Step 1, the app recognises them, skips both medical and emergency contact steps, lands on Step 3, ticks the T&Cs, clicks Reserve, and the booking is saved.
+
+**Preconditions:**
+- The Friday upcoming block (`fri-upcoming`) is bookable
+- The customer `returning-two@test.example` exists in the fixture
+- That customer has no existing active booking on `fri-upcoming` (otherwise the already-booked detection trips)
+
+**Fixture role used:** `fri-upcoming` + the seeded customer `returning-two@test.example`
+
+**Steps the test performs:**
+1. Looks up the customer via the `lookup_customer` RPC
+2. Pre-flight check: calls `has_active_booking_on_block` to confirm no existing booking — if one exists, the test fails fast with a "run npm run seed" hint
+3. Opens the Friday booking modal and fills Step 1 with the returning customer's email
+4. Waits for the app to detect the returning customer and jump straight to Step 3
+5. Verifies the Step 3 default state (checkbox unticked, button disabled)
+6. Ticks the T&Cs and clicks Reserve
+7. Waits for the success view to appear
+8. Calls `has_active_booking_on_block` again to confirm the booking now exists
+
+**What the test verifies:**
+- The customer is found and the lookup RPC works
+- The pre-booking RPC returns `false` (no existing booking)
+- Step 3 appears within 8 seconds (allowing for the 2.5s setTimeout in `goStep2()`)
+- The success view is shown after Reserve is clicked
+- The post-booking RPC returns `true` (booking now exists)
+
+**What a fail would mean:**
+The returning-customer fast track is broken. Existing customers would either be forced through the full new-client flow (a major UX regression) or be unable to complete a booking at all.
+
+> **Re-run note:** After a successful run, `returning-two@test.example` will have a booking on `fri-upcoming`. Re-running without reseeding trips the pre-flight check. Run `npm run seed` between full runs to reset.
+
+> **DB verification approach:** This test uses RPC functions (`lookup_customer`, `has_active_booking_on_block`) instead of direct SELECTs against `customers` or `bookings` — those tables are not readable by anon by design. The RPCs are the same channels the live app uses to read customer state.
+
+---
+
 # Appendix — What's NOT yet covered
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary below describes the main areas remaining.
 
-### Client Booking (CB) — 18 scenarios remaining
-See the Coverage Tracker above. Grouped into 4 batches by shared scaffold (T&Cs, step indicator, emergency contact, returning-client flows).
+### Client Booking (CB) — 13 scenarios remaining
+See the Coverage Tracker above. Grouped into 3 remaining batches by shared scaffold (step indicator, emergency contact, returning-client flows).
 
 ### Admin bookings (AB)
 - Louise adding/editing/cancelling bookings
