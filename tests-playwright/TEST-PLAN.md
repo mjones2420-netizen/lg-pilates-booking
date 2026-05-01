@@ -869,7 +869,7 @@ A customer who navigates back and forth could submit a booking with stale T&Cs a
 
 **Steps the test performs:**
 1. Looks up the customer via the `lookup_customer` RPC
-2. Pre-flight check: calls `has_active_booking_on_block` to confirm no existing booking — if one exists, the test fails fast with a "run npm run seed" hint
+2. Pre-flight check: calls `has_active_booking_on_block` to confirm no existing booking — if one exists, the test is **skipped** (not failed) with a "run npm run seed" hint. This means the suite stays green when CB-13 has been run twice without reseeding in between.
 3. Opens the Friday booking modal and fills Step 1 with the returning customer's email
 4. Waits for the app to detect the returning customer and jump straight to Step 3
 5. Verifies the Step 3 default state (checkbox unticked, button disabled)
@@ -887,7 +887,7 @@ A customer who navigates back and forth could submit a booking with stale T&Cs a
 **What a fail would mean:**
 The returning-customer fast track is broken. Existing customers would either be forced through the full new-client flow (a major UX regression) or be unable to complete a booking at all.
 
-> **Re-run note:** After a successful run, `returning-two@test.example` will have a booking on `fri-upcoming`. Re-running without reseeding trips the pre-flight check. Run `npm run seed` between full runs to reset.
+> **Re-run note:** After a successful run, `returning-two@test.example` will have a booking on `fri-upcoming`. Re-running without reseeding causes CB-13 to be **skipped** (with a clear reason in the test report) rather than failing — so the suite stays green. Run `npm run seed` between full runs to reset and have CB-13 actually execute.
 
 > **DB verification approach:** This test uses RPC functions (`lookup_customer`, `has_active_booking_on_block`) instead of direct SELECTs against `customers` or `bookings` — those tables are not readable by anon by design. The RPCs are the same channels the live app uses to read customer state.
 
