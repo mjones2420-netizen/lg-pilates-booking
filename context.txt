@@ -17,6 +17,9 @@ Rules to keep it useful:
 - If a fact is already covered in a structured section above, don't
   re-state it as a key decision below.
 
+This file lives in the GitHub repo. After any end-of-session update,
+push the new context.txt to GitHub alongside any index.html changes.
+
 ============================================================
 1. PROJECT OVERVIEW
 ============================================================
