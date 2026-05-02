@@ -1,0 +1,785 @@
+============================================================
+LG PILATES BOOKING SYSTEM — CONTEXT FILE
+Last updated: 2 May 2026
+============================================================
+
+ABOUT THIS FILE
+---------------
+This is a working context file, NOT a diary. It exists to give Claude
+fast, durable context at the start of any session.
+
+Rules to keep it useful:
+- Capture WHAT IS TRUE NOW, not the narrative of how we got here.
+- Session summaries belong in commit messages and chat history, not here.
+- Before adding a "Session N: ..." note, ask: is this a durable gotcha
+  that would help a future session, or is it just history? If history,
+  leave it out.
+- If a fact is already covered in a structured section above, don't
+  re-state it as a key decision below.
+
+============================================================
+1. PROJECT OVERVIEW
+============================================================
+
+A complete Pilates class booking system for LG Pilates (Louise George).
+Classes run in Baildon and Guiseley.
+Single HTML file (index.html) deployed to GitHub Pages.
+Backend: Supabase (Postgres database).
+Mark is the non-developer owner. Claude is the primary technical collaborator.
+
+LIVE URL:    https://mjones2420-netizen.github.io/lg-pilates-booking/
+GITHUB:      https://github.com/mjones2420-netizen/lg-pilates-booking
+DEMOS:       https://mjones2420-netizen.github.io/lg-pilates-booking/demos/
+             (11 standalone interactive HTML demo files; several outdated
+             since per-class priority + pro-rata + 4-step flow — see TO DO)
+
+index.html is uploaded manually by Mark at the start of each session.
+The GitHub connector is no longer used.
+
+============================================================
+2. SUPABASE PROJECTS
+============================================================
+
+PRODUCTION
+----------
+URL:        https://mrlooyixnlxzcfmvnqme.supabase.co
+Project ID: mrlooyixnlxzcfmvnqme
+Anon Key:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ybG9veWl4bmx4emNmbXZucW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM2MDAsImV4cCI6MjA4ODQ4OTYwMH0.k1LbLenXS29NosaayGnQn3SR2G1xXVDBICeH7w7bD_c
+
+TEST
+----
+URL:        https://ngzfhamjuviwfwuncrjo.supabase.co
+Project ID: ngzfhamjuviwfwuncrjo
+Anon Key:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nemZoYW1qdXZpd2Z3dW5jcmpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1OTM1ODksImV4cCI6MjA5MjE2OTU4OX0.okVYL1VLSDd3I7nD5VPuUCOZmY_G7mzC4o3Y3lx16Pg
+
+Schema is a byte-for-byte mirror of production. Verify with:
+    npm run schema-check
+Both should return fingerprint dad311c8a152bc0dbec1cb3fa0c584d5, 248 objects.
+
+Test admin user:
+  Email:    admin@lg-pilates-test.local
+  Password: stored in tests-playwright/.env.test as TEST_ADMIN_PASSWORD
+  IMPORTANT: Test admin users MUST be created via the Supabase dashboard
+  "Add user" button. Raw SQL inserts into auth.users do NOT populate
+  auth.identities, which Supabase Auth requires for password login.
+
+============================================================
+3. ENV SWITCH (?env=test)
+============================================================
+
+index.html supports a URL query parameter ?env=test that switches the
+Supabase client (data and auth) from production to the test project.
+
+- No query param  → production project, no banner
+- ?env=test       → test project, red banner injected at DOMContentLoaded
+
+Code lives at the top of the script section in index.html (around line 800).
+Banner: fixed-top red div, id="test-mode-banner", class="on" — this is
+the assertion target Playwright uses in every CB spec's beforeEach as a
+second line of defence against tests hitting production.
+
+Production behaviour is byte-identical to before the switch existed when
+the URL has no ?env=test parameter.
+
+============================================================
+4. DATABASE SCHEMA
+============================================================
+
+TABLES
+------
+classes                  — permanent class slots (id, name, level, day, time, end_time, venue, loc)
+blocks                   — each 6-week block run (id, class_id, start_date, end_date, weeks, dates[], price, cap, booked, visible, status)
+bookings                 — client bookings (id, class_id, block_id, customer_id, status, amount_due, refund_amount, created_at)
+customers                — client records (id, first_name, last_name, email, phone, customer_type, priority, created_at)
+                           NOTE: customers.priority column is retained in DB but no longer used by the app.
+                           Per-class manual priority is now managed via customer_class_priority table.
+parq                     — health forms (id, booking_id, customer_id, age, emergency_name, emergency_relationship, emergency_phone, q1_heart...q12_other_reasons, yes_details, additional_notes, print_name, sign_date)
+                           NOTE: sign_date is DATE type. Front-end stores ISO (YYYY-MM-DD) in a data-iso
+                           attribute on the display element and sends that direct to the DB.
+                           Admin PAR-Q view uses formatDateDisplay() to render "18 Apr 2026".
+settings                 — key/value store for bank details (bank_name, bank_sort_code, bank_account_no)
+waitlist                 — placeholder for future waitlist feature (id, class_id, customer_id, created_at)
+                           RLS enabled. Empty — not yet connected to booking flow.
+cancellations            — audit trail of all client removals from blocks
+                           Columns: id, customer_id, class_id, block_id, first_name, last_name, email,
+                           class_name, venue, block_start_date, block_end_date, sessions_attended,
+                           sessions_remaining, price_per_session, refund_amount, refunded (BOOLEAN),
+                           refunded_at (TIMESTAMPTZ), cancelled_at (TIMESTAMPTZ)
+                           NOTE: first_name/last_name/email/class_name/venue are denormalised so records
+                           survive even if the customer or class is later deleted.
+customer_class_priority  — per-class manual priority grants
+                           Columns: id (BIGSERIAL), customer_id (BIGINT FK → customers),
+                           class_id (BIGINT FK → classes), granted_at (TIMESTAMPTZ)
+                           UNIQUE constraint on (customer_id, class_id)
+                           ON DELETE CASCADE on both FKs
+                           A row present = that customer has manual priority for that class.
+                           This table replaces the global customers.priority boolean.
+
+NOTE: parq table uses emergency_name, emergency_relationship, emergency_phone (NOT emergency_contact — dropped)
+NOTE: parq.booking_id FK is ON DELETE CASCADE — PAR-Qs auto-delete when their booking is deleted.
+NOTE: bookings.block_id FK is ON DELETE CASCADE — prevents orphan bookings.
+NOTE: App-level deletion code still clears child rows explicitly as belt-and-braces safety net.
+NOTE: When bulk-deleting all client data, deletion order must be:
+parq → cancellations → bookings → customer_class_priority → customers
+
+CHECK CONSTRAINTS
+-----------------
+bookings:
+  - bookings_status_check: status IN ('reserved','confirmed','cancelled','refund-pending','refunded','waitlist')
+
+blocks:
+  - blocks_status_check:    status IN ('upcoming','active','completed','cancelled')
+  - blocks_price_nonneg:    price >= 0
+  - blocks_cap_positive:    cap >= 1
+  - blocks_weeks_positive:  weeks >= 1
+
+customers:
+  - customers_type_check:      customer_type IN ('new','returning','vip') OR customer_type IS NULL
+  - customers_first_name_len:  char_length(first_name) <= 100
+  - customers_last_name_len:   char_length(last_name)  <= 100
+  - customers_email_len:       char_length(email)      <= 200
+  - customers_phone_len:       char_length(phone)      <= 40
+
+parq:
+  - parq_yes_details_len:      char_length(yes_details)            <= 4000
+  - parq_additional_notes_len: char_length(additional_notes)       <= 4000
+  - parq_emergency_name_len:   char_length(emergency_name)         <= 100
+  - parq_emergency_rel_len:    char_length(emergency_relationship) <= 50
+  - parq_emergency_phone_len:  char_length(emergency_phone)        <= 40
+  - parq_print_name_len:       char_length(print_name)             <= 100
+
+IMPORTANT: customer_type must be lowercase 'new' or 'returning' — the
+customers_type_check constraint rejects capitalised variants.
+
+NOT NULL CONSTRAINTS
+--------------------
+customers:    email NOT NULL
+bookings:     customer_id, class_id, block_id NOT NULL
+blocks:       class_id, start_date, end_date NOT NULL
+classes:      name, day, venue NOT NULL
+
+NOT NULL violation = Postgres error code 23502; existing try/catch blocks
+surface a generic toast ("Error saving class." / "Error adding block.").
+
+PARTIAL UNIQUE INDEX
+--------------------
+bookings_unique_active_per_block:
+  CREATE UNIQUE INDEX ON bookings (customer_id, block_id) WHERE status != 'cancelled'
+
+Prevents duplicate non-cancelled bookings by same customer on same block, at DB level.
+Re-booking after cancellation still works — cancelled rows excluded.
+book_if_available RPC catches unique_violation and re-raises as ALREADY_BOOKED
+so the front-end handles it identically.
+
+SECURITY DEFINER FUNCTIONS
+--------------------------
+These bypass RLS and are called from the JS client instead of direct table access:
+
+- lookup_customer(p_email) — returns customer record by email
+- upsert_customer(p_first_name, p_last_name, p_email, p_phone, p_customer_type)
+    inserts or updates customer, returns id
+- book_if_available(p_block_id, p_class_id, p_customer_id, p_amount_due)
+    atomic capacity check + booking insert, returns booking id
+- check_priority_access(p_email, p_block_id) → BOOLEAN
+    checks customer_class_priority (per-class manual) then previous-block
+    confirmed booking
+- has_active_booking_on_block(p_customer_id, p_block_id) → BOOLEAN
+    true if customer has a non-cancelled booking on this block.
+    Used by the booking modal step-1 handler.
+- get_schema_fingerprint() → (fingerprint TEXT, total_objects BIGINT)
+    Read-only deterministic hash of the public schema's structure (columns,
+    constraints, indexes, RLS policies, functions, triggers, grants).
+    Self-excluded from its own fingerprint. Used by the schema-check helper.
+
+All functions granted EXECUTE to anon and authenticated roles.
+
+DATABASE TRIGGERS
+-----------------
+trg_sync_block_booked_count — fires AFTER INSERT OR DELETE on bookings.
+Calls sync_block_booked_count() which recalculates blocks.booked from actual
+bookings (excluding cancelled). SECURITY DEFINER, SET search_path = public.
+
+IMPORTANT: This trigger fires on app-level inserts/deletes only. If bookings
+are bulk-modified via raw SQL, the booked count will NOT update automatically.
+After raw SQL changes to bookings, run this resync:
+
+    UPDATE blocks b
+    SET booked = (
+      SELECT COUNT(*) FROM bookings
+      WHERE block_id = b.id AND status != 'cancelled'
+    );
+
+RLS POLICIES
+------------
+RLS enabled on all tables.
+
+classes:                 SELECT anon+auth | INS/UPD/DEL auth only
+blocks:                  SELECT anon+auth | INS/UPD/DEL auth only
+bookings:                INSERT anon+auth (routes via SECURITY DEFINER) | SELECT/UPD/DEL auth only
+customers:               INSERT anon+auth (routes via SECURITY DEFINER) | SELECT/UPD/DEL auth only
+parq:                    INSERT anon+auth | SELECT/DEL auth only (no UPDATE — write-once)
+settings:                SELECT anon+auth | INS/UPD auth only
+waitlist:                ALL auth only
+cancellations:           ALL auth only
+customer_class_priority: ALL auth only
+
+NOTE: customers and bookings have no anon SELECT policy — intentional. All
+public reads of customer/booking data must go via SECURITY DEFINER functions.
+
+ANON ROLE GRANTS
+----------------
+Table grants to anon:
+  classes   — SELECT only
+  blocks    — SELECT only
+  settings  — SELECT only
+  parq      — INSERT only (PAR-Q save during booking)
+
+Tables with NO anon grants at all:
+  bookings, customers, cancellations, waitlist, customer_class_priority
+
+Function EXECUTE grants to anon:
+  book_if_available, check_priority_access, has_active_booking_on_block,
+  lookup_customer, upsert_customer, get_schema_fingerprint
+
+The `authenticated` role retains ALL on every table (admin dashboard unaffected).
+
+============================================================
+5. FRONT-END
+============================================================
+
+CSS VARIABLES
+-------------
+--cream: #eef5f5 | --warm: #f7fafa | --sage: #3a8a8a | --sage-dk: #2a6b6b
+--sage-lt: #b8d8d8 | --clay: #e07b4a | --charcoal: #1a2e2e | --mid: #4a6060
+--light: #8aabab | --border: #cde0e0 | --green: #3a8a6a | --red: #c04040
+
+STYLING GUIDE
+-------------
+Fonts:
+  - Headings, logo, large numbers: Raleway (300, 400, 500, 600)
+  - Body text, labels, buttons: Open Sans (300, 400, 500)
+
+Border radius:
+  - Standard: 4px (sharp — cards, modals, inputs, buttons)
+  - Pills/badges only: 100px
+  - Circular avatars/icons: 50%
+
+Spacing:
+  - Page padding: 40px horizontal desktop / 18px mobile
+  - Card padding: 26px
+  - Modal body padding: 20px 28px
+
+Buttons:
+  Primary:        var(--charcoal) bg, white, border:none, Open Sans 12-14px,
+                  letter-spacing 0.1em, text-transform uppercase, border-radius 2px,
+                  padding 13-16px
+  Secondary/back: transparent bg, 1px solid var(--border), var(--mid)
+  Sage variant:   var(--sage-dk) bg (admin export buttons)
+
+Booking modal:
+  - .modal: max-width 500px, max-height 92vh, overflow-y auto (single scroll container)
+  - .mhead: position sticky, top 0, z-index 10, background var(--warm) — sticky header
+  - .mbody: padding 20px 28px — plain wrapper, NOT the scroll container
+  - Step pips: 4 for new clients / 2 for returning clients
+
+  CRITICAL: Do NOT convert .modal to a flex container — this breaks mobile scroll.
+
+SHARED JS HELPERS
+-----------------
+- calcBlockDates(startDateStr, weeks) — builds dates array in "D MMM" format
+- sanitise(str) — HTML-escapes strings for safe DOM insertion
+- formatDateDisplay(isoStr) — formats YYYY-MM-DD → "D MMM YYYY" for display
+- renderDatePills(dates) — sanitised date pill HTML
+- populateBankDetails(name, sort, acc) — updates all bank detail DOM elements
+- validateBlockOverlap(classId, startStr, weeks, excludeBlockId) — checks overlaps
+- PARQ_LABELS / PARQ_KEYS — 12-element shared constants
+- calcProrata(blk) — sessions remaining, pro-rata price, full price
+- showAlreadyBookedView() — renders the duplicate-booking early-detection view
+
+COMPLETED FEATURES
+------------------
+Client-facing:
+- Class cards with day/time prominent, venue/level, current block panel
+- Date pills: past/today/upcoming awareness
+- Pro-rata pricing
+- Next block collapsible toggle with priority/standard/locked icons
+- Booking modal — 4 steps new / 2 steps returning
+- Already-booked early detection view (returning client step 1)
+- Priority booking system — priority 8-14 days before block start, standard 0-7 days
+
+Admin dashboard (password protected via Supabase Auth):
+- All Bookings tab with Missing PAR-Q banner
+- By Class tab — accordion
+- Clients tab with per-class priority management
+- Cancellations tab with audit trail and CSV export
+- Upcoming Classes section — add/edit classes and blocks
+- Settings — bank details
+- Backup & Export — CSV with formula-injection protection
+- Block warnings banner — red/yellow advisories
+- Block overlap prevention
+- Test-mode env switch (URL query param ?env=test)
+
+CLASSES (PRODUCTION — IDs 28–32)
+---------------------------------
+28: Mixed Ability, Mon 9:45am–10:30am, Baildon Moravian Church, Baildon
+29: Intermediate,  Mon 6:30pm–7:15pm,  St Johns Parish Church,  Baildon
+30: Mixed Ability, Tue 9:45am–10:30am, Starlight Academy,       Guiseley
+31: Beginner,      Wed 7:00pm–7:45pm,  Baildon Moravian Church, Baildon
+32: Beginner,      Fri 10:30am–11:15am, Potting Shed,           Guiseley
+
+BOOKING WINDOW LOGIC
+--------------------
+- >14 days before block start: LOCKED — timeline shown
+- 8-14 days before:            PRIORITY WINDOW — priority clients can book
+- 0-7 days before:             STANDARD WINDOW — all can book
+
+============================================================
+6. PLAYWRIGHT TEST SUITE
+============================================================
+
+PURPOSE
+-------
+Automated regression pack for the booking system. Runs against the isolated
+lg-pilates-test Supabase project so real client data is never touched.
+
+REPO LAYOUT
+-----------
+tests-playwright/
+├── package.json                 # scripts: test, test:headed, test:ui, test:debug, report, seed, schema-check
+├── playwright.config.js         # always-on trace/screenshot/video
+├── .env.test.example            # template, committed
+├── .env.test                    # secrets, gitignored — TEST_APP_URL, TEST_SUPABASE_DB_URL,
+│                                #   TEST_ADMIN_PASSWORD, PROD_SUPABASE_URL, PROD_SUPABASE_ANON_KEY
+├── README.md
+├── TEST-PLAN.md                 # plain-English description of every test (updated each batch)
+├── migrations/                  # SQL migrations applied to test DB
+│   ├── 01_tables.sql
+│   ├── 02_foreign_keys.sql
+│   ├── 03_indexes.sql
+│   ├── 04_functions.sql
+│   ├── 05_trigger.sql
+│   ├── 06_rls_and_grants.sql
+│   ├── 07_seed_data.sql
+│   ├── 08_seed_cb31_active_booking.sql    # obsolete — superseded by 09; do not re-run
+│   ├── 09_reseed_with_dynamic_dates.sql   # live migration — idempotent, dynamic dates
+│   ├── 10_add_schema_fingerprint_function.sql  # applied to BOTH prod and test
+│   └── README.md
+├── scripts/
+│   ├── seed.js                  # npm run seed wrapper (safety checks + verification)
+│   ├── schema-check.js          # compares prod vs test schema fingerprint
+│   └── SCHEMA-CHECK-README.md
+└── tests/
+    ├── safety-check.js
+    ├── helpers/
+    │   ├── supabase.js          # shared anon client (exports `sb`)
+    │   ├── app-url.js           # APP_PATH helper
+    │   ├── booking-flow.js      # CB test helpers (incl. agreeAndReserve)
+    │   └── fixture-lookup.js    # role-based block lookup (getBlockByRole)
+    ├── smoke-01-anon-reads.spec.js
+    ├── smoke-02-anon-rpcs.spec.js
+    ├── smoke-03-rls-enforcement.spec.js
+    ├── smoke-04-ui-page-loads.spec.js
+    └── cb-*.spec.js              # 23 CB spec files covering 28 of 34 scenarios
+
+CURRENT TEST COUNT: 42 tests (all passing)
+  Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
+  CB:    28 tests covering 28 of 34 CB scenarios
+
+CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
+The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
+CB-16b covers Step 3 → Step 4 advance — a transition not present in the old
+3-step Excel scenarios but real in the current 4-step booking flow.
+
+Coverage Tracker is in tests-playwright/TEST-PLAN.md at the top — that file
+is the authoritative view of automation progress for all CB scenarios.
+
+THE SAFETY CHECK (non-negotiable)
+----------------------------------
+tests/safety-check.js is loaded by playwright.config.js BEFORE any test runs.
+It throws and crashes the run if:
+  1. TEST_SUPABASE_PROJECT_ID is missing
+  2. TEST_SUPABASE_PROJECT_ID equals production (mrlooyixnlxzcfmvnqme)
+  3. TEST_SUPABASE_URL contains the production project reference
+  4. TEST_SUPABASE_ANON_KEY is missing
+  5. The anon key's JWT 'ref' claim is the production project ID
+
+LIMITATION: This safety check only guards the test helper's Supabase client.
+It does NOT guard the browser page's own Supabase client. The TEST MODE banner
+assertion in CB test beforeEach() hooks is the second line of defence.
+
+TEST FIXTURE — DYNAMIC DATES
+----------------------------
+Migration 09 dynamically computes all block dates from CURRENT_DATE at the
+moment the migration runs, so the fixture always stays correctly positioned
+relative to "today" — priority window is always priority, standard is always
+standard, etc.
+
+Migration 09 is idempotent and re-runnable. Running it again wipes the
+existing fixture and rebuilds it fresh.
+
+CURRENT TEST FIXTURE — 9 blocks across 3 classes:
+
+  Mon Mixed (class_id=1):
+    - Mon past         (completed, priority-source)
+    - Mon current      (active, CB-31 duplicate booking)
+    - Mon upcoming     (priority window, ~+13 days out)
+    - Mon full         (locked window, ~+55 days out, cap=2, FULL)
+
+  Wed Beginner (class_id=2):
+    - Wed past         (completed, priority-source)
+    - Wed upcoming     (priority window, ~+8 days out)
+
+  Fri Intermediate (class_id=3):
+    - Fri old past     (completed, older history)
+    - Fri recent past  (completed, just-finished, priority-source)
+    - Fri upcoming     (standard window, ~+3 days out)
+
+Customers (3):
+  - returning-one@test.example — confirmed on Mon past, Mon current, Wed past
+                                  + manual priority on Wed class
+  - returning-two@test.example — confirmed on Mon past, Fri recent past, Mon full
+  - admin-dummy@test.example   — confirmed on Mon full (fills the cap-2 slot)
+
+Bookings total: 7. Priority grants: 1.
+
+ROLE-BASED BLOCK LOOKUP
+-----------------------
+tests/helpers/fixture-lookup.js exports getBlockByRole(role) and
+getBlocksByRoles([roles]). Specs MUST use these helpers rather than
+hardcoding block IDs — IDs regenerate on every reseed.
+
+Valid roles (9):
+  mon-past, mon-current, mon-upcoming, mon-full,
+  wed-past, wed-upcoming,
+  fri-old-past, fri-recent-past, fri-upcoming
+
+Lookup strategy: one SELECT query at first call, cached for rest of test run.
+Throws FixtureDriftError with "Run npm run seed" guidance on drift.
+
+NPM RUN SEED
+------------
+`npm run seed` from ~/dev/lg-pilates-booking/tests-playwright reseeds the
+test DB by re-applying migration 09.
+
+Behaviour:
+- Refuses to run if TEST_SUPABASE_PROJECT_ID or TEST_SUPABASE_DB_URL
+  references production
+- Prompts for "yes" confirmation (skip with `npm run seed -- --yes` for CI)
+- Runs the entire migration in a BEGIN/COMMIT transaction
+- Verifies post-run: 9 blocks, 3 classes, 3 customers, 7 bookings, 1 priority
+
+Requires in .env.test:
+  - TEST_SUPABASE_DB_URL — direct Postgres connection string for test DB
+    (session pooler URI from Supabase dashboard → Project Settings → Database)
+
+TEST DATA FRESHNESS — DRIFT CHECK
+----------------------------------
+The fixture eventually drifts as "today" moves on. After ~1 week without
+reseeding, window states start shifting (priority becomes standard, active
+becomes completed, etc.).
+
+Claude runs a drift check at the start of every session (see WORKFLOW
+section). If drift is detected, Claude reminds Mark to run:
+
+    cd ~/dev/lg-pilates-booking/tests-playwright
+    npm run seed
+
+ALWAYS-ON TEST EVIDENCE
+-----------------------
+playwright.config.js use block: trace: 'on', screenshot: 'on', video: 'on'
+
+Every test run produces a full trace file, screenshots per step, and a video.
+
+Viewing options:
+  npx playwright show-report        # HTML report after any `npm test` run
+  npm run test:ui                   # interactive UI runner with step timeline
+  npx playwright show-trace <file>  # view a specific trace zip
+
+Disk usage: ~20-50MB per full test run in test-results/. Overwrites each run.
+
+TEST / PROD SCHEMA PARITY
+--------------------------
+Both projects have a SECURITY DEFINER function get_schema_fingerprint()
+that returns a deterministic MD5 hash + object count covering: columns,
+constraints, indexes, RLS policies, functions, triggers, and grants in
+the public schema. Read-only, granted to anon, exposes nothing sensitive.
+
+scripts/schema-check.js calls the RPC on both projects via their anon keys
+and compares the results. Auto-generated constraint and index names are
+normalised so cosmetic differences don't trigger a false positive.
+
+To run:
+    cd ~/dev/lg-pilates-booking/tests-playwright
+    npm run schema-check
+
+Expected output when in sync:
+    PROD: dad311c8a152bc0dbec1cb3fa0c584d5  (248 objects)
+    TEST: dad311c8a152bc0dbec1cb3fa0c584d5  (248 objects)
+    ✅ Schemas are identical.
+
+When to run:
+- After applying any schema change to production
+- At the start of a session if you suspect drift
+- Before a release or deployment milestone
+- Quarterly as a routine health check
+
+Gaps the helper does NOT catch:
+- Project-level Auth settings (test has its own admin user, prod doesn't)
+- Per-project secrets and config (CORS, Resend keys, etc.)
+- Data-level differences — fixture data is intentionally different from
+  production data; only structure is compared.
+
+Future schema changes to production should also be applied to the test
+project, and a `npm run schema-check` run afterwards confirms they landed
+in both places.
+
+MAC SETUP
+---------
+- Node.js v24.15.0 (via nodejs.org LTS)
+- npm v11.12.1
+- Homebrew 5.1.7
+- GitHub CLI (gh) 2.90.0 authenticated as mjones2420-netizen (HTTPS)
+- Git 2.50.1 (Apple Git-155)
+- Git user.name="Mark Jones", user.email="mjones2420@gmail.com"
+- Repo cloned locally at: /Users/markjones/dev/lg-pilates-booking
+- Playwright scaffold at: /Users/markjones/dev/lg-pilates-booking/tests-playwright
+- .env.test in place (gitignored)
+- Local server: python3 -m http.server 8000 (from repo root)
+- TEST_APP_URL=http://localhost:8000/?env=test
+- devDependencies: @playwright/test, @supabase/supabase-js, dotenv, pg
+
+RUNNING TESTS
+-------------
+Terminal tab 1 (keep running):
+    cd ~/dev/lg-pilates-booking
+    python3 -m http.server 8000
+
+Terminal tab 2:
+    cd ~/dev/lg-pilates-booking/tests-playwright
+    npm test                        # run all tests, generate HTML report
+    npx playwright show-report      # open last report in browser
+    npm run test:ui                 # interactive UI runner (RECOMMENDED for Mark)
+    npm test -- --headed            # show browser during run
+    npm test -- --headed --slow-mo 500
+    npm run seed                    # reseed test DB (prompts for yes)
+    npm run seed -- --yes           # skip prompt (CI)
+    npm run schema-check            # verify prod/test schema parity
+
+TEST DATA ACCUMULATION
+----------------------
+Playwright specs don't clean up after themselves. Each full run adds 3+
+test customers (cb01-{timestamp}@test.example etc.). Harmless functionally
+as each uses a unique timestamped email, but flag to Mark when Mon block
+booked count climbs toward 10.
+
+Cleanest reset: re-run `npm run seed`.
+
+Manual cleanup SQL alternative (test DB only):
+  DELETE FROM parq WHERE customer_id IN (SELECT id FROM customers WHERE email LIKE 'cb%-%@test.example');
+  DELETE FROM bookings WHERE customer_id IN (SELECT id FROM customers WHERE email LIKE 'cb%-%@test.example');
+  DELETE FROM customers WHERE email LIKE 'cb%-%@test.example';
+  UPDATE blocks b SET booked = (SELECT COUNT(*) FROM bookings WHERE block_id=b.id AND status != 'cancelled');
+
+============================================================
+7. WORKFLOW
+============================================================
+
+SESSION START — CLAUDE'S CHECKS
+-------------------------------
+Run BOTH of these EVERY session, regardless of whether the session looks
+test-related:
+
+A. Confirm index.html is present
+   - Check line count (~2,889 lines post-Session 7)
+   - Copy to /home/claude/index.html as the working file
+
+B. Check test DB fixture freshness
+   - Run this query against project ID ngzfhamjuviwfwuncrjo:
+
+       SELECT
+         COUNT(*) FILTER (WHERE status='active'
+                          AND start_date <= CURRENT_DATE
+                          AND end_date   >= CURRENT_DATE) AS active_ok,
+         COUNT(*) FILTER (WHERE status='completed'
+                          AND end_date < CURRENT_DATE)    AS past_ok,
+         COUNT(*) FILTER (WHERE status='upcoming'
+                          AND (start_date - CURRENT_DATE) BETWEEN 0 AND 7)  AS standard_window,
+         COUNT(*) FILTER (WHERE status='upcoming'
+                          AND (start_date - CURRENT_DATE) BETWEEN 8 AND 14) AS priority_window,
+         COUNT(*) FILTER (WHERE status='upcoming'
+                          AND (start_date - CURRENT_DATE) >= 15)            AS locked_window
+       FROM blocks;
+
+   - Healthy fixture: active_ok >= 1, past_ok >= 1, and at least two of
+     (standard_window, priority_window, locked_window) >= 1
+
+   Report result as a single line near the top of the opening response:
+     ✅ "Test DB fixture looks healthy — all booking windows covered."
+     ⚠️ "Test DB fixture has drifted — [which window(s) missing].
+          Run `npm run seed` from ~/dev/lg-pilates-booking/tests-playwright
+          before any Playwright work this session."
+
+   Don't block the session over it — flag clearly and move on.
+
+DURING SESSION
+--------------
+- Make all changes to /home/claude/index.html
+- Copy final output to /mnt/user-data/outputs/index.html for Mark to download
+- If any Playwright test is added or substantially modified, TEST-PLAN.md
+  MUST be updated in the same session. Non-negotiable.
+
+AFTER SESSION — MARK'S STEPS
+----------------------------
+1. Download the output index.html from Claude
+2. Replace ~/dev/lg-pilates-booking/index.html with the downloaded file
+3. Push to GitHub:
+
+     cd ~/dev/lg-pilates-booking
+     git status                    # confirm only index.html is modified
+     git add index.html
+     git commit -m "TITLE"         # use the title Claude provides
+     git push
+
+   Multi-line commit messages with em-dashes or backticks can get tangled
+   in zsh quoting. Best to use a SHORT title only.
+
+   Claude's commit-message format: short single-line title.
+
+FILE DRIFT PREVENTION
+---------------------
+- index.html is uploaded manually at session start — never use a cached version
+- If a second index.html is uploaded mid-session, warn Mark and confirm which to use
+- Always push the output file to GitHub before ending or starting a session
+- Use meaningful commit messages on every push
+
+COMMUNICATION STYLE — MARK'S PREFERENCES
+-----------------------------------------
+- One action per response, then wait for Mark to confirm before the next
+- Don't bury action requests at the end of long explanations
+- Keep technical detail brief; plain English summaries only where needed
+- Don't offer "I can do this next time" as a buried aside — if it matters,
+  track it in context.txt or the TO DO list
+- Shorter overall; less narrative; still helpful but focused
+
+============================================================
+8. TO DO (priority order)
+============================================================
+
+1. PLAYWRIGHT TESTS — continue expanding coverage:
+   CB BATCHES (per Session 11 plan, see tests-playwright/TEST-PLAN.md):
+   - ✅ Batch 1 — quick wins on new-client scaffold (CB-02, CB-06, CB-22,
+        CB-23, CB-24, CB-29, CB-30)
+   - ✅ Batch 2 — T&Cs checkbox (CB-08, CB-09, CB-10, CB-11, CB-13)
+   - ✅ Batch 3 — Step indicator (CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18,
+        CB-19, CB-20)
+   - ⏳ Batch 4 — Emergency contact + back nav (CB-25, CB-26, CB-27)
+   - ⏳ Batch 5 — Returning client flows (CB-03, CB-31, CB-32)
+   THEN:
+   - AB (Admin Bookings) tab — needs admin login helper using the
+     admin@lg-pilates-test.local user
+   - PB (Priority Booking) tab — previous-block eligibility, manual
+     priority, priority window timing
+   - GitHub Actions CI for auto-run on push
+   - Mobile Safari Playwright project for proper mobile coverage
+     (currently CB-29/CB-30 use shrunken desktop viewport at 480x700 as
+     a proxy — works but doesn't catch real mobile-specific issues)
+   - Strengthen CB-33 to actually query the parq table directly. Needs
+     authenticated test client (admin login helper)
+   - CB-13 self-cleaning: currently skips on re-run when customer is
+     already booked. Full re-runnability would need a cleanup RPC or
+     admin-auth path — bundle with Batch 5+ admin work
+   REMINDER: TEST-PLAN.md must be updated in the same session as any new test
+
+2. INDEX.HTML — minor cosmetic bug:
+   Line 476 still reads "Step 1 of 3 — Your Details" — leftover from the
+   old 3-step flow. Lines 501, 558, 576 correctly say "Step 2 of 4",
+   "Step 3 of 4", "Step 4 of 4". The pip indicator itself is correct;
+   only this in-app step-label text needs fixing.
+
+3. EMAIL NOTIFICATIONS via Resend
+4. CLASS REGISTER FEATURE
+5. DEMO FILE UPDATES (multiple outdated since per-class priority + pro-rata + 4-step flow)
+6. HONEYPOT anti-bot protection
+7. BANK DETAILS — replace placeholder with Louise's real details
+8. HOSTING MIGRATION & CUSTOM DOMAIN (GitHub Pages → Netlify, book.lg-pilates.co.uk)
+9. USER GUIDE — update PDF at post-email milestone
+10. WAITLIST FEATURE — table exists, not yet connected
+11. FILE SPLIT — consider at next major milestone
+12. AUDIT ITEMS:
+    - Swap Supabase anon key to newer publishable key format (at Netlify migration)
+    - Enable leaked password protection in Supabase Auth dashboard (manual toggle)
+
+============================================================
+9. KEY DECISIONS & GOTCHAS
+============================================================
+
+These are durable, hard-won lessons. Add new ones sparingly — only if
+they'd save a future session real time.
+
+DATABASE & SUPABASE
+-------------------
+- customer_type values must be lowercase: 'new', 'returning', 'vip' (or NULL).
+- blocks.dates[] stores display-formatted strings ("6 Apr", "13 Apr"), NOT ISO dates.
+- Front-end JS must never rely on direct SELECT against customers or bookings
+  from an anon context — RLS silently returns empty arrays rather than erroring.
+- Three-layer defence against duplicate bookings (DB unique index, RPC catch,
+  front-end early detection).
+- PAR-Q presence is flagged in the dashboard for new-client bookings only.
+- Supabase web SQL editor has a parser bug with PL/pgSQL DECLARE vars.
+  Use apply_migration (MCP) or Supabase CLI for any DDL involving function bodies.
+- supabase_migrations.schema_migrations stores full SQL of applied migrations
+  in its `statements` column — useful for reconstructing migrations applied
+  via MCP without a local file.
+- Test admin users on Supabase MUST be created via the dashboard, not via raw
+  SQL. Raw inserts into auth.users don't populate auth.identities, which
+  Supabase Auth requires for password login.
+- After raw SQL changes to bookings, manually resync blocks.booked — the
+  trigger only fires on app-level inserts/deletes (see DATABASE TRIGGERS).
+- The lg-pilates-test Supabase project is a byte-for-byte mirror of production
+  schema. Any future production schema changes MUST be mirrored to test or
+  tests will drift from reality.
+
+PLAYWRIGHT / TEST INFRA
+-----------------------
+- tests/helpers/supabase.js exports `sb`, NOT `supabase`. Any new helper
+  importing from it must use `const { sb } = require('./supabase')`.
+- Spec helper imports use './helpers/...' (same level), NOT '../helpers/...'.
+  Helpers live INSIDE tests/, not above it.
+- Block IDs are NOT stable across reseeds — specs must look up by role
+  via fixture-lookup.js, never by literal ID.
+- Playwright's baseURL strips query strings from page.goto('/'). Always
+  use the APP_PATH helper from tests/helpers/app-url.js.
+- Every CB/AB/PB spec's beforeEach must assert #test-mode-banner.on before
+  doing anything else — fail fast, fail loud. The browser-page Supabase
+  client is NOT covered by the safety-check.js helper guard.
+- openBookingModal helper signature is (page, day, which) — `day` is a
+  string like "Monday", NOT a numeric class_id. `which` is 'current'
+  (default) or 'next'.
+- Button labels on class cards depend on block state:
+    "Book Current Block"  — active blocks AND upcoming when no active block
+    "Book Next Block"     — only in standard window (0-7 days out)
+    "Check My Priority"   — priority window (8-14 days out), no direct book
+  When in doubt, use 'current' as the openBookingModal arg.
+- Step pip mechanism: completed steps swap textContent from the number to
+  a tick (\u2713). Assertions need toHaveText('\u2713'), not just a class
+  check. The .done class is added but the visual change comes from BOTH.
+- Step pip back-nav for returning clients: goStepBack3() returns to step 1
+  directly (no intermediate step in 2-step layout). The "Payment" label on
+  pip 2 persists across back/forward — only resets on full modal close + reopen.
+- Modal scroll-to-top uses scrollTo({behavior:'smooth'}). Playwright
+  assertions need expect.poll on scrollTop with a short timeout (~2s).
+  Hard-asserting toBe(0) immediately will race the smooth scroll.
+- CB-13 uses test.skip() (not expect().toBe(false)) on its pre-flight
+  already-booked check, so a successful first run leaves the suite green
+  on the second run.
+- CB-21 and CB-28 already test parts of step pip behaviour. Batch 3 specs
+  (CB-14, CB-15, CB-16b) overlap. Decision: keep both. Atomic Batch 3
+  specs make failures clearer; slight redundancy is the price for diagnostic clarity.
+
+CB-12 NOTE
+----------
+CB-12 has no standalone spec file. It's covered by CB-01's spec (the
+new-client happy path naturally exercises T&Cs agreement). Coverage
+Tracker shows it as ✅ with that note.
+
+============================================================
