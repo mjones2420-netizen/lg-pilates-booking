@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 2 May 2026
+Last updated: 2 May 2026 (Session 15 — Batch 5 CB tests, CB suite complete)
 ============================================================
 
 ABOUT THIS FILE
@@ -16,9 +16,6 @@ Rules to keep it useful:
   leave it out.
 - If a fact is already covered in a structured section above, don't
   re-state it as a key decision below.
-
-This file lives in the GitHub repo. After any end-of-session update,
-push the new context.txt to GitHub alongside any index.html changes.
 
 ============================================================
 1. PROJECT OVERVIEW
@@ -382,11 +379,11 @@ tests-playwright/
     ├── smoke-02-anon-rpcs.spec.js
     ├── smoke-03-rls-enforcement.spec.js
     ├── smoke-04-ui-page-loads.spec.js
-    └── cb-*.spec.js              # 23 CB spec files covering 28 of 34 scenarios
+    └── cb-*.spec.js              # 26 CB spec files covering ALL 34 CB scenarios
 
-CURRENT TEST COUNT: 42 tests (all passing)
+CURRENT TEST COUNT: 48 tests (all passing)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
-  CB:    28 tests covering 28 of 34 CB scenarios
+  CB:    34 tests covering all 34 CB scenarios — CB suite COMPLETE ✅
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -669,15 +666,15 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
 ============================================================
 
 1. PLAYWRIGHT TESTS — continue expanding coverage:
-   CB BATCHES (per Session 11 plan, see tests-playwright/TEST-PLAN.md):
+   CB BATCHES — ALL COMPLETE ✅ (CB suite is 34 of 34, see TEST-PLAN.md):
    - ✅ Batch 1 — quick wins on new-client scaffold (CB-02, CB-06, CB-22,
         CB-23, CB-24, CB-29, CB-30)
    - ✅ Batch 2 — T&Cs checkbox (CB-08, CB-09, CB-10, CB-11, CB-13)
    - ✅ Batch 3 — Step indicator (CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18,
         CB-19, CB-20)
-   - ⏳ Batch 4 — Emergency contact + back nav (CB-25, CB-26, CB-27)
-   - ⏳ Batch 5 — Returning client flows (CB-03, CB-31, CB-32)
-   THEN:
+   - ✅ Batch 4 — Emergency contact + back nav (CB-25, CB-26, CB-27)
+   - ✅ Batch 5 — Returning client flows (CB-03, CB-31, CB-32)
+   NEXT FOCUS AREAS:
    - AB (Admin Bookings) tab — needs admin login helper using the
      admin@lg-pilates-test.local user
    - PB (Priority Booking) tab — previous-block eligibility, manual
@@ -690,7 +687,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
      authenticated test client (admin login helper)
    - CB-13 self-cleaning: currently skips on re-run when customer is
      already booked. Full re-runnability would need a cleanup RPC or
-     admin-auth path — bundle with Batch 5+ admin work
+     admin-auth path — bundle with admin auth work
    REMINDER: TEST-PLAN.md must be updated in the same session as any new test
 
 2. INDEX.HTML — minor cosmetic bug:
@@ -778,6 +775,21 @@ PLAYWRIGHT / TEST INFRA
 - CB-21 and CB-28 already test parts of step pip behaviour. Batch 3 specs
   (CB-14, CB-15, CB-16b) overlap. Decision: keep both. Atomic Batch 3
   specs make failures clearer; slight redundancy is the price for diagnostic clarity.
+- Returning-customer fixture coupling is the biggest pitfall when adding
+  returning-client specs. Before writing any spec that books a fixture
+  customer, scan ALL existing specs (including smoke tests) for the same
+  (customer, block) combination. Session 15 hit this three times: CB-03 vs
+  CB-32 (both wanted returning-two + mon-current), CB-13 vs CB-32 (both
+  wanted returning-two + fri-upcoming), and smoke-02 vs CB-32 (smoke test
+  asserted returning-one + fri-upcoming was UNBOOKED, which CB-32 then
+  booked). Final clean combo for CB-32: returning-one + fri-upcoming.
+- Smoke tests asserting "no booking exists for X" should NOT use real
+  fixture (customer, block) pairs as the "stable empty" target — any new
+  CB spec might book that pair. Use deliberately-fake IDs (e.g. 999999999)
+  instead. The has_active_booking_on_block RPC handles non-existent IDs
+  cleanly (returns false, no FK exception). This pattern also better
+  reflects the test's intent: it's an RPC contract check, not a fixture
+  state check. See Session 15 fix to smoke-02-anon-rpcs.spec.js.
 
 CB-12 NOTE
 ----------
