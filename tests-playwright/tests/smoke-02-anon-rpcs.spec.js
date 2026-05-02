@@ -7,6 +7,15 @@
 // heuristics to role-based lookup via getBlockByRole(). Block IDs are
 // regenerated on every reseed (migration 09) so role lookup is the only
 // stable way to target specific blocks.
+//
+// Session 15: the has_active_booking_on_block FALSE-case test was previously
+// asserting that returning-one had no booking on fri-upcoming. CB-32 (added
+// in Batch 5) deliberately books returning-one onto fri-upcoming, so that
+// pair is no longer a stable "no booking" target after CB-32 has run.
+// Switched to deliberately-fake IDs (999_999_999) which can never match a
+// real booking — this also better reflects the test's intent (proving the
+// RPC contract returns false for non-existent records, independent of any
+// fixture state).
 
 const { test, expect } = require('@playwright/test');
 const { sb } = require('./helpers/supabase');
@@ -53,20 +62,18 @@ test.describe('Smoke 02 — anon RPCs', () => {
   });
 
   test('has_active_booking_on_block returns FALSE for a non-existent booking', async () => {
-    // returning-one has NO booking on the fri-upcoming block (seed migration 09
-    // only gives them bookings on mon-past, mon-current, and wed-past).
-    // This is the stable "no booking" target — role-based lookup means it
-    // stays correct across reseeds regardless of date rollovers.
-    const { data: ret } = await sb.rpc('lookup_customer', {
-      p_email: 'returning-one@test.example'
-    });
-    const customerId = ret[0].id;
-
-    const friUpcoming = await getBlockByRole('fri-upcoming');
+    // Use deliberately-fake IDs that can never match a real booking row.
+    // This proves the RPC contract (returns false when no row exists) without
+    // depending on any specific (customer, block) pair staying unbooked —
+    // which would be a flaky guarantee, since CB specs deliberately create
+    // bookings as part of their assertions (e.g. CB-32 books returning-one
+    // onto fri-upcoming, which used to be the "stable no-booking" pair here).
+    const FAKE_CUSTOMER_ID = 999999999;
+    const FAKE_BLOCK_ID    = 999999999;
 
     const { data, error } = await sb.rpc('has_active_booking_on_block', {
-      p_customer_id: customerId,
-      p_block_id: friUpcoming.id
+      p_customer_id: FAKE_CUSTOMER_ID,
+      p_block_id:    FAKE_BLOCK_ID
     });
 
     expect(error).toBeNull();

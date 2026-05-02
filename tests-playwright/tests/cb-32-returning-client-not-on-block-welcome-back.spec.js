@@ -13,13 +13,14 @@
 // duplicate-detection branch (item 17b) doesn't false-positive a returning
 // client onto the already-booked screen when they're booking a different block.
 //
-// Fixture: returning-two@test.example is confirmed on mon-past, fri-recent-past,
-// and mon-full — but NOT on fri-upcoming. Booking fri-upcoming triggers the
-// welcome-back flow cleanly without colliding with CB-03 (which uses mon-current).
+// Fixture: returning-one@test.example is confirmed on mon-past, wed-past,
+// and mon-current — but NOT on fri-upcoming. Booking fri-upcoming triggers
+// the welcome-back flow cleanly.
 //
-// Friday is deliberately chosen here so this spec doesn't share the same
-// (customer, block) combination as CB-03. Running both in the same suite
-// without reseeding would otherwise cause CB-32 to skip after CB-03 ran.
+// Customer choice: returning-one is used here (not returning-two) because
+// CB-13 already books returning-two onto fri-upcoming. Using returning-two
+// here would cause CB-32 to skip whenever CB-13 ran first in the suite.
+// returning-one + fri-upcoming is a unique combination across the CB suite.
 //
 // Self-cleaning: pre-flight test.skip() pattern same as CB-03.
 
@@ -34,7 +35,7 @@ const {
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 
 const APP_URL = process.env.TEST_APP_URL;
-const RETURNING_EMAIL = 'returning-two@test.example';
+const RETURNING_EMAIL = 'returning-one@test.example';
 
 test.describe('CB-32 — Returning client NOT on this block — welcome-back flow continues normally', () => {
   test.skip(!APP_URL, 'TEST_APP_URL not set — CB specs require the app to be served.');
@@ -49,12 +50,9 @@ test.describe('CB-32 — Returning client NOT on this block — welcome-back flo
   });
 
   test('returning client not yet on this block sees welcome-back message and proceeds to payment', async ({ page }) => {
-    // Pre-flight: same as CB-03 — skip cleanly if returning-two already
-    // Pre-flight: skip cleanly if returning-two is somehow already booked
-    // on fri-upcoming (only happens if fixture was modified outside seed).
-    // Friday is used here (not Monday) deliberately — CB-03 books returning-two
-    // on mon-current, so re-using Monday in this spec would cause CB-32 to
-    // collide and skip when the suite runs in order.
+    // Pre-flight: skip cleanly if returning-one is somehow already booked
+    // on fri-upcoming. CB-13 books returning-two (not -one) on this block,
+    // so under normal conditions returning-one stays unbooked here.
     const friUpcoming = await getBlockByRole('fri-upcoming');
     const { data: hasBooking } = await sb.rpc('has_active_booking_on_block', {
       p_customer_id: (await sb.rpc('lookup_customer', { p_email: RETURNING_EMAIL })).data[0].id,
@@ -62,14 +60,14 @@ test.describe('CB-32 — Returning client NOT on this block — welcome-back flo
     });
     test.skip(
       hasBooking === true,
-      'returning-two@test.example is already booked on fri-upcoming — run `npm run seed` to reset.'
+      'returning-one@test.example is already booked on fri-upcoming — run `npm run seed` to reset.'
     );
 
     await openBookingModal(page, 'Friday', 'current');
 
     await fillStep1(page, {
       firstName: 'Returning',
-      lastName:  'Two',
+      lastName:  'One',
       email:     RETURNING_EMAIL,
       phone:     '07700900032'
     });

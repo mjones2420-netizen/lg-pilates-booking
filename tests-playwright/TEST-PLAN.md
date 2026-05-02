@@ -1268,15 +1268,15 @@ A client could fill in the entire booking form and only discover the duplicate a
 **What this proves:** The duplicate-detection check from CB-31 doesn't false-positive. A returning client who is genuinely not on this particular block — even if they have other bookings elsewhere — should see the normal welcome-back flow and reach payment, not the already-booked screen.
 
 **Preconditions:**
-- A returning customer (`returning-two@test.example`) exists in the test DB with previous bookings on other classes/blocks
+- A returning customer (`returning-one@test.example`) exists in the test DB with previous bookings on other classes/blocks
 - That customer is NOT currently booked on the Friday upcoming block (fri-upcoming)
 
-**Fixture role used:** `fri-upcoming` (block) plus `returning-two@test.example` (existing customer)
+**Fixture role used:** `fri-upcoming` (block) plus `returning-one@test.example` (existing customer)
 
-> Friday is deliberately used here, not Monday. CB-03 books `returning-two` onto `mon-current`, so re-using the same combination would cause CB-32 to skip after CB-03 ran. Friday avoids the collision.
+> Customer choice matters here. CB-13 already books `returning-two` onto `fri-upcoming`, so re-using `returning-two` would cause CB-32 to skip after CB-13 ran. `returning-one` + `fri-upcoming` is a unique combination across the CB suite.
 
 **Steps the test performs:**
-1. Pre-flight check: skip the test if `returning-two` is already booked on `fri-upcoming`
+1. Pre-flight check: skip the test if `returning-one` is already booked on `fri-upcoming`
 2. Opens the booking modal on Friday's current block
 3. Fills Step 1 with the returning customer's existing details
 4. Waits for the welcome-back message
