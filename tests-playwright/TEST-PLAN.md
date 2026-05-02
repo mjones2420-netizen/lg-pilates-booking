@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 2 May 2026 (Session 13 — Batch 3 CB tests added)
-**Total tests:** 42 (14 smoke + 28 CB)
+**Last updated:** 2 May 2026 (Session 14 — Batch 4 CB tests added)
+**Total tests:** 45 (14 smoke + 31 CB)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -15,14 +15,14 @@ CB-16b was added in Session 13 to cover the Step 3 → Step 4 advance — a tran
 
 | Status | Scenarios |
 |---|---|
-| ✅ Automated | CB-01, CB-02, CB-04, CB-05, CB-06, CB-07, CB-08, CB-09, CB-10, CB-11, CB-12, CB-13, CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18, CB-19, CB-20, CB-21, CB-22, CB-23, CB-24, CB-28, CB-29, CB-30, CB-33 (28 of 34) |
-| ⬜ Not started | CB-03, CB-25, CB-26, CB-27, CB-31, CB-32 (6 of 34) |
+| ✅ Automated | CB-01, CB-02, CB-04, CB-05, CB-06, CB-07, CB-08, CB-09, CB-10, CB-11, CB-12, CB-13, CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18, CB-19, CB-20, CB-21, CB-22, CB-23, CB-24, CB-25, CB-26, CB-27, CB-28, CB-29, CB-30, CB-33 (31 of 34) |
+| ⬜ Not started | CB-03, CB-31, CB-32 (3 of 34) |
 
 **Batch plan for remaining CB work:**
 
 - ~~**Batch 2 — T&Cs checkbox:** CB-08, CB-09, CB-10, CB-11, CB-13~~ ✅ Done (Session 12)
 - ~~**Batch 3 — Step indicator behaviour:** CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18, CB-19, CB-20~~ ✅ Done (Session 13)
-- **Batch 4 — Emergency contact + back nav:** CB-25, CB-26, CB-27 (3 tests)
+- ~~**Batch 4 — Emergency contact + back nav:** CB-25, CB-26, CB-27~~ ✅ Done (Session 14)
 - **Batch 5 — Returning client flows:** CB-03, CB-31, CB-32 (3 tests)
 
 **Other tabs (not started):** Priority Booking (15), Booking Windows (10), Admin Bookings (24), Admin Classes (26), Admin Clients (6), Schedule Display (8), Settings Export (11), Edge Cases (16), Block Warnings (11), Security (9).
@@ -1114,12 +1114,96 @@ Modal state persists across open/close cycles. A returning customer's "Payment" 
 
 ---
 
+### CB-25 — Emergency contact step shows as Step 3 of 4
+
+**What this proves:** When a new client finishes the medical questions, they're handed off to a clean, focused emergency-contact screen — clearly labelled as Step 3 of 4, with only the three contact fields visible. This guards against the medical questions accidentally bleeding into the emergency step, which would feel cluttered and confusing.
+
+**Preconditions:**
+- Monday current block is bookable
+- A new client (no prior bookings) is being created in this test
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Opens the modal on Monday's current block
+2. Fills in Step 1 (your details) with a unique test email
+3. Completes Step 2 (medical) with a clear PAR-Q and signed declaration
+4. Inspects the resulting Step 3 (emergency contact) panel
+
+**What the test verifies:**
+- Step label reads "Step 3 of 4 — Emergency Contact"
+- Pip 3 is `.active` and labelled "Emergency contact"
+- Pips 1 and 2 show ticks (✓), confirming they're marked done
+- All three emergency contact fields are visible (name, relationship, phone)
+- Medical-step fields (age input, PAR-Q radios, print name) are NOT visible — the previous step is fully hidden, not just scrolled past
+
+**What a fail would mean:**
+Steps could overlap visually, or the emergency contact step could appear with the wrong label/pip state. Real clients would either be confused about where they are in the flow, or might accidentally leave fields blank because the previous step's content distracted them.
+
+---
+
+### CB-26 — Emergency contact phone validation fires on Continue
+
+**What this proves:** A too-short emergency phone is caught before the booking is reserved. Louise needs a real, reachable number on the emergency contact — without this guard, a typo or partial entry could silently make it through to the database.
+
+**Preconditions:**
+- Monday current block is bookable
+- New client has reached Step 3 (emergency contact)
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Opens the modal on Monday and progresses through Steps 1 and 2
+2. On Step 3, fills in a name and relationship
+3. Enters "12345" as the emergency phone (too short)
+4. Clicks Continue
+
+**What the test verifies:**
+- Validation toast appears at the top of the page
+- Toast text contains "Emergency contact phone must be 11 digits"
+- The form does NOT advance: Step 3 panel is still visible, Step 4 (Payment) is not visible
+- Pip 4 (Payment) does not become `.active`
+
+**What a fail would mean:**
+The booking system would accept incomplete emergency phone numbers. If Louise ever needed to reach a client's emergency contact during a class, she could be left with an unusable number — a real safety issue, not just a data quality one.
+
+---
+
+### CB-27 — Back navigation from Emergency Contact preserves data
+
+**What this proves:** Clicking Back works correctly through every step of the new-client flow. Pip indicators reset properly, the modal scrolls to the top so the back-stepped screen is visible immediately, and previously entered data is preserved so the client doesn't have to re-type anything.
+
+**Preconditions:**
+- Monday current block is bookable
+- New client is being walked through the full flow
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Opens the modal and fills Step 1 with name, email, phone
+2. Fills Step 2 with age 42, print name, ticked declaration
+3. On Step 3 (emergency contact), scrolls the modal down to simulate a long form
+4. Clicks Back to return to Step 2
+5. Scrolls down again, then clicks Back to return to Step 1
+
+**What the test verifies:**
+- Back from Step 3 → Step 2 (Medical) with pip 2 `.active`, pip 1 still `.done`, pips 3 and 4 not `.active`
+- Modal scrolls back to top after each Back click (smooth scroll, polled briefly)
+- Medical-step data preserved: age "42", print name, declaration still ticked
+- Back from Step 2 → Step 1 (Your details) with pip 1 `.active`, pips 2-4 not `.active`
+- Step 1 data preserved: first name, last name, email, phone
+
+**What a fail would mean:**
+A real client second-guessing their answers and clicking Back would lose what they'd typed and have to start over. The pip indicator could lie about which step they're on. Or the modal could remain scrolled mid-page after Back, hiding the panel header and confusing the client about which step they're now editing.
+
+---
+
 # Appendix — What's NOT yet covered
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary below describes the main areas remaining.
 
-### Client Booking (CB) — 6 scenarios remaining
-See the Coverage Tracker above. Grouped into 2 remaining batches by shared scaffold (emergency contact + returning-client flows).
+### Client Booking (CB) — 3 scenarios remaining
+See the Coverage Tracker above. The remaining batch covers returning-client flows.
 
 ### Admin bookings (AB)
 - Louise adding/editing/cancelling bookings
