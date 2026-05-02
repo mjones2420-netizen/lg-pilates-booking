@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 2 May 2026 (Session 14 — Batch 4 CB tests added)
-**Total tests:** 45 (14 smoke + 31 CB)
+**Last updated:** 2 May 2026 (Session 15 — Batch 5 CB tests added; CB suite complete)
+**Total tests:** 48 (14 smoke + 34 CB)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -15,15 +15,17 @@ CB-16b was added in Session 13 to cover the Step 3 → Step 4 advance — a tran
 
 | Status | Scenarios |
 |---|---|
-| ✅ Automated | CB-01, CB-02, CB-04, CB-05, CB-06, CB-07, CB-08, CB-09, CB-10, CB-11, CB-12, CB-13, CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18, CB-19, CB-20, CB-21, CB-22, CB-23, CB-24, CB-25, CB-26, CB-27, CB-28, CB-29, CB-30, CB-33 (31 of 34) |
-| ⬜ Not started | CB-03, CB-31, CB-32 (3 of 34) |
+| ✅ Automated | CB-01, CB-02, CB-03, CB-04, CB-05, CB-06, CB-07, CB-08, CB-09, CB-10, CB-11, CB-12, CB-13, CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18, CB-19, CB-20, CB-21, CB-22, CB-23, CB-24, CB-25, CB-26, CB-27, CB-28, CB-29, CB-30, CB-31, CB-32, CB-33 (34 of 34) ✅ Complete |
+| ⬜ Not started | None |
 
 **Batch plan for remaining CB work:**
 
 - ~~**Batch 2 — T&Cs checkbox:** CB-08, CB-09, CB-10, CB-11, CB-13~~ ✅ Done (Session 12)
 - ~~**Batch 3 — Step indicator behaviour:** CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18, CB-19, CB-20~~ ✅ Done (Session 13)
 - ~~**Batch 4 — Emergency contact + back nav:** CB-25, CB-26, CB-27~~ ✅ Done (Session 14)
-- **Batch 5 — Returning client flows:** CB-03, CB-31, CB-32 (3 tests)
+- ~~**Batch 5 — Returning client flows:** CB-03, CB-31, CB-32~~ ✅ Done (Session 15)
+
+**Client Booking automation is now complete.** Next focus areas (Admin Bookings, Priority Booking, etc.) listed below.
 
 **Other tabs (not started):** Priority Booking (15), Booking Windows (10), Admin Bookings (24), Admin Classes (26), Admin Clients (6), Schedule Display (8), Settings Export (11), Edge Cases (16), Block Warnings (11), Security (9).
 
@@ -1198,12 +1200,107 @@ A real client second-guessing their answers and clicking Back would lose what th
 
 ---
 
+### CB-03 — Returning client skips PAR-Q
+
+**What this proves:** Returning clients don't have to fill in the medical form or emergency contact every time. The system recognises an existing email and jumps straight to the payment step. This is the core convenience that distinguishes a returning client's experience from a new one.
+
+**Preconditions:**
+- A returning customer (`returning-two@test.example`) exists in the test DB and has at least one previous booking
+- That customer is NOT yet booked on the Monday current block
+
+**Fixture role used:** `mon-current` (block) plus `returning-two@test.example` (existing customer)
+
+**Steps the test performs:**
+1. Pre-flight check: skip the test if `returning-two` is already booked on `mon-current` (a previous run leaves them booked — `npm run seed` resets this)
+2. Opens the booking modal on Monday's current block
+3. Fills Step 1 with the returning client's existing details
+4. Waits for the welcome-back message and 2.5s transition
+5. Verifies the modal goes straight to Step 3 (Payment) without showing Step 2 (Medical) or Step 2b (Emergency contact)
+6. Completes the booking via T&Cs + Reserve to confirm end-to-end
+
+**What the test verifies:**
+- Welcome-back message contains "Welcome back" and "skip the health form"
+- Step 3 (Payment) is visible after the transition
+- Step 2a (Medical) and Step 2b (Emergency Contact) panels are NOT visible
+- Step label reads "Step 2 of 2 — Payment" (returning-client 2-step layout)
+- The booking completes successfully through Reserve My Spot
+
+**What a fail would mean:**
+Either returning clients would be forced to re-fill the medical form every block (bad UX, complaints) or the system would lose track of who's a returning customer entirely. Both would push clients away from rebooking.
+
+---
+
+### CB-31 — Duplicate booking caught at Step 1
+
+**What this proves:** A returning client trying to re-book a class they're already on is caught immediately, before being walked through the full flow only to fail at the very end. They get a clear "you're already booked" screen showing exactly which booking the system has on record.
+
+**Preconditions:**
+- A returning customer (`returning-one@test.example`) exists in the test DB
+- That customer IS currently booked on the Monday active block (mon-current)
+
+**Fixture role used:** `mon-current` (block) plus `returning-one@test.example` (existing customer)
+
+**Steps the test performs:**
+1. Opens the booking modal on Monday's current block
+2. Fills Step 1 with the already-booked customer's details
+3. Waits for the "Checking your bookings..." message and 1.2s transition
+4. Inspects the resulting already-booked screen
+5. Clicks the Close button
+
+**What the test verifies:**
+- The "Welcome back! Checking your bookings..." message appears first
+- After the brief delay, the already-booked view becomes visible
+- All Step 1, 2a, 2b, 3 panels are hidden
+- The view contains the "already booked" title and tick icon
+- Block details are populated: Class, When, Venue, and Block range rows are all shown
+- The class name "Mixed Ability" and day "Monday" appear in the details
+- A Close button is visible
+- The step progress pip indicator is dimmed (opacity less than 1)
+- Clicking Close hides the modal overlay
+
+**What a fail would mean:**
+A client could fill in the entire booking form and only discover the duplicate at the very end (or worse, end up with two bookings, two payments, and a refund problem). The early-detection screen is what spares them — and Louise — that messy outcome.
+
+---
+
+### CB-32 — Returning client NOT on this block — welcome-back flow continues normally
+
+**What this proves:** The duplicate-detection check from CB-31 doesn't false-positive. A returning client who is genuinely not on this particular block — even if they have other bookings elsewhere — should see the normal welcome-back flow and reach payment, not the already-booked screen.
+
+**Preconditions:**
+- A returning customer (`returning-two@test.example`) exists in the test DB with previous bookings on other classes/blocks
+- That customer is NOT currently booked on the Friday upcoming block (fri-upcoming)
+
+**Fixture role used:** `fri-upcoming` (block) plus `returning-two@test.example` (existing customer)
+
+> Friday is deliberately used here, not Monday. CB-03 books `returning-two` onto `mon-current`, so re-using the same combination would cause CB-32 to skip after CB-03 ran. Friday avoids the collision.
+
+**Steps the test performs:**
+1. Pre-flight check: skip the test if `returning-two` is already booked on `fri-upcoming`
+2. Opens the booking modal on Friday's current block
+3. Fills Step 1 with the returning customer's existing details
+4. Waits for the welcome-back message
+5. Verifies the modal advances to Step 3 (Payment), NOT the already-booked screen
+6. Completes the booking via T&Cs + Reserve
+
+**What the test verifies:**
+- Welcome-back message contains "Welcome back" and "skip the health form"
+- Step 3 (Payment) is visible after the transition
+- Already-booked view is NOT visible (the regression check)
+- Reserve button is reachable
+- The booking completes successfully through Reserve My Spot
+
+**What a fail would mean:**
+A returning client trying to book a new class would be wrongly told they're already booked — blocking a real booking and a real payment. This is the regression check that proves the early-detection logic only fires when it should.
+
+---
+
 # Appendix — What's NOT yet covered
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary below describes the main areas remaining.
 
-### Client Booking (CB) — 3 scenarios remaining
-See the Coverage Tracker above. The remaining batch covers returning-client flows.
+### Client Booking (CB) — All 34 scenarios automated ✅
+The full CB scenario set is now covered. Future CB work will be incremental — adding tests for new features, regression coverage for bug fixes, or strengthening existing tests (e.g. the CB-33 PAR-Q DB-direct verification follow-up).
 
 ### Admin bookings (AB)
 - Louise adding/editing/cancelling bookings
