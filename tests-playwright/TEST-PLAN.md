@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 1 May 2026 (Session 12 — Batch 2 CB tests added)
-**Total tests:** 34 (14 smoke + 20 CB)
+**Last updated:** 2 May 2026 (Session 13 — Batch 3 CB tests added)
+**Total tests:** 42 (14 smoke + 28 CB)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -9,17 +9,19 @@
 
 ## Coverage Tracker — Client Booking (CB) scenarios
 
-The 33 Client Booking scenarios from `LG-Pilates-Test-Scenarios.xlsx` are being automated in batches. This tracker shows what's done and what's outstanding.
+The 34 Client Booking scenarios from `LG-Pilates-Test-Scenarios.xlsx` are being automated in batches. This tracker shows what's done and what's outstanding.
+
+CB-16b was added in Session 13 to cover the Step 3 → Step 4 advance — a transition not present in the old 3-step Excel scenarios but real in the current 4-step booking flow.
 
 | Status | Scenarios |
 |---|---|
-| ✅ Automated | CB-01, CB-02, CB-04, CB-05, CB-06, CB-07, CB-08, CB-09, CB-10, CB-11, CB-12, CB-13, CB-21, CB-22, CB-23, CB-24, CB-28, CB-29, CB-30, CB-33 (20 of 33) |
-| ⬜ Not started | CB-03, CB-14, CB-15, CB-16, CB-17, CB-18, CB-19, CB-20, CB-25, CB-26, CB-27, CB-31, CB-32 (13 of 33) |
+| ✅ Automated | CB-01, CB-02, CB-04, CB-05, CB-06, CB-07, CB-08, CB-09, CB-10, CB-11, CB-12, CB-13, CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18, CB-19, CB-20, CB-21, CB-22, CB-23, CB-24, CB-28, CB-29, CB-30, CB-33 (28 of 34) |
+| ⬜ Not started | CB-03, CB-25, CB-26, CB-27, CB-31, CB-32 (6 of 34) |
 
 **Batch plan for remaining CB work:**
 
 - ~~**Batch 2 — T&Cs checkbox:** CB-08, CB-09, CB-10, CB-11, CB-13~~ ✅ Done (Session 12)
-- **Batch 3 — Step indicator behaviour:** CB-14, CB-15, CB-16, CB-17, CB-18, CB-19, CB-20 (7 tests)
+- ~~**Batch 3 — Step indicator behaviour:** CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18, CB-19, CB-20~~ ✅ Done (Session 13)
 - **Batch 4 — Emergency contact + back nav:** CB-25, CB-26, CB-27 (3 tests)
 - **Batch 5 — Returning client flows:** CB-03, CB-31, CB-32 (3 tests)
 
@@ -893,12 +895,231 @@ The returning-customer fast track is broken. Existing customers would either be 
 
 ---
 
+# CB Batch 3 — Step indicator behaviour
+
+*These tests focus on the 4-pip step indicator at the top of the booking modal. They verify the visual state (which pip is active, which is done, which is dim) at each transition and after navigation. The existing CB-21 and CB-28 cover some of the same ground bundled with other checks; the Batch 3 tests are atomic — each isolates one specific transition so failures point precisely at what broke.*
+
+---
+
+### CB-14 — Step indicator: shows correct state on modal open
+
+**What this proves:** When a new visitor opens the booking modal, the step indicator starts in a clean initial state — pip 1 active, the other 3 dim, no ticks anywhere, all four labels reading correctly. This is the foundation for every other step-indicator behaviour.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Opens the booking modal on the Monday class
+2. Inspects the step indicator without entering any data
+
+**What the test verifies:**
+- All 4 pip wrappers and 3 connectors are visible
+- Pip 1 has `.active`, shows "1", and pip-lbl-1 reads "Your details"
+- Pips 2, 3, 4 are dim (no `.active`, no `.done`) and show their numbers
+- Pip labels read "Medical", "Emergency contact", "Payment"
+- No connector is `.done`
+
+**What a fail would mean:**
+The step indicator opens in a broken state — could mislead the customer about where they are in the booking flow.
+
+---
+
+### CB-15 — Step 1 ticks on advance to Step 2 (new client)
+
+**What this proves:** When a new client fills Step 1 and clicks Continue, the indicator updates correctly: pip 1 changes from "1" to a tick, pip 2 becomes active, and the connector between them lights up. The modal also auto-scrolls to the top so the customer sees the new step header.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Opens the booking modal on Monday
+2. Fills Step 1 with a unique fresh email and clicks Continue
+3. Waits for Step 2 (Medical) to appear
+
+**What the test verifies:**
+- Pip 1 has `.done`, no `.active`, and shows the tick character (✓)
+- Pip 2 has `.active`, no `.done`, and still shows "2"
+- Connector 1 has `.done`
+- Pips 3 and 4 remain dim
+- Modal `scrollTop` returns to 0 within 2 seconds (smooth scroll)
+
+**What a fail would mean:**
+The customer can't tell they've made progress. The pip layout looks "stuck on step 1" even though they've moved on.
+
+---
+
+### CB-16 — Step 2 ticks on advance to Step 3 (Emergency contact)
+
+**What this proves:** A new client completing the medical step advances to Emergency contact, and the indicator reflects this — pip 2 now ticks, pip 3 becomes active. Steps 1 and 2 stay marked done with their connectors lit.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Opens the booking modal and completes Step 1
+2. Fills the medical form with all-clear answers (age 34, all No to PAR-Q, declaration ticked)
+3. Clicks Continue to advance to Step 3 (Emergency contact)
+
+**What the test verifies:**
+- Pips 1 and 2 both `.done`, both showing ticks
+- Pip 3 is `.active`, shows "3"
+- Pip 4 still dim
+- Connectors 1 and 2 `.done`; connector 3 not
+- Modal scrolled to top
+
+**What a fail would mean:**
+The Medical→Emergency transition doesn't update the indicator. Customer sees stale state showing them stuck at Medical.
+
+> **Note on Excel scenarios:** The Excel CB-16 was written for an old 3-step flow ("advance to Payment"). The current 4-step flow advances Medical → Emergency contact, which is what this test verifies. The Excel was updated in Session 13 to match.
+
+---
+
+### CB-16b — Step 3 ticks on advance to Step 4 (Payment)
+
+**What this proves:** A new client completing the emergency contact step advances to Payment, with pip 3 ticking and pip 4 becoming active. All three connectors are now lit. This is the final forward transition before booking confirmation.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Drives a new client through Step 1, Step 2 (Medical) and Step 3 (Emergency contact)
+2. Clicks Continue from Emergency contact to reach Step 4 (Payment)
+
+**What the test verifies:**
+- Pips 1, 2, and 3 all `.done`, all showing ticks
+- Pip 4 is `.active`, shows "4"
+- All three connectors are `.done`
+- Modal scrolled to top
+
+**What a fail would mean:**
+The customer reaches Payment but the indicator doesn't reflect that — looks like they still have a step to go.
+
+> **Note:** CB-16b was added in Session 13 to fill a gap. The Excel scenarios skipped the Step 3 → Step 4 transition because they were written for a 3-step flow. CB-16b makes this transition official scenario coverage.
+
+---
+
+### CB-17 — Back from Payment reactivates Step 3 (Emergency contact)
+
+**What this proves:** New clients can navigate backwards from Payment without losing earlier progress. Pip 4 dims, pip 3 reactivates, but pips 1 and 2 keep their ticks — the customer hasn't lost any earlier work, just stepped back.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Drives a new client all the way to Step 4 (Payment)
+2. Clicks the Back button
+
+**What the test verifies:**
+- Step 3 (Emergency contact) is visible again
+- Pips 1 and 2 retain `.done` and ticks
+- Pip 3 reactivates (`.active`, shows "3")
+- Pip 4 dims (no `.active`, no `.done`)
+- Connectors 1 and 2 stay `.done`; connector 3 is no longer `.done`
+- Modal scrolled to top
+
+**What a fail would mean:**
+Backwards navigation corrupts the indicator state — customer sees something visually inconsistent (e.g. pip 4 stuck active, or earlier ticks lost).
+
+---
+
+### CB-18 — Returning client shows 2-step layout
+
+**What this proves:** When a returning customer enters their email at Step 1, the system recognises them and switches to a streamlined 2-step layout. Pip wrappers 3 and 4 disappear, the label on pip 2 changes to "Payment", and the customer skips straight from Your details to Payment.
+
+**Preconditions:**
+- Wednesday upcoming block is open for booking
+- `returning-two@test.example` exists as a returning customer (no Wed booking)
+
+**Fixture role used:** `wed-upcoming`
+
+**Steps the test performs:**
+1. Opens the booking modal on Wednesday
+2. Fills Step 1 with `returning-two@test.example` and clicks Continue
+3. Waits for Step 3 (Payment) to be visible (returning-client fast track)
+
+**What the test verifies:**
+- Pip 1 has `.done` and shows a tick
+- Pip 2 has `.active`, shows "2", and pip-lbl-2 reads "Payment" (not "Medical")
+- Pip wrappers 3 and 4 are hidden (display:none)
+- Connectors 2 and 3 are hidden
+- Connector 1 is visible and `.done`
+
+**What a fail would mean:**
+The returning-customer fast track is broken visually. Either they see all 4 pips (looks like the new-client flow) or pip 2's label still reads "Medical" — both confusing.
+
+---
+
+### CB-19 — Returning client Back from Payment reactivates Step 1
+
+**What this proves:** Returning customers can also step backwards from Payment, returning to Step 1 with the indicator updating correctly. Pip 1 reactivates, pip 2 dims, but the 2-step layout (with pip wrappers 3 and 4 hidden, pip-lbl-2 still reading "Payment") stays in place.
+
+**Preconditions:**
+- Wednesday upcoming block is open for booking
+- `returning-two@test.example` exists as a returning customer (no Wed booking)
+
+**Fixture role used:** `wed-upcoming`
+
+**Steps the test performs:**
+1. Opens the booking modal on Wednesday and completes Step 1 as returning-two
+2. Lands on Payment in 2-step layout
+3. Clicks Back
+
+**What the test verifies:**
+- Step 1 (Your details) is visible again
+- Pip 1 reactivates (`.active`, shows "1")
+- Pip 2 dims (no `.active`, no `.done`) but its label still reads "Payment"
+- Pip wrappers 3 and 4 still hidden, connectors 2 and 3 still hidden
+- Connector 1 is no longer `.done`
+- Modal scrolled to top
+
+**What a fail would mean:**
+Backwards navigation in the 2-step flow either loses the returning-client transformation (showing all 4 pips again) or leaves stale state (e.g. pip 2 stuck active).
+
+---
+
+### CB-20 — Modal close & reopen resets state
+
+**What this proves:** Closing and reopening the booking modal returns it to a clean initial state. No leftover ticks, no leftover "Payment" label on pip 2, the full 4-step layout is back. This guards against state leaking between modal sessions.
+
+**Preconditions:**
+- Monday current block is bookable
+
+**Fixture role used:** `mon-current`
+
+**Steps the test performs:**
+1. Opens the modal and advances to Step 2 so pip 1 is `.done`
+2. Closes the modal via the "x" button
+3. Reopens the modal on the same class
+4. Inspects the indicator state
+
+**What the test verifies:**
+- Pip 1 is `.active`, shows "1" (not a tick)
+- Pips 2, 3, 4 are all dim and show their numbers
+- Pip 2 label reads "Medical" (the new-client default — confirms full reset, not the "Payment" returning-client label)
+- All 4 pip wrappers and 3 connectors are visible (4-step layout)
+- No connectors are `.done`
+
+**What a fail would mean:**
+Modal state persists across open/close cycles. A returning customer's "Payment" label could stick around for a new visitor, or earlier ticks could appear stale — confusing the next user.
+
+---
+
 # Appendix — What's NOT yet covered
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary below describes the main areas remaining.
 
-### Client Booking (CB) — 13 scenarios remaining
-See the Coverage Tracker above. Grouped into 3 remaining batches by shared scaffold (step indicator, emergency contact, returning-client flows).
+### Client Booking (CB) — 6 scenarios remaining
+See the Coverage Tracker above. Grouped into 2 remaining batches by shared scaffold (emergency contact + returning-client flows).
 
 ### Admin bookings (AB)
 - Louise adding/editing/cancelling bookings
