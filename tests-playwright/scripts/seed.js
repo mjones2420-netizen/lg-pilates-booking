@@ -28,12 +28,20 @@ const { Client } = require('pg');
 
 // --- Constants ----------------------------------------------------------
 const PRODUCTION_PROJECT_ID = 'mrlooyixnlxzcfmvnqme';
-const MIGRATION_FILE = path.join(__dirname, '..', 'migrations', '09_reseed_with_dynamic_dates.sql');
+// Migrations are applied in order inside a single transaction. Migration 09
+// is the base fixture (3 classes, 9 blocks, 7 bookings). Migration 11 adds
+// the Thursday class with active + locked-window blocks for PB-01.
+const MIGRATION_FILES = [
+  path.join(__dirname, '..', 'migrations', '09_reseed_with_dynamic_dates.sql'),
+  path.join(__dirname, '..', 'migrations', '11_add_locked_window_class.sql'),
+];
 
 // Expected fixture shape after a successful reseed.
+// Block + class counts include Migration 11 (Thursday class with active +
+// locked-window blocks) on top of Migration 09's 9 blocks across 3 classes.
 const EXPECTED = {
-  blocks: 9,
-  classes: 3,
+  blocks: 11,
+  classes: 4,
   customers: 3,
   bookings: 7,
   priority_grants: 1,
@@ -75,17 +83,22 @@ function runSafetyChecks() {
 }
 
 // --- Migration & verification ------------------------------------------
-async function runMigration(client) {
-  if (!fs.existsSync(MIGRATION_FILE)) {
-    die(`Migration file not found: ${MIGRATION_FILE}`);
+async function runMigrations(client) {
+  for (const file of MIGRATION_FILES) {
+    if (!fs.existsSync(file)) {
+      die(`Migration file not found: ${file}`);
+    }
   }
-  const sql = fs.readFileSync(MIGRATION_FILE, 'utf8');
 
   await client.query('BEGIN');
   try {
-    await client.query(sql);
+    for (const file of MIGRATION_FILES) {
+      const sql = fs.readFileSync(file, 'utf8');
+      await client.query(sql);
+      log(`   applied ${path.basename(file)}`);
+    }
     await client.query('COMMIT');
-    log('✅ Migration applied');
+    log('✅ Migrations applied');
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     die(`Migration failed (rolled back): ${err.message}`);
@@ -122,7 +135,7 @@ async function verifyFixture(client) {
 
   const { projectId, dbUrl } = runSafetyChecks();
   log(`   Project: ${projectId}`);
-  log(`   Migration: ${path.basename(MIGRATION_FILE)}\n`);
+  log(`   Migrations: ${MIGRATION_FILES.map(f => path.basename(f)).join(', ')}\n`);
 
   // Confirmation prompt (skipped with --yes or in non-TTY CI env)
   const skipConfirm = process.argv.includes('--yes') || !process.stdin.isTTY;
@@ -145,7 +158,7 @@ async function verifyFixture(client) {
     await client.connect();
     log('✅ Connected to test DB');
 
-    await runMigration(client);
+    await runMigrations(client);
     await verifyFixture(client);
 
     log('\n🌱 Seed complete.\n');

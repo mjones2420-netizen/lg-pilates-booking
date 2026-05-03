@@ -8,22 +8,22 @@ const { sb } = require('./helpers/supabase');
 
 test.describe('Smoke 01 — anon reads', () => {
 
-  test('anon can SELECT from classes and sees the 3 seed classes', async () => {
+  test('anon can SELECT from classes and sees the 4 seed classes', async () => {
     const { data, error } = await sb.from('classes').select('id, name, day, venue');
 
     expect(error).toBeNull();
     expect(data).not.toBeNull();
-    expect(data.length).toBe(3);
+    expect(data.length).toBe(4);
 
     const days = data.map(c => c.day).sort();
-    expect(days).toEqual(['Friday', 'Monday', 'Wednesday']);
+    expect(days).toEqual(['Friday', 'Monday', 'Thursday', 'Wednesday']);
   });
 
-  test('anon can SELECT from blocks and sees 9 seed blocks', async () => {
+  test('anon can SELECT from blocks and sees 11 seed blocks', async () => {
     const { data, error } = await sb.from('blocks').select('id, class_id, status, cap, booked');
 
     expect(error).toBeNull();
-    expect(data.length).toBe(9);
+    expect(data.length).toBe(11);
 
     // One block should be at capacity (the "full" fixture)
     const fullBlocks = data.filter(b => b.booked >= b.cap);

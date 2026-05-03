@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 2 May 2026 (Session 15 — Batch 5 CB tests added; CB suite complete)
-**Total tests:** 48 (14 smoke + 34 CB)
+**Last updated:** 3 May 2026 (Session 16 — Batch 1 of PB tests added; fixture extended via Migration 11)
+**Total tests:** 54 (14 smoke + 34 CB + 6 PB)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -25,9 +25,39 @@ CB-16b was added in Session 13 to cover the Step 3 → Step 4 advance — a tran
 - ~~**Batch 4 — Emergency contact + back nav:** CB-25, CB-26, CB-27~~ ✅ Done (Session 14)
 - ~~**Batch 5 — Returning client flows:** CB-03, CB-31, CB-32~~ ✅ Done (Session 15)
 
-**Client Booking automation is now complete.** Next focus areas (Admin Bookings, Priority Booking, etc.) listed below.
+**Client Booking automation is now complete.**
 
-**Other tabs (not started):** Priority Booking (15), Booking Windows (10), Admin Bookings (24), Admin Classes (26), Admin Clients (6), Schedule Display (8), Settings Export (11), Edge Cases (16), Block Warnings (11), Security (9).
+---
+
+## Coverage Tracker — Priority Booking (PB) scenarios
+
+The 10 Priority Booking scenarios from `LG_Pilates_Test_Scenarios.xlsx` (after the Session 16 sense-check that removed the obsolete tooltip scenario and the housekeeping reset step). PB-03 is shared coverage with PB-10 — see notes below.
+
+| Status | Scenarios |
+|---|---|
+| ✅ Automated | PB-01, PB-02, PB-03 (covered by PB-10), PB-04, PB-05, PB-09, PB-10 (7 of 10) |
+| ⏳ Deferred | PB-06, PB-07, PB-08 (admin-login dependent — defer to admin-auth batch) |
+
+**PB-03 note:** "Priority granted — eligible client" is functionally the positive-path assertion that PB-10 makes (confirmed booking on previous block → priority granted). PB-10 adds the confirmed-vs-reserved distinction by being paired with PB-09. To avoid a redundant spec we mark PB-03 as ✅ covered by PB-10, following the same pattern as CB-12 covered-by-CB-01.
+
+**Batch plan for PB work:**
+
+- ~~**Batch 1 — Booking-window UI + priority gate flows:** PB-01, PB-02, PB-04, PB-05, PB-09, PB-10~~ ✅ Done (Session 16)
+- ⏳ **Batch 2 — Admin per-class priority management:** PB-06, PB-07, PB-08 (depends on admin-login helper, planned for the AB suite)
+
+**What's left for PB**
+
+The Excel scenarios cover the headline behaviour but leave a few real-world gaps. These are not in the Excel sheet — they're suggested follow-ups identified during the Session 16 sense-check. Would be worth adding once the admin-login helper exists so the per-class flows can be tested end-to-end.
+
+- **PB-X1 — Priority gate input validation.** Empty email and malformed email submitted to the gate should be rejected client-side (or at least produce a clear deny message) rather than triggering an RPC call. Currently untested.
+- **PB-X2 — Email pre-fill on priority grant.** PB-10 verifies this in passing; a dedicated test would assert the pre-fill survives if the user closes and reopens the modal mid-flow.
+- **PB-X3 — Per-class priority isolation.** Manual priority granted on the Wednesday class must NOT grant priority on Monday or Friday. Important business rule, currently only implicitly tested through PB-04 (ineligible email path).
+- **PB-X4 — Cancelled previous-block booking does not grant priority.** Mirror of PB-09 (reserved → denied) for the `cancelled` status. Confirms the RPC's `status = 'confirmed'` filter is strict.
+- **PB-X5 — Manual priority survives a reseed and admin grant/remove cycle.** End-to-end check that a granted/removed/granted sequence in the admin panel produces the same gate behaviour as the seed-time priority grant. Will require admin-login helper.
+
+Naming uses `PB-X*` to keep them distinct from the Excel-numbered scenarios — they can be promoted to official numbered scenarios later if added to the Excel sheet.
+
+**Other tabs (not started):** Booking Windows (10), Admin Bookings (24), Admin Classes (26), Admin Clients (6), Schedule Display (8), Settings Export (11), Edge Cases (16), Block Warnings (11), Security (9).
 
 Coverage trackers for those tabs will be added here as each area begins automation.
 
@@ -73,7 +103,7 @@ Every test now has a full video, trace, and step-by-step screenshots (not just f
 
 ## Fixture roles (the seeded test data)
 
-Every test runs against 9 pre-seeded blocks across 3 classes. Roles are stable, block IDs are not — so tests look up blocks by role, not ID.
+Every test runs against 11 pre-seeded blocks across 4 classes (Migration 09 base + Migration 11 Thursday class). Roles are stable, block IDs are not — so tests look up blocks by role, not ID.
 
 | Role | Class | State | Purpose |
 |---|---|---|---|
@@ -83,6 +113,8 @@ Every test runs against 9 pre-seeded blocks across 3 classes. Roles are stable, 
 | `mon-full` | Mon Mixed Ability | Upcoming, cap=2, fully booked | Capacity-limit testing |
 | `wed-past` | Wed Beginner | Completed | Priority-source for Wed customers |
 | `wed-upcoming` | Wed Beginner | Upcoming (~8 days out) | Priority-window + manual priority grant |
+| `thu-current` | Thu Mixed Ability | Active (mid-run) | Anchor for the Thursday card so a nextBlk panel renders |
+| `thu-locked` | Thu Mixed Ability | Upcoming (~30 days out) | Locked-window UI testing (PB-01) |
 | `fri-old-past` | Fri Intermediate | Completed (older) | Historical record |
 | `fri-recent-past` | Fri Intermediate | Just completed | Priority-source for Fri customers |
 | `fri-upcoming` | Fri Intermediate | Upcoming (~3 days out) | Standard-window testing |
@@ -1295,6 +1327,195 @@ A returning client trying to book a new class would be wrongly told they're alre
 
 ---
 
+# Priority Booking (PB) — Batch 1
+
+*These tests cover the priority-booking gate UI in three booking windows (locked / priority / standard) plus the granted-vs-denied paths through the priority RPC.*
+
+---
+
+### PB-01 — Locked window: Not Open Yet panel + 3-row info
+
+**What this proves:** When a class's next block is more than 14 days away, the booking page must NOT let any visitor — priority or otherwise — book it. The visitor sees a clear info panel with three dated rows (when priority opens, when standard opens, and when the block actually starts) plus a disabled "Not Open Yet" button. This protects the booking window business rule and gives clients a predictable timeline.
+
+**Preconditions:**
+- Migration 11 has been applied (Thursday class with active block + locked-window block)
+- The `thu-locked` block is upcoming and more than 14 days away (>14 days out)
+- The Thursday class card is visible on the booking page
+
+**Fixture role used:** `thu-locked`
+
+**Steps the test performs:**
+1. Looks up the `thu-locked` block and verifies it really is more than 14 days away (sanity check on the fixture)
+2. Locates the Thursday class card and clicks the next-block toggle to expand it
+3. Inspects the next-block panel
+
+**What the test verifies:**
+- The disabled "Not Open Yet" button is visible inside the next-block panel
+- The `.priority-info` panel is visible and contains all four labels: "Not open yet", "Priority booking opens", "Standard booking opens", "Block starts"
+- No email gate (`#pcheck-{blockId}`) is rendered for this block
+- No "Book Next Block" button is rendered for this block
+
+**What a fail would mean:**
+Either a visitor could book a block far too early (breaking the booking-window business rule), or the dates panel wouldn't render and clients would be left wondering when they can book. Both undermine the system's value as a structured booking gate.
+
+> **Why a separate Thursday class?** The original Mon/Wed/Fri fixture from Migration 09 has no class with both an active block AND a >14-days-out next block — every class's nextBlk is either in the priority window or the standard window, or has no nextBlk. Migration 11 adds the Thursday class purely to render this UI state.
+
+---
+
+### PB-02 — Priority window: email gate shown, no direct Book button
+
+**What this proves:** When a class's next block is in the priority window (8-14 days away), the booking page must show an email-gate flow — not a direct Book button. This is the gate that lets returning priority clients book early while keeping new visitors out until the standard window.
+
+**Preconditions:**
+- The `mon-upcoming` block is upcoming and 8-14 days away
+- The Monday class card is visible on the booking page
+
+**Fixture role used:** `mon-upcoming`
+
+**Steps the test performs:**
+1. Looks up the `mon-upcoming` block and verifies it really is 8-14 days away
+2. Locates the Monday class card and clicks the next-block toggle
+3. Inspects the next-block panel
+
+**What the test verifies:**
+- The `.priority-info` headline reads "Priority booking is open"
+- The panel includes "Standard booking opens" and "Block starts" rows
+- The email gate (`#pcheck-{blockId}`) is visible
+- The email input (`#pemail-{blockId}`) is visible with a relevant placeholder
+- The "Check My Priority" button is visible
+- No direct "Book Next Block" button appears
+- No "Not Open Yet" disabled button appears
+
+**What a fail would mean:**
+Either the priority gate would not appear and any visitor could book in the priority window (defeating the point of priority access), or the gate would render incorrectly and priority clients couldn't get in.
+
+---
+
+### PB-04 — Priority denied for ineligible email
+
+**What this proves:** A visitor who isn't eligible for priority access (no manual grant, no confirmed previous-block booking) is cleanly denied at the gate, told when standard booking opens, and not allowed past the gate. This protects the priority window from being opened up to standard clients.
+
+**Preconditions:**
+- The `mon-upcoming` block is in the priority window
+- A fresh ineligible email (no record in the customers table) is used
+
+**Fixture role used:** `mon-upcoming`
+
+**Steps the test performs:**
+1. Generates a fresh `pb04-{timestamp}@test.example` email — guaranteed not to exist in the customers table
+2. Locates the Monday card, expands the next-block toggle
+3. Enters the ineligible email in the priority gate
+4. Clicks Check My Priority
+
+**What the test verifies:**
+- The deny message renders inside `#pmsg-{blockId}`
+- The message contains "don't have priority booking"
+- The message contains "Standard booking opens" with the date
+- The booking modal does NOT open (`#overlay.on` is not visible)
+- The email gate stays in place
+
+**What a fail would mean:**
+Either an ineligible client would be wrongly granted priority (breaking the business rule), or the deny message wouldn't render and clients would be left with no feedback as to why nothing happened — both bad for trust and for Louise's pricing model.
+
+---
+
+### PB-05 — Standard window: direct Book button, no gate
+
+**What this proves:** Once the next block reaches the standard window (0-7 days away), the priority gate disappears and any visitor can book directly. This is the "everyone is welcome now" state — opposite of PB-01's locked state and PB-02's email-gated state.
+
+**Preconditions:**
+- The `fri-upcoming` block is 0-7 days away
+- The Friday class card is visible on the booking page
+
+**Fixture role used:** `fri-upcoming`
+
+**Steps the test performs:**
+1. Looks up `fri-upcoming` and verifies it really is 0-7 days away
+2. Locates the Friday class card
+3. Inspects the visible Book button on the card
+
+**What the test verifies:**
+- A direct "Book Current Block" or "Book Next Block" button is visible and enabled
+- No email gate (`#pcheck-{blockId}`) is rendered for this block
+- No "Not Open Yet" disabled button is rendered
+- No "Check My Priority" button is rendered
+
+**What a fail would mean:**
+Either the priority gate would persist past the priority window (preventing new clients from booking and losing Louise revenue), or some other UI state would render incorrectly leaving the card unbookable.
+
+---
+
+### PB-09 — Reserved booking on previous block: priority denied
+
+**What this proves:** Only `confirmed` bookings on the previous block grant priority access — `reserved` (still awaiting payment) does not. This protects Louise from priority access being given to clients who haven't actually paid for their previous block.
+
+**Preconditions:**
+- The `mon-upcoming` block is in the priority window (8-14 days away)
+- A test customer is created and given a `reserved` booking on `mon-current` (the actual previous block per the priority RPC's logic)
+
+**Fixture role used:** `mon-upcoming` (gate target) and `mon-current` (where the reserved booking is created)
+
+**Steps the test performs:**
+1. Looks up `mon-current` and `mon-upcoming` and verifies the priority-window state
+2. Creates a fresh customer via `upsert_customer` RPC (`pb09-{timestamp}@test.example`)
+3. Creates a reserved booking on `mon-current` via `book_if_available` RPC (this RPC always inserts as `reserved` status)
+4. Reloads the booking page so the priority gate sees the new state
+5. Locates the Monday card, expands the next-block toggle
+6. Enters the reserved-booking customer's email in the priority gate
+7. Clicks Check My Priority
+
+**What the test verifies:**
+- The deny message renders inside `#pmsg-{blockId}`
+- The message contains "don't have priority booking"
+- The message contains "Standard booking opens"
+- The booking modal does NOT open
+
+**What a fail would mean:**
+A client who reserved but never paid for the previous block could jump the queue and book the next block during priority access — undermining the entire reason the priority window exists (rewarding clients who paid through to confirmed status).
+
+---
+
+### PB-10 — Confirmed booking on previous block: priority granted
+
+**What this proves:** A client with a `confirmed` booking on the previous block of a class gets priority access during the 8-14-day window — the booking modal opens with their email pre-filled and they can complete the booking through to a successful Reserve. This is the positive path that priority access is built around.
+
+**Preconditions:**
+- The `mon-upcoming` block is in the priority window (8-14 days away)
+- `returning-one@test.example` is confirmed on `mon-current` (the actual previous block — seeded by migration 09)
+- `returning-one` is NOT yet booked on `mon-upcoming` (a previous run leaves them booked — `npm run seed` resets this)
+
+**Fixture role used:** `mon-upcoming` plus `returning-one@test.example`
+
+**Steps the test performs:**
+1. Looks up `mon-upcoming` and verifies the priority-window state
+2. Pre-flight check: skip the test if `returning-one` is already booked on `mon-upcoming`
+3. Locates the Monday card, expands the next-block toggle
+4. Enters the eligible email in the priority gate
+5. Clicks Check My Priority
+6. Waits for the "Priority confirmed!" message and the 1.2s delay before the modal opens
+7. Confirms the modal opens with email pre-filled
+8. Submits Step 1 with the eligible client's details
+9. Waits for the welcome-back transition to Step 3 (Payment)
+10. Agrees to T&Cs and clicks Reserve
+11. Verifies the success view appears
+12. Verifies via the database RPC that the booking row now exists
+
+**What the test verifies:**
+- The "Priority confirmed!" message appears in `#pmsg-{blockId}`
+- The booking modal opens (`#overlay.on` visible)
+- The email field is pre-filled with the eligible email
+- After Step 1, the modal goes to Step 3 (Payment) — welcome-back flow
+- The already-booked view is NOT shown
+- After Reserve, the success view appears
+- A booking row exists for this customer/block pair after the test (confirmed via `has_active_booking_on_block` RPC)
+
+**What a fail would mean:**
+Either an eligible priority client would be denied access (blocking a valid early booking and frustrating a paying client), or the modal would fail to pre-fill the email (forcing the client to retype), or the booking wouldn't actually be saved at the end. Any of these would break the headline benefit Louise offers her returning clients.
+
+> **Note on PB-03 coverage:** PB-10 also covers PB-03 ("Priority granted — eligible client"). PB-03 is the simpler positive-path assertion; PB-10 adds the confirmed-vs-reserved distinction by being paired with PB-09. To avoid a redundant spec, PB-03 is marked ✅ covered by PB-10 in the tracker — the same pattern used for CB-12 covered by CB-01.
+
+---
+
 # Appendix — What's NOT yet covered
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary below describes the main areas remaining.
@@ -1302,20 +1523,19 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 ### Client Booking (CB) — All 34 scenarios automated ✅
 The full CB scenario set is now covered. Future CB work will be incremental — adding tests for new features, regression coverage for bug fixes, or strengthening existing tests (e.g. the CB-33 PAR-Q DB-direct verification follow-up).
 
+### Priority Booking (PB) — 7 of 10 scenarios automated
+- PB-06, PB-07, PB-08 deferred to the admin-login batch (per-class priority grant/remove + the manual-priority allows-early-access flow)
+
 ### Admin bookings (AB)
 - Louise adding/editing/cancelling bookings
 - Missing PAR-Q banner behaviour
 - Cancellation and refund flow
 - CSV export of client data
 
-### Priority booking (PB)
-- Previous-block priority eligibility
-- Manual per-class priority management
-- Priority window timing rules
-
 ### Infrastructure
 - GitHub Actions CI (run tests automatically on every code push)
 - Mobile Safari project for proper mobile coverage (currently CB-29/CB-30 use shrunken desktop viewports as a proxy)
+- Admin login helper — required for AB suite, PB Batch 2, and a stronger CB-33
 
 ---
 
@@ -1327,6 +1547,9 @@ The full CB scenario set is now covered. Future CB work will be incremental — 
 - **CB / AB / PB** — Naming convention for test scenarios: Client Booking, Admin Booking, Priority Booking.
 - **Fixture** — The seed data loaded into the test database at the start of a test run.
 - **PAR-Q** — Physical Activity Readiness Questionnaire. The medical/emergency form new clients must complete.
+- **Priority window** — 8-14 days before a block start date. Returning clients with priority can book early.
+- **Standard window** — 0-7 days before a block start date. Open to all visitors.
+- **Locked window** — More than 14 days before a block start date. Nobody can book yet.
 - **RLS** — Row Level Security. The Postgres mechanism that controls which rows each user can see.
 - **RPC** — Remote Procedure Call. A database function that runs with elevated permissions on behalf of a user.
 - **Smoke test** — A fast, low-level test that checks basic infrastructure (can we read data? are permissions correct? does the page load?). These run quickly and fail fast if something foundational is wrong.

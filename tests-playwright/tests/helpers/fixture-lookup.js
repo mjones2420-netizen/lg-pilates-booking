@@ -28,6 +28,9 @@ const VALID_ROLES = Object.freeze([
   'fri-old-past',
   'fri-recent-past',
   'fri-upcoming',
+  // Migration 11 — locked-window class for PB-01.
+  'thu-current',
+  'thu-locked',
 ]);
 
 // In-memory cache: populated on first call, reused for rest of test run.
@@ -100,6 +103,21 @@ async function loadFixture() {
   roleMap['fri-old-past']    = c3Completed[0];
   roleMap['fri-recent-past'] = c3Completed[1];
   assignSingle(roleMap, 'fri-upcoming', c3.filter(b => b.status === 'upcoming'));
+
+  // --- Class 4: Thu Mixed Ability (Migration 11) ---
+  // Expected: 1 active (thu-current), 1 upcoming with start_date >14 days from
+  //           today (thu-locked — drives the locked-window UI for PB-01).
+  const c4 = data.filter(b => b.class_id === 4);
+  assignSingle(roleMap, 'thu-current', c4.filter(b => b.status === 'active'));
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const c4Locked = c4.filter(b => {
+    if (b.status !== 'upcoming') return false;
+    const start = new Date(b.start_date + 'T00:00:00');
+    const daysUntil = Math.round((start - today) / (1000 * 60 * 60 * 24));
+    return daysUntil > 14;
+  });
+  assignSingle(roleMap, 'thu-locked', c4Locked);
 
   // Final sanity check — every valid role must have been assigned.
   for (const role of VALID_ROLES) {
