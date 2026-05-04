@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 3 May 2026 (Session 16 — Batch 1 of PB tests added; fixture extended via Migration 11)
-**Total tests:** 54 (14 smoke + 34 CB + 6 PB)
+**Last updated:** 4 May 2026 (Session 17 — Batch 2 of PB tests added; admin-auth + admin-db helpers introduced)
+**Total tests:** 57 (14 smoke + 34 CB + 9 PB)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -35,25 +35,30 @@ The 10 Priority Booking scenarios from `LG_Pilates_Test_Scenarios.xlsx` (after t
 
 | Status | Scenarios |
 |---|---|
-| ✅ Automated | PB-01, PB-02, PB-03 (covered by PB-10), PB-04, PB-05, PB-09, PB-10 (7 of 10) |
-| ⏳ Deferred | PB-06, PB-07, PB-08 (admin-login dependent — defer to admin-auth batch) |
+| ✅ Automated | PB-01, PB-02, PB-03 (covered by PB-10), PB-04, PB-05, PB-06, PB-07, PB-08, PB-09, PB-10 (10 of 10) ✅ Complete |
+| ⬜ Not started | None |
 
 **PB-03 note:** "Priority granted — eligible client" is functionally the positive-path assertion that PB-10 makes (confirmed booking on previous block → priority granted). PB-10 adds the confirmed-vs-reserved distinction by being paired with PB-09. To avoid a redundant spec we mark PB-03 as ✅ covered by PB-10, following the same pattern as CB-12 covered-by-CB-01.
+
+**PB-08 note:** Excel originally referenced the Wednesday class for this scenario. The current fixture's Wednesday card has no active block, which means the priority gate UI does not render on it. PB-08 was implemented against the Monday class instead (using `returning-two`, who is confirmed on `mon-past` and `mon-full` but NOT on `mon-current`, so without a manual grant they are denied access to `mon-upcoming`). The Excel scenario wording was updated to match in Session 17.
 
 **Batch plan for PB work:**
 
 - ~~**Batch 1 — Booking-window UI + priority gate flows:** PB-01, PB-02, PB-04, PB-05, PB-09, PB-10~~ ✅ Done (Session 16)
-- ⏳ **Batch 2 — Admin per-class priority management:** PB-06, PB-07, PB-08 (depends on admin-login helper, planned for the AB suite)
+- ~~**Batch 2 — Admin per-class priority management:** PB-06, PB-07, PB-08~~ ✅ Done (Session 17)
+
+**Priority Booking automation is now complete.**
 
 **What's left for PB**
 
-The Excel scenarios cover the headline behaviour but leave a few real-world gaps. These are not in the Excel sheet — they're suggested follow-ups identified during the Session 16 sense-check. Would be worth adding once the admin-login helper exists so the per-class flows can be tested end-to-end.
+The Excel scenarios (PB-01 to PB-10) are all automated. The items below were identified during the Session 16 sense-check as real-world gaps not in the Excel sheet. They are now grouped as **Batch 3** for the next PB session, since the admin-login helper introduced in Session 17 unblocks PB-X5.
 
-- **PB-X1 — Priority gate input validation.** Empty email and malformed email submitted to the gate should be rejected client-side (or at least produce a clear deny message) rather than triggering an RPC call. Currently untested.
-- **PB-X2 — Email pre-fill on priority grant.** PB-10 verifies this in passing; a dedicated test would assert the pre-fill survives if the user closes and reopens the modal mid-flow.
-- **PB-X3 — Per-class priority isolation.** Manual priority granted on the Wednesday class must NOT grant priority on Monday or Friday. Important business rule, currently only implicitly tested through PB-04 (ineligible email path).
-- **PB-X4 — Cancelled previous-block booking does not grant priority.** Mirror of PB-09 (reserved → denied) for the `cancelled` status. Confirms the RPC's `status = 'confirmed'` filter is strict.
-- **PB-X5 — Manual priority survives a reseed and admin grant/remove cycle.** End-to-end check that a granted/removed/granted sequence in the admin panel produces the same gate behaviour as the seed-time priority grant. Will require admin-login helper.
+- ⏳ **Batch 3 — PB gap-analysis tests:** PB-X1, PB-X2, PB-X3, PB-X4, PB-X5 (next session)
+  - **PB-X1 — Priority gate input validation.** Empty email and malformed email submitted to the gate should be rejected client-side (or at least produce a clear deny message) rather than triggering an RPC call. Currently untested.
+  - **PB-X2 — Email pre-fill on priority grant.** PB-10 verifies this in passing; a dedicated test would assert the pre-fill survives if the user closes and reopens the modal mid-flow.
+  - **PB-X3 — Per-class priority isolation.** Manual priority granted on the Wednesday class must NOT grant priority on Monday or Friday. Important business rule, currently only implicitly tested through PB-04 (ineligible email path).
+  - **PB-X4 — Cancelled previous-block booking does not grant priority.** Mirror of PB-09 (reserved → denied) for the `cancelled` status. Confirms the RPC's `status = 'confirmed'` filter is strict.
+  - **PB-X5 — Manual priority survives a reseed and admin grant/remove cycle.** End-to-end check that a granted/removed/granted sequence in the admin panel produces the same gate behaviour as the seed-time priority grant. Now unblocked — admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are both in place.
 
 Naming uses `PB-X*` to keep them distinct from the Excel-numbered scenarios — they can be promoted to official numbered scenarios later if added to the Excel sheet.
 
@@ -1445,6 +1450,112 @@ Either the priority gate would persist past the priority window (preventing new 
 
 ---
 
+### PB-06 — Admin grants Manual priority via per-class panel
+
+**What this proves:** Louise can give a specific client priority access on a specific class from the admin dashboard — and the change actually lands in the database, persists across page reloads, and updates every relevant badge in the UI. This is the foundation of the per-class manual priority system: without it Louise would have no way to grant priority outside the automatic "confirmed-on-previous-block" rule.
+
+**Preconditions:**
+- An admin user exists in the test Supabase project (`admin@lg-pilates-test.local`) with credentials in `.env.test` (`TEST_ADMIN_EMAIL`, `TEST_ADMIN_PASSWORD`)
+- `returning-two@test.example` is a seed customer with a confirmed booking on `fri-recent-past` (so the Friday class appears in their per-class panel with an Auto badge)
+- No existing manual grant on the (returning-two, Friday) pair (cleaned by `beforeEach` if leftover from a prior run)
+
+**Fixture role used:** No block role — the test operates on customer + class IDs looked up dynamically.
+
+**Steps the test performs:**
+1. Logs in as admin via the dashboard login form
+2. Opens the Clients tab and waits for the customer table to render
+3. Expands the per-class panel for `returning-two`
+4. Confirms the starting state: Grant button visible, Auto badge visible
+5. Clicks Grant
+6. Re-expands the panel after the table re-renders
+7. Confirms the new state: Remove button visible, Manual badge visible, overall row badge shows "Manual priority"
+8. Verifies via direct Postgres that a row exists in `customer_class_priority`
+9. Reloads the page, logs in again, confirms the grant survived
+
+**What the test verifies:**
+- The per-class action button changes from Grant to Remove after the click
+- The per-class status badge changes from Auto to Manual
+- The overall customer-row badge updates to "Manual priority"
+- A row exists in `customer_class_priority` after the click
+- The grant persists across a full page reload + re-login
+
+**What a fail would mean:**
+Either Louise's Grant button doesn't actually save anything (so manual priority would silently not work), or the UI lies to her about the new state (badge says Manual but the DB has no row), or the grant is lost on reload (so a refresh would silently revoke priority she just granted). Any of these would break Louise's trust in the admin tool.
+
+> **DB access note:** The `customer_class_priority` table has no anon grants by design (admin-only). All test fixture writes/reads on it use the new `tests/helpers/admin-db.js` helper, which opens a direct Postgres connection via `TEST_SUPABASE_DB_URL` and bypasses RLS for fixture purposes only.
+
+---
+
+### PB-07 — Admin removes Manual priority via per-class panel
+
+**What this proves:** Louise can take Manual priority away from a client just as cleanly as she granted it. When she removes a Manual grant from someone who also has a confirmed booking on a previous block of that class, the badge correctly falls back to Auto priority (not Standard) — which means the per-class fall-through logic between Manual and Auto is wired up correctly.
+
+**Preconditions:**
+- An admin user exists in the test Supabase project with credentials in `.env.test`
+- `returning-one@test.example` has a Manual priority grant on the Wednesday class (seeded by migration 09)
+- `returning-one` is also confirmed on `wed-past`, so removing Manual should leave them with Auto priority on Wednesday
+- If a previous run left the seed grant missing, `beforeEach` re-inserts it before the test runs
+
+**Fixture role used:** No block role — the test operates on customer + class IDs looked up dynamically.
+
+**Steps the test performs:**
+1. Logs in as admin via the dashboard login form
+2. Opens the Clients tab and expands the per-class panel for `returning-one`
+3. Confirms the starting state: Remove button visible, Manual badge visible
+4. Clicks Remove
+5. Re-expands the panel after the table re-renders
+6. Confirms the new state: Grant button visible, Auto badge visible (because of the confirmed booking on wed-past)
+7. Verifies via direct Postgres that the row no longer exists in `customer_class_priority`
+8. afterEach restores the seed grant so smoke-02 and other specs that rely on it stay valid
+
+**What the test verifies:**
+- The per-class action button changes from Remove to Grant after the click
+- The per-class status badge changes from Manual to Auto (NOT Standard) — proving the Auto fall-through path
+- The row no longer exists in `customer_class_priority`
+
+**What a fail would mean:**
+Either Louise's Remove button doesn't actually delete anything (so revoked priority would still apply), or the badge gets stuck at Manual after removal (so she can't tell what state the client is in), or the badge falls all the way to Standard ignoring the Auto priority that should still apply (so a client confirmed on the previous block would lose their automatic priority access). Any of these break the per-class priority model Louise relies on.
+
+> **Self-cleaning note:** This test deletes a fixture-seeded row in the test body. The afterEach hook re-inserts it via the admin-db helper, so smoke-02's invariant ("returning-one has manual priority on Wednesday") is preserved between specs and across the suite.
+
+---
+
+### PB-08 — Manually granted priority allows early access
+
+**What this proves:** A client who's been given Manual priority by Louise gets through the priority gate even though they didn't book the previous block — which is exactly the use case Louise needs Manual priority for (e.g. a long-standing client who skipped a block but should still get early access).
+
+**Preconditions:**
+- An admin user exists in the test Supabase project with credentials in `.env.test`
+- `mon-upcoming` is in the priority window (8-14 days away)
+- `returning-two@test.example` has confirmed bookings on `mon-past` and `mon-full` but NOT on `mon-current` — so without a manual grant the priority RPC denies them
+- No existing manual grant on the (returning-two, Monday) pair (cleared by `beforeEach`)
+
+**Fixture role used:** `mon-upcoming` plus `returning-two@test.example`.
+
+**Steps the test performs:**
+1. Verifies `mon-upcoming` is in the priority window
+2. **Baseline (no grant):** opens the Monday card's next-block toggle, enters returning-two's email, clicks Check My Priority — expects denied (no "Priority confirmed" message, no modal)
+3. **Admin grants Manual priority:** logs in as admin, opens Clients tab, expands returning-two's per-class panel, clicks Grant on the Monday class
+4. **Admin signs out** — returns to schedule view (note: schedule does NOT re-render on sign-out, so the priority panel from step 2 is still open)
+5. **With grant in place:** refills the email field on the (still open) priority panel, clicks Check My Priority again
+6. Confirms the gate now grants access: "Priority confirmed!" message, booking modal opens with email pre-filled
+7. afterEach removes the manual grant via direct Postgres
+
+**What the test verifies:**
+- Without a manual grant, the gate denies returning-two on `mon-upcoming`
+- After the admin grants Manual on the Monday class, the same gate grants access
+- The booking modal opens with the email pre-filled
+- The flip from denied → allowed is purely caused by the Manual grant — nothing else in the fixture changed
+
+**What a fail would mean:**
+Either Manual priority granted in the admin panel doesn't actually unlock the gate for the client (so Louise's grant would be cosmetic only — they still couldn't book), or the gate would let returning-two through without a grant (which would mean the priority rules are broken altogether). Either failure breaks the headline use case for Manual priority.
+
+> **Excel scenario note:** The original Excel scenario referenced the Wednesday class. The current test fixture's Wednesday card has no active block, so the priority gate UI does not render on it. This test was implemented against the Monday class instead — see the PB-08 note in the Coverage Tracker section. The Excel was updated in Session 17 to match.
+
+> **Implementation note:** `signOut()` calls `show("schedule")` which only unhides the existing schedule DOM — it does not re-render. The priority panel toggled open at step 2 is therefore still open after sign-out. Clicking the toggle a second time would close it, so the spec deliberately skips that re-toggle.
+
+---
+
 ### PB-09 — Reserved booking on previous block: priority denied
 
 **What this proves:** Only `confirmed` bookings on the previous block grant priority access — `reserved` (still awaiting payment) does not. This protects Louise from priority access being given to clients who haven't actually paid for their previous block.
@@ -1523,8 +1634,8 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 ### Client Booking (CB) — All 34 scenarios automated ✅
 The full CB scenario set is now covered. Future CB work will be incremental — adding tests for new features, regression coverage for bug fixes, or strengthening existing tests (e.g. the CB-33 PAR-Q DB-direct verification follow-up).
 
-### Priority Booking (PB) — 7 of 10 scenarios automated
-- PB-06, PB-07, PB-08 deferred to the admin-login batch (per-class priority grant/remove + the manual-priority allows-early-access flow)
+### Priority Booking (PB) — All 10 Excel scenarios automated ✅
+The full PB Excel scenario set is now covered. Five gap-analysis tests (PB-X1 through PB-X5) have been identified as Batch 3 for the next session — these cover real-world edge cases not in the Excel sheet.
 
 ### Admin bookings (AB)
 - Louise adding/editing/cancelling bookings
@@ -1532,10 +1643,12 @@ The full CB scenario set is now covered. Future CB work will be incremental — 
 - Cancellation and refund flow
 - CSV export of client data
 
+> **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) were introduced for PB Batch 2 and are reusable for the entire AB suite.
+
 ### Infrastructure
 - GitHub Actions CI (run tests automatically on every code push)
 - Mobile Safari project for proper mobile coverage (currently CB-29/CB-30 use shrunken desktop viewports as a proxy)
-- Admin login helper — required for AB suite, PB Batch 2, and a stronger CB-33
+- ~~Admin login helper~~ ✅ Added in Session 17 (`tests/helpers/admin-auth.js` + `tests/helpers/admin-db.js`)
 
 ---
 
