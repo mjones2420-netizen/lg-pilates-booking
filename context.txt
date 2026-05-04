@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 3 May 2026
+Last updated: 4 May 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -375,18 +375,20 @@ tests-playwright/
     │   ├── supabase.js          # shared anon client (exports `sb`)
     │   ├── app-url.js           # APP_PATH helper
     │   ├── booking-flow.js      # CB test helpers (incl. agreeAndReserve)
-    │   └── fixture-lookup.js    # role-based block lookup (getBlockByRole)
+    │   ├── fixture-lookup.js    # role-based block lookup (getBlockByRole)
+    │   ├── admin-auth.js        # admin login + per-class panel UI helpers (Session 17)
+    │   └── admin-db.js          # direct pg helper for admin-only tables (Session 17)
     ├── smoke-01-anon-reads.spec.js
     ├── smoke-02-anon-rpcs.spec.js
     ├── smoke-03-rls-enforcement.spec.js
     ├── smoke-04-ui-page-loads.spec.js
     ├── cb-*.spec.js             # 23 CB spec files covering 34 of 34 scenarios
-    └── pb-*.spec.js             # 6 PB spec files covering 7 of 10 scenarios
+    └── pb-*.spec.js             # 9 PB spec files covering 10 of 10 PB Excel scenarios
 
-CURRENT TEST COUNT: 54 tests (all passing)
+CURRENT TEST COUNT: 57 tests (all passing)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
-  PB:    6 tests covering 7 of 10 PB scenarios (PB-03 covered by PB-10)
+  PB:    9 tests covering 10 of 10 PB Excel scenarios (PB-03 covered by PB-10) — PB suite complete
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -690,31 +692,33 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
 
    PB BATCHES (Session 16+):
    - ✅ Batch 1 — Booking-window UI + priority gate flows (PB-01, PB-02,
-        PB-04, PB-05, PB-09, PB-10) — 7 of 10 PB scenarios covered
-        (PB-03 covered by PB-10)
-   - ⏳ Batch 2 — Admin per-class priority management (PB-06, PB-07, PB-08)
-        Depends on admin-login helper — bundle with AB suite kickoff.
+        PB-04, PB-05, PB-09, PB-10) — Done Session 16
+   - ✅ Batch 2 — Admin per-class priority management (PB-06, PB-07, PB-08)
+        Done Session 17. Introduced admin-auth.js + admin-db.js helpers.
+   PB EXCEL SCENARIOS COMPLETE — 10 of 10 scenarios automated.
 
-   PB GAP-ANALYSIS TESTS (suggested follow-ups, NOT in Excel):
-   - PB-X1 — Priority gate input validation (empty/malformed email)
-   - PB-X2 — Email pre-fill survives modal close/reopen
-   - PB-X3 — Per-class priority isolation (Wed grant doesn't unlock Mon/Fri)
-   - PB-X4 — Cancelled previous-block booking does not grant priority
-   - PB-X5 — Manual priority round-trip via admin panel (needs admin-login helper)
+   PB BATCH 3 — gap-analysis tests (suggested follow-ups, NOT in Excel):
+   - ⏳ PB-X1 — Priority gate input validation (empty/malformed email)
+   - ⏳ PB-X2 — Email pre-fill survives modal close/reopen
+   - ⏳ PB-X3 — Per-class priority isolation (Wed grant doesn't unlock Mon/Fri)
+   - ⏳ PB-X4 — Cancelled previous-block booking does not grant priority
+   - ⏳ PB-X5 — Manual priority round-trip via admin panel (now unblocked —
+        admin-auth.js + admin-db.js available from Session 17)
    See TEST-PLAN.md "What's left for PB" section for full descriptions.
 
    THEN:
-   - AB (Admin Bookings) tab — needs admin login helper using the
-     admin@lg-pilates-test.local user. Unlocks PB Batch 2 too.
+   - AB (Admin Bookings) tab — admin-login helper now exists
+     (tests/helpers/admin-auth.js) and is reusable for the entire AB suite.
    - GitHub Actions CI for auto-run on push
    - Mobile Safari Playwright project for proper mobile coverage
      (currently CB-29/CB-30 use shrunken desktop viewport at 480x700 as
      a proxy — works but doesn't catch real mobile-specific issues)
-   - Strengthen CB-33 to actually query the parq table directly. Needs
-     authenticated test client (admin login helper)
+   - Strengthen CB-33 to actually query the parq table directly. The
+     admin-db helper makes this straightforward now (direct pg bypasses
+     anon RLS on the parq table).
    - CB-13 self-cleaning: currently skips on re-run when customer is
-     already booked. Full re-runnability would need a cleanup RPC or
-     admin-auth path — bundle with admin-login work
+     already booked. The admin-db helper makes a cleanup path possible
+     now — bundle with the next CB enhancement pass.
    REMINDER: TEST-PLAN.md must be updated in the same session as any new
    test, BUT only after tests are verified passing (Session 16 learning).
 
@@ -831,6 +835,43 @@ PLAYWRIGHT / TEST INFRA
   saved migration file. Tests passed until the next reseed re-applied the
   stale file. Rule: when a change has both a "live apply" and a "file save"
   component, do them from the same source string.
+- The shared `sb` client in tests/helpers/supabase.js is anon-only. It has
+  NO grants on customer_class_priority, bookings, customers, cancellations,
+  or waitlist. Calls against those tables return null/empty silently rather
+  than erroring (RLS behaviour). For fixture writes/reads on admin-only
+  tables, use tests/helpers/admin-db.js (Session 17) which opens a direct
+  Postgres connection via TEST_SUPABASE_DB_URL and bypasses RLS. Pattern:
+  `const { grantManualPriority, hasManualPriority } = require('./helpers/admin-db')`
+  Same pg pool also useful for any future AB or stronger CB-33 tests.
+- Admin login helper: tests/helpers/admin-auth.js (Session 17) drives the
+  dashboard login UI via #dash-email / #dash-password. Requires
+  TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD in .env.test. Session is held
+  in the browser localStorage, not in the test process. signOutAdmin() is
+  also exported. Per-class panel utilities included:
+  expandPerClassPanel, classPriorityButton(cust,cls,'grant'|'remove'),
+  classPriorityBadge(cust,cls).
+- Per-class panel button selectors use the onclick attribute pattern:
+  `button[onclick="toggleClassPriority(custId,classId,true|false)"]`.
+  Third arg is true=Remove (currently granted), false=Grant (not granted).
+  Stable across UI restructure since onclick wiring is in the rendered HTML.
+- When admin signs out via signOut(), show("schedule") only UN-HIDES the
+  existing schedule DOM — it does NOT re-render. Any panels open before the
+  admin session (e.g. next-blk-body toggled open in a pre-admin step) remain
+  open after sign-out, with their input values intact. Re-clicking a toggle
+  in this state will CLOSE it. Either avoid the second toggle click, or
+  expect the panel to already be open. PB-08 hit this in Session 17.
+- Admin login does not work without auth.identities populated. Test admin
+  users MUST be created via the Supabase dashboard "Add user" button —
+  raw INSERTs into auth.users skip the identity row and password sign-in
+  fails silently. (Already documented above under DATABASE & SUPABASE.)
+- Per-class priority gate UI rendering rule (Session 16, re-confirmed
+  Session 17): the gate only renders on a class card that has BOTH an
+  active current block AND an upcoming block. Wednesday (no active in
+  current fixture) and Friday (no priority-window upcoming) do not render
+  the gate. Monday is the only fixture class with a working gate. Verify
+  via `EXISTS(blocks WHERE status='active' AND today between start/end)`
+  AND `EXISTS(blocks WHERE status='upcoming' AND start_date - today
+  BETWEEN 8 AND 14)` BEFORE planning a gate-driven spec.
 
 CB-12 NOTE
 ----------
@@ -843,6 +884,18 @@ PB-03 NOTE
 PB-03 has no standalone spec file. It's covered by PB-10 (confirmed
 booking on previous block grants priority — same assertion as PB-03's
 eligible-client scenario). Coverage Tracker shows it as ✅ with that note.
+
+PB-08 NOTE
+----------
+PB-08's Excel scenario originally referenced the Wednesday class. The
+current fixture's Wednesday card has no active block — only an upcoming
+one — which means the priority gate UI does NOT render on it (the gate
+only appears when a class has both an active current block AND an
+upcoming block). Monday is the only fixture class where the gate
+renders, so PB-08 was implemented against Monday using returning-two
+(confirmed on mon-past and mon-full but NOT on mon-current, so denied
+without a manual grant). Excel scenario wording was updated in Session
+17 to match.
 
 WORKFLOW DISCIPLINE — SESSION 16 LEARNING
 -----------------------------------------
