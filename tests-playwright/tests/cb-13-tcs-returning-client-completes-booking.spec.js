@@ -19,17 +19,20 @@
 //
 // Test data:
 //   - Customer: returning-two@test.example (already in fixture)
-//   - Block:    fri-upcoming (this customer has no booking on it yet)
+//   - Block:    fri-upcoming (this customer has no booking on it in a fresh fixture)
 //
-// Re-run note: after this test runs successfully, returning-two will have
-// a booking on fri-upcoming. Re-running without reseeding will trip the
-// already-booked detection. Run `npm run seed` between full runs.
+// Self-cleaning (post-Session 18): if a previous run left a booking on
+// fri-upcoming for returning-two, this spec deletes it before the UI flow
+// starts so the test can run end-to-end every time without needing a reseed.
+// PAR-Q rows cascade-delete via FK. blocks.booked is resynced afterwards
+// since the trigger only fires on app-level operations.
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const { sb } = require('./helpers/supabase');
 const { openBookingModal } = require('./helpers/booking-flow');
+const { deleteBookingsForCustomerOnBlock } = require('./helpers/admin-db');
 
 const RETURNING_EMAIL = 'returning-two@test.example';
 
@@ -51,23 +54,24 @@ test.describe('CB-13: T&Cs — Returning client completes booking after agreeing
     expect(customer && customer.length, `fixture: ${RETURNING_EMAIL} must exist`).toBe(1);
     const customerId = customer[0].id;
 
-    // Pre-flight: ensure this customer doesn't already have an active
-    // booking on fri-upcoming. If they do, the fixture has drifted (or a
-    // previous run didn't reseed) — fail fast with a clear hint.
+    // Self-cleaning pre-flight: if a previous run left a booking for this
+    // customer/block pair, delete it via direct pg before continuing. This
+    // makes the test re-runnable without needing `npm run seed` between runs.
     const { data: alreadyBookedBefore, error: hasBookedErr } = await sb.rpc(
       'has_active_booking_on_block',
       { p_customer_id: customerId, p_block_id: friUpcoming.id }
     );
     expect(hasBookedErr, 'has_active_booking_on_block RPC must not error').toBeFalsy();
 
-    // Pre-flight skip: if this customer already has a booking on the block
-    // (i.e. a previous CB-13 run has not been cleaned up by reseeding), skip
-    // the test rather than fail. Re-runnability without reseeding is a
-    // separate piece of work tracked for Batch 5+ when admin-auth helpers land.
-    test.skip(
-      alreadyBookedBefore === true,
-      `${RETURNING_EMAIL} already has a booking on fri-upcoming — run \`npm run seed\` to reset, then re-run`
-    );
+    if (alreadyBookedBefore === true) {
+      const deleted = await deleteBookingsForCustomerOnBlock(customerId, friUpcoming.id);
+      // Verify the cleanup actually worked before continuing — a stale booking
+      // here would let the UI flow trip the duplicate-booking detection.
+      const { data: stillBooked } = await sb.rpc('has_active_booking_on_block', {
+        p_customer_id: customerId, p_block_id: friUpcoming.id
+      });
+      expect(stillBooked, `cleanup left ${deleted} booking(s) but RPC still reports booked`).toBe(false);
+    }
 
     // ---- UI flow ----
 

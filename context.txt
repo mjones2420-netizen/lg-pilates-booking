@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 4 May 2026
+Last updated: 4 May 2026 (Session 18)
 ============================================================
 
 ABOUT THIS FILE
@@ -378,17 +378,23 @@ tests-playwright/
     │   ├── fixture-lookup.js    # role-based block lookup (getBlockByRole)
     │   ├── admin-auth.js        # admin login + per-class panel UI helpers (Session 17)
     │   └── admin-db.js          # direct pg helper for admin-only tables (Session 17)
+    │                            # Exports: grantManualPriority, removeManualPriority,
+    │                            #          hasManualPriority, setBookingStatus (S18),
+    │                            #          resyncBlockBookedCount (S18),
+    │                            #          deleteBookingsForCustomerOnBlock (S18),
+    │                            #          deleteCustomerCascade (S18)
     ├── smoke-01-anon-reads.spec.js
     ├── smoke-02-anon-rpcs.spec.js
     ├── smoke-03-rls-enforcement.spec.js
     ├── smoke-04-ui-page-loads.spec.js
     ├── cb-*.spec.js             # 23 CB spec files covering 34 of 34 scenarios
-    └── pb-*.spec.js             # 9 PB spec files covering 10 of 10 PB Excel scenarios
+    └── pb-*.spec.js             # 14 PB spec files covering 10 Excel scenarios + 5 PB-X gap-analysis tests
 
-CURRENT TEST COUNT: 57 tests (all passing)
+CURRENT TEST COUNT: 64 tests (all passing — Session 18)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
-  PB:    9 tests covering 10 of 10 PB Excel scenarios (PB-03 covered by PB-10) — PB suite complete
+  PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
+         (PB-X1 has 3 sub-tests, PB-X2 through PB-X5 have 1 each)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -698,27 +704,44 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    PB EXCEL SCENARIOS COMPLETE — 10 of 10 scenarios automated.
 
    PB BATCH 3 — gap-analysis tests (suggested follow-ups, NOT in Excel):
-   - ⏳ PB-X1 — Priority gate input validation (empty/malformed email)
-   - ⏳ PB-X2 — Email pre-fill survives modal close/reopen
-   - ⏳ PB-X3 — Per-class priority isolation (Wed grant doesn't unlock Mon/Fri)
-   - ⏳ PB-X4 — Cancelled previous-block booking does not grant priority
-   - ⏳ PB-X5 — Manual priority round-trip via admin panel (now unblocked —
-        admin-auth.js + admin-db.js available from Session 17)
-   See TEST-PLAN.md "What's left for PB" section for full descriptions.
+   - ✅ PB-X1 — Priority gate input validation (empty/whitespace/no @) — Session 18
+   - ✅ PB-X2 — Email pre-fill survives modal close/reopen — Session 18
+   - ✅ PB-X3 — Per-class priority isolation (RPC-driven) — Session 18
+   - ✅ PB-X4 — Cancelled previous-block booking does not grant priority — Session 18
+   - ✅ PB-X5 — Manual priority round-trip via admin panel — Session 18
+   PB GAP-ANALYSIS TESTS COMPLETE — 5 of 5 scenarios automated (7 tests including PB-X1 sub-cases).
 
-   THEN:
+   THEN (next session focus):
+   - ⏳ CB-33 STRENGTHENING — currently asserts the booking succeeded; should
+     also query the parq table directly via admin-db to verify the row exists
+     with the expected age, emergency contact, declaration etc. The admin-db
+     helper makes this straightforward (direct pg bypasses anon RLS on parq).
+   - ⏳ OPTION B — make every spec that creates a booking self-clean on EXIT
+     (afterEach) rather than entry (current pattern). Why this is needed:
+       1. Specs currently rely on either (a) reseeding before each full run,
+          or (b) self-cleaning on entry. Both leave junk in the test DB
+          between runs. Session 18 hit a real failure when mon-current
+          accumulated 13 stray bookings across multiple runs and filled to
+          capacity — every test booking on Monday then failed with CLASS_FULL.
+       2. Self-cleaning on entry only handles ONE customer/block pair per
+          spec. Cascading effects (e.g. CB-01 leaves a cb01-{ts}@... customer
+          on mon-current; nothing cleans it up) build up over many runs.
+       3. Self-cleaning on exit (afterEach) — like PB-X4 now does — keeps
+          the DB stable between runs and removes the need for periodic
+          manual cleanup or full reseed cycles.
+       4. Pattern to apply: track per-run customer ID in describe-scope `let`,
+          afterEach calls deleteCustomerCascade(id) — reusable helper already
+          exists in admin-db.js.
+     Affected specs (any spec that creates a customer or booking via UI/RPC):
+     CB-01, CB-02, CB-03, CB-07 (capacity), CB-13, CB-31, CB-32, CB-33,
+     PB-09, PB-10, PB-X4 (already done). Approx 10–11 specs.
+   THEN AFTER THAT:
    - AB (Admin Bookings) tab — admin-login helper now exists
      (tests/helpers/admin-auth.js) and is reusable for the entire AB suite.
    - GitHub Actions CI for auto-run on push
    - Mobile Safari Playwright project for proper mobile coverage
      (currently CB-29/CB-30 use shrunken desktop viewport at 480x700 as
      a proxy — works but doesn't catch real mobile-specific issues)
-   - Strengthen CB-33 to actually query the parq table directly. The
-     admin-db helper makes this straightforward now (direct pg bypasses
-     anon RLS on the parq table).
-   - CB-13 self-cleaning: currently skips on re-run when customer is
-     already booked. The admin-db helper makes a cleanup path possible
-     now — bundle with the next CB enhancement pass.
    REMINDER: TEST-PLAN.md must be updated in the same session as any new
    test, BUT only after tests are verified passing (Session 16 learning).
 
@@ -919,5 +942,55 @@ that's the cue to stop and ask: "I'll just...", "Easiest thing is to...",
 "I'll defer/skip/replace this for now..."
 
 This is captured formally in the playwright-batch-workflow skill (STEP 2.5).
+
+SESSION 18 LEARNINGS — SELECTORS, ASYNC RACES, FIXTURE STATE DRIFT
+-------------------------------------------------------------------
+- Class card root selector is `.card`, NOT `.class-card`. Several Session 18
+  specs failed initially because they used `.class-card`. When in doubt,
+  click the toggle by its unique onclick attribute instead of finding the
+  card first: `[onclick="toggleNextBlk('nb-${blockId}')"]` — that selector
+  is stable and tied to the specific block.
+- The admin login helper expects `#tab-bookings.on` after login. After
+  `openClientsTab` is called, the tab classes are sticky and don't reset on
+  signOut. Re-login in the same test fails because tab-bookings is no
+  longer the active tab. Workaround: `page.goto(APP_PATH)` (full reload)
+  before the second loginAsAdmin call. The session was already cleared by
+  signOut, so the reload lands on the login form as expected.
+- toggleClassPriority is a fire-and-forget IIFE: clicking Grant/Remove
+  awaits a DB write, shows a toast, then calls renderCustomersTab() which
+  itself awaits 4 DB reads before swapping tbody innerHTML. Clicking the
+  Per-class button to re-expand the panel BEFORE this re-render completes
+  hits a stale (now-detached) row. Fix: after Grant/Remove click, wait for
+  `#toastEl.on` to be visible AND for the next button (Remove if you just
+  granted, Grant if you just removed) to exist via `toHaveCount(1)`. Then
+  re-expand the panel. PB-X5 has the canonical pattern.
+- Fixture state drift across multiple test runs is a real failure mode.
+  Specs that book the same fixture customer on a fixture block (CB-01,
+  CB-07, CB-13, CB-31, CB-32, CB-33, PB-09, PB-10, PB-X4) accumulate
+  bookings on mon-current and other shared blocks across runs. Session 18
+  hit a CLASS_FULL failure when mon-current reached cap=12 with 13 stray
+  bookings from earlier runs. The trg_sync_block_booked_count trigger
+  keeps blocks.booked accurate, but the UNDERLYING DATA is the problem,
+  not the count. The fix applied (Session 18) was a one-time manual
+  cleanup of mon-current + a self-cleaning afterEach in PB-X4. The full
+  fix (Option B in TO DO) is to add afterEach cleanup to every spec that
+  creates state. Until that lands, expect to occasionally need a manual
+  cleanup or full `npm run seed` after heavy iteration.
+- bookings → customers FK is NOT ON DELETE CASCADE. parq → bookings IS
+  ON DELETE CASCADE. So to delete a customer, delete their bookings
+  first (parq cascades), then delete the customer. context.txt's stated
+  deletion order is the canonical reference: parq → cancellations →
+  bookings → customer_class_priority → customers. (Cancellations are
+  denormalised audit records — they don't get deleted by routine cleanup.)
+- The shared `sb` anon client returns null/empty silently when calling
+  RPCs that fail server-side (e.g. CLASS_FULL). Always check the `error`
+  return, not just `data`. Pattern: `const { data, error } = await sb.rpc(...)`
+  then `expect(error).toBeNull()` BEFORE asserting on `data`.
+- deleteBookingsForCustomerOnBlock only deletes status != 'cancelled'.
+  PB-X4 leaves a cancelled booking by design — that booking is junk
+  state that won't be removed by entry-side self-cleaning, which is why
+  PB-X4 needed an afterEach with deleteCustomerCascade instead. Specs
+  that flip booking status to cancelled MUST clean up via customer
+  cascade, not booking-level delete.
 
 ============================================================

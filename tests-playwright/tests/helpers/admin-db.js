@@ -97,10 +97,110 @@ async function hasManualPriority(customerId, classId) {
   return rows.length > 0;
 }
 
+/**
+ * Updates a booking's status. Anon has no UPDATE on bookings, so direct pg
+ * is required for status flips needed by tests (e.g. simulating a cancelled
+ * booking for PB-X4).
+ *
+ * Status must be one of the values allowed by bookings_status_check:
+ *   'reserved', 'confirmed', 'cancelled', 'refund-pending', 'refunded', 'waitlist'
+ *
+ * Note: this does NOT trigger trg_sync_block_booked_count (which only fires
+ * on INSERT/DELETE). If the test depends on blocks.booked being correct
+ * after a status change, call resyncBlockBookedCount(blockId) afterwards.
+ */
+async function setBookingStatus(bookingId, status) {
+  await getPool().query(
+    `UPDATE bookings SET status = $1 WHERE id = $2`,
+    [status, bookingId]
+  );
+}
+
+/**
+ * Recalculates blocks.booked from the actual non-cancelled booking count.
+ * Mirrors the body of sync_block_booked_count() so tests can run it after
+ * raw SQL changes that bypass the app-level trigger.
+ *
+ * Pass a blockId to resync a single block, or omit to resync all blocks.
+ */
+async function resyncBlockBookedCount(blockId = null) {
+  if (blockId == null) {
+    await getPool().query(
+      `UPDATE blocks b
+       SET booked = (
+         SELECT COUNT(*) FROM bookings
+         WHERE block_id = b.id AND status != 'cancelled'
+       )`
+    );
+  } else {
+    await getPool().query(
+      `UPDATE blocks
+       SET booked = (
+         SELECT COUNT(*) FROM bookings
+         WHERE block_id = $1 AND status != 'cancelled'
+       )
+       WHERE id = $1`,
+      [blockId]
+    );
+  }
+}
+
+/**
+ * Deletes any non-cancelled bookings for a (customer, block) pair, used by
+ * tests that need to reset their own state before re-running without a full
+ * reseed (e.g. CB-13 self-cleaning).
+ *
+ * Foreign keys handle the cascade for us:
+ *   - parq.booking_id has ON DELETE CASCADE → PAR-Q rows go automatically
+ *
+ * Cancellations rows are NOT deleted — those exist only when the admin
+ * goes through the cancel-and-refund flow, which CB-13 doesn't trigger.
+ *
+ * After deletion this helper resyncs blocks.booked because the
+ * trg_sync_block_booked_count trigger only fires on app-level operations.
+ *
+ * Returns the number of booking rows deleted (0 or more).
+ */
+async function deleteBookingsForCustomerOnBlock(customerId, blockId) {
+  const { rowCount } = await getPool().query(
+    `DELETE FROM bookings
+     WHERE customer_id = $1 AND block_id = $2 AND status != 'cancelled'`,
+    [customerId, blockId]
+  );
+  await resyncBlockBookedCount(blockId);
+  return rowCount;
+}
+
+/**
+ * Deletes a customer and all their bookings (parq cascades via FK).
+ * Used by tests that create per-run customers and want to clean up on exit.
+ *
+ * Deletion order follows the FK chain: bookings → customer.
+ * (parq cascades via parq.booking_id ON DELETE CASCADE.)
+ *
+ * Cancellations rows are NOT deleted — those are denormalised audit records
+ * that should survive even if the customer is later deleted (per schema design).
+ *
+ * Returns the number of customer rows deleted (0 or 1).
+ */
+async function deleteCustomerCascade(customerId) {
+  await getPool().query(`DELETE FROM bookings WHERE customer_id = $1`, [customerId]);
+  const { rowCount } = await getPool().query(
+    `DELETE FROM customers WHERE id = $1`,
+    [customerId]
+  );
+  await resyncBlockBookedCount();
+  return rowCount;
+}
+
 module.exports = {
   getPool,
   closePool,
   grantManualPriority,
   removeManualPriority,
-  hasManualPriority
+  hasManualPriority,
+  setBookingStatus,
+  resyncBlockBookedCount,
+  deleteBookingsForCustomerOnBlock,
+  deleteCustomerCascade
 };

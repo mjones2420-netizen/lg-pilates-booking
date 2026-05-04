@@ -46,21 +46,23 @@ The 10 Priority Booking scenarios from `LG_Pilates_Test_Scenarios.xlsx` (after t
 
 - ~~**Batch 1 — Booking-window UI + priority gate flows:** PB-01, PB-02, PB-04, PB-05, PB-09, PB-10~~ ✅ Done (Session 16)
 - ~~**Batch 2 — Admin per-class priority management:** PB-06, PB-07, PB-08~~ ✅ Done (Session 17)
+- ~~**Batch 3 — Gap-analysis tests:** PB-X1, PB-X2, PB-X3, PB-X4, PB-X5~~ ✅ Done (Session 18)
 
-**Priority Booking automation is now complete.**
+**Priority Booking automation is now complete — all 10 Excel scenarios plus 5 gap-analysis tests (7 individual test cases).**
+
+**PB Batch 3 — gap-analysis tests (now automated, Session 18):**
+
+These tests cover real-world edge cases that were not in the original Excel sheet. Naming uses `PB-X*` to keep them distinct from the Excel-numbered scenarios. They can be promoted to official numbered scenarios later if added to Excel.
+
+- ✅ **PB-X1 — Priority gate input validation.** Empty, whitespace-only, and malformed (no `@`) emails submitted to the gate are rejected client-side with a clear validation message — no `check_priority_access` RPC call made. Three sub-tests in one spec file.
+- ✅ **PB-X2 — Email pre-fill survives modal close/reopen.** PB-10 verifies the pre-fill happens on the initial grant. PB-X2 extends that to assert the pre-fill is consistent if the user closes and reopens the modal mid-flow.
+- ✅ **PB-X3 — Per-class priority isolation.** Manual priority granted on the Wednesday class does NOT grant priority on Monday or Friday. RPC-driven test (gate UI doesn't render on Wed/Fri in the current fixture, so directly asserting `check_priority_access` for the same customer across three classes is the cleanest proof).
+- ✅ **PB-X4 — Cancelled previous-block booking does not grant priority.** Mirror of PB-09 (reserved → denied) for the `cancelled` status. Confirms the RPC's `status = 'confirmed'` filter is strict. Includes `afterEach` cleanup that deletes the per-run customer.
+- ✅ **PB-X5 — Manual priority grant/remove cycle via admin panel.** End-to-end UI test: gate denies → admin grants → gate allows → admin removes → gate denies again. Drives both the admin Clients tab and the client-facing gate.
 
 **What's left for PB**
 
-The Excel scenarios (PB-01 to PB-10) are all automated. The items below were identified during the Session 16 sense-check as real-world gaps not in the Excel sheet. They are now grouped as **Batch 3** for the next PB session, since the admin-login helper introduced in Session 17 unblocks PB-X5.
-
-- ⏳ **Batch 3 — PB gap-analysis tests:** PB-X1, PB-X2, PB-X3, PB-X4, PB-X5 (next session)
-  - **PB-X1 — Priority gate input validation.** Empty email and malformed email submitted to the gate should be rejected client-side (or at least produce a clear deny message) rather than triggering an RPC call. Currently untested.
-  - **PB-X2 — Email pre-fill on priority grant.** PB-10 verifies this in passing; a dedicated test would assert the pre-fill survives if the user closes and reopens the modal mid-flow.
-  - **PB-X3 — Per-class priority isolation.** Manual priority granted on the Wednesday class must NOT grant priority on Monday or Friday. Important business rule, currently only implicitly tested through PB-04 (ineligible email path).
-  - **PB-X4 — Cancelled previous-block booking does not grant priority.** Mirror of PB-09 (reserved → denied) for the `cancelled` status. Confirms the RPC's `status = 'confirmed'` filter is strict.
-  - **PB-X5 — Manual priority survives a reseed and admin grant/remove cycle.** End-to-end check that a granted/removed/granted sequence in the admin panel produces the same gate behaviour as the seed-time priority grant. Now unblocked — admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are both in place.
-
-Naming uses `PB-X*` to keep them distinct from the Excel-numbered scenarios — they can be promoted to official numbered scenarios later if added to the Excel sheet.
+PB Excel scenarios (PB-01 to PB-10) and PB Batch 3 gap-analysis tests (PB-X1 to PB-X5) are all automated. Future PB additions would either be new Excel scenarios or further gap-analysis tests as new edge cases are identified.
 
 **Other tabs (not started):** Booking Windows (10), Admin Bookings (24), Admin Classes (26), Admin Clients (6), Schedule Display (8), Settings Export (11), Edge Cases (16), Block Warnings (11), Security (9).
 
@@ -904,13 +906,13 @@ A customer who navigates back and forth could submit a booking with stale T&Cs a
 **Preconditions:**
 - The Friday upcoming block (`fri-upcoming`) is bookable
 - The customer `returning-two@test.example` exists in the fixture
-- That customer has no existing active booking on `fri-upcoming` (otherwise the already-booked detection trips)
+- Self-cleaning handles any previous-run booking state automatically
 
 **Fixture role used:** `fri-upcoming` + the seeded customer `returning-two@test.example`
 
 **Steps the test performs:**
 1. Looks up the customer via the `lookup_customer` RPC
-2. Pre-flight check: calls `has_active_booking_on_block` to confirm no existing booking — if one exists, the test is **skipped** (not failed) with a "run npm run seed" hint. This means the suite stays green when CB-13 has been run twice without reseeding in between.
+2. Self-cleaning pre-flight: calls `has_active_booking_on_block` — if a booking exists from a previous run, deletes it via `deleteBookingsForCustomerOnBlock` (admin-db helper) and re-verifies it's gone. The test then runs end-to-end every time without needing a reseed.
 3. Opens the Friday booking modal and fills Step 1 with the returning customer's email
 4. Waits for the app to detect the returning customer and jump straight to Step 3
 5. Verifies the Step 3 default state (checkbox unticked, button disabled)
@@ -920,7 +922,7 @@ A customer who navigates back and forth could submit a booking with stale T&Cs a
 
 **What the test verifies:**
 - The customer is found and the lookup RPC works
-- The pre-booking RPC returns `false` (no existing booking)
+- After self-cleaning, the pre-booking RPC returns `false` (no existing booking)
 - Step 3 appears within 8 seconds (allowing for the 2.5s setTimeout in `goStep2()`)
 - The success view is shown after Reserve is clicked
 - The post-booking RPC returns `true` (booking now exists)
@@ -928,7 +930,7 @@ A customer who navigates back and forth could submit a booking with stale T&Cs a
 **What a fail would mean:**
 The returning-customer fast track is broken. Existing customers would either be forced through the full new-client flow (a major UX regression) or be unable to complete a booking at all.
 
-> **Re-run note:** After a successful run, `returning-two@test.example` will have a booking on `fri-upcoming`. Re-running without reseeding causes CB-13 to be **skipped** (with a clear reason in the test report) rather than failing — so the suite stays green. Run `npm run seed` between full runs to reset and have CB-13 actually execute.
+> **Self-cleaning (Session 18):** This test now deletes any leftover booking on entry rather than skipping. The test is fully re-runnable without a reseed. The previous `test.skip` pattern was replaced because cascading skips across the suite (CB-13 → CB-32 → PB-10 etc.) made the green suite hide real coverage gaps.
 
 > **DB verification approach:** This test uses RPC functions (`lookup_customer`, `has_active_booking_on_block`) instead of direct SELECTs against `customers` or `bookings` — those tables are not readable by anon by design. The RPCs are the same channels the live app uses to read customer state.
 
@@ -1243,12 +1245,12 @@ A real client second-guessing their answers and clicking Back would lose what th
 
 **Preconditions:**
 - A returning customer (`returning-two@test.example`) exists in the test DB and has at least one previous booking
-- That customer is NOT yet booked on the Monday current block
+- That customer is NOT yet booked on the Monday current block (self-cleaning handles previous-run state)
 
 **Fixture role used:** `mon-current` (block) plus `returning-two@test.example` (existing customer)
 
 **Steps the test performs:**
-1. Pre-flight check: skip the test if `returning-two` is already booked on `mon-current` (a previous run leaves them booked — `npm run seed` resets this)
+1. Self-cleaning pre-flight: looks up `returning-two`, checks for an existing booking on `mon-current`, and if found deletes it via `deleteBookingsForCustomerOnBlock` (admin-db helper). The test runs end-to-end every time without needing a reseed.
 2. Opens the booking modal on Monday's current block
 3. Fills Step 1 with the returning client's existing details
 4. Waits for the welcome-back message and 2.5s transition
@@ -1264,6 +1266,8 @@ A real client second-guessing their answers and clicking Back would lose what th
 
 **What a fail would mean:**
 Either returning clients would be forced to re-fill the medical form every block (bad UX, complaints) or the system would lose track of who's a returning customer entirely. Both would push clients away from rebooking.
+
+> **Self-cleaning (Session 18):** Replaces the previous `test.skip` pattern. See CB-13 note for the rationale.
 
 ---
 
@@ -1306,14 +1310,14 @@ A client could fill in the entire booking form and only discover the duplicate a
 
 **Preconditions:**
 - A returning customer (`returning-one@test.example`) exists in the test DB with previous bookings on other classes/blocks
-- That customer is NOT currently booked on the Friday upcoming block (fri-upcoming)
+- That customer is NOT currently booked on the Friday upcoming block (self-cleaning handles previous-run state)
 
 **Fixture role used:** `fri-upcoming` (block) plus `returning-one@test.example` (existing customer)
 
 > Customer choice matters here. CB-13 already books `returning-two` onto `fri-upcoming`, so re-using `returning-two` would cause CB-32 to skip after CB-13 ran. `returning-one` + `fri-upcoming` is a unique combination across the CB suite.
 
 **Steps the test performs:**
-1. Pre-flight check: skip the test if `returning-one` is already booked on `fri-upcoming`
+1. Self-cleaning pre-flight: looks up `returning-one`, checks for an existing booking on `fri-upcoming`, and if found deletes it via `deleteBookingsForCustomerOnBlock`. The test runs end-to-end every time without needing a reseed.
 2. Opens the booking modal on Friday's current block
 3. Fills Step 1 with the returning customer's existing details
 4. Waits for the welcome-back message
@@ -1329,6 +1333,8 @@ A client could fill in the entire booking form and only discover the duplicate a
 
 **What a fail would mean:**
 A returning client trying to book a new class would be wrongly told they're already booked — blocking a real booking and a real payment. This is the regression check that proves the early-detection logic only fires when it should.
+
+> **Self-cleaning (Session 18):** Replaces the previous `test.skip` pattern. See CB-13 note for the rationale.
 
 ---
 
@@ -1593,13 +1599,13 @@ A client who reserved but never paid for the previous block could jump the queue
 **Preconditions:**
 - The `mon-upcoming` block is in the priority window (8-14 days away)
 - `returning-one@test.example` is confirmed on `mon-current` (the actual previous block — seeded by migration 09)
-- `returning-one` is NOT yet booked on `mon-upcoming` (a previous run leaves them booked — `npm run seed` resets this)
+- `returning-one` is NOT yet booked on `mon-upcoming` (self-cleaning handles previous-run state)
 
 **Fixture role used:** `mon-upcoming` plus `returning-one@test.example`
 
 **Steps the test performs:**
 1. Looks up `mon-upcoming` and verifies the priority-window state
-2. Pre-flight check: skip the test if `returning-one` is already booked on `mon-upcoming`
+2. Self-cleaning pre-flight: if `returning-one` already has a booking on `mon-upcoming` (e.g. left over from a previous PB-10 run), deletes it via `deleteBookingsForCustomerOnBlock`. The test runs end-to-end every time without needing a reseed.
 3. Locates the Monday card, expands the next-block toggle
 4. Enters the eligible email in the priority gate
 5. Clicks Check My Priority
@@ -1627,15 +1633,168 @@ Either an eligible priority client would be denied access (blocking a valid earl
 
 ---
 
+# PB Batch 3 — Gap-analysis tests (Session 18)
+
+These tests cover real-world edge cases not in the Excel scenarios sheet. They were identified during the Session 16 sense-check as worth automating for production confidence.
+
+### PB-X1 — Priority gate input validation
+
+**What this proves:** The priority gate rejects empty, whitespace-only, and malformed (no `@`) emails client-side with a clear validation message, and does NOT make a wasted `check_priority_access` RPC call. This protects Louise from pointless RPC traffic and gives the user immediate, friendly feedback rather than a confusing deny message.
+
+**Preconditions:**
+- The Monday card's priority gate is rendered (Monday is the only class in the current fixture with both an active current block and an upcoming block in the priority window — see PB-08 note)
+
+**Fixture role used:** `mon-upcoming` (the gate target)
+
+**Steps the test performs (three sub-tests):**
+1. Opens the Monday card's next-block panel via its toggle
+2. **Empty email:** clicks Check My Priority with the input still empty
+3. **Whitespace-only:** fills the input with `   ` and clicks Check My Priority
+4. **Missing `@`:** fills the input with `notanemail` and clicks Check My Priority
+5. Each sub-test attaches a `request` listener to the page and asserts no `check_priority_access` URL is hit
+
+**What the test verifies:**
+- The validation message renders inside `#pmsg-{blockId}` with the text "Please enter a valid email address."
+- The booking modal does NOT open (`#overlay.on` has count 0)
+- The `check_priority_access` RPC is never called (caught via network listener with a 400ms grace window)
+
+**What a fail would mean:**
+A user typing a typo or leaving the field blank would either get a confusing server-side denial, or the gate would silently fail without telling them what went wrong. Either is a poor user experience and could leave clients thinking the system is broken.
+
+---
+
+### PB-X2 — Email pre-fill on priority grant survives modal close/reopen
+
+**What this proves:** When an eligible client gets through the priority gate, their email is pre-filled on Step 1 of the booking modal. If the client closes the modal mid-flow and re-triggers the gate, the email pre-fill behaviour is consistent — they don't have to retype. PB-10 verifies the pre-fill happens on the initial grant; PB-X2 extends that to the close/reopen round-trip.
+
+**Preconditions:**
+- The `mon-upcoming` block is in the priority window
+- `returning-one@test.example` is confirmed on `mon-current` (priority-eligible)
+
+**Fixture role used:** `mon-upcoming` plus `returning-one@test.example`
+
+**Steps the test performs:**
+1. Self-cleaning pre-flight: deletes any existing `returning-one` booking on `mon-upcoming` (PB-10 runs before PB-X2 alphabetically and books returning-one on the same block)
+2. Opens the Monday card's next-block panel
+3. Submits the eligible email through the priority gate
+4. Asserts the modal opens with email pre-filled
+5. Closes the modal via the `.mclose` button
+6. Re-fills the gate input (the gate is just a text field, doesn't restore previous text)
+7. Re-triggers the gate
+
+**What the test verifies:**
+- First gate flow: priority confirmed message renders, modal opens, `#b-email` is pre-filled with the eligible email
+- After close: `#overlay.on` has count 0
+- Second gate flow: priority confirmed message renders again, modal opens again, `#b-email` is pre-filled again
+
+**What a fail would mean:**
+A returning client who accidentally closes the modal mid-flow would be forced to retype their email, hitting the gate from scratch. While not catastrophic, it would create unnecessary friction at the exact moment they're trying to complete a paid booking.
+
+---
+
+### PB-X3 — Per-class priority isolation
+
+**What this proves:** A manual priority grant for one class does NOT leak into other classes for the same customer. This is a core business rule — Louise grants priority per class, not per client. If isolation failed, granting Wednesday priority to one client would silently unlock every other class for them.
+
+**Preconditions:**
+- A fresh customer is created in the test
+- Manual priority is granted on the Wednesday class only (via direct pg)
+
+**Fixture roles used:** `wed-upcoming`, `mon-upcoming`, `fri-upcoming` (the upcoming blocks for each class)
+
+**Steps the test performs:**
+1. Creates a fresh customer via `upsert_customer` RPC (`pbx3-{timestamp}@test.example`)
+2. Grants manual priority on the Wednesday class only via `grantManualPriority` (admin-db helper)
+3. Calls `check_priority_access` RPC for the same customer against `wed-upcoming`, `mon-upcoming`, and `fri-upcoming`
+4. Removes the manual grant in `afterEach` cleanup
+
+**What the test verifies:**
+- `check_priority_access` returns `true` for `wed-upcoming` (granted)
+- `check_priority_access` returns `false` for `mon-upcoming` (not granted)
+- `check_priority_access` returns `false` for `fri-upcoming` (not granted)
+
+**What a fail would mean:**
+Granting one client manual priority on a single class would unlock priority access for them across every class. This would silently inflate the priority window's effective participant count and damage Louise's ability to control who gets early access.
+
+> **Note on RPC vs UI testing:** PB-X3 is RPC-driven rather than UI-driven. The priority gate UI only renders on the Monday card in the current fixture (Wed has no active block, Fri has no priority-window upcoming block), so a UI-only isolation test isn't possible without fixture changes. The RPC assertion proves the business rule directly — the gate UI is a thin wrapper around this RPC.
+
+---
+
+### PB-X4 — Cancelled previous-block booking does not grant priority
+
+**What this proves:** A `cancelled` booking on the previous block does NOT count as priority-eligible. The `check_priority_access` RPC only treats `confirmed` as eligible. PB-09 covers the `reserved` case; PB-X4 covers `cancelled`. Together they prove the RPC's status filter is strict.
+
+**Preconditions:**
+- The `mon-upcoming` block is in the priority window
+- A test customer is created and given a booking on `mon-current` that is then flipped to `cancelled` status
+
+**Fixture role used:** `mon-current` (where the cancelled booking is created) and `mon-upcoming` (gate target)
+
+**Steps the test performs:**
+1. Creates a fresh customer via `upsert_customer` RPC (`pbx4-{timestamp}@test.example`)
+2. Creates a booking on `mon-current` via `book_if_available` (status `reserved`)
+3. Flips status to `cancelled` via `setBookingStatus` (admin-db helper, direct pg)
+4. Resyncs `blocks.booked` via `resyncBlockBookedCount` (status changes don't trigger the sync)
+5. Reloads the booking page so the gate sees the new state
+6. Submits the customer's email to the priority gate on Monday
+
+**What the test verifies:**
+- The deny message renders inside `#pmsg-{blockId}`
+- The message contains "don't have priority booking"
+- The message contains "Standard booking opens"
+- The booking modal does NOT open
+- `afterEach` cleanup deletes the per-run customer + their booking via `deleteCustomerCascade`
+
+**What a fail would mean:**
+A client who cancelled their previous block could still claim priority for the next one — an exploit that would let people "save their spot" via cancellation while bypassing the rule that priority rewards continuous attendance.
+
+---
+
+### PB-X5 — Manual priority grant/remove cycle via admin panel
+
+**What this proves:** A full round-trip through the admin panel — granting manual priority unlocks the gate for a client, and removing it locks them back out. End-to-end UI test driving both the admin Clients tab and the client-facing gate. Confirms that admin grant/remove buttons produce the same effect as a seed-time priority grant.
+
+**Preconditions:**
+- The `mon-upcoming` block is in the priority window
+- `returning-two@test.example` is confirmed on `mon-past` and `mon-full` but NOT on `mon-current` (so without a manual grant, denied for `mon-upcoming`)
+
+**Fixture role used:** `mon-upcoming` plus `returning-two@test.example`
+
+**Steps the test performs (7 phases):**
+1. **Baseline:** opens the Monday card priority gate, submits returning-two's email, asserts denial message
+2. **Admin grants:** logs in as admin, opens Clients tab, expands returning-two's per-class panel, clicks Grant on Monday class
+3. **Admin signs out:** returns to schedule view
+4. **Gate now allows:** re-fills the email and re-triggers the gate; asserts priority confirmed + modal opens with email pre-filled
+5. **Admin removes:** closes the modal, reloads the page (full reload required to reset dashboard tab state for second login), logs in again, clicks Remove on Monday
+6. **Admin signs out** again
+7. **Gate denies again:** re-opens the priority panel, submits the email, asserts the original denial message
+
+**What the test verifies:**
+- Phase 1: denial message contains "don't have priority booking", modal does not open
+- Phase 2: Grant button flips to Remove (after waiting for the toast and the re-rendered button to appear in the DOM — `toggleClassPriority` is fire-and-forget async)
+- Phase 4: priority confirmed message appears, `#overlay.on` becomes visible, `#b-email` is pre-filled
+- Phase 5: Remove button flips back to Grant
+- Phase 7: original denial behaviour restored
+- `afterEach` cleanup removes any leftover grant via direct pg (belt-and-braces)
+
+**What a fail would mean:**
+The admin grant/remove buttons would be cosmetic — they'd appear to work but the underlying priority logic wouldn't reflect the change. Louise could grant priority to a client who then couldn't book, or remove priority from someone who could still claim it. Either is a serious operational bug.
+
+---
+
 # Appendix — What's NOT yet covered
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary below describes the main areas remaining.
 
 ### Client Booking (CB) — All 34 scenarios automated ✅
-The full CB scenario set is now covered. Future CB work will be incremental — adding tests for new features, regression coverage for bug fixes, or strengthening existing tests (e.g. the CB-33 PAR-Q DB-direct verification follow-up).
+The full CB scenario set is now covered. CB-13, CB-03, and CB-32 were upgraded to self-cleaning in Session 18. Future CB work will be incremental — adding tests for new features, regression coverage for bug fixes, or strengthening existing tests (e.g. the CB-33 PAR-Q DB-direct verification follow-up — see "Next session" below).
 
-### Priority Booking (PB) — All 10 Excel scenarios automated ✅
-The full PB Excel scenario set is now covered. Five gap-analysis tests (PB-X1 through PB-X5) have been identified as Batch 3 for the next session — these cover real-world edge cases not in the Excel sheet.
+### Priority Booking (PB) — All 10 Excel scenarios + 5 gap-analysis tests automated ✅
+The full PB Excel scenario set plus all five PB-X gap-analysis tests are now covered (Session 18). PB-10 was upgraded to self-cleaning; PB-X4 has full afterEach cleanup.
+
+### Next session
+- **CB-33 strengthening** — currently asserts the booking succeeded. Should also query the `parq` table directly via the admin-db helper to verify the row exists with the expected age, emergency contact, and declaration values.
+- **Self-cleaning rollout (Option B)** — make every spec that creates a booking self-clean on EXIT (afterEach) rather than only on entry. The current entry-side pattern leaves customer + booking junk in the test DB across runs. Session 18 hit a CLASS_FULL failure when mon-current accumulated 13 stray bookings across runs and reached its cap of 12. The afterEach pattern (already in use in PB-X4) prevents this. Affected specs: CB-01, CB-02, CB-03, CB-07 (capacity), CB-13, CB-31, CB-32, CB-33, PB-09, PB-10. Reusable helper exists: `deleteCustomerCascade(customerId)` in admin-db.js.
 
 ### Admin bookings (AB)
 - Louise adding/editing/cancelling bookings

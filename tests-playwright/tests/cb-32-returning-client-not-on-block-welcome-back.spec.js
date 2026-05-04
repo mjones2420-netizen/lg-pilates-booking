@@ -33,6 +33,7 @@ const {
   agreeAndReserve
 } = require('./helpers/booking-flow');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
+const { deleteBookingsForCustomerOnBlock } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 const RETURNING_EMAIL = 'returning-one@test.example';
@@ -50,18 +51,25 @@ test.describe('CB-32 — Returning client NOT on this block — welcome-back flo
   });
 
   test('returning client not yet on this block sees welcome-back message and proceeds to payment', async ({ page }) => {
-    // Pre-flight: skip cleanly if returning-one is somehow already booked
-    // on fri-upcoming. CB-13 books returning-two (not -one) on this block,
-    // so under normal conditions returning-one stays unbooked here.
+    // Self-cleaning pre-flight: if a previous run left a booking for
+    // returning-one on fri-upcoming, delete it via direct pg so this test
+    // can run end-to-end every time. Same pattern as CB-13 (Session 18).
     const friUpcoming = await getBlockByRole('fri-upcoming');
+    const { data: lookupCust } = await sb.rpc('lookup_customer', { p_email: RETURNING_EMAIL });
+    expect(lookupCust && lookupCust.length, `fixture: ${RETURNING_EMAIL} must exist`).toBe(1);
+    const customerId = lookupCust[0].id;
+
     const { data: hasBooking } = await sb.rpc('has_active_booking_on_block', {
-      p_customer_id: (await sb.rpc('lookup_customer', { p_email: RETURNING_EMAIL })).data[0].id,
+      p_customer_id: customerId,
       p_block_id: friUpcoming.id
     });
-    test.skip(
-      hasBooking === true,
-      'returning-one@test.example is already booked on fri-upcoming — run `npm run seed` to reset.'
-    );
+    if (hasBooking === true) {
+      await deleteBookingsForCustomerOnBlock(customerId, friUpcoming.id);
+      const { data: stillBooked } = await sb.rpc('has_active_booking_on_block', {
+        p_customer_id: customerId, p_block_id: friUpcoming.id
+      });
+      expect(stillBooked, 'cleanup failed — RPC still reports booking active').toBe(false);
+    }
 
     await openBookingModal(page, 'Friday', 'current');
 

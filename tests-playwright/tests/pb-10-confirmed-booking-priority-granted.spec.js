@@ -47,6 +47,7 @@ const {
   fillStep1,
   agreeAndReserve
 } = require('./helpers/booking-flow');
+const { deleteBookingsForCustomerOnBlock } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 const PRIORITY_EMAIL = 'returning-one@test.example';
@@ -83,10 +84,16 @@ test.describe('PB-10 — Confirmed booking on previous block: priority granted',
       p_customer_id: customerId,
       p_block_id:    monUpcoming.id
     });
-    test.skip(
-      alreadyBooked === true,
-      `${PRIORITY_EMAIL} already has a booking on mon-upcoming — run \`npm run seed\` to reset.`
-    );
+    if (alreadyBooked === true) {
+      // Self-cleaning: a prior PB-10 run (or a re-run without reseeding) left
+      // returning-one booked on mon-upcoming. Delete via direct pg so the
+      // gate flow can run end-to-end every time. Same pattern as CB-13.
+      await deleteBookingsForCustomerOnBlock(customerId, monUpcoming.id);
+      const { data: stillBooked } = await sb.rpc('has_active_booking_on_block', {
+        p_customer_id: customerId, p_block_id: monUpcoming.id
+      });
+      expect(stillBooked, 'cleanup failed — RPC still reports booking active').toBe(false);
+    }
 
     // Open the Monday card's next-block toggle.
     const card = page.locator('.card').filter({
