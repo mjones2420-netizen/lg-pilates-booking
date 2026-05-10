@@ -1,72 +1,279 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 4 May 2026 (Session 17 — Batch 2 of PB tests added; admin-auth + admin-db helpers introduced)
-**Total tests:** 57 (14 smoke + 34 CB + 9 PB)
+**Last updated:** 10 May 2026
+**Total tests:** 64 (14 smoke + 34 CB + 16 PB)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
 ---
 
-## Coverage Tracker — Client Booking (CB) scenarios
+## Coverage Tracker — Summary
 
-The 34 Client Booking scenarios from `LG-Pilates-Test-Scenarios.xlsx` are being automated in batches. This tracker shows what's done and what's outstanding.
+The table below summarises the state of every Excel test-scenarios tab. "Removed" counts scenarios that were either flagged as duplicates of existing automated tests (during the 10 May 2026 sense-check) or marked as housekeeping rather than real tests. Removed scenarios are red-filled in `LG_Pilates_Test_Scenarios.xlsx` so they don't get picked up in future batches.
 
-CB-16b was added in Session 13 to cover the Step 3 → Step 4 advance — a transition not present in the old 3-step Excel scenarios but real in the current 4-step booking flow.
+| Excel Tab | Total in Excel | Removed | Genuine total | Automated | Outstanding |
+|---|---:|---:|---:|---:|---:|
+| Client Booking (CB) | 33 | 0 | 33 | 33 | 0 |
+| Priority Booking (PB) | 10 | 0 | 10 | 10 | 0 |
+| Booking Windows (BW) | 7 | 4 | 3 | 0 | 3 |
+| Admin Bookings (AB) | 22 | 0 | 22 | 0 | 22 |
+| Admin Classes (AC) | 24 | 0 | 24 | 0 | 24 |
+| Admin Clients (ACL) | 4 | 2 | 2 | 0 | 2 |
+| Schedule Display (SD) | 6 | 0 | 6 | 0 | 6 |
+| Settings & Export (SE) | 9 | 0 | 9 | 0 | 9 |
+| Edge Cases (EC) | 14 | 1 | 13 | 0 | 13 |
+| Block Warnings (BLW) | 8 | 0 | 8 | 0 | 8 |
+| Security (SEC) | 7 | 3 | 4 | 0 | 4 |
+| **Totals** | **144** | **10** | **134** | **43** | **91** |
 
-| Status | Scenarios |
-|---|---|
-| ✅ Automated | CB-01, CB-02, CB-03, CB-04, CB-05, CB-06, CB-07, CB-08, CB-09, CB-10, CB-11, CB-12, CB-13, CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18, CB-19, CB-20, CB-21, CB-22, CB-23, CB-24, CB-25, CB-26, CB-27, CB-28, CB-29, CB-30, CB-31, CB-32, CB-33 (34 of 34) ✅ Complete |
-| ⬜ Not started | None |
+> **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
-**Batch plan for remaining CB work:**
-
-- ~~**Batch 2 — T&Cs checkbox:** CB-08, CB-09, CB-10, CB-11, CB-13~~ ✅ Done (Session 12)
-- ~~**Batch 3 — Step indicator behaviour:** CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18, CB-19, CB-20~~ ✅ Done (Session 13)
-- ~~**Batch 4 — Emergency contact + back nav:** CB-25, CB-26, CB-27~~ ✅ Done (Session 14)
-- ~~**Batch 5 — Returning client flows:** CB-03, CB-31, CB-32~~ ✅ Done (Session 15)
-
-**Client Booking automation is now complete.**
+> **Naming note (10 May 2026):** The "Block Warnings" tab IDs were renamed from `BW-` to `BLW-` to avoid collision with the "Booking Windows" tab. References to BLW-01 to BLW-08 in this document refer to the Block Warnings dashboard banners, not the booking-window UI states.
 
 ---
 
-## Coverage Tracker — Priority Booking (PB) scenarios
+## Coverage Tracker — Per-tab detail
 
-The 10 Priority Booking scenarios from `LG_Pilates_Test_Scenarios.xlsx` (after the Session 16 sense-check that removed the obsolete tooltip scenario and the housekeeping reset step). PB-03 is shared coverage with PB-10 — see notes below.
+Each table below lists every scenario in that Excel tab with its current status and (for outstanding scenarios) the suggested batch. Status legend:
 
-| Status | Scenarios |
-|---|---|
-| ✅ Automated | PB-01, PB-02, PB-03 (covered by PB-10), PB-04, PB-05, PB-06, PB-07, PB-08, PB-09, PB-10 (10 of 10) ✅ Complete |
-| ⬜ Not started | None |
+- ✅ **Automated** — full Playwright coverage exists
+- 🔁 **Duplicate of [X]** — covered by an existing automated test; red-filled in Excel; no new spec needed
+- 🚮 **Housekeeping** — not a real test scenario; red-filled in Excel
+- ⬜ **Outstanding** — yet to be automated; suggested batch column shows planned grouping
 
-**PB-03 note:** "Priority granted — eligible client" is functionally the positive-path assertion that PB-10 makes (confirmed booking on previous block → priority granted). PB-10 adds the confirmed-vs-reserved distinction by being paired with PB-09. To avoid a redundant spec we mark PB-03 as ✅ covered by PB-10, following the same pattern as CB-12 covered-by-CB-01.
+### Client Booking (CB) — Complete ✅
 
-**PB-08 note:** Excel originally referenced the Wednesday class for this scenario. The current fixture's Wednesday card has no active block, which means the priority gate UI does not render on it. PB-08 was implemented against the Monday class instead (using `returning-two`, who is confirmed on `mon-past` and `mon-full` but NOT on `mon-current`, so without a manual grant they are denied access to `mon-upcoming`). The Excel scenario wording was updated to match in Session 17.
+| ID | Scenario | Status |
+|---|---|---|
+| CB-01 | New client books — full flow | ✅ cb-01.spec.js |
+| CB-02 | PAR-Q Yes answer shows details box | ✅ cb-02.spec.js |
+| CB-03 | Returning client skips PAR-Q | ✅ cb-03.spec.js |
+| CB-04 | Booking modal subtitle shows correct block | ✅ cb-04.spec.js |
+| CB-05 | Payment reference is personalised | ✅ cb-05.spec.js |
+| CB-06 | Required fields validation | ✅ cb-06.spec.js |
+| CB-07 | Capacity bar updates after booking | ✅ cb-07.spec.js |
+| CB-08 | T&Cs — Reserve button disabled by default | ✅ cb-08.spec.js |
+| CB-09 | T&Cs — Checkbox activates Reserve button | ✅ cb-09.spec.js |
+| CB-10 | T&Cs — Unticking checkbox disables button again | ✅ cb-10.spec.js |
+| CB-11 | T&Cs — Checkbox resets on Back and Return | ✅ cb-11.spec.js |
+| CB-12 | T&Cs — New client completes booking after agreeing | ✅ Covered by cb-01.spec.js |
+| CB-13 | T&Cs — Returning client completes booking after agreeing | ✅ cb-13.spec.js |
+| CB-14 | Step indicator — shows correct state on modal open | ✅ cb-14.spec.js |
+| CB-15 | Step indicator — Step 1 ticks on advance to Step 2 | ✅ cb-15.spec.js |
+| CB-16 | Step indicator — Step 2 ticks on advance to Step 3 | ✅ cb-16.spec.js |
+| CB-16b | Step indicator — Step 3 ticks on advance to Step 4 | ✅ cb-16b.spec.js |
+| CB-17 | Step indicator — Back from Payment reactivates Step 3 | ✅ cb-17.spec.js |
+| CB-18 | Step indicator — Returning client shows 2-step layout | ✅ cb-18.spec.js |
+| CB-19 | Step indicator — Returning client Back from Payment | ✅ cb-19.spec.js |
+| CB-20 | Step indicator — resets cleanly when modal closed/reopened | ✅ cb-20.spec.js |
+| CB-21 | 4-step flow — new client sees all 4 steps | ✅ cb-21.spec.js |
+| CB-22 | Medical step — intro note and age question appear | ✅ cb-22.spec.js |
+| CB-23 | Medical step — age validation fires on Continue | ✅ cb-23.spec.js |
+| CB-24 | Medical step — declaration must be signed | ✅ cb-24.spec.js |
+| CB-25 | Emergency contact step — shows as Step 3 of 4 | ✅ cb-25.spec.js |
+| CB-26 | Emergency contact step — phone validation | ✅ cb-26.spec.js |
+| CB-27 | Back navigation — Emergency → Medical → Your details | ✅ cb-27.spec.js |
+| CB-28 | Payment step shows as Step 4 of 4 for new clients | ✅ cb-28.spec.js |
+| CB-29 | Sticky header stays visible while scrolling medical | ✅ cb-29.spec.js |
+| CB-30 | Medical form is scrollable — all content reachable | ✅ cb-30.spec.js |
+| CB-31 | Duplicate booking caught at step 1 | ✅ cb-31.spec.js |
+| CB-32 | Returning client NOT on this block — welcome-back flow | ✅ cb-32.spec.js |
+| CB-33 | PAR-Q sign_date stored as proper DATE type | ✅ cb-33.spec.js (strengthening planned in Batch 6) |
 
-**Batch plan for PB work:**
+### Priority Booking (PB) — Complete ✅
 
-- ~~**Batch 1 — Booking-window UI + priority gate flows:** PB-01, PB-02, PB-04, PB-05, PB-09, PB-10~~ ✅ Done (Session 16)
-- ~~**Batch 2 — Admin per-class priority management:** PB-06, PB-07, PB-08~~ ✅ Done (Session 17)
-- ~~**Batch 3 — Gap-analysis tests:** PB-X1, PB-X2, PB-X3, PB-X4, PB-X5~~ ✅ Done (Session 18)
+Excel scenarios:
 
-**Priority Booking automation is now complete — all 10 Excel scenarios plus 5 gap-analysis tests (7 individual test cases).**
+| ID | Scenario | Status |
+|---|---|---|
+| PB-01 | Next block locked — more than 14 days away | ✅ pb-01.spec.js |
+| PB-02 | Priority window — email gate shown | ✅ pb-02.spec.js |
+| PB-03 | Priority granted — eligible client | ✅ Covered by pb-10.spec.js |
+| PB-04 | Priority denied — ineligible client | ✅ pb-04.spec.js |
+| PB-05 | Standard window — everyone can book | ✅ pb-05.spec.js |
+| PB-06 | Grant manual priority in admin (per-class) | ✅ pb-06.spec.js |
+| PB-07 | Remove manual priority in admin (per-class) | ✅ pb-07.spec.js |
+| PB-08 | Manually granted priority allows early access | ✅ pb-08.spec.js |
+| PB-09 | Reserved booking does NOT grant priority access | ✅ pb-09.spec.js |
+| PB-10 | Confirmed booking DOES grant priority access | ✅ pb-10.spec.js |
 
-**PB Batch 3 — gap-analysis tests (now automated, Session 18):**
+Gap-analysis tests (not in Excel; added in PB Batch 3):
 
-These tests cover real-world edge cases that were not in the original Excel sheet. Naming uses `PB-X*` to keep them distinct from the Excel-numbered scenarios. They can be promoted to official numbered scenarios later if added to Excel.
+| ID | Scenario | Status |
+|---|---|---|
+| PB-X1 | Priority gate input validation (3 sub-tests) | ✅ pb-x1.spec.js |
+| PB-X2 | Email pre-fill survives modal close/reopen | ✅ pb-x2.spec.js |
+| PB-X3 | Per-class priority isolation (RPC-driven) | ✅ pb-x3.spec.js |
+| PB-X4 | Cancelled previous-block booking does not grant priority | ✅ pb-x4.spec.js |
+| PB-X5 | Manual priority grant/remove cycle via admin panel | ✅ pb-x5.spec.js |
 
-- ✅ **PB-X1 — Priority gate input validation.** Empty, whitespace-only, and malformed (no `@`) emails submitted to the gate are rejected client-side with a clear validation message — no `check_priority_access` RPC call made. Three sub-tests in one spec file.
-- ✅ **PB-X2 — Email pre-fill survives modal close/reopen.** PB-10 verifies the pre-fill happens on the initial grant. PB-X2 extends that to assert the pre-fill is consistent if the user closes and reopens the modal mid-flow.
-- ✅ **PB-X3 — Per-class priority isolation.** Manual priority granted on the Wednesday class does NOT grant priority on Monday or Friday. RPC-driven test (gate UI doesn't render on Wed/Fri in the current fixture, so directly asserting `check_priority_access` for the same customer across three classes is the cleanest proof).
-- ✅ **PB-X4 — Cancelled previous-block booking does not grant priority.** Mirror of PB-09 (reserved → denied) for the `cancelled` status. Confirms the RPC's `status = 'confirmed'` filter is strict. Includes `afterEach` cleanup that deletes the per-run customer.
-- ✅ **PB-X5 — Manual priority grant/remove cycle via admin panel.** End-to-end UI test: gate denies → admin grants → gate allows → admin removes → gate denies again. Drives both the admin Clients tab and the client-facing gate.
+### Booking Windows (BW)
 
-**What's left for PB**
+| ID | Scenario | Status | Suggested Batch |
+|---|---|---|---|
+| BW-01 | Only current block shown (no next block) | ⬜ Outstanding | Batch 9 |
+| BW-02 | Current block session dates are listed | ⬜ Outstanding | Batch 9 |
+| BW-03 | Next block >14 days — locked state | 🔁 Duplicate of PB-01 | — |
+| BW-04 | Next block 8-14 days — priority window | 🔁 Duplicate of PB-02 | — |
+| BW-05 | Next block 0-7 days — standard open | 🔁 Duplicate of PB-05 | — |
+| BW-06 | Next block becomes active (start date = today) | ⬜ Outstanding | Batch 9 |
+| BW-07 | Reset all test dates when done | 🚮 Housekeeping (not a real test) | — |
 
-PB Excel scenarios (PB-01 to PB-10) and PB Batch 3 gap-analysis tests (PB-X1 to PB-X5) are all automated. Future PB additions would either be new Excel scenarios or further gap-analysis tests as new edge cases are identified.
+### Admin Bookings (AB)
 
-**Other tabs (not started):** Booking Windows (10), Admin Bookings (24), Admin Classes (26), Admin Clients (6), Schedule Display (8), Settings Export (11), Edge Cases (16), Block Warnings (11), Security (9).
+| ID | Scenario | Status | Suggested Batch |
+|---|---|---|---|
+| AB-01 | Admin can log in | ⬜ Outstanding | Batch 15 |
+| AB-02 | All Bookings tab loads correctly | ⬜ Outstanding | Batch 15 |
+| AB-03 | View booking details | ⬜ Outstanding | Batch 15 |
+| AB-04 | Confirm a reserved booking | ⬜ Outstanding | Batch 15 |
+| AB-05 | Cancel a booking | ⬜ Outstanding | Batch 15 |
+| AB-06 | Remove from Block — booking + health form deleted, customer kept | ⬜ Outstanding | Batch 15 |
+| AB-07 | Permanently Delete Customer — all data removed | ⬜ Outstanding | Batch 15 |
+| AB-08 | Remove from Block — 0 sessions attended, client has not paid | ⬜ Outstanding | Batch 16 |
+| AB-09 | Remove from Block — 0 sessions attended, client has paid | ⬜ Outstanding | Batch 16 |
+| AB-10 | By Class tab groups bookings by block | ⬜ Outstanding | Batch 16 |
+| AB-11 | Remove from Block — sessions attended, refund calculated | ⬜ Outstanding | Batch 16 |
+| AB-12 | Remove from Block — refund override changes saved amount | ⬜ Outstanding | Batch 16 |
+| AB-13 | Cancellations report — all removals appear in table | ⬜ Outstanding | Batch 16 |
+| AB-14 | Mark Refunded — button appears for unrefunded records | ⬜ Outstanding | Batch 16 |
+| AB-15 | Mark Refunded — clicking button updates record | ⬜ Outstanding | Batch 16 |
+| AB-16 | Cancellations report — CSV export downloads correctly | ⬜ Outstanding | Batch 17 |
+| AB-17 | Del Customer button — still present alongside Remove from Block | ⬜ Outstanding | Batch 17 |
+| AB-18 | Sign-in button resets correctly on subsequent sign-in | ⬜ Outstanding | Batch 17 |
+| AB-19 | Missing PAR-Q banner — hidden when all PAR-Qs present | ⬜ Outstanding | Batch 17 |
+| AB-20 | Missing PAR-Q banner — appears when a PAR-Q is missing | ⬜ Outstanding | Batch 17 |
+| AB-21 | Missing PAR-Q banner — plural count + click-to-scroll highlight | ⬜ Outstanding | Batch 17 |
+| AB-22 | Admin PAR-Q view renders friendly date format | ⬜ Outstanding | Batch 17 |
 
-Coverage trackers for those tabs will be added here as each area begins automation.
+### Admin Classes (AC)
+
+| ID | Scenario | Status | Suggested Batch |
+|---|---|---|---|
+| AC-01 | Add a new class | ⬜ Outstanding | Batch 18 |
+| AC-02 | Add a block to a class | ⬜ Outstanding | Batch 18 |
+| AC-03 | Block start date must match class day | ⬜ Outstanding | Batch 18 |
+| AC-04 | Edit a block | ⬜ Outstanding | Batch 18 |
+| AC-05 | Delete a block | ⬜ Outstanding | Batch 18 |
+| AC-06 | Edit a class slot | ⬜ Outstanding | Batch 18 |
+| AC-07 | Delete a class | ⬜ Outstanding | Batch 18 |
+| AC-08 | Class hidden when it has no blocks | ⬜ Outstanding | Batch 18 |
+| AC-09 | Add class rejected when not logged in | ⬜ Outstanding | Batch 19 |
+| AC-10 | Edit class rejected when not logged in | ⬜ Outstanding | Batch 19 |
+| AC-11 | Add block rejected when not logged in | ⬜ Outstanding | Batch 19 |
+| AC-12 | Warning banner shows class time in name | ⬜ Outstanding | Batch 19 |
+| AC-13 | Add block modal subtitle shows class time | ⬜ Outstanding | Batch 19 |
+| AC-14 | Auto start date prefill from advisory warning | ⬜ Outstanding | Batch 19 |
+| AC-15 | Red warning banner — Add Block does NOT prefill date | ⬜ Outstanding | Batch 19 |
+| AC-16 | Prevent overlapping block dates | ⬜ Outstanding | Batch 19 |
+| AC-17 | Prevent new block starting on same day existing block ends | ⬜ Outstanding | Batch 20 |
+| AC-18 | Edit block — overlap validation also applies | ⬜ Outstanding | Batch 20 |
+| AC-19 | Auto am/pm — 24hr time converted on blur | ⬜ Outstanding | Batch 20 |
+| AC-20 | Auto am/pm — bare hour and minute input | ⬜ Outstanding | Batch 20 |
+| AC-21 | Auto am/pm — already formatted input left unchanged | ⬜ Outstanding | Batch 20 |
+| AC-22 | Auto am/pm applies to End Time field as well | ⬜ Outstanding | Batch 20 |
+| AC-23 | Delete class with bookings + PAR-Qs — completes cleanly | ⬜ Outstanding | Batch 20 |
+| AC-24 | Block validation — rejects negative / zero price, cap, weeks | ⬜ Outstanding | Batch 20 |
+
+### Admin Clients (ACL)
+
+| ID | Scenario | Status | Suggested Batch |
+|---|---|---|---|
+| ACL-01 | Clients tab lists all customers | ⬜ Outstanding | Batch 8 |
+| ACL-02 | Priority badges display correctly | ⬜ Outstanding | Batch 8 |
+| ACL-03 | Grant priority to a standard client | 🔁 Duplicate of PB-06 | — |
+| ACL-04 | Remove priority from a client | 🔁 Duplicate of PB-07 | — |
+
+### Schedule Display (SD)
+
+| ID | Scenario | Status | Suggested Batch |
+|---|---|---|---|
+| SD-01 | All classes load on page open | ⬜ Outstanding | Batch 7 |
+| SD-02 | Filter by Baildon | ⬜ Outstanding | Batch 7 |
+| SD-03 | Filter by Guiseley | ⬜ Outstanding | Batch 7 |
+| SD-04 | Filter by day within a location | ⬜ Outstanding | Batch 7 |
+| SD-05 | Reset to All Classes | ⬜ Outstanding | Batch 7 |
+| SD-06 | Class without blocks is hidden | ⬜ Outstanding | Batch 7 |
+
+### Settings & Export (SE)
+
+| ID | Scenario | Status | Suggested Batch |
+|---|---|---|---|
+| SE-01 | Save bank details | ⬜ Outstanding | Batch 14 |
+| SE-02 | Bank details appear on booking payment screen | ⬜ Outstanding | Batch 14 |
+| SE-03 | Bank details appear on success/confirmation screen | ⬜ Outstanding | Batch 14 |
+| SE-04 | Export Classes CSV | ⬜ Outstanding | Batch 14 |
+| SE-05 | Export Blocks CSV | ⬜ Outstanding | Batch 14 |
+| SE-06 | Export Customers CSV | ⬜ Outstanding | Batch 14 |
+| SE-07 | Export Bookings CSV | ⬜ Outstanding | Batch 14 |
+| SE-08 | Export Everything — full backup | ⬜ Outstanding | Batch 14 |
+| SE-09 | CSV export — formula injection protection | ⬜ Outstanding | Batch 14 |
+
+### Edge Cases (EC)
+
+| ID | Scenario | Status | Suggested Batch |
+|---|---|---|---|
+| EC-01 | Booking a full class is prevented | ⬜ Outstanding | Batch 11 |
+| EC-02 | Duplicate booking — same email, same block | 🔁 Duplicate of CB-31 | — |
+| EC-03 | Invalid email format | ⬜ Outstanding | Batch 11 |
+| EC-04 | Block with wrong day is rejected | ⬜ Outstanding | Batch 11 |
+| EC-05 | Page loads with no active classes | ⬜ Outstanding | Batch 11 |
+| EC-06 | Very long text in booking form | ⬜ Outstanding | Batch 11 |
+| EC-07 | Overbooking prevented — class fills during booking | ⬜ Outstanding | Batch 11 |
+| EC-08 | Duplicate booking same block — server-side rejection | ⬜ Outstanding | Batch 12 |
+| EC-09 | Reserve button disabled during submission | ⬜ Outstanding | Batch 12 |
+| EC-10 | Capacity bar resets when bookings are bulk-deleted via SQL | ⬜ Outstanding | Batch 12 |
+| EC-11 | Capacity bar updates automatically when a booking is made | ⬜ Outstanding | Batch 12 |
+| EC-12 | DB-level duplicate booking protection — direct SQL insert rejected | ⬜ Outstanding | Batch 12 |
+| EC-13 | book_if_available RPC returns ALREADY_BOOKED on duplicate | ⬜ Outstanding | Batch 12 |
+| EC-14 | DB refuses rows with NULL on critical columns | ⬜ Outstanding | Batch 12 |
+
+### Block Warnings (BLW)
+
+| ID | Scenario | Status | Suggested Batch |
+|---|---|---|---|
+| BLW-01 | Red alert — class with no block at all | ⬜ Outstanding | Batch 13 |
+| BLW-02 | Yellow advisory — active block but no next block | ⬜ Outstanding | Batch 13 |
+| BLW-03 | Both banners show when both conditions exist | ⬜ Outstanding | Batch 13 |
+| BLW-04 | + Add Block button opens correct modal | ⬜ Outstanding | Batch 13 |
+| BLW-05 | Banner disappears after block is added | ⬜ Outstanding | Batch 13 |
+| BLW-06 | No banners shown when all classes are covered | ⬜ Outstanding | Batch 13 |
+| BLW-07 | Yellow advisory — Add Block prefills date automatically | ⬜ Outstanding | Batch 13 |
+| BLW-08 | Class and time both shown in warning banner row | ⬜ Outstanding | Batch 13 |
+
+### Security (SEC)
+
+| ID | Scenario | Status | Suggested Batch |
+|---|---|---|---|
+| SEC-01 | Public schedule loads without sign-in | 🔁 Duplicate of smoke-04 + smoke-01 | — |
+| SEC-02 | Bank details visible on payment screen without sign-in | ⬜ Outstanding | Batch 10 |
+| SEC-03 | New-client full booking works end-to-end (anon RPC writes) | ⬜ Outstanding | Batch 10 |
+| SEC-04 | Anon cannot directly read customer data | 🔁 Duplicate of smoke-03.2 | — |
+| SEC-05 | Anon cannot directly read bookings | 🔁 Duplicate of smoke-03.1 | — |
+| SEC-06 | Admin sign-in promotes session → full dashboard access | ⬜ Outstanding | Batch 10 |
+| SEC-07 | Grant matrix matches context.txt spec (one-off verification) | ⬜ Outstanding | Batch 10 |
+
+---
+
+## Suggested Batches
+
+| Batch | Scope | Count | Notes |
+|---|---|---:|---|
+| Batch 6 | Test infrastructure (self-cleaning afterEach + CB-33 strengthening) | ~11 specs | NOT from Excel — existing tests being upgraded. Adds afterEach cleanup to CB-01, CB-02, CB-03, CB-07, CB-13, CB-31, CB-32, CB-33, PB-09, PB-10. CB-33 also gains direct `parq` table assertion via admin-db helper. |
+| Batch 7 | Schedule Display | 6 | UI filter tests; no DB state. Quick wins. |
+| Batch 8 | Admin Clients (remaining) | 2 | Customers tab layout + priority badge rendering. |
+| Batch 9 | Booking Windows (remaining) | 3 | Card-state UI tests not covered by PB. |
+| Batch 10 | Security (remaining) | 4 | Two UI checks + admin tour + grant-matrix audit. |
+| Batch 11 | Edge Cases (part 1) | 6 | Validation + boundary tests. |
+| Batch 12 | Edge Cases (part 2) | 7 | Capacity + DB-level integrity tests. |
+| Batch 13 | Block Warnings | 8 | Dashboard banner regressions. Needs admin login. |
+| Batch 14 | Settings & Export | 9 | Bank details + CSV export tests. Needs admin login. |
+| Batch 15 | Admin Bookings (part 1) | 7 | Login + table + booking lifecycle. |
+| Batch 16 | Admin Bookings (part 2) | 8 | Refund flows + cancellations report. |
+| Batch 17 | Admin Bookings (part 3) | 7 | CSV export + Missing PAR-Q banner. |
+| Batch 18 | Admin Classes (part 1) | 8 | CRUD on classes + blocks. |
+| Batch 19 | Admin Classes (part 2) | 8 | Auth gates + overlap validation. |
+| Batch 20 | Admin Classes (part 3) | 8 | Time formatting + delete-cascade tests. |
 
 ---
 
@@ -1784,27 +1991,15 @@ The admin grant/remove buttons would be cosmetic — they'd appear to work but t
 
 # Appendix — What's NOT yet covered
 
-The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary below describes the main areas remaining.
+The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary table and per-tab tables give the full breakdown by Excel tab; the Suggested Batches table lays out the planned grouping for upcoming sessions.
 
-### Client Booking (CB) — All 34 scenarios automated ✅
-The full CB scenario set is now covered. CB-13, CB-03, and CB-32 were upgraded to self-cleaning in Session 18. Future CB work will be incremental — adding tests for new features, regression coverage for bug fixes, or strengthening existing tests (e.g. the CB-33 PAR-Q DB-direct verification follow-up — see "Next session" below).
+**Outstanding totals:** 91 scenarios across 9 tabs (10 May 2026).
 
-### Priority Booking (PB) — All 10 Excel scenarios + 5 gap-analysis tests automated ✅
-The full PB Excel scenario set plus all five PB-X gap-analysis tests are now covered (Session 18). PB-10 was upgraded to self-cleaning; PB-X4 has full afterEach cleanup.
+**Next session focus:** Batch 6 — Test infrastructure (self-cleaning afterEach rollout for ~10 state-creating specs + CB-33 strengthening to add direct `parq` table assertion via admin-db helper). See the Suggested Batches table for full batch sequence.
 
-### Next session
-- **CB-33 strengthening** — currently asserts the booking succeeded. Should also query the `parq` table directly via the admin-db helper to verify the row exists with the expected age, emergency contact, and declaration values.
-- **Self-cleaning rollout (Option B)** — make every spec that creates a booking self-clean on EXIT (afterEach) rather than only on entry. The current entry-side pattern leaves customer + booking junk in the test DB across runs. Session 18 hit a CLASS_FULL failure when mon-current accumulated 13 stray bookings across runs and reached its cap of 12. The afterEach pattern (already in use in PB-X4) prevents this. Affected specs: CB-01, CB-02, CB-03, CB-07 (capacity), CB-13, CB-31, CB-32, CB-33, PB-09, PB-10. Reusable helper exists: `deleteCustomerCascade(customerId)` in admin-db.js.
+> **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 
-### Admin bookings (AB)
-- Louise adding/editing/cancelling bookings
-- Missing PAR-Q banner behaviour
-- Cancellation and refund flow
-- CSV export of client data
-
-> **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) were introduced for PB Batch 2 and are reusable for the entire AB suite.
-
-### Infrastructure
+### Infrastructure backlog
 - GitHub Actions CI (run tests automatically on every code push)
 - Mobile Safari project for proper mobile coverage (currently CB-29/CB-30 use shrunken desktop viewports as a proxy)
 - ~~Admin login helper~~ ✅ Added in Session 17 (`tests/helpers/admin-auth.js` + `tests/helpers/admin-db.js`)

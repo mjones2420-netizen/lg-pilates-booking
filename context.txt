@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 4 May 2026 (Session 18)
+Last updated: 10 May 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -606,14 +606,14 @@ Manual cleanup SQL alternative (test DB only):
 
 SESSION START — CLAUDE'S CHECKS
 -------------------------------
-Run BOTH of these EVERY session, regardless of whether the session looks
-test-related:
+Run ALL THREE of these EVERY session, regardless of whether the session
+looks test-related:
 
 A. Confirm index.html is present
    - Check line count (~2,889 lines post-Session 7)
    - Copy to /home/claude/index.html as the working file
 
-B. Check test DB fixture freshness
+B. Check test DB fixture TIME drift
    - Run this query against project ID ngzfhamjuviwfwuncrjo:
 
        SELECT
@@ -633,13 +633,36 @@ B. Check test DB fixture freshness
    - Healthy fixture: active_ok >= 1, past_ok >= 1, and at least two of
      (standard_window, priority_window, locked_window) >= 1
 
-   Report result as a single line near the top of the opening response:
-     ✅ "Test DB fixture looks healthy — all booking windows covered."
-     ⚠️ "Test DB fixture has drifted — [which window(s) missing].
-          Run `npm run seed` from ~/dev/lg-pilates-booking/tests-playwright
-          before any Playwright work this session."
+C. Check test DB fixture STATE drift
+   - Detects accumulated junk from previous Playwright runs (stray
+     test customers, mon-current creeping toward capacity). Catches
+     the failure mode that hit Session 18 (CLASS_FULL on mon-current
+     after 13 stray bookings accumulated over multiple test runs).
+   - Run this query against project ID ngzfhamjuviwfwuncrjo:
 
-   Don't block the session over it — flag clearly and move on.
+       SELECT
+         (SELECT COUNT(*) FROM customers
+          WHERE email LIKE 'cb%-%@test.example'
+             OR email LIKE 'pb%-%@test.example')                AS stray_test_customers,
+         (SELECT COUNT(*) FROM blocks
+          WHERE status IN ('active','upcoming')
+            AND booked >= cap AND cap > 2)                      AS unexpectedly_full_blocks;
+
+   - Healthy: stray_test_customers low single digits, unexpectedly_full_blocks = 0
+   - Note: the seeded mon-full block is intentionally cap=2/booked=2 — the
+     `cap > 2` filter excludes it.
+
+   Once Batch 6 (self-cleaning afterEach rollout) is complete, this
+   check becomes mostly redundant — specs will clean up after themselves.
+
+   Report combined result for B + C as a single line near the top of the
+   opening response:
+     ✅ "Test DB fixture looks healthy — all booking windows covered, no state drift."
+     ⚠️ "Test DB fixture has drifted — [details]. Run `npm run seed`
+          from ~/dev/lg-pilates-booking/tests-playwright before any
+          Playwright work this session."
+
+   Don't block the session over either drift check — flag clearly and move on.
 
 DURING SESSION
 --------------
@@ -686,62 +709,62 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
 ============================================================
 
 1. PLAYWRIGHT TESTS — continue expanding coverage:
-   CB BATCHES (per Session 11 plan, see tests-playwright/TEST-PLAN.md):
-   - ✅ Batch 1 — quick wins on new-client scaffold (CB-02, CB-06, CB-22,
-        CB-23, CB-24, CB-29, CB-30)
-   - ✅ Batch 2 — T&Cs checkbox (CB-08, CB-09, CB-10, CB-11, CB-13)
-   - ✅ Batch 3 — Step indicator (CB-14, CB-15, CB-16, CB-16b, CB-17, CB-18,
-        CB-19, CB-20)
-   - ✅ Batch 4 — Emergency contact + back nav (CB-25, CB-26, CB-27)
-   - ✅ Batch 5 — Returning client flows (CB-03, CB-31, CB-32)
-   CB SUITE COMPLETE — 34 of 34 scenarios automated.
 
-   PB BATCHES (Session 16+):
-   - ✅ Batch 1 — Booking-window UI + priority gate flows (PB-01, PB-02,
-        PB-04, PB-05, PB-09, PB-10) — Done Session 16
-   - ✅ Batch 2 — Admin per-class priority management (PB-06, PB-07, PB-08)
-        Done Session 17. Introduced admin-auth.js + admin-db.js helpers.
-   PB EXCEL SCENARIOS COMPLETE — 10 of 10 scenarios automated.
+   The full per-tab and per-batch breakdown lives in
+   tests-playwright/TEST-PLAN.md. That's the source of truth for what's
+   automated, what's outstanding, and which scenarios are duplicates that
+   have been red-filled in LG_Pilates_Test_Scenarios.xlsx.
 
-   PB BATCH 3 — gap-analysis tests (suggested follow-ups, NOT in Excel):
-   - ✅ PB-X1 — Priority gate input validation (empty/whitespace/no @) — Session 18
-   - ✅ PB-X2 — Email pre-fill survives modal close/reopen — Session 18
-   - ✅ PB-X3 — Per-class priority isolation (RPC-driven) — Session 18
-   - ✅ PB-X4 — Cancelled previous-block booking does not grant priority — Session 18
-   - ✅ PB-X5 — Manual priority round-trip via admin panel — Session 18
-   PB GAP-ANALYSIS TESTS COMPLETE — 5 of 5 scenarios automated (7 tests including PB-X1 sub-cases).
+   COMPLETED SUITES:
+   - ✅ Client Booking — 33 of 33 Excel scenarios automated (Batches 1-5)
+   - ✅ Priority Booking — 10 of 10 Excel scenarios automated (Batches 1-2)
+        + 5 PB-X gap-analysis tests (Batch 3, Session 18)
 
-   THEN (next session focus):
-   - ⏳ CB-33 STRENGTHENING — currently asserts the booking succeeded; should
-     also query the parq table directly via admin-db to verify the row exists
-     with the expected age, emergency contact, declaration etc. The admin-db
-     helper makes this straightforward (direct pg bypasses anon RLS on parq).
-   - ⏳ OPTION B — make every spec that creates a booking self-clean on EXIT
-     (afterEach) rather than entry (current pattern). Why this is needed:
-       1. Specs currently rely on either (a) reseeding before each full run,
-          or (b) self-cleaning on entry. Both leave junk in the test DB
-          between runs. Session 18 hit a real failure when mon-current
-          accumulated 13 stray bookings across multiple runs and filled to
-          capacity — every test booking on Monday then failed with CLASS_FULL.
-       2. Self-cleaning on entry only handles ONE customer/block pair per
-          spec. Cascading effects (e.g. CB-01 leaves a cb01-{ts}@... customer
-          on mon-current; nothing cleans it up) build up over many runs.
-       3. Self-cleaning on exit (afterEach) — like PB-X4 now does — keeps
-          the DB stable between runs and removes the need for periodic
-          manual cleanup or full reseed cycles.
-       4. Pattern to apply: track per-run customer ID in describe-scope `let`,
-          afterEach calls deleteCustomerCascade(id) — reusable helper already
-          exists in admin-db.js.
-     Affected specs (any spec that creates a customer or booking via UI/RPC):
+   DUPLICATE SENSE-CHECK (10 May 2026):
+   10 Excel rows red-filled as no longer requiring automation — see
+   TEST-PLAN.md Coverage Tracker for which scenarios are covered by which
+   existing tests. Affected: BW-03, BW-04, BW-05, BW-07, EC-02, SEC-01,
+   SEC-04, SEC-05, ACL-03, ACL-04. Block Warnings tab IDs renamed
+   BW-* → BLW-* to disambiguate from Booking Windows tab.
+
+   UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
+   - Batch 6  — Test infrastructure (self-cleaning afterEach + CB-33 strengthening)
+   - Batch 7  — Schedule Display
+   - Batch 8  — Admin Clients (remaining)
+   - Batch 9  — Booking Windows (remaining)
+   - Batch 10 — Security (remaining)
+   - Batch 11 — Edge Cases (part 1)
+   - Batch 12 — Edge Cases (part 2)
+   - Batch 13 — Block Warnings (BLW)
+   - Batch 14 — Settings & Export
+   - Batch 15 — Admin Bookings (part 1)
+   - Batch 16 — Admin Bookings (part 2)
+   - Batch 17 — Admin Bookings (part 3)
+   - Batch 18 — Admin Classes (part 1)
+   - Batch 19 — Admin Classes (part 2)
+   - Batch 20 — Admin Classes (part 3)
+
+   NEXT SESSION FOCUS — Batch 6 details:
+   - CB-33 STRENGTHENING — currently asserts the booking succeeded; should
+     also query the parq table directly via admin-db to verify the row
+     exists with the expected age, emergency contact, declaration etc.
+     The admin-db helper makes this straightforward (direct pg bypasses
+     anon RLS on parq).
+   - SELF-CLEANING AFTEREACH ROLLOUT — make every spec that creates a
+     booking self-clean on EXIT (afterEach) rather than entry. Why this
+     is needed: Session 18 hit a CLASS_FULL failure when mon-current
+     accumulated 13 stray bookings across runs. The afterEach pattern
+     (already in use in PB-X4) prevents this. Affected specs:
      CB-01, CB-02, CB-03, CB-07 (capacity), CB-13, CB-31, CB-32, CB-33,
-     PB-09, PB-10, PB-X4 (already done). Approx 10–11 specs.
-   THEN AFTER THAT:
-   - AB (Admin Bookings) tab — admin-login helper now exists
-     (tests/helpers/admin-auth.js) and is reusable for the entire AB suite.
+     PB-09, PB-10. Reusable helper: deleteCustomerCascade(customerId)
+     in admin-db.js.
+
+   INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
    - Mobile Safari Playwright project for proper mobile coverage
      (currently CB-29/CB-30 use shrunken desktop viewport at 480x700 as
      a proxy — works but doesn't catch real mobile-specific issues)
+
    REMINDER: TEST-PLAN.md must be updated in the same session as any new
    test, BUT only after tests are verified passing (Session 16 learning).
 
@@ -796,6 +819,15 @@ DATABASE & SUPABASE
 
 PLAYWRIGHT / TEST INFRA
 -----------------------
+- Excel test scenarios live in LG_Pilates_Test_Scenarios.xlsx. Two prefix
+  gotchas: (a) the "Block Warnings" tab IDs were renamed BW-* → BLW-* on
+  10 May 2026 to disambiguate from the "Booking Windows" tab. So BLW-01
+  to BLW-08 are the dashboard banner tests; BW-01 to BW-06 are the
+  booking-window UI states. (b) Red-filled rows in the Excel file are
+  duplicates of existing automated tests or housekeeping steps — do NOT
+  pick these up in future batches. The TEST-PLAN.md Coverage Tracker is
+  the source of truth for which Excel scenario maps to which automated
+  spec.
 - tests/helpers/supabase.js exports `sb`, NOT `supabase`. Any new helper
   importing from it must use `const { sb } = require('./supabase')`.
 - Spec helper imports use './helpers/...' (same level), NOT '../helpers/...'.
