@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 11 May 2026
+Last updated: 12 May 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -383,8 +383,8 @@ tests-playwright/
     │                            #          resyncBlockBookedCount (S18),
     │                            #          deleteBookingsForCustomerOnBlock (S18),
     │                            #          deleteCustomerCascade (S18),
-    │                            #          getParqByCustomerId (S19, currently unused —
-    │                            #          kept for CB-33 parq-401 diagnostic next session)
+    │                            #          getParqByCustomerId (S19, used by CB-33
+    │                            #          after Session 20 .select() fix)
     ├── smoke-01-anon-reads.spec.js
     ├── smoke-02-anon-rpcs.spec.js
     ├── smoke-03-rls-enforcement.spec.js
@@ -727,7 +727,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - ✅ Client Booking — 33 of 33 Excel scenarios automated (Batches 1-5)
    - ✅ Priority Booking — 10 of 10 Excel scenarios automated (Batches 1-2)
         + 5 PB-X gap-analysis tests (Batch 3, Session 18)
-   - ✅ Batch 6 (Session 19) — self-cleaning afterEach rolled out to 6 specs:
+   - ✅ Batch 6 (Sessions 19-20) — self-cleaning afterEach rolled out to 6 specs:
         cb-01 (5 tests inside), cb-03, cb-13, cb-32, pb-09, pb-10.
         Pattern: per-run customers tracked in describe-scope createdCustomerIds[]
         with deleteCustomerCascade in afterEach; fixture customers + per-test
@@ -735,7 +735,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
         deleteBookingsForCustomerOnBlock in afterEach.
         cb-02, cb-31, pb-x4 left as-is (cb-02/cb-31 create no state, pb-x4
         is the canonical afterEach example we modelled on).
-        CB-33 strengthening was attempted but PARKED — see TO DO item 2.
+        CB-33 strengthening completed Session 20 — see Session 20 learnings.
 
    DUPLICATE SENSE-CHECK (10 May 2026):
    10 Excel rows red-filled as no longer requiring automation — see
@@ -760,31 +760,8 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — diagnose CB-33 parq insert 401, THEN start Batch 7:
-   - CB-33 PARQ INSERT 401 DIAGNOSTIC (must do first, before Batch 7):
-     The Playwright trace shows POST /rest/v1/parq?select=* returning
-     401 (PostgREST error 42501, "permission denied for table parq")
-     in the test environment. Production saves PAR-Q rows successfully
-     under what appear to be byte-identical anon grants (verified: both
-     prod and test have anon INSERT only on parq, no SELECT).
-     - Tod Bob (18 Apr 2026) and Del Trotter (19 Apr 2026, 3 min after
-       item_20_tighten_anon_privileges migration) both have parq rows
-       in production. Production parq saving genuinely works.
-     - SET LOCAL ROLE anon; INSERT...RETURNING; fails as expected on test.
-       The same fails on prod too at SQL level (I declined to write to
-       prod to verify, but grants are identical so it should).
-     - Recommended next step: open prod booking page in browser DevTools,
-       book a new test client, watch the actual /rest/v1/parq?select=*
-       request live, and see what response code it returns. If 200, the
-       behaviour difference is PostgREST config-level (something we can't
-       see from SQL). If 401, prod has been silently failing parq saves
-       AND something else is creating those rows — at which point dig
-       deeper.
-     - admin-db.js's getParqByCustomerId helper is already in place and
-       unused; once the 401 is understood, CB-33 strengthening can drop
-       back in as originally specified.
-   - BATCH 7 — Schedule Display (start once CB-33 mystery is resolved or
-     consciously deferred). Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 7 (Schedule Display):
+   - BATCH 7 — Schedule Display (6 UI filter tests; no DB state). Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -795,30 +772,22 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    REMINDER: TEST-PLAN.md must be updated in the same session as any new
    test, BUT only after tests are verified passing (Session 16 learning).
 
-2. CB-33 PARQ INSERT 401 — under investigation (see Next Session Focus
-   above). Possible production-affecting bug, possible test-environment
-   quirk. NOT YET CONFIRMED EITHER WAY. Production parq rows are landing
-   for real bookings as of 19 Apr 2026 onwards, so if it is a bug it's
-   not preventing PAR-Qs being saved — but it's not understood, which
-   is uncomfortable. Resolve before any new feature work touches the
-   booking flow.
-
-3. INDEX.HTML — minor cosmetic bug:
+2. INDEX.HTML — minor cosmetic bug:
    Line 476 still reads "Step 1 of 3 — Your Details" — leftover from the
    old 3-step flow. Lines 501, 558, 576 correctly say "Step 2 of 4",
    "Step 3 of 4", "Step 4 of 4". The pip indicator itself is correct;
    only this in-app step-label text needs fixing.
 
-4. EMAIL NOTIFICATIONS via Resend
-5. CLASS REGISTER FEATURE
-6. DEMO FILE UPDATES (multiple outdated since per-class priority + pro-rata + 4-step flow)
-7. HONEYPOT anti-bot protection
-8. BANK DETAILS — replace placeholder with Louise's real details
-9. HOSTING MIGRATION & CUSTOM DOMAIN (GitHub Pages → Netlify, book.lg-pilates.co.uk)
-10. USER GUIDE — update PDF at post-email milestone
-11. WAITLIST FEATURE — table exists, not yet connected
-12. FILE SPLIT — consider at next major milestone
-13. AUDIT ITEMS:
+3. EMAIL NOTIFICATIONS via Resend
+4. CLASS REGISTER FEATURE
+5. DEMO FILE UPDATES (multiple outdated since per-class priority + pro-rata + 4-step flow)
+6. HONEYPOT anti-bot protection
+7. BANK DETAILS — replace placeholder with Louise's real details
+8. HOSTING MIGRATION & CUSTOM DOMAIN (GitHub Pages → Netlify, book.lg-pilates.co.uk)
+9. USER GUIDE — update PDF at post-email milestone
+10. WAITLIST FEATURE — table exists, not yet connected
+11. FILE SPLIT — consider at next major milestone
+12. AUDIT ITEMS:
     - Swap Supabase anon key to newer publishable key format (at Netlify migration)
     - Enable leaked password protection in Supabase Auth dashboard (manual toggle)
 
@@ -1060,8 +1029,8 @@ SESSION 18 LEARNINGS — SELECTORS, ASYNC RACES, FIXTURE STATE DRIFT
   that flip booking status to cancelled MUST clean up via customer
   cascade, not booking-level delete.
 
-SESSION 19 LEARNINGS — FIXTURE DRIFT EDGE CASES, BATCH 6 ROLLOUT, PARQ 401
---------------------------------------------------------------------------
+SESSION 19 LEARNINGS — FIXTURE DRIFT EDGE CASES, BATCH 6 ROLLOUT
+----------------------------------------------------------------
 - The session-start fixture drift check was too coarse pre-Session 19.
   It used bucket counts (priority_window >= 1, etc.) which passed even
   when a block was ONE DAY from slipping out of its expected window.
@@ -1085,15 +1054,42 @@ SESSION 19 LEARNINGS — FIXTURE DRIFT EDGE CASES, BATCH 6 ROLLOUT, PARQ 401
   pb-x4 (already canonical example we modelled on).
 - Pattern: set the tracking variable BEFORE the UI flow runs so afterEach
   cleans up even if UI assertions fail. Reset in beforeEach.
-- CB-33 STRENGTHENING WAS ATTEMPTED AND PARKED. The plan was to read
-  the parq row directly via getParqByCustomerId (anon has no SELECT on
-  parq so direct pg is needed). The test failed with a 401 from the
-  parq INSERT in the Playwright trace (PostgREST error 42501,
-  permission denied). Production saves parq rows successfully under
-  what appear to be byte-identical anon grants. The contradiction is
-  not understood — see TO DO item 2. Until resolved, CB-33 is back to
-  its pre-Batch-6 soft check (booking succeeds, customer_type='new').
-  The getParqByCustomerId helper stays in admin-db.js unused, ready to
-  use again once the 401 mystery is settled.
+- CB-33 STRENGTHENING WAS ATTEMPTED in Session 19 and PARKED — resolved
+  in Session 20 (see below). Original symptom: parq INSERT returning 401
+  from PostgREST (error 42501, permission denied). The fix was a one-line
+  front-end change, not a grant change. See Session 20 learnings for the
+  full diagnosis.
+
+SESSION 20 LEARNINGS — PARQ 401 ROOT CAUSE, .SELECT() CHAINING PITFALL
+---------------------------------------------------------------------
+- Root cause of the CB-33 parq 401: the front-end's parq insert was
+  `await sb.from("parq").insert({...}).select()`. The trailing `.select()`
+  makes PostgREST add `RETURNING *`, which requires SELECT permission.
+  Anon has INSERT but not SELECT on parq, so PostgREST returned 42501.
+  The booking flow's try/catch swallowed the error and showed the
+  success view — so the bug was invisible in production. The CB-33 test
+  was the only thing that surfaced it.
+- The lingering production mystery (Del Trotter, Clark Bob parq rows
+  existing post-Item-20 migration despite SQL-layer rollback in tests)
+  was NOT fully chased. At SQL level, INSERT...RETURNING with permission
+  denied DOES roll back the row (verified directly). At PostgREST HTTP
+  level, the row must NOT roll back — that's the only way prod parq
+  rows could exist. The behaviour difference between SQL and PostgREST
+  on RETURNING failures is real but not yet investigated. Not worth
+  chasing further since the .select() removal eliminates the issue
+  entirely.
+- The fix (one line in index.html, line ~1554): drop the `.select()` from
+  the parq insert. The returned value was never consumed. Same data
+  goes in, no RETURNING is requested, no 401 fires. Production now
+  also runs without the silent console error.
+- CB-33 strengthening (deferred from Session 19) landed cleanly: imports
+  `getParqByCustomerId` from admin-db.js, asserts parq row exists with
+  matching customer_id, booking_id, print_name, sign_date, and that
+  q1_heart and q12_other_reasons are 'No'. All 7 tests in
+  cb-01-new-client-happy-path.spec.js pass (33.9s wall clock).
+- Pattern to watch for: any `.insert(...).select()` chain on a table
+  where anon has INSERT but not SELECT will silently fail in production
+  with the same symptom. Search for similar chains before adding new
+  anon-write paths. Currently only parq is affected.
 
 ============================================================

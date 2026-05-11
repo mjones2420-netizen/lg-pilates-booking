@@ -9,7 +9,9 @@
 //   CB-12: New client completes booking after T&Cs agreement (merged with CB-01)
 //   CB-21: Step indicator shows 4 pips for new client
 //   CB-28: Payment step shows as "Step 4 of 4"
-//   CB-33: PAR-Q record created for new client booking (strengthening parked — see test body)
+//   CB-33: PAR-Q record created for new client booking (strengthened Session 20 —
+//          parq row contents asserted directly via admin-db helper after the
+//          .select() fix landed; previously parked due to anon 401 on RETURNING)
 //
 // Canonical bookable class for new-client flow tests: Monday (mon-current role, active).
 // Wednesday (wed-upcoming role) is used for CB-04.
@@ -20,9 +22,7 @@
 // Batch 6 (Session 19): self-cleaning afterEach added — each test that
 // creates a customer pushes its id into createdCustomerIds, and afterEach
 // calls deleteCustomerCascade on each so test DB state stays clean across
-// runs. CB-33 strengthening was attempted but parked — the direct parq
-// read failed with a 401 in test that's not reproducible in production.
-// See context.txt TO DO: "CB-33 parq insert 401 diagnostic".
+// runs.
 //
 // Tests that DON'T create a customer (no Reserve click): CB-04, CB-21, CB-28.
 // Their describe-scope tracking arrays simply stay empty.
@@ -38,7 +38,7 @@ const {
   agreeAndReserve,
   uniqueTestEmail
 } = require('./helpers/booking-flow');
-const { deleteCustomerCascade } = require('./helpers/admin-db');
+const { deleteCustomerCascade, getParqByCustomerId } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -236,14 +236,9 @@ test.describe('CB-01 — New client happy path', () => {
   });
 
   test('CB-33 — PAR-Q record created for new client booking', async ({ page }) => {
-    // Strengthening parked (Session 19): the planned direct-pg parq row
-    // assertion failed in the test environment with a 401 from the parq
-    // insert, despite production successfully saving parq rows under what
-    // appear to be identical anon grants. The contradiction is not yet
-    // diagnosed — see context.txt TO DO "CB-33 parq insert 401 diagnostic".
-    // Until that's resolved, we fall back to the original soft check:
-    // the booking completes end-to-end and customer_type lands as 'new',
-    // which is only set on the same code path that runs the parq insert.
+    // Hard check: after a new-client booking completes, the parq row should
+    // exist in the DB with the values entered in the booking flow.
+    // Anon has no SELECT on parq, so we read it directly via admin-db.js.
     const email = uniqueTestEmail(33);
     await openBookingModal(page, 'Monday', 'current');
     await fillStep1(page, {
@@ -263,5 +258,15 @@ test.describe('CB-01 — New client happy path', () => {
     expect(customer.length).toBe(1);
     expect(customer[0].customer_type).toBe('new');
     createdCustomerIds.push(customer[0].id);
+
+    const parq = await getParqByCustomerId(customer[0].id);
+    expect(parq, 'parq row should exist for this customer').not.toBeNull();
+    expect(parq.customer_id).toBe(customer[0].id);
+    expect(parq.booking_id).toBeTruthy();
+    expect(parq.print_name).toBe('Daria Daterson');
+    expect(parq.sign_date).toBeTruthy();
+    // fillStep2Medical answers all 12 questions 'No' by default
+    expect(parq.q1_heart).toBe('No');
+    expect(parq.q12_other_reasons).toBe('No');
   });
 });

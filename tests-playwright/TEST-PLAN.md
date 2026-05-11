@@ -78,7 +78,7 @@ Each table below lists every scenario in that Excel tab with its current status 
 | CB-30 | Medical form is scrollable — all content reachable | ✅ cb-30.spec.js |
 | CB-31 | Duplicate booking caught at step 1 | ✅ cb-31.spec.js |
 | CB-32 | Returning client NOT on this block — welcome-back flow | ✅ cb-32.spec.js |
-| CB-33 | PAR-Q sign_date stored as proper DATE type | ✅ cb-33.spec.js (strengthening planned in Batch 6) |
+| CB-33 | PAR-Q sign_date stored as proper DATE type | ✅ cb-33.spec.js (strengthened Session 20 — direct parq row assertion) |
 
 ### Priority Booking (PB) — Complete ✅
 
@@ -259,7 +259,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 
 | Batch | Scope | Count | Notes |
 |---|---|---:|---|
-| Batch 6 | Test infrastructure (self-cleaning afterEach + CB-33 strengthening) | ~11 specs | NOT from Excel — existing tests being upgraded. Adds afterEach cleanup to CB-01, CB-02, CB-03, CB-07, CB-13, CB-31, CB-32, CB-33, PB-09, PB-10. CB-33 also gains direct `parq` table assertion via admin-db helper. |
+| Batch 6 ✅ | Test infrastructure (self-cleaning afterEach + CB-33 strengthening) | ~11 specs | NOT from Excel — existing tests being upgraded. Adds afterEach cleanup to CB-01, CB-03, CB-13, CB-32, PB-09, PB-10. CB-33 strengthened Session 20 with direct `parq` row assertion after `.select()` fix landed in index.html. CB-02, CB-31 left as-is (create no state). |
 | Batch 7 | Schedule Display | 6 | UI filter tests; no DB state. Quick wins. |
 | Batch 8 | Admin Clients (remaining) | 2 | Customers tab layout + priority badge rendering. |
 | Batch 9 | Booking Windows (remaining) | 3 | Card-state UI tests not covered by PB. |
@@ -810,15 +810,21 @@ Either the database trigger is broken (capacity counts drift from reality), or t
 **Steps the test performs:**
 1. Completes full booking for a new customer named "Daria Daterson"
 2. Looks up the customer in the database
+3. Reads the parq row directly via `getParqByCustomerId` (admin-db helper, direct Postgres)
 
 **What the test verifies:**
 - The customer exists with `customer_type='new'`
-- (The customer_type being set to `'new'` only happens after the PAR-Q insert succeeds — same code path, so this indirectly verifies PAR-Q creation)
+- A parq row exists for that customer
+- parq.customer_id matches the booked customer
+- parq.booking_id is populated (linked to the booking)
+- parq.print_name matches the name entered in the form
+- parq.sign_date is populated
+- parq.q1_heart = 'No' and parq.q12_other_reasons = 'No' (the values entered in the form)
 
 **What a fail would mean:**
 New clients would be booking without their health questionnaire being saved. Compliance risk for Louise and a safety concern for classes.
 
-> **Note (Session 11):** CB-33 currently verifies PAR-Q creation *indirectly* via the `customer_type='new'` check. A direct check against the `parq` table would be stronger — but anon can't SELECT from `parq` (by design), so this needs an authenticated test client first. Earmarked for when admin-login helpers are added.
+> **Strengthened (Session 20):** Originally verified PAR-Q creation indirectly via `customer_type='new'`. Strengthening was attempted Session 19 but parked — the parq insert was returning a silent 401 in the test environment due to an unnecessary `.select()` on the front-end's insert call (anon has INSERT but not SELECT on parq, so PostgREST's RETURNING was being rejected). Session 20 fixed the `.select()` call in index.html, which also removed a silent error from production, and the direct parq row assertion now passes cleanly.
 
 ---
 
@@ -1995,7 +2001,7 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 **Outstanding totals:** 91 scenarios across 9 tabs (10 May 2026).
 
-**Next session focus:** Batch 6 — Test infrastructure (self-cleaning afterEach rollout for ~10 state-creating specs + CB-33 strengthening to add direct `parq` table assertion via admin-db helper). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 7 — Schedule Display (6 UI filter tests; no DB state). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 
