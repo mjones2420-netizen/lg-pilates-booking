@@ -193,6 +193,25 @@ async function deleteCustomerCascade(customerId) {
   return rowCount;
 }
 
+/**
+ * Returns the most recent parq row for a given customer (or null).
+ * Used by CB-33 to assert that the PAR-Q insert from the booking flow
+ * actually landed in the DB with the expected field values.
+ *
+ * Anon has INSERT-only on parq (no SELECT), so this direct pg helper is
+ * the only way to verify parq row contents from a test.
+ *
+ * Returns the full row including all 12 qN_* columns, age, emergency_*,
+ * print_name, sign_date, yes_details, additional_notes, booking_id.
+ */
+async function getParqByCustomerId(customerId) {
+  const { rows } = await getPool().query(
+    `SELECT * FROM parq WHERE customer_id = $1 ORDER BY id DESC LIMIT 1`,
+    [customerId]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   getPool,
   closePool,
@@ -202,5 +221,6 @@ module.exports = {
   setBookingStatus,
   resyncBlockBookedCount,
   deleteBookingsForCustomerOnBlock,
-  deleteCustomerCascade
+  deleteCustomerCascade,
+  getParqByCustomerId
 };

@@ -9,13 +9,23 @@
 //   CB-12: New client completes booking after T&Cs agreement (merged with CB-01)
 //   CB-21: Step indicator shows 4 pips for new client
 //   CB-28: Payment step shows as "Step 4 of 4"
-//   CB-33: PAR-Q record created for new client booking
+//   CB-33: PAR-Q record created for new client booking (strengthening parked — see test body)
 //
 // Canonical bookable class for new-client flow tests: Monday (mon-current role, active).
 // Wednesday (wed-upcoming role) is used for CB-04.
 //
 // These specs navigate by day name via openBookingModal(), so they're
 // resilient to block-ID regeneration by migration 09. No hardcoded IDs.
+//
+// Batch 6 (Session 19): self-cleaning afterEach added — each test that
+// creates a customer pushes its id into createdCustomerIds, and afterEach
+// calls deleteCustomerCascade on each so test DB state stays clean across
+// runs. CB-33 strengthening was attempted but parked — the direct parq
+// read failed with a 401 in test that's not reproducible in production.
+// See context.txt TO DO: "CB-33 parq insert 401 diagnostic".
+//
+// Tests that DON'T create a customer (no Reserve click): CB-04, CB-21, CB-28.
+// Their describe-scope tracking arrays simply stay empty.
 
 const { test, expect } = require('@playwright/test');
 const { sb } = require('./helpers/supabase');
@@ -28,13 +38,21 @@ const {
   agreeAndReserve,
   uniqueTestEmail
 } = require('./helpers/booking-flow');
+const { deleteCustomerCascade } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
 test.describe('CB-01 — New client happy path', () => {
   test.skip(!APP_URL, 'TEST_APP_URL not set — CB specs require the app to be served.');
 
+  // Track per-test customer IDs so afterEach can clean up regardless of
+  // where the test fails. Array because 5 of the 7 tests in this file create
+  // a customer end-to-end; CB-04/CB-21/CB-28 stop short of Reserve and leave
+  // it empty. See Session 18/19 self-cleaning rollout (Option B).
+  let createdCustomerIds = [];
+
   test.beforeEach(async ({ page }) => {
+    createdCustomerIds = [];
     await page.goto(APP_PATH);
     await expect(page.getByText(/Monday|Wednesday|Friday/).first()).toBeVisible({ timeout: 10000 });
     // SAFETY: every CB test must verify we're in TEST MODE before touching the DB.
@@ -43,6 +61,12 @@ test.describe('CB-01 — New client happy path', () => {
       page.locator('#test-mode-banner.on'),
       'TEST MODE banner is not visible — env switch is NOT active, aborting to protect production data'
     ).toBeVisible({ timeout: 5000 });
+  });
+
+  test.afterEach(async () => {
+    for (const id of createdCustomerIds) {
+      await deleteCustomerCascade(id);
+    }
   });
 
   test('CB-01 / CB-12 — new client completes full 4-step booking and record lands in DB', async ({ page }) => {
@@ -69,6 +93,7 @@ test.describe('CB-01 — New client happy path', () => {
     expect(customer.length).toBe(1);
     expect(customer[0].first_name).toBe(firstName);
     expect(customer[0].customer_type).toBe('new');
+    createdCustomerIds.push(customer[0].id);
   });
 
   test('CB-21 — step indicator shows 4 pips for new client', async ({ page }) => {
@@ -135,10 +160,11 @@ test.describe('CB-01 — New client happy path', () => {
   test('CB-05 — payment reference shows name and class day', async ({ page }) => {
     const firstName = 'Reffy';
     const lastName  = 'McReference';
+    const email = uniqueTestEmail(5);
     await openBookingModal(page, 'Monday', 'current');
     await fillStep1(page, {
       firstName, lastName,
-      email: uniqueTestEmail(5),
+      email,
       phone: '07700900400'
     });
     await expect(page.locator('#step-2a')).toBeVisible({ timeout: 5000 });
@@ -155,6 +181,18 @@ test.describe('CB-01 — New client happy path', () => {
     await expect(page.locator('#bank-name-1')).not.toBeEmpty();
     await expect(page.locator('#bank-sort-1')).not.toBeEmpty();
     await expect(page.locator('#bank-acc-1')).not.toBeEmpty();
+
+    // Complete the booking so afterEach has a customer to clean up. Without
+    // this the customer would never be created (upsert runs on Reserve click)
+    // and the test would still pass — but Step 1 also runs upsert if the
+    // user enters an existing email, which they don't here. Reserve is the
+    // cleanest way to ensure a customer row exists for tracking.
+    await agreeAndReserve(page);
+    await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 5000 });
+
+    const { data: customer } = await sb.rpc('lookup_customer', { p_email: email });
+    expect(customer && customer.length).toBe(1);
+    createdCustomerIds.push(customer[0].id);
   });
 
   test('CB-07 — capacity bar updates after booking', async ({ page }) => {
@@ -166,11 +204,12 @@ test.describe('CB-01 — New client happy path', () => {
     expect(beforeMatch, `expected "N of M" in "${capBefore}"`).toBeTruthy();
     const beforeCount = parseInt(beforeMatch[1], 10);
 
+    const email = uniqueTestEmail(7);
     await openBookingModal(page, 'Monday', 'current');
     await fillStep1(page, {
       firstName: 'Cappy',
       lastName:  'Barzz',
-      email:     uniqueTestEmail(7),
+      email,
       phone:     '07700900500'
     });
     await expect(page.locator('#step-2a')).toBeVisible({ timeout: 5000 });
@@ -190,13 +229,21 @@ test.describe('CB-01 — New client happy path', () => {
     const afterCount = parseInt(afterMatch[1], 10);
 
     expect(afterCount).toBe(beforeCount + 1);
+
+    const { data: customer } = await sb.rpc('lookup_customer', { p_email: email });
+    expect(customer && customer.length).toBe(1);
+    createdCustomerIds.push(customer[0].id);
   });
 
   test('CB-33 — PAR-Q record created for new client booking', async ({ page }) => {
-    // sign_date DATE-type invariant is enforced by the test DB schema
-    // (mirrored from production, Session 6). At the UI level we verify a
-    // new-client booking completes end-to-end and customer_type is 'new' —
-    // which only happens if the PAR-Q insert succeeds (same code path).
+    // Strengthening parked (Session 19): the planned direct-pg parq row
+    // assertion failed in the test environment with a 401 from the parq
+    // insert, despite production successfully saving parq rows under what
+    // appear to be identical anon grants. The contradiction is not yet
+    // diagnosed — see context.txt TO DO "CB-33 parq insert 401 diagnostic".
+    // Until that's resolved, we fall back to the original soft check:
+    // the booking completes end-to-end and customer_type lands as 'new',
+    // which is only set on the same code path that runs the parq insert.
     const email = uniqueTestEmail(33);
     await openBookingModal(page, 'Monday', 'current');
     await fillStep1(page, {
@@ -215,5 +262,6 @@ test.describe('CB-01 — New client happy path', () => {
     expect(customer).toBeTruthy();
     expect(customer.length).toBe(1);
     expect(customer[0].customer_type).toBe('new');
+    createdCustomerIds.push(customer[0].id);
   });
 });

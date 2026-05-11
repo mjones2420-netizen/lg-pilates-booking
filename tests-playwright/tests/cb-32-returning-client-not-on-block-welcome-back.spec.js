@@ -22,7 +22,10 @@
 // here would cause CB-32 to skip whenever CB-13 ran first in the suite.
 // returning-one + fri-upcoming is a unique combination across the CB suite.
 //
-// Self-cleaning: pre-flight test.skip() pattern same as CB-03.
+// Self-cleaning (Session 19, Batch 6): afterEach calls
+// deleteBookingsForCustomerOnBlock to remove the booking this test creates
+// on fri-upcoming. Migrated from entry-side pre-flight check to exit-side
+// cleanup for consistency with the rest of the Batch 6 rollout.
 
 const { test, expect } = require('@playwright/test');
 const { sb } = require('./helpers/supabase');
@@ -41,7 +44,13 @@ const RETURNING_EMAIL = 'returning-one@test.example';
 test.describe('CB-32 — Returning client NOT on this block — welcome-back flow continues normally', () => {
   test.skip(!APP_URL, 'TEST_APP_URL not set — CB specs require the app to be served.');
 
+  // Self-cleaning (Session 19, Batch 6): afterEach deletes the booking this
+  // test creates on fri-upcoming. Migrated from entry-side pre-flight to
+  // exit-side cleanup for consistency with the rest of the Batch 6 rollout.
+  let createdBooking = null;
+
   test.beforeEach(async ({ page }) => {
+    createdBooking = null;
     await page.goto(APP_PATH);
     await expect(page.getByText(/Monday|Wednesday|Friday/).first()).toBeVisible({ timeout: 10000 });
     await expect(
@@ -50,26 +59,21 @@ test.describe('CB-32 — Returning client NOT on this block — welcome-back flo
     ).toBeVisible({ timeout: 5000 });
   });
 
+  test.afterEach(async () => {
+    if (createdBooking) {
+      await deleteBookingsForCustomerOnBlock(createdBooking.customerId, createdBooking.blockId);
+    }
+  });
+
   test('returning client not yet on this block sees welcome-back message and proceeds to payment', async ({ page }) => {
-    // Self-cleaning pre-flight: if a previous run left a booking for
-    // returning-one on fri-upcoming, delete it via direct pg so this test
-    // can run end-to-end every time. Same pattern as CB-13 (Session 18).
     const friUpcoming = await getBlockByRole('fri-upcoming');
     const { data: lookupCust } = await sb.rpc('lookup_customer', { p_email: RETURNING_EMAIL });
     expect(lookupCust && lookupCust.length, `fixture: ${RETURNING_EMAIL} must exist`).toBe(1);
     const customerId = lookupCust[0].id;
 
-    const { data: hasBooking } = await sb.rpc('has_active_booking_on_block', {
-      p_customer_id: customerId,
-      p_block_id: friUpcoming.id
-    });
-    if (hasBooking === true) {
-      await deleteBookingsForCustomerOnBlock(customerId, friUpcoming.id);
-      const { data: stillBooked } = await sb.rpc('has_active_booking_on_block', {
-        p_customer_id: customerId, p_block_id: friUpcoming.id
-      });
-      expect(stillBooked, 'cleanup failed — RPC still reports booking active').toBe(false);
-    }
+    // Set tracking BEFORE the UI flow runs so afterEach cleans up even if
+    // assertions fail.
+    createdBooking = { customerId, blockId: friUpcoming.id };
 
     await openBookingModal(page, 'Friday', 'current');
 

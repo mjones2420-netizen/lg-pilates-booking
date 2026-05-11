@@ -26,27 +26,41 @@
 // public RPCs (upsert_customer, book_if_available). book_if_available always
 // inserts as status='reserved' — exactly what PB-09 needs.
 //
-// Idempotent: each run uses a unique timestamped email, so re-runs don't
-// collide. Bookings created here remain in the test DB — `npm run seed`
-// resets them on the next reseed.
+// Self-cleaning (Session 19, Batch 6): afterEach calls deleteCustomerCascade
+// on the fresh customer this test creates, removing both the customer row
+// and the reserved booking on mon-current. Each test uses a unique
+// timestamped email, so cleanup is scoped to per-run state only.
 
 const { test, expect } = require('@playwright/test');
 const { sb } = require('./helpers/supabase');
 const { APP_PATH } = require('./helpers/app-url');
 const { getBlockByRole, getBlocksByRoles } = require('./helpers/fixture-lookup');
+const { deleteCustomerCascade } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
 test.describe('PB-09 — Reserved booking on previous block: priority denied', () => {
   test.skip(!APP_URL, 'TEST_APP_URL not set — PB specs require the app to be served.');
 
+  // Per-run customer ID tracked at describe scope so afterEach can clean up
+  // regardless of where the test fails. Set immediately after upsert_customer
+  // succeeds inside the test body.
+  let createdCustomerId = null;
+
   test.beforeEach(async ({ page }) => {
+    createdCustomerId = null;
     await page.goto(APP_PATH);
     await expect(page.getByText(/Monday|Wednesday|Friday/).first()).toBeVisible({ timeout: 10000 });
     await expect(
       page.locator('#test-mode-banner.on'),
       'TEST MODE banner is not visible — env switch is NOT active, aborting to protect production data'
     ).toBeVisible({ timeout: 5000 });
+  });
+
+  test.afterEach(async () => {
+    if (createdCustomerId) {
+      await deleteCustomerCascade(createdCustomerId);
+    }
   });
 
   test('client with only a reserved booking on the previous block is denied priority access', async ({ page }) => {
@@ -72,6 +86,7 @@ test.describe('PB-09 — Reserved booking on previous block: priority denied', (
     });
     expect(upsertErr, 'upsert_customer must not error').toBeFalsy();
     expect(customerId, 'upsert_customer must return a customer id').toBeTruthy();
+    createdCustomerId = customerId;  // expose to afterEach for cleanup
 
     // Create a reserved booking on the previous block (mon-current).
     // book_if_available always inserts as status='reserved' — exactly what we need.

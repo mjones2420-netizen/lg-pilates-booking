@@ -36,8 +36,10 @@
 //     unaffected.
 //   - No other PB spec in this batch uses returning-one + mon-upcoming.
 //
-// Self-cleaning: pre-flight test.skip() if returning-one is already booked
-// on mon-upcoming (i.e. a previous PB-10 run left state behind).
+// Self-cleaning (Session 19, Batch 6): afterEach calls
+// deleteBookingsForCustomerOnBlock to remove the booking this test creates
+// on mon-upcoming. Migrated from entry-side pre-flight check to exit-side
+// cleanup for consistency with the rest of the Batch 6 rollout.
 
 const { test, expect } = require('@playwright/test');
 const { sb } = require('./helpers/supabase');
@@ -55,13 +57,25 @@ const PRIORITY_EMAIL = 'returning-one@test.example';
 test.describe('PB-10 — Confirmed booking on previous block: priority granted', () => {
   test.skip(!APP_URL, 'TEST_APP_URL not set — PB specs require the app to be served.');
 
+  // Self-cleaning: returning-one is a fixture customer (must persist) but
+  // the booking on mon-upcoming created by this test is junk. afterEach
+  // deletes just the booking via deleteBookingsForCustomerOnBlock.
+  let createdBooking = null;
+
   test.beforeEach(async ({ page }) => {
+    createdBooking = null;
     await page.goto(APP_PATH);
     await expect(page.getByText(/Monday|Wednesday|Friday/).first()).toBeVisible({ timeout: 10000 });
     await expect(
       page.locator('#test-mode-banner.on'),
       'TEST MODE banner is not visible — env switch is NOT active, aborting to protect production data'
     ).toBeVisible({ timeout: 5000 });
+  });
+
+  test.afterEach(async () => {
+    if (createdBooking) {
+      await deleteBookingsForCustomerOnBlock(createdBooking.customerId, createdBooking.blockId);
+    }
   });
 
   test('eligible client enters email in gate and proceeds through to a completed priority booking', async ({ page }) => {
@@ -74,26 +88,14 @@ test.describe('PB-10 — Confirmed booking on previous block: priority granted',
     expect(daysUntil, 'mon-upcoming must be 8-14 days out for the priority-window UI').toBeGreaterThan(7);
     expect(daysUntil).toBeLessThanOrEqual(14);
 
-    // Pre-flight: skip cleanly if returning-one already has a booking on
-    // mon-upcoming (e.g. left over from a prior PB-10 run that wasn't reseeded).
+    // Look up the fixture customer.
     const { data: customer } = await sb.rpc('lookup_customer', { p_email: PRIORITY_EMAIL });
     expect(customer && customer.length, `fixture: ${PRIORITY_EMAIL} must exist`).toBe(1);
     const customerId = customer[0].id;
 
-    const { data: alreadyBooked } = await sb.rpc('has_active_booking_on_block', {
-      p_customer_id: customerId,
-      p_block_id:    monUpcoming.id
-    });
-    if (alreadyBooked === true) {
-      // Self-cleaning: a prior PB-10 run (or a re-run without reseeding) left
-      // returning-one booked on mon-upcoming. Delete via direct pg so the
-      // gate flow can run end-to-end every time. Same pattern as CB-13.
-      await deleteBookingsForCustomerOnBlock(customerId, monUpcoming.id);
-      const { data: stillBooked } = await sb.rpc('has_active_booking_on_block', {
-        p_customer_id: customerId, p_block_id: monUpcoming.id
-      });
-      expect(stillBooked, 'cleanup failed — RPC still reports booking active').toBe(false);
-    }
+    // Set tracking BEFORE the UI flow runs so afterEach cleans up even if
+    // assertions fail.
+    createdBooking = { customerId, blockId: monUpcoming.id };
 
     // Open the Monday card's next-block toggle.
     const card = page.locator('.card').filter({

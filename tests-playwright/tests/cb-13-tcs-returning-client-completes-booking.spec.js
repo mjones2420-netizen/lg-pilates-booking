@@ -21,11 +21,12 @@
 //   - Customer: returning-two@test.example (already in fixture)
 //   - Block:    fri-upcoming (this customer has no booking on it in a fresh fixture)
 //
-// Self-cleaning (post-Session 18): if a previous run left a booking on
-// fri-upcoming for returning-two, this spec deletes it before the UI flow
-// starts so the test can run end-to-end every time without needing a reseed.
-// PAR-Q rows cascade-delete via FK. blocks.booked is resynced afterwards
-// since the trigger only fires on app-level operations.
+// Self-cleaning (Session 19, Batch 6): afterEach calls
+// deleteBookingsForCustomerOnBlock to remove the booking this test creates
+// on fri-upcoming. Migrated from entry-side pre-flight check to exit-side
+// cleanup for consistency with the rest of the Batch 6 rollout.
+// PAR-Q rows cascade-delete via FK; blocks.booked is resynced inside the
+// helper.
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
@@ -37,9 +38,22 @@ const { deleteBookingsForCustomerOnBlock } = require('./helpers/admin-db');
 const RETURNING_EMAIL = 'returning-two@test.example';
 
 test.describe('CB-13: T&Cs — Returning client completes booking after agreeing', () => {
+
+  // Self-cleaning (Session 19, Batch 6): afterEach deletes the booking this
+  // test creates on fri-upcoming. Migrated from entry-side pre-flight to
+  // exit-side cleanup for consistency with the rest of the Batch 6 rollout.
+  let createdBooking = null;
+
   test.beforeEach(async ({ page }) => {
+    createdBooking = null;
     await page.goto(APP_PATH);
     await expect(page.locator('#test-mode-banner.on'), 'TEST MODE banner missing — refusing to run against production').toBeVisible();
+  });
+
+  test.afterEach(async () => {
+    if (createdBooking) {
+      await deleteBookingsForCustomerOnBlock(createdBooking.customerId, createdBooking.blockId);
+    }
   });
 
   test('Returning client books fri-upcoming after agreeing to T&Cs', async ({ page }) => {
@@ -54,24 +68,11 @@ test.describe('CB-13: T&Cs — Returning client completes booking after agreeing
     expect(customer && customer.length, `fixture: ${RETURNING_EMAIL} must exist`).toBe(1);
     const customerId = customer[0].id;
 
-    // Self-cleaning pre-flight: if a previous run left a booking for this
-    // customer/block pair, delete it via direct pg before continuing. This
-    // makes the test re-runnable without needing `npm run seed` between runs.
-    const { data: alreadyBookedBefore, error: hasBookedErr } = await sb.rpc(
-      'has_active_booking_on_block',
-      { p_customer_id: customerId, p_block_id: friUpcoming.id }
-    );
-    expect(hasBookedErr, 'has_active_booking_on_block RPC must not error').toBeFalsy();
-
-    if (alreadyBookedBefore === true) {
-      const deleted = await deleteBookingsForCustomerOnBlock(customerId, friUpcoming.id);
-      // Verify the cleanup actually worked before continuing — a stale booking
-      // here would let the UI flow trip the duplicate-booking detection.
-      const { data: stillBooked } = await sb.rpc('has_active_booking_on_block', {
-        p_customer_id: customerId, p_block_id: friUpcoming.id
-      });
-      expect(stillBooked, `cleanup left ${deleted} booking(s) but RPC still reports booked`).toBe(false);
-    }
+    // Set tracking BEFORE the UI flow runs so afterEach cleans up even if
+    // assertions fail. If a previous run somehow left state behind, the
+    // duplicate-detection screen will fire and the UI assertions will fail —
+    // at which point afterEach kicks in and clears it for next time.
+    createdBooking = { customerId, blockId: friUpcoming.id };
 
     // ---- UI flow ----
 
