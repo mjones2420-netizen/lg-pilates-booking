@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 10 May 2026
-**Total tests:** 64 (14 smoke + 34 CB + 16 PB)
+**Last updated:** 14 May 2026
+**Total tests:** 70 (14 smoke + 34 CB + 16 PB + 6 SD)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -19,12 +19,12 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Admin Bookings (AB) | 22 | 0 | 22 | 0 | 22 |
 | Admin Classes (AC) | 24 | 0 | 24 | 0 | 24 |
 | Admin Clients (ACL) | 4 | 2 | 2 | 0 | 2 |
-| Schedule Display (SD) | 6 | 0 | 6 | 0 | 6 |
+| Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
 | Settings & Export (SE) | 9 | 0 | 9 | 0 | 9 |
 | Edge Cases (EC) | 14 | 1 | 13 | 0 | 13 |
 | Block Warnings (BLW) | 8 | 0 | 8 | 0 | 8 |
 | Security (SEC) | 7 | 3 | 4 | 0 | 4 |
-| **Totals** | **144** | **10** | **134** | **43** | **91** |
+| **Totals** | **144** | **10** | **134** | **49** | **85** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -184,16 +184,16 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | ACL-03 | Grant priority to a standard client | 🔁 Duplicate of PB-06 | — |
 | ACL-04 | Remove priority from a client | 🔁 Duplicate of PB-07 | — |
 
-### Schedule Display (SD)
+### Schedule Display (SD) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
 |---|---|---|---|
-| SD-01 | All classes load on page open | ⬜ Outstanding | Batch 7 |
-| SD-02 | Filter by Baildon | ⬜ Outstanding | Batch 7 |
-| SD-03 | Filter by Guiseley | ⬜ Outstanding | Batch 7 |
-| SD-04 | Filter by day within a location | ⬜ Outstanding | Batch 7 |
-| SD-05 | Reset to All Classes | ⬜ Outstanding | Batch 7 |
-| SD-06 | Class without blocks is hidden | ⬜ Outstanding | Batch 7 |
+| SD-01 | All classes load on page open | ✅ Automated | Batch 7 |
+| SD-02 | Filter by Baildon | ✅ Automated | Batch 7 |
+| SD-03 | Filter by Guiseley | ✅ Automated | Batch 7 |
+| SD-04 | Filter by day within a location | ✅ Automated | Batch 7 |
+| SD-05 | Reset to All Classes | ✅ Automated | Batch 7 |
+| SD-06 | Class without blocks is hidden | ✅ Automated | Batch 7 |
 
 ### Settings & Export (SE)
 
@@ -260,7 +260,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch | Scope | Count | Notes |
 |---|---|---:|---|
 | Batch 6 ✅ | Test infrastructure (self-cleaning afterEach + CB-33 strengthening) | ~11 specs | NOT from Excel — existing tests being upgraded. Adds afterEach cleanup to CB-01, CB-03, CB-13, CB-32, PB-09, PB-10. CB-33 strengthened Session 20 with direct `parq` row assertion after `.select()` fix landed in index.html. CB-02, CB-31 left as-is (create no state). |
-| Batch 7 | Schedule Display | 6 | UI filter tests; no DB state. Quick wins. |
+| Batch 7 ✅ | Schedule Display | 6 | UI filter tests; SD-01 to SD-05 are pure UI, SD-06 hides wed-upcoming via `visible=false` with self-cleaning afterEach (restored to original value regardless of pass/fail). |
 | Batch 8 | Admin Clients (remaining) | 2 | Customers tab layout + priority badge rendering. |
 | Batch 9 | Booking Windows (remaining) | 3 | Card-state UI tests not covered by PB. |
 | Batch 10 | Security (remaining) | 4 | Two UI checks + admin tour + grant-matrix audit. |
@@ -1995,13 +1995,140 @@ The admin grant/remove buttons would be cosmetic — they'd appear to work but t
 
 ---
 
+### SD-01 — All classes load on page open
+
+**What this proves:** The public booking page renders one card for every class that has at least one active or upcoming block, with no filter applied by default. This is the baseline schedule view every visitor sees on first load.
+
+**Fixture role used:** None directly — queries the DB for the set of class IDs with `status IN ('active','upcoming')` and asserts the grid count matches.
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test`
+2. Asserts the TEST MODE banner is visible
+3. Queries the test DB for the count of distinct class IDs with active or upcoming blocks
+4. Asserts `#fb-all` is in the `.on` state on page load (default selection)
+5. Asserts `#grid .card` has exactly that count
+6. Asserts no `.no-filter-msg` empty-state is present
+
+**What a fail would mean:**
+Either the grid renders too few cards (classes silently missing — visitors can't see classes they should be able to book) or too many (classes without bookable blocks showing up — visitors click cards that lead nowhere).
+
+---
+
+### SD-02 — Filter by Baildon
+
+**What this proves:** Clicking the Baildon location pill filters the grid to only Baildon classes AND reveals the day filter buttons row (the day buttons only appear after a location is selected).
+
+**Fixture role used:** None directly — queries the DB for the Baildon class count.
+
+**Steps the test performs:**
+1. Loads the booking page
+2. Queries the DB for the count of distinct Baildon class IDs with active/upcoming blocks
+3. Clicks `#fg-baildon-card`
+4. Asserts the Baildon pill is `.on` and `#fb-all` is no longer `.on`
+5. Asserts `#filter-days-wrap` has the `.on` class (the visibility toggle)
+6. Asserts at least one day button is visible in `#filter-row`
+7. Asserts `#grid .card` count matches the Baildon class count
+8. Asserts every visible `.card-loc` contains "Baildon"
+
+**What a fail would mean:**
+The filter is broken — either it doesn't filter (Guiseley classes still show), the day row doesn't appear (visitors can't drill down to a specific day), or the wrong classes are shown.
+
+---
+
+### SD-03 — Filter by Guiseley
+
+**What this proves:** Same as SD-02 but for the Guiseley pill. Confirms the filter mechanism works symmetrically for both locations rather than being hardcoded for one.
+
+**Fixture role used:** None directly — queries the DB for the Guiseley class count.
+
+**Steps the test performs:**
+1. Loads the booking page
+2. Queries the DB for the count of distinct Guiseley class IDs with active/upcoming blocks
+3. Clicks `#fg-guiseley-card`
+4. Asserts the Guiseley pill is `.on` and `#fb-all` is no longer `.on`
+5. Asserts `#grid .card` count matches the Guiseley class count
+6. Asserts every visible `.card-loc` contains "Guiseley"
+
+**What a fail would mean:**
+Same as SD-02 — broken filter, but specifically for Guiseley. Catches the case where someone hardcodes "Baildon" somewhere by accident.
+
+---
+
+### SD-04 — Filter by day within a location
+
+**What this proves:** After picking a location, clicking a day button further narrows the grid to just that day's classes at that location. Confirms the two-level filter (location then day) works end-to-end.
+
+**Fixture role used:** None directly — uses Baildon + Monday (the fixture guarantees a Baildon Monday class: class 1, Mon Mixed at Baildon Moravian Church).
+
+**Steps the test performs:**
+1. Loads the booking page
+2. Queries the DB for the count of distinct class IDs that are Baildon AND Monday with active/upcoming blocks
+3. Clicks `#fg-baildon-card`, asserts day row is visible
+4. Locates the Monday button inside `#filter-row` via `hasText`
+5. Asserts the Monday button exists, then clicks it
+6. Asserts the Monday button is now `.on`
+7. Asserts `#grid .card` count matches the Baildon-Monday count
+8. Asserts every visible `.card-loc` contains "Baildon" AND every `.card-when-day` reads "Monday"
+
+**What a fail would mean:**
+Day filter doesn't work — visitors trying to find their class for a specific day would see classes for other days too, leading to confusion.
+
+---
+
+### SD-05 — Reset to All Classes
+
+**What this proves:** After applying a filter, clicking "All Classes" fully resets the view — all classes return AND the day filter row disappears. Confirms the reset is complete, not partial.
+
+**Fixture role used:** None directly — queries the DB for the all-classes count.
+
+**Steps the test performs:**
+1. Loads the booking page
+2. Queries the DB for the total count of distinct class IDs with active/upcoming blocks
+3. Applies a Baildon filter first (so there's something to reset from), confirms day row is visible
+4. Clicks `#fb-all`
+5. Asserts `#fb-all` is `.on` again and the Baildon pill is no longer `.on`
+6. Asserts `#filter-days-wrap` is no longer `.on` AND is hidden
+7. Asserts `#grid .card` count is back to the full total
+
+**What a fail would mean:**
+Reset is broken — either the day row stays visible (UI clutter, stale state), the wrong classes show, or "All Classes" doesn't reactivate. A visitor who clicked into Baildon then changed their mind couldn't return to the full view cleanly.
+
+---
+
+### SD-06 — Class without blocks is hidden
+
+**What this proves:** A class with no active or upcoming blocks does NOT appear on the public booking page. This is the front-line privacy rule that protects unreleased classes from being seen by visitors.
+
+**Mechanism:** Temporarily flips `wed-upcoming`'s `visible` column to `false`. This is the actual lever the front-end uses to hide blocks — `getActiveBlock()` in index.html filters with `b.visible !== false` (status is not part of this filter). Wed is the only fixture class with a single visible block, so hiding it cleanly removes the class without affecting any other.
+
+**Fixture role used:** `wed-upcoming` (its `visible` value is captured before the change and restored in `afterEach` regardless of pass/fail).
+
+**Steps the test performs:**
+1. Loads the booking page, baselines the visible class count
+2. Reads the current `visible` value of `wed-upcoming` directly via the pg pool (fixture-lookup doesn't expose the column)
+3. Captures the block ID and original `visible` value into describe-scope state BEFORE the UPDATE — this ordering guarantees `afterEach` can always restore even if the UPDATE itself fails
+4. Runs `UPDATE blocks SET visible = false WHERE id = wed-upcoming.id` via the direct pg pool
+5. Reloads the page so it re-fetches the blocks
+6. Asserts `#grid .card` count is one less than baseline
+7. Asserts no visible `.card-when-day` reads "Wednesday"
+
+**Cleanup (`afterEach`):**
+- Restores `wed-upcoming`'s `visible` column to its original value via the direct pg pool
+- Runs unconditionally so a mid-test failure can't leave the fixture broken
+- No `resyncBlockBookedCount` needed — booked count is unaffected by visibility changes
+
+**What a fail would mean:**
+A class with no active/upcoming blocks would still appear on the public page — visitors could click into a class that has nothing bookable, leading to dead ends and confusion. This is also the mechanism the "Block Warnings" dashboard banner relies on for its "X classes are not visible" diagnostic, so the front-end logic needs to stay in sync with that.
+
+---
+
 # Appendix — What's NOT yet covered
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary table and per-tab tables give the full breakdown by Excel tab; the Suggested Batches table lays out the planned grouping for upcoming sessions.
 
-**Outstanding totals:** 91 scenarios across 9 tabs (10 May 2026).
+**Outstanding totals:** 85 scenarios across 8 tabs (14 May 2026).
 
-**Next session focus:** Batch 7 — Schedule Display (6 UI filter tests; no DB state). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 8 — Admin Clients (remaining ACL scenarios). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 
