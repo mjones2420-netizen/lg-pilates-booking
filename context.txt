@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 12 May 2026
+Last updated: 14 May 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -390,13 +390,15 @@ tests-playwright/
     ├── smoke-03-rls-enforcement.spec.js
     ├── smoke-04-ui-page-loads.spec.js
     ├── cb-*.spec.js             # 23 CB spec files covering 34 of 34 scenarios
-    └── pb-*.spec.js             # 14 PB spec files covering 10 Excel scenarios + 5 PB-X gap-analysis tests
+    ├── pb-*.spec.js             # 14 PB spec files covering 10 Excel scenarios + 5 PB-X gap-analysis tests
+    └── sd-*.spec.js             # 6 SD spec files covering 6 of 6 scenarios
 
-CURRENT TEST COUNT: 64 tests (all passing — Session 19, Batch 6 complete)
+CURRENT TEST COUNT: 70 tests (all passing — Session 21, Batch 7 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
          (PB-X1 has 3 sub-tests, PB-X2 through PB-X5 have 1 each)
+  SD:    6 tests covering 6 of 6 SD scenarios (SD suite complete)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -736,6 +738,10 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
         cb-02, cb-31, pb-x4 left as-is (cb-02/cb-31 create no state, pb-x4
         is the canonical afterEach example we modelled on).
         CB-33 strengthening completed Session 20 — see Session 20 learnings.
+   - ✅ Schedule Display — 6 of 6 Excel scenarios automated (Batch 7, Session 21).
+        SD-01 to SD-05 are pure UI filter tests with no DB state. SD-06 hides
+        wed-upcoming via `visible=false` with a self-cleaning afterEach that
+        restores the original value regardless of pass/fail.
 
    DUPLICATE SENSE-CHECK (10 May 2026):
    10 Excel rows red-filled as no longer requiring automation — see
@@ -745,7 +751,6 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    BW-* → BLW-* to disambiguate from Booking Windows tab.
 
    UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
-   - Batch 7  — Schedule Display
    - Batch 8  — Admin Clients (remaining)
    - Batch 9  — Booking Windows (remaining)
    - Batch 10 — Security (remaining)
@@ -760,8 +765,8 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — start Batch 7 (Schedule Display):
-   - BATCH 7 — Schedule Display (6 UI filter tests; no DB state). Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 8 (Admin Clients):
+   - BATCH 8 — Admin Clients (remaining ACL scenarios). Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -1091,5 +1096,39 @@ SESSION 20 LEARNINGS — PARQ 401 ROOT CAUSE, .SELECT() CHAINING PITFALL
   where anon has INSERT but not SELECT will silently fail in production
   with the same symptom. Search for similar chains before adding new
   anon-write paths. Currently only parq is affected.
+
+SESSION 21 LEARNINGS — VISIBLE vs STATUS, DOCUMENTATION DISCIPLINE
+------------------------------------------------------------------
+- Front-end block-hiding lever is `blocks.visible`, NOT `blocks.status`.
+  getActiveBlock() at line ~886 of index.html filters with
+  `b.visible !== false` and does NOT check status at all. So flipping
+  status from 'upcoming' to anything else has zero effect on what the
+  public grid shows. Confirmed twice over in Session 21: first via a
+  failed UPDATE to status='archived' (rejected by blocks_status_check;
+  not a valid status anyway), then via UPDATE to status='cancelled'
+  which the constraint allowed but the page still showed the class.
+  Reading the actual filter function on attempt 3 surfaced the right
+  column. Rule: before assuming what column the front-end filters on,
+  read the actual filter function in index.html — the Excel SQL hints
+  (e.g. SD-06's "UPDATE blocks SET status = 'archived'") are not always
+  accurate.
+- blocks_status_check allows ONLY: 'upcoming', 'active', 'completed',
+  'cancelled'. 'archived' is NOT a valid status. The Excel scenario for
+  SD-06 used 'archived' in its example SQL — that wording is wrong and
+  was left as-is in the Excel for now (not a real blocker since the
+  spec mechanism is documented in code and TEST-PLAN.md).
+- Documentation discipline reinforced: I jumped the gun on the
+  TEST-PLAN.md update before the SD-06 spec was green, then had to fix
+  the mechanism description twice after the spec was finally working.
+  Rule (already documented under WORKFLOW DISCIPLINE — SESSION 16
+  LEARNING): do NOT update TEST-PLAN.md, context.txt, or the Excel
+  scenarios during a batch in progress. The trigger is the user
+  explicitly saying tests are green. Re-stating it here because the
+  failure mode keeps recurring.
+- The Excel SD-06 wording references "Run the SQL to remove a block's
+  status" with example SQL setting status='archived'. This is wrong on
+  two counts (invalid status value AND wrong column). If the Excel
+  scenarios are ever revised, SD-06 should be updated to reference
+  `visible = false` as the actual mechanism.
 
 ============================================================
