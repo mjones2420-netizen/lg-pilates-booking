@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 14 May 2026
-**Total tests:** 70 (14 smoke + 34 CB + 16 PB + 6 SD)
+**Last updated:** 15 May 2026
+**Total tests:** 72 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -18,13 +18,13 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Booking Windows (BW) | 7 | 4 | 3 | 0 | 3 |
 | Admin Bookings (AB) | 22 | 0 | 22 | 0 | 22 |
 | Admin Classes (AC) | 24 | 0 | 24 | 0 | 24 |
-| Admin Clients (ACL) | 4 | 2 | 2 | 0 | 2 |
+| Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
 | Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
 | Settings & Export (SE) | 9 | 0 | 9 | 0 | 9 |
 | Edge Cases (EC) | 14 | 1 | 13 | 0 | 13 |
 | Block Warnings (BLW) | 8 | 0 | 8 | 0 | 8 |
 | Security (SEC) | 7 | 3 | 4 | 0 | 4 |
-| **Totals** | **144** | **10** | **134** | **49** | **85** |
+| **Totals** | **144** | **10** | **134** | **51** | **83** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -175,14 +175,16 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | AC-23 | Delete class with bookings + PAR-Qs — completes cleanly | ⬜ Outstanding | Batch 20 |
 | AC-24 | Block validation — rejects negative / zero price, cap, weeks | ⬜ Outstanding | Batch 20 |
 
-### Admin Clients (ACL)
+### Admin Clients (ACL) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
 |---|---|---|---|
-| ACL-01 | Clients tab lists all customers | ⬜ Outstanding | Batch 8 |
-| ACL-02 | Priority badges display correctly | ⬜ Outstanding | Batch 8 |
+| ACL-01 | Clients tab lists all customers | ✅ acl-01.spec.js | Batch 8 |
+| ACL-02 | Priority badges display correctly | ✅ acl-02.spec.js | Batch 8 |
 | ACL-03 | Grant priority to a standard client | 🔁 Duplicate of PB-06 | — |
 | ACL-04 | Remove priority from a client | 🔁 Duplicate of PB-07 | — |
+
+> **Excel wording note (15 May 2026):** ACL-01 and ACL-02 originally referenced the deprecated global `customers.priority` column and a two-state "Priority/Standard" badge model. The live UI uses per-class priority via `customer_class_priority` and renders a three-state overall badge: "Manual priority", "Auto priority", or "Standard". The automated specs test the live behaviour; the Excel wording should be updated in line with this at end of session.
 
 ### Schedule Display (SD) — Complete ✅
 
@@ -261,7 +263,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 |---|---|---:|---|
 | Batch 6 ✅ | Test infrastructure (self-cleaning afterEach + CB-33 strengthening) | ~11 specs | NOT from Excel — existing tests being upgraded. Adds afterEach cleanup to CB-01, CB-03, CB-13, CB-32, PB-09, PB-10. CB-33 strengthened Session 20 with direct `parq` row assertion after `.select()` fix landed in index.html. CB-02, CB-31 left as-is (create no state). |
 | Batch 7 ✅ | Schedule Display | 6 | UI filter tests; SD-01 to SD-05 are pure UI, SD-06 hides wed-upcoming via `visible=false` with self-cleaning afterEach (restored to original value regardless of pass/fail). |
-| Batch 8 | Admin Clients (remaining) | 2 | Customers tab layout + priority badge rendering. |
+| Batch 8 ✅ | Admin Clients (remaining) | 2 | Customers tab layout + three-state priority badge rendering (Manual / Auto / Standard). Excel wording updated to match the live UI. |
 | Batch 9 | Booking Windows (remaining) | 3 | Card-state UI tests not covered by PB. |
 | Batch 10 | Security (remaining) | 4 | Two UI checks + admin tour + grant-matrix audit. |
 | Batch 11 | Edge Cases (part 1) | 6 | Validation + boundary tests. |
@@ -2122,13 +2124,67 @@ A class with no active/upcoming blocks would still appear on the public page —
 
 ---
 
+# Admin Clients (ACL) — Batch 8
+
+### ACL-01 — Clients tab lists all customers
+
+**What this proves:** When the admin logs in and opens the Clients tab, the customers table renders with the correct column structure and every seeded fixture customer appears in the body. This is the baseline view Louise relies on to find any client.
+
+**Fixture roles used:** None directly — asserts against the three seeded customers `returning-one`, `returning-two`, and `admin-dummy` regardless of how many stray test customers also exist in the DB.
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test`
+2. Asserts the TEST MODE banner is visible
+3. Logs in as admin via `loginAsAdmin`
+4. Clicks `#tab-customers` and asserts it gets the `.on` class
+5. Waits for `#customers-tbody` to populate (initial `Loading...` placeholder replaced)
+6. Asserts the header row has 6 `<th>` cells with text `Client | Email | Phone | Type | Priority | Actions`
+7. For each of the three seeded customer emails, asserts a row exists with non-empty Client/Email/Type cells and that the Type cell reads `returning`
+8. Asserts each seeded row contains a `.priority-badge` element in the Priority column
+9. Signs out cleanly in `afterEach`
+
+**What a fail would mean:**
+The admin would either see a broken column layout (wrong headers, missing columns) or seeded customers wouldn't appear at all — which would mean Louise can't find clients she knows are in the system, or the table is rendering against a stale schema.
+
+**Excel wording note:** The Excel scenario references a 5-column layout with a green/grey priority badge tied to the deprecated `customers.priority` column. The live UI has 6 columns and uses a three-state per-class badge model. The spec tests the live behaviour; the Excel will be updated to match.
+
+---
+
+### ACL-02 — Priority badges display correctly
+
+**What this proves:** The overall Priority badge in the Clients tab correctly reflects all three priority states the system can render: Manual (when the customer has any row in `customer_class_priority`), Auto (when they have at least one confirmed booking but no manual grants), and Standard (when neither applies). Manual outranks Auto when both are present.
+
+**Fixture roles used:**
+- `returning-one` — has a seeded manual grant on the Wed class AND 3 confirmed bookings → should render as **Manual priority** (manual wins).
+- `returning-two` — has 3 confirmed bookings and no manual grants → should render as **Auto priority**.
+- A fresh per-run customer (no bookings, no grants) → should render as **Standard**.
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts TEST MODE banner
+2. Creates a per-run customer via `upsert_customer` RPC with no bookings or grants (Standard-state fixture)
+3. Logs in as admin and opens the Clients tab
+4. Waits for the customer table to finish loading
+5. Locates the `returning-one@test.example` row and asserts its Priority cell badge contains the text `Manual priority`
+6. Locates the `returning-two@test.example` row and asserts its Priority cell badge contains the text `Auto priority`
+7. Locates the per-run customer's row and asserts its Priority cell badge has exact text `Standard` (no leading star)
+8. `afterEach` deletes the per-run customer via `deleteCustomerCascade` and signs out
+
+**Self-cleaning note:** The per-run customer ID is tracked at describe scope and assigned immediately after the `upsert_customer` call succeeds, so `afterEach` cleans it up regardless of where the rest of the test fails. The fixture customers (`returning-one`, `returning-two`) are read-only in this spec — their seeded state is what's under test.
+
+**What a fail would mean:**
+The visual signal Louise relies on to identify priority clients would be wrong: a Standard client might appear as Priority and get incorrectly favoured during a manual-priority audit, or a Manual-priority client might appear as Standard and lose the visibility Louise granted them.
+
+**Excel wording note:** The Excel scenario lists only two badge states ("green Priority / grey Standard"). The live UI renders three states with manual > auto > standard precedence. The spec tests the live behaviour; the Excel will be updated to match.
+
+---
+
 # Appendix — What's NOT yet covered
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary table and per-tab tables give the full breakdown by Excel tab; the Suggested Batches table lays out the planned grouping for upcoming sessions.
 
-**Outstanding totals:** 85 scenarios across 8 tabs (14 May 2026).
+**Outstanding totals:** 83 scenarios across 7 tabs (15 May 2026).
 
-**Next session focus:** Batch 8 — Admin Clients (remaining ACL scenarios). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 9 — Booking Windows (remaining BW scenarios). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 
