@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 15 May 2026
+Last updated: 16 May 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -393,9 +393,10 @@ tests-playwright/
     ├── pb-*.spec.js             # 14 PB spec files covering 10 Excel scenarios + 5 PB-X gap-analysis tests
     ├── sd-*.spec.js             # 6 SD spec files covering 6 of 6 scenarios
     ├── acl-*.spec.js            # 2 ACL spec files covering 2 of 2 genuine scenarios
-    └── bw-*.spec.js             # 3 BW spec files covering 3 of 3 genuine scenarios
+    ├── bw-*.spec.js             # 3 BW spec files covering 3 of 3 genuine scenarios
+    └── sec-*.spec.js            # 3 SEC spec files covering 3 of 3 genuine scenarios
 
-CURRENT TEST COUNT: 75 tests (all passing — Session 22, Batches 8 + 9 complete)
+CURRENT TEST COUNT: 81 tests (all passing — Session 23, Batch 10 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
@@ -403,6 +404,9 @@ CURRENT TEST COUNT: 75 tests (all passing — Session 22, Batches 8 + 9 complete
   SD:    6 tests covering 6 of 6 SD scenarios (SD suite complete)
   ACL:   2 tests covering 2 of 2 genuine ACL scenarios (ACL suite complete)
   BW:    3 tests covering 3 of 3 genuine BW scenarios (BW suite complete)
+  SEC:   6 tests in 3 spec files covering 3 of 3 genuine SEC scenarios
+         (SEC-02 has 2 sub-tests, SEC-06 has 3 sub-tests, SEC-07 has 1.
+          SEC-01/03/04/05 are red-filled in Excel as duplicates of other specs.)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -763,16 +767,27 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
         All read-only — no DB writes. fixture-lookup.js extended to include
         `dates` column in its SELECT for BW-02 (pure addition, no existing
         spec read that field).
+   - ✅ Security — 3 of 3 genuine scenarios automated (Batch 10, Session 23).
+        SEC-02 (2 tests) confirms anon SELECT on settings table directly AND
+        the functional consequence — bank details render on the payment screen.
+        SEC-06 (3 tests) confirms admin login works, all 4 dashboard tabs
+        render their panels, and the 3 below-tab sections (Upcoming Classes,
+        Settings, Backup & Export) render their headings + primary controls.
+        SEC-07 (1 test) audits the live anon grant matrix via direct pg
+        against information_schema.role_table_grants — fails loudly if anon
+        gains unexpected grants OR loses expected ones. Excel updated in same
+        session: SEC-03 red-filled as duplicate of CB-01; SEC-06 wording
+        corrected from "every tab loads (incl. Settings, Backup & Export)"
+        to "4 tabs + 3 below-tab sections".
 
-   DUPLICATE SENSE-CHECK (10 May 2026):
-   10 Excel rows red-filled as no longer requiring automation — see
+   DUPLICATE SENSE-CHECK (10 May 2026, updated 16 May 2026):
+   11 Excel rows red-filled as no longer requiring automation — see
    TEST-PLAN.md Coverage Tracker for which scenarios are covered by which
    existing tests. Affected: BW-03, BW-04, BW-05, BW-07, EC-02, SEC-01,
-   SEC-04, SEC-05, ACL-03, ACL-04. Block Warnings tab IDs renamed
+   SEC-03, SEC-04, SEC-05, ACL-03, ACL-04. Block Warnings tab IDs renamed
    BW-* → BLW-* to disambiguate from Booking Windows tab.
 
    UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
-   - Batch 10 — Security (remaining)
    - Batch 11 — Edge Cases (part 1)
    - Batch 12 — Edge Cases (part 2)
    - Batch 13 — Block Warnings (BLW)
@@ -784,8 +799,8 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — start Batch 10 (Security):
-   - BATCH 10 — Security (remaining SEC scenarios). Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 11 (Edge Cases part 1):
+   - BATCH 11 — Edge Cases (first 6 EC scenarios). Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -1196,5 +1211,34 @@ SESSION 22 LEARNINGS — STALE EXCEL WORDING, STRICT-MODE LOCATORS, HELPER COVER
 - The mockup-first-ui skill applies to UI/feature changes, not to test
   writing. Don't waste cycles producing a mockup before adding a spec —
   that's not the skill's intended trigger.
+
+SESSION 23 LEARNINGS — BOOKING FLOW WRITE BOUNDARIES, GRANT MATRIX AUDIT, DASHBOARD STRUCTURE
+---------------------------------------------------------------------------------------------
+- Customer is created ONLY at the Reserve click in Step 4, not earlier.
+  goStep2() (the Step 1 → Step 2 advance) calls lookup_customer to detect
+  returning clients, but does NOT call upsert_customer. The upsert + the
+  book_if_available RPC both run inside the Reserve click handler (line
+  ~1505 in index.html). Implication for specs: a spec that stops short of
+  Reserve creates NO customer/booking row, even if it filled Step 1 and
+  advanced through Step 2a/2b. No afterEach cleanup needed in that case
+  (SEC-02 second test is the canonical example). Conversely, a spec that
+  clicks Reserve always creates a customer AND a booking, so cleanup must
+  track both.
+- Direct pg via admin-db.js is the right tool for grant matrix audits.
+  Anon SELECT on information_schema returns role-relative results (anon
+  only sees its OWN grants), which is useless for a "what does anon have"
+  audit. The TEST_SUPABASE_DB_URL pool sees everything. SEC-07's query
+  groups by table_name and aggregates privilege_type — the canonical
+  pattern. The same approach works for grant audits on any role.
+- The admin dashboard has 4 tabs + 3 below-tab sections, NOT 6 tabs:
+    Tabs:     #tab-bookings, #tab-classes, #tab-customers, #tab-cancellations
+    Sections: Upcoming Classes (#ctbody), Settings (#setting-bank-*),
+              Backup & Export (Export buttons)
+  Sections render unconditionally below the tab strip — they're always
+  visible once logged in. Excel scenarios written before this distinction
+  was clear (notably the old SEC-06 wording) referred to all 6 as "tabs".
+  When picking up Admin Settings / Admin Classes batches, target sections
+  by their headings/inputs/buttons rather than expecting a tab-style
+  click-through.
 
 ============================================================
