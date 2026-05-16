@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 15 May 2026
-**Total tests:** 75 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW)
+**Last updated:** 16 May 2026
+**Total tests:** 81 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -23,8 +23,8 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Settings & Export (SE) | 9 | 0 | 9 | 0 | 9 |
 | Edge Cases (EC) | 14 | 1 | 13 | 0 | 13 |
 | Block Warnings (BLW) | 8 | 0 | 8 | 0 | 8 |
-| Security (SEC) | 7 | 3 | 4 | 0 | 4 |
-| **Totals** | **144** | **10** | **134** | **54** | **80** |
+| Security (SEC) | 7 | 4 | 3 | 3 | 0 |
+| **Totals** | **144** | **11** | **133** | **57** | **76** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -243,17 +243,17 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | BLW-07 | Yellow advisory — Add Block prefills date automatically | ⬜ Outstanding | Batch 13 |
 | BLW-08 | Class and time both shown in warning banner row | ⬜ Outstanding | Batch 13 |
 
-### Security (SEC)
+### Security (SEC) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
 |---|---|---|---|
 | SEC-01 | Public schedule loads without sign-in | 🔁 Duplicate of smoke-04 + smoke-01 | — |
-| SEC-02 | Bank details visible on payment screen without sign-in | ⬜ Outstanding | Batch 10 |
-| SEC-03 | New-client full booking works end-to-end (anon RPC writes) | ⬜ Outstanding | Batch 10 |
+| SEC-02 | Bank details visible on payment screen without sign-in | ✅ sec-02.spec.js | Batch 10 |
+| SEC-03 | New-client full booking works end-to-end (anon RPC writes) | 🔁 Duplicate of CB-01 | — |
 | SEC-04 | Anon cannot directly read customer data | 🔁 Duplicate of smoke-03.2 | — |
 | SEC-05 | Anon cannot directly read bookings | 🔁 Duplicate of smoke-03.1 | — |
-| SEC-06 | Admin sign-in promotes session → full dashboard access | ⬜ Outstanding | Batch 10 |
-| SEC-07 | Grant matrix matches context.txt spec (one-off verification) | ⬜ Outstanding | Batch 10 |
+| SEC-06 | Admin sign-in promotes session → full dashboard access | ✅ sec-06.spec.js | Batch 10 |
+| SEC-07 | Grant matrix matches context.txt spec (one-off verification) | ✅ sec-07.spec.js | Batch 10 |
 
 ---
 
@@ -265,7 +265,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 7 ✅ | Schedule Display | 6 | UI filter tests; SD-01 to SD-05 are pure UI, SD-06 hides wed-upcoming via `visible=false` with self-cleaning afterEach (restored to original value regardless of pass/fail). |
 | Batch 8 ✅ | Admin Clients (remaining) | 2 | Customers tab layout + three-state priority badge rendering (Manual / Auto / Standard). Excel wording updated to match the live UI. |
 | Batch 9 ✅ | Booking Windows (remaining) | 3 | Card-state UI tests not covered by PB. BW-01 single-block layout, BW-02 session date pills, BW-06 active-vs-next block selection by date. |
-| Batch 10 | Security (remaining) | 4 | Two UI checks + admin tour + grant-matrix audit. |
+| Batch 10 ✅ | Security (remaining) | 3 specs (6 tests) | SEC-02 anon-settings read + bank details on payment screen, SEC-06 admin login + all 4 tabs + 3 below-tab sections render, SEC-07 anon grant matrix audit via direct pg. SEC-03 reclassified as duplicate of CB-01 (removed from genuine total). |
 | Batch 11 | Edge Cases (part 1) | 6 | Validation + boundary tests. |
 | Batch 12 | Edge Cases (part 2) | 7 | Capacity + DB-level integrity tests. |
 | Batch 13 | Block Warnings | 8 | Dashboard banner regressions. Needs admin login. |
@@ -2243,13 +2243,145 @@ Either the date logic in `getActiveBlock()` has slipped (so a block that's start
 
 ---
 
-# Appendix — What's NOT yet covered
+# Security (SEC) — Batch 10
+
+### SEC-02.1 — Anon can SELECT settings rows directly
+
+**What this proves:** The anon role retains its SELECT grant on the `settings` table. This is the database-level confirmation that the public booking flow can read bank details — the underlying privilege check, separate from any UI behaviour.
+
+**Preconditions:**
+- Test DB has the three seeded settings rows (`bank_name`, `bank_sort_code`, `bank_account_no`)
+
+**Steps the test performs:**
+1. Using the shared anon Supabase client (`sb`), calls `sb.from('settings').select('key,value')`
+2. Asserts the call returns rows with no error
+3. Asserts the returned keys include `bank_name`, `bank_sort_code`, and `bank_account_no`
+
+**What the test verifies:**
+- The query succeeds (no PostgREST error)
+- At least 3 rows are returned
+- All three expected keys are present
+
+**What a fail would mean:**
+The anon SELECT grant on `settings` has been revoked. Bank details would silently disappear from payment screens for real clients — they could complete a booking but have no way to know who to pay or which sort code/account to use. The booking flow doesn't surface any error in this case because the read is best-effort.
+
+---
+
+### SEC-02.2 — Bank details render on payment screen for anon user
+
+**What this proves:** The functional consequence of the SEC-02.1 grant — when an unauthenticated visitor reaches the payment step of the booking flow, the three bank detail spans (`#bank-name-1`, `#bank-sort-1`, `#bank-acc-1`) are populated with non-empty values.
+
+**Fixture role used:** `mon-current` — the standard Monday active block used for new-client flows across the CB suite.
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts TEST MODE banner
+2. Opens the booking modal for Monday's current block
+3. Fills Step 1 with a unique test email
+4. Advances through Step 2a (medical) and Step 2b (emergency contact) with default answers
+5. Lands on Step 3 (payment) and reads the bank detail spans
+6. Asserts each of `#bank-name-1`, `#bank-sort-1`, `#bank-acc-1` is non-empty
+7. Stops short of Reserve — no customer/booking rows are created
+
+**What the test verifies:**
+- All three bank detail spans contain non-empty text content after the payment step renders
+- The values are present (not just the elements existing)
+
+**What a fail would mean:**
+Either the underlying anon SELECT has failed silently (catastrophic — see SEC-02.1) OR `populateBankDetails()` in index.html is no longer wiring the fetched values into the DOM. Either way, real clients reaching the payment step would see blank bank rows and have nowhere to send their payment.
+
+---
+
+### SEC-06.1 — Admin can sign in and reach the dashboard
+
+**What this proves:** Login via the admin form completes successfully and lands the authenticated user on the dashboard with the sign-out button visible. This is the baseline "auth still works" assertion.
+
+**Preconditions:**
+- `TEST_ADMIN_EMAIL` and `TEST_ADMIN_PASSWORD` are set in `.env.test`
+- The admin user has been created via the Supabase dashboard "Add user" flow (so `auth.identities` is populated)
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts TEST MODE banner
+2. Calls the `loginAsAdmin(page)` helper, which fills `#dash-email` / `#dash-password` and clicks the login button
+3. Asserts `#pg-dashboard.on` is visible and `#tab-bookings.on` is the active tab (done inside the helper)
+4. Asserts `#nb-signout` is visible (proves authenticated nav state)
+5. Calls `signOutAdmin(page)` to return to the schedule view cleanly
+
+**What a fail would mean:**
+Either the admin password is wrong, the `auth.identities` row for the admin user is missing (a common Supabase gotcha when admin users are inserted via raw SQL), or the authenticated role has lost grants needed to render the dashboard. Louise would be locked out.
+
+---
+
+### SEC-06.2 — All 4 dashboard tabs render their panels
+
+**What this proves:** The authenticated role can read the data needed to render every dashboard tab. Each tab loads without permission errors, and the underlying content (booking table, classes accordion, customer rows, cancellations table) is reachable.
+
+**Preconditions:** Admin can log in (see SEC-06.1).
+
+**Steps the test performs:**
+1. Logs in as admin via `loginAsAdmin`
+2. Asserts the default All Bookings panel (`#tab-panel-bookings`) is visible
+3. Clicks the By Class tab, asserts `#tab-classes.on` and `#tab-panel-classes` are visible, confirms `#classes-accordion` exists in the DOM
+4. Clicks the Clients tab, asserts the panel is visible, waits for at least one customer row (`tr[id^="cust-row-"]`) to render (async via `renderCustomersTab`)
+5. Clicks the Cancellations tab, asserts the panel is visible, waits for the "Loading..." placeholder to be replaced
+6. Signs out
+
+**What a fail would mean:**
+The authenticated role has lost grants on one of the customer/booking/cancellation/class tables, OR a JavaScript regression has broken one of the `renderXxxTab()` functions. Either way, Louise would see "Loading..." forever or a permission error in the console for the affected tab.
+
+---
+
+### SEC-06.3 — Below-tab sections render
+
+**What this proves:** The dashboard's three below-tab sections (Upcoming Classes, Settings, Backup & Export) all render their headings and primary controls. These sections aren't behind tab clicks — they're always visible once you're on the dashboard.
+
+**Preconditions:** Admin can log in (see SEC-06.1).
+
+**Steps the test performs:**
+1. Logs in as admin
+2. Asserts the "Upcoming Classes" section heading and the "+ Add New Class" button are visible, plus the `#ctbody` table body exists
+3. Asserts the "Settings" section heading, the three bank detail inputs (`#setting-bank-name`, `#setting-bank-sort`, `#setting-bank-acc`), and the "Save Bank Details" button are all visible
+4. Asserts the "Backup & Export" section heading and at least the "Export Classes" button are visible
+5. Signs out
+
+**What a fail would mean:**
+A regression in the dashboard HTML (likely from a layout change) has broken one of the always-on sections. Louise might still be able to navigate the tabs but lose access to settings or backup tools, which she relies on for bank-detail updates and pre-change snapshots.
+
+---
+
+### SEC-07 — Anon grant matrix matches the documented spec
+
+**What this proves:** The live anon grant matrix in the test database matches exactly what's documented in the ANON ROLE GRANTS section of `context.txt`. This is the canary for grant-level regressions — particularly the kind that happen when someone clicks a "Enable for anon" toggle in the Supabase dashboard without going through code review.
+
+**Preconditions:**
+- `TEST_SUPABASE_DB_URL` is set in `.env.test` (the same connection string `npm run seed` uses)
+- The shared pg connection pool from `helpers/admin-db.js` is available
+
+**Why direct pg (not anon SELECT on `information_schema`):**
+`information_schema` returns role-relative results — the anon role would only see its own grants, but we want a full picture of what's been granted to anon from a privileged vantage point. Direct pg via the test-DB connection string sees everything.
+
+**Steps the test performs:**
+1. Runs a single SQL query against `information_schema.role_table_grants`, grouping by `table_name` and aggregating privilege types
+2. Builds a map of `table_name` → sorted privilege list from the result
+3. Asserts the expected tables (`blocks`, `classes`, `parq`, `settings`) appear with exactly their expected privileges:
+   - `blocks` → SELECT
+   - `classes` → SELECT
+   - `parq` → INSERT
+   - `settings` → SELECT
+4. Asserts the forbidden tables (`bookings`, `customers`, `cancellations`, `waitlist`, `customer_class_priority`) do NOT appear in the result at all
+5. Asserts no surprise tables are present — anything in the grant matrix outside the expected list fails the test with a clear message
+
+**What a fail would mean:**
+Someone has changed the anon grant matrix without updating the docs. If anon has gained grants on a forbidden table (e.g. `bookings`), it's a serious security regression — every customer's bookings could be exposed publicly. If anon has lost grants on an expected table, the public booking flow breaks silently. Either way, this spec catches it before it reaches production.
+
+---
+
+
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary table and per-tab tables give the full breakdown by Excel tab; the Suggested Batches table lays out the planned grouping for upcoming sessions.
 
-**Outstanding totals:** 80 scenarios across 6 tabs (15 May 2026).
+**Outstanding totals:** 76 scenarios across 5 tabs (16 May 2026).
 
-**Next session focus:** Batch 10 — Security (remaining SEC scenarios). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 11 — Edge Cases (part 1). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 
