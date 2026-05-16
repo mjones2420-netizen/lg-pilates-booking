@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 15 May 2026
-**Total tests:** 72 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL)
+**Total tests:** 75 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -15,7 +15,7 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 |---|---:|---:|---:|---:|---:|
 | Client Booking (CB) | 33 | 0 | 33 | 33 | 0 |
 | Priority Booking (PB) | 10 | 0 | 10 | 10 | 0 |
-| Booking Windows (BW) | 7 | 4 | 3 | 0 | 3 |
+| Booking Windows (BW) | 7 | 4 | 3 | 3 | 0 |
 | Admin Bookings (AB) | 22 | 0 | 22 | 0 | 22 |
 | Admin Classes (AC) | 24 | 0 | 24 | 0 | 24 |
 | Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
@@ -24,7 +24,7 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Edge Cases (EC) | 14 | 1 | 13 | 0 | 13 |
 | Block Warnings (BLW) | 8 | 0 | 8 | 0 | 8 |
 | Security (SEC) | 7 | 3 | 4 | 0 | 4 |
-| **Totals** | **144** | **10** | **134** | **51** | **83** |
+| **Totals** | **144** | **10** | **134** | **54** | **80** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -107,16 +107,16 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | PB-X4 | Cancelled previous-block booking does not grant priority | ✅ pb-x4.spec.js |
 | PB-X5 | Manual priority grant/remove cycle via admin panel | ✅ pb-x5.spec.js |
 
-### Booking Windows (BW)
+### Booking Windows (BW) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
 |---|---|---|---|
-| BW-01 | Only current block shown (no next block) | ⬜ Outstanding | Batch 9 |
-| BW-02 | Current block session dates are listed | ⬜ Outstanding | Batch 9 |
+| BW-01 | Only current block shown (no next block) | ✅ bw-01.spec.js | Batch 9 |
+| BW-02 | Current block session dates are listed | ✅ bw-02.spec.js | Batch 9 |
 | BW-03 | Next block >14 days — locked state | 🔁 Duplicate of PB-01 | — |
 | BW-04 | Next block 8-14 days — priority window | 🔁 Duplicate of PB-02 | — |
 | BW-05 | Next block 0-7 days — standard open | 🔁 Duplicate of PB-05 | — |
-| BW-06 | Next block becomes active (start date = today) | ⬜ Outstanding | Batch 9 |
+| BW-06 | Next block becomes active (start date = today) | ✅ bw-06.spec.js | Batch 9 |
 | BW-07 | Reset all test dates when done | 🚮 Housekeeping (not a real test) | — |
 
 ### Admin Bookings (AB)
@@ -264,7 +264,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 6 ✅ | Test infrastructure (self-cleaning afterEach + CB-33 strengthening) | ~11 specs | NOT from Excel — existing tests being upgraded. Adds afterEach cleanup to CB-01, CB-03, CB-13, CB-32, PB-09, PB-10. CB-33 strengthened Session 20 with direct `parq` row assertion after `.select()` fix landed in index.html. CB-02, CB-31 left as-is (create no state). |
 | Batch 7 ✅ | Schedule Display | 6 | UI filter tests; SD-01 to SD-05 are pure UI, SD-06 hides wed-upcoming via `visible=false` with self-cleaning afterEach (restored to original value regardless of pass/fail). |
 | Batch 8 ✅ | Admin Clients (remaining) | 2 | Customers tab layout + three-state priority badge rendering (Manual / Auto / Standard). Excel wording updated to match the live UI. |
-| Batch 9 | Booking Windows (remaining) | 3 | Card-state UI tests not covered by PB. |
+| Batch 9 ✅ | Booking Windows (remaining) | 3 | Card-state UI tests not covered by PB. BW-01 single-block layout, BW-02 session date pills, BW-06 active-vs-next block selection by date. |
 | Batch 10 | Security (remaining) | 4 | Two UI checks + admin tour + grant-matrix audit. |
 | Batch 11 | Edge Cases (part 1) | 6 | Validation + boundary tests. |
 | Batch 12 | Edge Cases (part 2) | 7 | Capacity + DB-level integrity tests. |
@@ -2178,13 +2178,78 @@ The visual signal Louise relies on to identify priority clients would be wrong: 
 
 ---
 
+# Booking Windows (BW) — Batch 9
+
+### BW-01 — Class with only one visible block has no next-block section
+
+**What this proves:** When a class has only a single visible block, the card renders the Book Current Block button on its own — no collapsible "Next Block" toggle is generated. This is the natural state once Louise has just one block running and nothing scheduled to follow.
+
+**Fixture role used:** `wed-upcoming` — the only visible block on the Wednesday class in the seeded fixture.
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts TEST MODE banner
+2. Resolves `wed-upcoming` via the fixture helper as a precondition sanity check
+3. Locates the Wednesday class card
+4. Asserts the card has exactly one `button.book-btn` element
+5. Asserts that button's text is "Book Current Block" (or one of its disabled variants — "Current Block Full", "Booking Closed"), and explicitly NOT "Next Block"
+6. Asserts `.next-blk-toggle` count is 0 on this card
+7. Asserts `.next-blk-body` count is 0 on this card (belt-and-braces)
+
+**What a fail would mean:**
+Either the card is rendering an empty next-block panel (cosmetic but confusing — looks like there's a follow-up block to book that doesn't exist), or `getNextBlock()` is returning a stale or invalid block. Both would erode trust in the schedule view.
+
+---
+
+### BW-02 — Current block session dates are listed on the card
+
+**What this proves:** The active block's individual session dates render as pills on the card, in chronological order, one per entry in the block's `dates[]` array. This is what gives clients a clear view of which weeks they're paying for.
+
+**Fixture role used:** `thu-current` — the active block on the Thursday class. Thursday is chosen over Monday to avoid any cross-test state risk from the many CB specs that book on Monday.
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts TEST MODE banner
+2. Resolves `thu-current` via the fixture helper and reads its `dates[]` array
+3. Locates the Thursday class card
+4. Asserts the count of `.block-dates-pills .date-pill` elements matches `thu-current.dates.length`
+5. Asserts each pill's text content equals the corresponding entry in `dates[]`, preserving order
+6. Independently parses each pill as "D MMM", converts to a numeric ordinal, and asserts strict ascending order (catches a future bug where the displayed pills are reordered but the underlying `dates[]` is also out of order)
+
+**What a fail would mean:**
+Clients would see an incomplete or out-of-order session list. They might think a block contains fewer weeks than it does, or get confused about which week they're booking. For pro-rata bookings (where past sessions are styled differently) this would also break the visual cue of which sessions are still upcoming.
+
+---
+
+### BW-06 — Block with start_date <= today is the current block
+
+**What this proves:** `getActiveBlock()` selects a block as "current" based on whether today falls inside its date range, NOT on the `status` column. So a block whose start date has reached today renders as the current block automatically — even if its DB status is still 'upcoming'. The complementary case: a block whose start date is still in the future stays in the collapsible "Next Block" panel.
+
+**Fixture roles used:**
+- `mon-current` — the active block on Monday, already started.
+- `mon-upcoming` — the future block on Monday, not yet started.
+
+Monday is the only class in the seeded fixture with BOTH an active block AND a separate upcoming block. That's exactly the setup needed to demonstrate the date-based promotion behaviour: today is inside mon-current's range, ahead of mon-upcoming's start_date.
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts TEST MODE banner
+2. Resolves `mon-current` and `mon-upcoming` via the fixture helper
+3. Fixture precondition: confirms today is inside `[mon-current.start_date, mon-current.end_date]` AND `mon-upcoming.start_date > today`. Fails fast with a clear message if drift breaks either condition.
+4. Locates the Monday class card
+5. Asserts the primary `button.book-btn` (top of card) text is a Book Current Block variant and does NOT contain "Next Block"
+6. Asserts the `.next-blk-toggle` element exists exactly once on the card and its text mentions "Next Block" — proving mon-upcoming is being rendered as a next block, not promoted
+7. Asserts the `.next-blk-body` collapsible body exists
+
+**What a fail would mean:**
+Either the date logic in `getActiveBlock()` has slipped (so a block that's started isn't being shown as current — clients see "Book Next Block" for a block that's already running), or a future block is being incorrectly promoted to current (clients see a class as bookable now when it hasn't started yet). Both are serious schedule-display bugs.
+
+---
+
 # Appendix — What's NOT yet covered
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary table and per-tab tables give the full breakdown by Excel tab; the Suggested Batches table lays out the planned grouping for upcoming sessions.
 
-**Outstanding totals:** 83 scenarios across 7 tabs (15 May 2026).
+**Outstanding totals:** 80 scenarios across 6 tabs (15 May 2026).
 
-**Next session focus:** Batch 9 — Booking Windows (remaining BW scenarios). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 10 — Security (remaining SEC scenarios). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 

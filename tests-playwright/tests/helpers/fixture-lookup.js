@@ -54,7 +54,7 @@ class FixtureDriftError extends Error {
 async function loadFixture() {
   const { data, error } = await sb
     .from('blocks')
-    .select('id, class_id, status, start_date, end_date, cap, booked')
+    .select('id, class_id, status, start_date, end_date, cap, booked, dates')
     .order('class_id', { ascending: true })
     .order('start_date', { ascending: true });
 

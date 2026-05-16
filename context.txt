@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 14 May 2026
+Last updated: 15 May 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -391,14 +391,18 @@ tests-playwright/
     ├── smoke-04-ui-page-loads.spec.js
     ├── cb-*.spec.js             # 23 CB spec files covering 34 of 34 scenarios
     ├── pb-*.spec.js             # 14 PB spec files covering 10 Excel scenarios + 5 PB-X gap-analysis tests
-    └── sd-*.spec.js             # 6 SD spec files covering 6 of 6 scenarios
+    ├── sd-*.spec.js             # 6 SD spec files covering 6 of 6 scenarios
+    ├── acl-*.spec.js            # 2 ACL spec files covering 2 of 2 genuine scenarios
+    └── bw-*.spec.js             # 3 BW spec files covering 3 of 3 genuine scenarios
 
-CURRENT TEST COUNT: 70 tests (all passing — Session 21, Batch 7 complete)
+CURRENT TEST COUNT: 75 tests (all passing — Session 22, Batches 8 + 9 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
          (PB-X1 has 3 sub-tests, PB-X2 through PB-X5 have 1 each)
   SD:    6 tests covering 6 of 6 SD scenarios (SD suite complete)
+  ACL:   2 tests covering 2 of 2 genuine ACL scenarios (ACL suite complete)
+  BW:    3 tests covering 3 of 3 genuine BW scenarios (BW suite complete)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -742,6 +746,23 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
         SD-01 to SD-05 are pure UI filter tests with no DB state. SD-06 hides
         wed-upcoming via `visible=false` with a self-cleaning afterEach that
         restores the original value regardless of pass/fail.
+   - ✅ Admin Clients — 2 of 2 genuine scenarios automated (Batch 8, Session 22).
+        ACL-01 asserts the customer table renders with the live 6-column schema
+        and all seeded fixture clients appear. ACL-02 asserts the three-state
+        overall priority badge (Manual / Auto / Standard) renders correctly per
+        client state, with a self-cleaning per-run Standard-state customer.
+        Excel wording updated in same session — old text referenced the
+        deprecated global customers.priority column and a two-state badge model;
+        live UI uses per-class priority via customer_class_priority and three
+        badge states with manual > auto > standard precedence.
+   - ✅ Booking Windows — 3 of 3 genuine scenarios automated (Batch 9, Session 22).
+        BW-01 asserts a single-block class card has no next-block panel.
+        BW-02 asserts the active block's date pills match the dates[] array in
+        chronological order. BW-06 asserts a block with start_date <= today
+        renders as current (via getActiveBlock's date logic, not status column).
+        All read-only — no DB writes. fixture-lookup.js extended to include
+        `dates` column in its SELECT for BW-02 (pure addition, no existing
+        spec read that field).
 
    DUPLICATE SENSE-CHECK (10 May 2026):
    10 Excel rows red-filled as no longer requiring automation — see
@@ -751,8 +772,6 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    BW-* → BLW-* to disambiguate from Booking Windows tab.
 
    UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
-   - Batch 8  — Admin Clients (remaining)
-   - Batch 9  — Booking Windows (remaining)
    - Batch 10 — Security (remaining)
    - Batch 11 — Edge Cases (part 1)
    - Batch 12 — Edge Cases (part 2)
@@ -765,8 +784,8 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — start Batch 8 (Admin Clients):
-   - BATCH 8 — Admin Clients (remaining ACL scenarios). Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 10 (Security):
+   - BATCH 10 — Security (remaining SEC scenarios). Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -828,15 +847,20 @@ DATABASE & SUPABASE
 
 PLAYWRIGHT / TEST INFRA
 -----------------------
-- Excel test scenarios live in LG_Pilates_Test_Scenarios.xlsx. Two prefix
-  gotchas: (a) the "Block Warnings" tab IDs were renamed BW-* → BLW-* on
-  10 May 2026 to disambiguate from the "Booking Windows" tab. So BLW-01
-  to BLW-08 are the dashboard banner tests; BW-01 to BW-06 are the
-  booking-window UI states. (b) Red-filled rows in the Excel file are
-  duplicates of existing automated tests or housekeeping steps — do NOT
-  pick these up in future batches. The TEST-PLAN.md Coverage Tracker is
-  the source of truth for which Excel scenario maps to which automated
-  spec.
+- Excel test scenarios live in LG_Pilates_Test_Scenarios.xlsx. As of
+  Session 22 (15 May 2026) this file is committed to git at the repo root
+  alongside index.html and context.txt — pushed and updated whenever
+  scenarios change. Three gotchas: (a) the "Block Warnings" tab IDs were
+  renamed BW-* → BLW-* on 10 May 2026 to disambiguate from the "Booking
+  Windows" tab. So BLW-01 to BLW-08 are the dashboard banner tests; BW-01
+  to BW-06 are the booking-window UI states. (b) Red-filled rows in the
+  Excel file are duplicates of existing automated tests or housekeeping
+  steps — do NOT pick these up in future batches. The TEST-PLAN.md
+  Coverage Tracker is the source of truth for which Excel scenario maps
+  to which automated spec. (c) Excel styling pattern: alternating row
+  fills FFFFFFFF / FFEEF5F5 (white / cream), SQL column (column 5) uses
+  Courier New 8pt with FFE8F0FE fill (pale blue). Preserve these when
+  updating rows via openpyxl.
 - tests/helpers/supabase.js exports `sb`, NOT `supabase`. Any new helper
   importing from it must use `const { sb } = require('./supabase')`.
 - Spec helper imports use './helpers/...' (same level), NOT '../helpers/...'.
@@ -1130,5 +1154,47 @@ SESSION 21 LEARNINGS — VISIBLE vs STATUS, DOCUMENTATION DISCIPLINE
   two counts (invalid status value AND wrong column). If the Excel
   scenarios are ever revised, SD-06 should be updated to reference
   `visible = false` as the actual mechanism.
+
+SESSION 22 LEARNINGS — STALE EXCEL WORDING, STRICT-MODE LOCATORS, HELPER COVERAGE
+--------------------------------------------------------------------------------
+- The Admin Clients (ACL) and Booking Windows (BW) Excel scenarios were
+  written against the original schema/UI and had drifted from reality.
+  ACL-01/02 referenced the deprecated global `customers.priority` column
+  and a two-state badge model — the live UI uses per-class priority via
+  `customer_class_priority` and renders three badge states (Manual / Auto
+  / Standard) with manual > auto > standard precedence. Excel scenarios
+  updated in the same session, with the spec testing the live behaviour.
+  Lesson: when picking up a long-deferred Excel tab, expect to find stale
+  wording — check what the live system actually does BEFORE locking
+  scope, not after writing the spec.
+- Playwright strict mode bites when a locator matches multiple elements.
+  Pattern that fails: `tbody.locator('tr').not.toHaveText(/Loading.../)`
+  on a multi-row tbody. The fix is to wait for a specific known row to
+  appear via `tbody.locator('tr', { hasText: 'known-email' }).first()`
+  — both proves the render finished AND avoids the multi-match.
+- The card.locator('.block-dates-pills .date-pill') pattern grabs pills
+  from BOTH the current-block section AND the next-block panel (line
+  1041 of index.html puts a second .block-dates-pills inside .next-blk-body).
+  When asserting pill counts/order on a card with a next-block panel,
+  scope with `.first()`: `card.locator('.block-dates-pills').first()
+  .locator('.date-pill')`. The current block always renders first.
+- fixture-lookup.js had been written before any spec needed the blocks.dates
+  column. When BW-02 needed it, the field was absent from the SELECT and
+  silently undefined. Fix was to add `dates` to the SELECT list — pure
+  addition, no existing spec read that field, zero blast radius. Rule:
+  when a shared helper omits a column a new spec needs, prefer extending
+  the helper to a one-off direct query — the helper change is more
+  durable AND lower risk than it looks.
+- The default fixture-lookup helper SELECT now returns: id, class_id,
+  status, start_date, end_date, cap, booked, dates. Any future spec
+  needing other block columns (price, weeks, visible) should extend the
+  SELECT the same way.
+- BW-06 sanity check: Monday is the ONLY fixture class with both an
+  active block AND a separate upcoming block. Any spec wanting to test
+  the active-vs-next distinction must target Monday — Wed/Thu/Fri don't
+  exhibit both states simultaneously.
+- The mockup-first-ui skill applies to UI/feature changes, not to test
+  writing. Don't waste cycles producing a mockup before adding a spec —
+  that's not the skill's intended trigger.
 
 ============================================================
