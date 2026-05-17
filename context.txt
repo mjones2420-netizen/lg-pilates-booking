@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 16 May 2026
+Last updated: 17 May 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -381,6 +381,7 @@ tests-playwright/
     │                            # Exports: grantManualPriority, removeManualPriority,
     │                            #          hasManualPriority, setBookingStatus (S18),
     │                            #          resyncBlockBookedCount (S18),
+    │                            #          setBlockBookedCount (S24),
     │                            #          deleteBookingsForCustomerOnBlock (S18),
     │                            #          deleteCustomerCascade (S18),
     │                            #          getParqByCustomerId (S19, used by CB-33
@@ -394,9 +395,10 @@ tests-playwright/
     ├── sd-*.spec.js             # 6 SD spec files covering 6 of 6 scenarios
     ├── acl-*.spec.js            # 2 ACL spec files covering 2 of 2 genuine scenarios
     ├── bw-*.spec.js             # 3 BW spec files covering 3 of 3 genuine scenarios
-    └── sec-*.spec.js            # 3 SEC spec files covering 3 of 3 genuine scenarios
+    ├── sec-*.spec.js            # 3 SEC spec files covering 3 of 3 genuine scenarios
+    └── ec-*.spec.js             # 6 EC spec files covering 6 of 13 genuine scenarios (Batch 11)
 
-CURRENT TEST COUNT: 81 tests (all passing — Session 23, Batch 10 complete)
+CURRENT TEST COUNT: 87 tests (all passing — Session 24, Batch 11 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
@@ -407,6 +409,9 @@ CURRENT TEST COUNT: 81 tests (all passing — Session 23, Batch 10 complete)
   SEC:   6 tests in 3 spec files covering 3 of 3 genuine SEC scenarios
          (SEC-02 has 2 sub-tests, SEC-06 has 3 sub-tests, SEC-07 has 1.
           SEC-01/03/04/05 are red-filled in Excel as duplicates of other specs.)
+  EC:    6 tests covering 6 of 13 genuine EC scenarios (Batch 11 — EC-01,
+         EC-03, EC-04, EC-05, EC-06, EC-07. EC-02 red-filled in Excel as
+         duplicate of CB-31. Remaining 7 in Batch 12.)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -779,6 +784,19 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
         session: SEC-03 red-filled as duplicate of CB-01; SEC-06 wording
         corrected from "every tab loads (incl. Settings, Backup & Export)"
         to "4 tabs + 3 below-tab sections".
+   - ✅ Batch 11 (Session 24) — Edge Cases (part 1), 6 of 13 genuine EC
+        scenarios automated. EC-01 full-class prevention (new
+        setBlockBookedCount helper added to admin-db.js for direct UI-state
+        tests). EC-03 invalid email format rejected with validation toast.
+        EC-04 wrong-day rejection in admin Add Block flow (admin login
+        required). EC-05 empty-state when all blocks hidden via
+        visible=false (Excel SQL updated — old hint used invalid
+        status='archived'; same fix pattern as SD-06). EC-06 long-text
+        input capped at maxlength=50 with full booking flow + admin row
+        render assertion. EC-07 overbooking race condition — fills the
+        block with cap-1 REAL booking rows before modal open, inserts one
+        more post-Step-3 to bump booked to cap, asserts CLASS_FULL toast
+        on Reserve. EC-02 red-filled in Excel as duplicate of CB-31.
 
    DUPLICATE SENSE-CHECK (10 May 2026, updated 16 May 2026):
    11 Excel rows red-filled as no longer requiring automation — see
@@ -788,7 +806,6 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    BW-* → BLW-* to disambiguate from Booking Windows tab.
 
    UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
-   - Batch 11 — Edge Cases (part 1)
    - Batch 12 — Edge Cases (part 2)
    - Batch 13 — Block Warnings (BLW)
    - Batch 14 — Settings & Export
@@ -799,8 +816,9 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — start Batch 11 (Edge Cases part 1):
-   - BATCH 11 — Edge Cases (first 6 EC scenarios). Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 12 (Edge Cases part 2):
+   - BATCH 12 — 7 EC scenarios (EC-08, EC-09, EC-10, EC-11, EC-12, EC-13,
+     EC-14). Capacity + DB-level integrity tests. Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -1240,5 +1258,46 @@ SESSION 23 LEARNINGS — BOOKING FLOW WRITE BOUNDARIES, GRANT MATRIX AUDIT, DASH
   When picking up Admin Settings / Admin Classes batches, target sections
   by their headings/inputs/buttons rather than expecting a tab-style
   click-through.
+
+SESSION 24 LEARNINGS — TRIGGER OVERRIDES DIRECT UPDATE, SUCCESS-VIEW OVERLAY, BOOKINGS TABLE COLUMNS
+---------------------------------------------------------------------------------------------------
+- trg_sync_block_booked_count fires AFTER any INSERT or DELETE on the
+  bookings table and recalculates blocks.booked from the real (non-
+  cancelled) booking count. This means any direct UPDATE to blocks.booked
+  (e.g. via the new setBlockBookedCount helper) gets OVERWRITTEN the
+  moment a real booking row is inserted. EC-07 hit this on first attempt
+  — set booked=11 directly, then INSERTed a filler booking, and the
+  trigger reset booked to 1 (just the filler row). The fix was to fill
+  the block with REAL booking rows from the start (one INSERT per
+  ephemeral customer) so the trigger keeps booked correct at each step.
+  Rule: setBlockBookedCount is only safe for UI-state tests that do NOT
+  cause any subsequent bookings INSERT/DELETE on the same block. For
+  race-condition tests, fill with real rows.
+- The booking success view's overlay (#overlay.on) intercepts clicks on
+  the Dashboard nav button afterwards. Specs that complete a booking and
+  then need to log in as admin MUST click "Back to Schedule" (which
+  calls closeModal()) before navigating elsewhere. EC-06 hit this — the
+  admin login helper timed out trying to click #nb-dashboard with the
+  overlay still active. Pattern: after asserting #success-view.on, click
+  the Back to Schedule button by role and wait for #overlay.on to be
+  hidden before the next user-facing action.
+- The admin Bookings table (#btbody) renders 7 columns:
+    Client (first + last, no email), Class, When, Block, Paid, Status, Actions
+  Email is stored on the booking's customer record but is NOT shown in
+  the row. Spec assertions that filter rows by email will silently
+  return zero matches. Filter by the customer's name combination
+  instead (which IS in the Client column).
+- New admin-db helper: setBlockBookedCount(blockId, count) — directly
+  UPDATEs blocks.booked, bypassing the bookings table entirely. Pair
+  with resyncBlockBookedCount(blockId) in afterEach to restore.
+  Suitable for: pure UI-state tests like EC-01 where no real bookings
+  are made. NOT suitable for: any test that subsequently triggers an
+  app-level or raw-SQL INSERT/DELETE on bookings for the same block —
+  the trigger will overwrite your value.
+- The Add Block modal can be opened from a test without needing the
+  Upcoming Classes table to have rendered the + Block button — just
+  call window.openAddBlockModal(classId) via page.evaluate. Useful when
+  the test doesn't care about how the modal was reached, only what it
+  does.
 
 ============================================================

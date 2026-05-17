@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 16 May 2026
-**Total tests:** 81 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC)
+**Last updated:** 17 May 2026
+**Total tests:** 87 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 6 EC)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -21,10 +21,10 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
 | Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
 | Settings & Export (SE) | 9 | 0 | 9 | 0 | 9 |
-| Edge Cases (EC) | 14 | 1 | 13 | 0 | 13 |
+| Edge Cases (EC) | 14 | 1 | 13 | 6 | 7 |
 | Block Warnings (BLW) | 8 | 0 | 8 | 0 | 8 |
 | Security (SEC) | 7 | 4 | 3 | 3 | 0 |
-| **Totals** | **144** | **11** | **133** | **57** | **76** |
+| **Totals** | **144** | **11** | **133** | **63** | **70** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -215,13 +215,13 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 
 | ID | Scenario | Status | Suggested Batch |
 |---|---|---|---|
-| EC-01 | Booking a full class is prevented | ⬜ Outstanding | Batch 11 |
+| EC-01 | Booking a full class is prevented | ✅ ec-01.spec.js | Batch 11 |
 | EC-02 | Duplicate booking — same email, same block | 🔁 Duplicate of CB-31 | — |
-| EC-03 | Invalid email format | ⬜ Outstanding | Batch 11 |
-| EC-04 | Block with wrong day is rejected | ⬜ Outstanding | Batch 11 |
-| EC-05 | Page loads with no active classes | ⬜ Outstanding | Batch 11 |
-| EC-06 | Very long text in booking form | ⬜ Outstanding | Batch 11 |
-| EC-07 | Overbooking prevented — class fills during booking | ⬜ Outstanding | Batch 11 |
+| EC-03 | Invalid email format | ✅ ec-03.spec.js | Batch 11 |
+| EC-04 | Block with wrong day is rejected | ✅ ec-04.spec.js | Batch 11 |
+| EC-05 | Page loads with no active classes | ✅ ec-05.spec.js | Batch 11 |
+| EC-06 | Very long text in booking form | ✅ ec-06.spec.js | Batch 11 |
+| EC-07 | Overbooking prevented — class fills during booking | ✅ ec-07.spec.js | Batch 11 |
 | EC-08 | Duplicate booking same block — server-side rejection | ⬜ Outstanding | Batch 12 |
 | EC-09 | Reserve button disabled during submission | ⬜ Outstanding | Batch 12 |
 | EC-10 | Capacity bar resets when bookings are bulk-deleted via SQL | ⬜ Outstanding | Batch 12 |
@@ -266,7 +266,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 8 ✅ | Admin Clients (remaining) | 2 | Customers tab layout + three-state priority badge rendering (Manual / Auto / Standard). Excel wording updated to match the live UI. |
 | Batch 9 ✅ | Booking Windows (remaining) | 3 | Card-state UI tests not covered by PB. BW-01 single-block layout, BW-02 session date pills, BW-06 active-vs-next block selection by date. |
 | Batch 10 ✅ | Security (remaining) | 3 specs (6 tests) | SEC-02 anon-settings read + bank details on payment screen, SEC-06 admin login + all 4 tabs + 3 below-tab sections render, SEC-07 anon grant matrix audit via direct pg. SEC-03 reclassified as duplicate of CB-01 (removed from genuine total). |
-| Batch 11 | Edge Cases (part 1) | 6 | Validation + boundary tests. |
+| Batch 11 ✅ | Edge Cases (part 1) | 6 | Validation + boundary tests. EC-01 full-class prevention via direct booked-count update (new `setBlockBookedCount` helper added to admin-db.js). EC-03 invalid-email validation toast. EC-04 wrong-day rejection in Add Block modal. EC-05 empty-state page when all blocks hidden via `visible=false` (Excel SQL updated — old hint used invalid `status='archived'`). EC-06 long-text input cap at maxlength=50 and admin row render. EC-07 overbooking race condition via real booking rows (trigger overrides direct UPDATE on `blocks.booked`, so the test fills with cap-1 real rows then inserts one more mid-flow). |
 | Batch 12 | Edge Cases (part 2) | 7 | Capacity + DB-level integrity tests. |
 | Batch 13 | Block Warnings | 8 | Dashboard banner regressions. Needs admin login. |
 | Batch 14 | Settings & Export | 9 | Bank details + CSV export tests. Needs admin login. |
@@ -2375,13 +2375,168 @@ Someone has changed the anon grant matrix without updating the docs. If anon has
 
 ---
 
+### EC-01 — Booking a full class is prevented
+
+**What this proves:** When a block's `booked` count reaches its `cap`, the class card renders with a red "Full" badge and the primary booking button is disabled with the text "Current Block Full". This is the front-end's guardrail against attempting to book a full class before the user even opens the modal.
+
+**Preconditions:**
+- fri-upcoming exists in the fixture (always present after `npm run seed`)
+- `setBlockBookedCount` helper available in admin-db.js (added Session 24)
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts the TEST MODE banner
+2. Looks up fri-upcoming via `getBlockByRole`
+3. Sets `fri-upcoming.booked = cap` directly via `setBlockBookedCount` (no real booking rows inserted — pure UI-state test)
+4. Reloads the page so it picks up the new booked count
+5. Locates the Friday class card
+6. Asserts the `.badge.b-full` element is visible with text "Full"
+7. Asserts the primary book button is disabled and labelled "Current Block Full"
+
+**What a fail would mean:** The full-class guardrail has broken. Either the "Full" badge isn't rendering, the disabled-button label has regressed, or the front-end is letting users open the booking modal for a full class — which would then fail at the RPC layer with a CLASS_FULL toast (EC-07) but with worse UX.
+
+**Cleanup:** `afterEach` calls `resyncBlockBookedCount(fri-upcoming.id)`, which recalculates `booked` from real booking rows (returns to 0).
+
+---
+
+### EC-03 — Invalid email format is rejected on Step 1
+
+**What this proves:** Step 1 of the booking modal validates the email field against a regex (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`) before allowing the flow to advance. An obviously invalid email like "notanemail" is rejected with a validation toast, and the modal stays on Step 1.
+
+**Preconditions:**
+- fri-upcoming exists in the fixture
+- Friday card is in the standard window (no priority gate)
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts the TEST MODE banner
+2. Opens the booking modal on the Friday card (current block)
+3. Asserts step 1 is visible and step 2a/2b/3 are hidden
+4. Fills Step 1 with valid first name, last name, and phone, but enters `notanemail` for the email
+5. Clicks Continue on Step 1
+6. Asserts `#validation-toast` becomes visible and contains "Email address is not valid"
+7. Asserts the modal is still on step 1 (step 2a/2b stay hidden)
+
+**What a fail would mean:** The Step 1 email validation has regressed and bad emails are reaching the lookup_customer RPC, where they may fail silently or land in the database as malformed customer rows.
+
+**No DB state created** — the spec returns before any RPC call, so no afterEach cleanup is required.
+
+---
+
+### EC-04 — Block with wrong day is rejected in admin Add Block flow
+
+**What this proves:** When an admin uses the Add Block flow on a Wednesday class but picks a Friday as the start date, the day-mismatch validation in `validateAbDate()` fires, an inline warning displays, and `saveNewBlock()` short-circuits so no block row is inserted.
+
+**Preconditions:**
+- Admin login credentials are set in `.env.test`
+- Wednesday class (class_id=2) exists in the fixture
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts the TEST MODE banner
+2. Logs in as admin via `loginAsAdmin`
+3. Reads the current count of blocks for class_id=2 (baseline)
+4. Calls `openAddBlockModal(2)` via `page.evaluate` to open the Add Block modal directly for the Wednesday class
+5. Asserts `#add-block-overlay.on` is visible
+6. Fills the `#ab-start` field with a Friday date 200+ days in the future
+7. Asserts the inline warning `#ab-date-val` is visible and contains "is a Friday. Please pick a Wednesday."
+8. Fills the remaining required fields (weeks, price, capacity)
+9. Clicks the Add Block (`#ab-btn`) button
+10. Asserts `#ab-err` is visible with a "start date" error message
+11. Asserts the modal is still open (no save happened)
+12. Queries the blocks table again and asserts the count for class_id=2 is unchanged
+
+**What a fail would mean:** The day-of-week guard for new blocks has regressed. Louise could accidentally create a block with a start date on the wrong day of the week, which would silently miscompute session dates via `calcBlockDates()` and confuse clients.
+
+**No DB state created** — the spec asserts no row was inserted. No afterEach cleanup is required.
+
+---
+
+### EC-05 — Page loads cleanly when no classes are available
+
+**What this proves:** When every active and upcoming block has been hidden from public view (via `blocks.visible = false`), the public booking page renders an empty-state message ("No classes available") instead of crashing or showing zero cards with no explanation.
+
+**Preconditions:**
+- Fixture has at least one active or upcoming block (always true after `npm run seed`)
+
+**Mechanism note (deviation from Excel):** The Excel scenario originally suggested `UPDATE blocks SET status = 'archived'` as the test setup. That SQL is wrong on two counts: `'archived'` is not a valid `blocks.status` value (rejected by the `blocks_status_check` constraint), and the front-end filter in `getActiveBlock()` checks `visible !== false`, NOT `status`. This spec uses `visible = false` as the actual mechanism. Excel scenario wording was updated in Session 24 to match.
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts the TEST MODE banner
+2. Reads every block in `('active','upcoming')` status, capturing each row's current `visible` value for later restore
+3. Updates all of them to `visible = false` in a single UPDATE
+4. Reloads the page
+5. Asserts `#grid .card` has count 0 (no class cards rendered)
+6. Asserts `#grid .no-filter-msg` is visible and contains "No classes available"
+
+**What a fail would mean:** The empty-state branch in `renderGrid()` has regressed. If all blocks are hidden, the public page might render blank, error out, or show stale cached classes — confusing to a real client landing on the site.
+
+**Cleanup:** `afterEach` restores each block's original `visible` value (captured before the UPDATE) regardless of pass/fail.
+
+---
+
+### EC-06 — Long text in the booking form is handled gracefully
+
+**What this proves:** The `b-firstname` input has `maxlength="50"` so the browser physically prevents typing past 50 characters. A user pasting in a 100-character string lands with exactly 50 characters in the field. The booking flow completes end-to-end with the truncated name, and the admin Bookings table row renders correctly without breaking the layout.
+
+**Preconditions:**
+- fri-upcoming exists in the fixture (single block on Friday, no priority gate)
+- Admin login credentials are set in `.env.test`
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts the TEST MODE banner
+2. Opens the booking modal on the Friday card
+3. Fills `b-firstname` with a 100-character string of `A`s
+4. Reads back the input's `inputValue` and asserts it's exactly 50 characters
+5. Fills the rest of Step 1 with valid name, email (unique timestamped), phone
+6. Clicks Continue, fills Step 2a (Medical), Step 2b (Emergency Contact), and Step 3 (Payment)
+7. Clicks Reserve and asserts the success view appears
+8. Looks up the customer by email and asserts `first_name` is exactly 50 characters of `A`
+9. Closes the success view and logs in as admin
+10. Locates the new row in `#btbody` by its truncated name and asserts it's visible and renders the expected name text
+
+**What a fail would mean:** Either the maxlength enforcement has regressed (the field accepts more than 50 chars, potentially overflowing DB constraints or layout), the booking flow crashes on long input, or the admin table fails to render the row cleanly.
+
+**Cleanup:** `afterEach` calls `deleteCustomerCascade` on the test customer ID, which cascades parq + bookings and resyncs the block's booked count.
+
+---
+
+### EC-07 — Overbooking prevented when class fills during booking
+
+**What this proves:** The `book_if_available` RPC's `FOR UPDATE` row lock plus `IF v_booked >= v_cap THEN RAISE 'CLASS_FULL'` check correctly prevents a Reserve click from creating a booking when another user has filled the last spot during the modal flow. The front-end catches the CLASS_FULL error and shows the toast "this class just became full" before closing the modal.
+
+**Preconditions:**
+- fri-upcoming exists in the fixture (cap=12, booked=0)
+- Direct pg helper `admin-db.js` available for filler-row inserts
+
+**Mechanism note (Session 24 learning):** The trigger `trg_sync_block_booked_count` fires AFTER any INSERT or DELETE on `bookings` and recalculates `blocks.booked` from real booking rows. This means `setBlockBookedCount` (which directly updates `blocks.booked`) gets OVERWRITTEN as soon as a real booking row is inserted. So this spec fills the block using REAL booking rows (one per ephemeral test customer), not a faked booked count.
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts the TEST MODE banner
+2. Looks up fri-upcoming via `getBlockByRole`
+3. Creates cap-1 ephemeral test customers and a booking row for each via direct pg. After all inserts the trigger has bumped `blocks.booked` to cap-1
+4. Asserts the pre-condition: `booked = cap - 1`
+5. Reloads the page and confirms the Friday book button is still enabled (block is not yet full)
+6. Opens the booking modal as a new client (unique timestamped email)
+7. Fills Step 1, Step 2a (Medical), Step 2b (Emergency), and advances to Step 3 (Payment)
+8. BEFORE clicking Reserve: inserts one more booking row via direct pg using a fresh ephemeral customer. Trigger bumps `booked` to cap
+9. Asserts `booked = cap` at the DB level
+10. Ticks T&Cs and clicks Reserve
+11. Asserts the `#toastEl` shows "this class just became full"
+12. Asserts the modal overlay is hidden (modal closed)
+13. Looks up the test customer (upsert_customer runs before book_if_available, so the customer row WAS created) and asserts no booking row exists for them on fri-upcoming
+14. Final assertion: `blocks.booked` is exactly equal to `cap` (never exceeded it)
+
+**What a fail would mean:** The atomic capacity check in `book_if_available` has regressed and the system could allow more bookings than `cap`. In production this means a class could be overbooked, leaving a client paid up with no actual spot — a customer experience disaster.
+
+**Cleanup:** `afterEach` deletes every ephemeral filler customer via `deleteCustomerCascade` (cascades bookings + parq) and the test customer if one was created. The helper resyncs `blocks.booked` at the end, so the block returns to its seeded state of 0.
+
+---
+
 
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary table and per-tab tables give the full breakdown by Excel tab; the Suggested Batches table lays out the planned grouping for upcoming sessions.
 
-**Outstanding totals:** 76 scenarios across 5 tabs (16 May 2026).
+**Outstanding totals:** 70 scenarios across 5 tabs (17 May 2026).
 
-**Next session focus:** Batch 11 — Edge Cases (part 1). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 12 — Edge Cases (part 2). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 

@@ -146,6 +146,24 @@ async function resyncBlockBookedCount(blockId = null) {
 }
 
 /**
+ * Directly sets blocks.booked for a given block, bypassing the bookings
+ * table entirely. Used by tests that need to simulate a "full" or
+ * "near-full" block without inserting real booking rows (EC-01, EC-07).
+ *
+ * IMPORTANT: this leaves blocks.booked out of sync with the actual booking
+ * count. Always pair this with resyncBlockBookedCount(blockId) in an
+ * afterEach to restore the correct count before the next test runs.
+ *
+ * Returns nothing.
+ */
+async function setBlockBookedCount(blockId, count) {
+  await getPool().query(
+    `UPDATE blocks SET booked = $1 WHERE id = $2`,
+    [count, blockId]
+  );
+}
+
+/**
  * Deletes any non-cancelled bookings for a (customer, block) pair, used by
  * tests that need to reset their own state before re-running without a full
  * reseed (e.g. CB-13 self-cleaning).
@@ -220,6 +238,7 @@ module.exports = {
   hasManualPriority,
   setBookingStatus,
   resyncBlockBookedCount,
+  setBlockBookedCount,
   deleteBookingsForCustomerOnBlock,
   deleteCustomerCascade,
   getParqByCustomerId
