@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 17 May 2026
-**Total tests:** 87 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 6 EC)
+**Last updated:** 18 May 2026
+**Total tests:** 96 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -21,10 +21,10 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
 | Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
 | Settings & Export (SE) | 9 | 0 | 9 | 0 | 9 |
-| Edge Cases (EC) | 14 | 1 | 13 | 6 | 7 |
+| Edge Cases (EC) | 14 | 1 | 13 | 13 | 0 |
 | Block Warnings (BLW) | 8 | 0 | 8 | 0 | 8 |
 | Security (SEC) | 7 | 4 | 3 | 3 | 0 |
-| **Totals** | **144** | **11** | **133** | **63** | **70** |
+| **Totals** | **144** | **11** | **133** | **70** | **63** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -222,13 +222,13 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | EC-05 | Page loads with no active classes | ✅ ec-05.spec.js | Batch 11 |
 | EC-06 | Very long text in booking form | ✅ ec-06.spec.js | Batch 11 |
 | EC-07 | Overbooking prevented — class fills during booking | ✅ ec-07.spec.js | Batch 11 |
-| EC-08 | Duplicate booking same block — server-side rejection | ⬜ Outstanding | Batch 12 |
-| EC-09 | Reserve button disabled during submission | ⬜ Outstanding | Batch 12 |
-| EC-10 | Capacity bar resets when bookings are bulk-deleted via SQL | ⬜ Outstanding | Batch 12 |
-| EC-11 | Capacity bar updates automatically when a booking is made | ⬜ Outstanding | Batch 12 |
-| EC-12 | DB-level duplicate booking protection — direct SQL insert rejected | ⬜ Outstanding | Batch 12 |
-| EC-13 | book_if_available RPC returns ALREADY_BOOKED on duplicate | ⬜ Outstanding | Batch 12 |
-| EC-14 | DB refuses rows with NULL on critical columns | ⬜ Outstanding | Batch 12 |
+| EC-08 | Duplicate booking same block — server-side rejection | ✅ ec-08.spec.js | Batch 12 |
+| EC-09 | Reserve button disabled during submission | ✅ ec-09.spec.js | Batch 12 |
+| EC-10 | Capacity bar resets when bookings are bulk-deleted via SQL | ✅ ec-10.spec.js | Batch 12 |
+| EC-11 | Capacity bar updates automatically when a booking is made | ✅ ec-11.spec.js | Batch 12 |
+| EC-12 | DB-level duplicate booking protection — direct SQL insert rejected | ✅ ec-12.spec.js | Batch 12 |
+| EC-13 | book_if_available RPC returns ALREADY_BOOKED on duplicate | ✅ ec-13.spec.js | Batch 12 |
+| EC-14 | DB refuses rows with NULL on critical columns | ✅ ec-14.spec.js | Batch 12 |
 
 ### Block Warnings (BLW)
 
@@ -267,7 +267,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 9 ✅ | Booking Windows (remaining) | 3 | Card-state UI tests not covered by PB. BW-01 single-block layout, BW-02 session date pills, BW-06 active-vs-next block selection by date. |
 | Batch 10 ✅ | Security (remaining) | 3 specs (6 tests) | SEC-02 anon-settings read + bank details on payment screen, SEC-06 admin login + all 4 tabs + 3 below-tab sections render, SEC-07 anon grant matrix audit via direct pg. SEC-03 reclassified as duplicate of CB-01 (removed from genuine total). |
 | Batch 11 ✅ | Edge Cases (part 1) | 6 | Validation + boundary tests. EC-01 full-class prevention via direct booked-count update (new `setBlockBookedCount` helper added to admin-db.js). EC-03 invalid-email validation toast. EC-04 wrong-day rejection in Add Block modal. EC-05 empty-state page when all blocks hidden via `visible=false` (Excel SQL updated — old hint used invalid `status='archived'`). EC-06 long-text input cap at maxlength=50 and admin row render. EC-07 overbooking race condition via real booking rows (trigger overrides direct UPDATE on `blocks.booked`, so the test fills with cap-1 real rows then inserts one more mid-flow). |
-| Batch 12 | Edge Cases (part 2) | 7 | Capacity + DB-level integrity tests. |
+| Batch 12 ✅ | Edge Cases (part 2) | 7 | Capacity + DB-level integrity tests. EC-08 server-side ALREADY_BOOKED via direct RPC after a successful UI booking. EC-09 transient "Reserving..." button state via expect.poll on disabled+text snapshot. EC-10 bulk-delete + resync workflow on mon-current with bookings restored in afterEach. EC-11 trigger increments blocks.booked after a UI booking, asserted via cap-txt after reload. EC-12 direct INSERT of duplicate (customer, block) → 23505 unique-violation on bookings_unique_active_per_block. EC-13 sb.rpc('book_if_available') with duplicate pair → ALREADY_BOOKED error message. EC-14 three sub-tests for NOT NULL on customers.email, classes.name, blocks.class_id (23502 with correct column name). |
 | Batch 13 | Block Warnings | 8 | Dashboard banner regressions. Needs admin login. |
 | Batch 14 | Settings & Export | 9 | Bank details + CSV export tests. Needs admin login. |
 | Batch 15 | Admin Bookings (part 1) | 7 | Login + table + booking lifecycle. |
@@ -2530,13 +2530,176 @@ Someone has changed the anon grant matrix without updating the docs. If anon has
 
 ---
 
+### EC-08 — Duplicate booking same block: server-side rejection
+
+**What this proves:** The `book_if_available` RPC catches a unique-violation from `bookings_unique_active_per_block` and re-raises as a clean `ALREADY_BOOKED` exception. This is the server-side tripwire that fires if the front-end's Step-1 early-detection is somehow bypassed (e.g. two concurrent browser tabs).
+
+**Preconditions:**
+- fri-upcoming exists in the fixture
+- `sb.rpc('book_if_available')` works under the anon role (already a smoke test)
+
+**Steps the test performs:**
+1. Loads the booking page with `?env=test` and asserts the TEST MODE banner
+2. Completes a full UI booking on fri-upcoming as a new client with a unique timestamped email
+3. Waits for `#success-view.on` to confirm the booking landed
+4. Looks up the customer ID via `lookup_customer` RPC
+5. Verifies exactly one booking row exists for the new (customer, block) pair
+6. Calls `book_if_available` directly via the anon RPC client with the same customer + block + class + amount — this simulates a second tab racing the first
+7. Asserts the RPC returns `data === null` and `error.message` matches `/ALREADY_BOOKED/`
+8. Verifies no duplicate row was inserted
+
+**What a fail would mean:** The RPC's duplicate-detection has regressed. The front-end ALREADY_BOOKED toast branch (index.html line 1533) would never fire, leaving the system reliant on the partial unique index alone — which would surface as a generic "Something went wrong" toast instead of the friendly "You already have a booking on this block" message.
+
+**Cleanup:** `afterEach` calls `deleteCustomerCascade` on the per-run customer.
+
+---
+
+### EC-09 — Reserve button disabled during submission
+
+**What this proves:** The synchronous disable + text swap at the top of `confirmBooking()` (index.html lines 1502-1503) runs BEFORE any async RPC, preventing a fast double-click from triggering two bookings.
+
+**Preconditions:**
+- fri-upcoming exists
+- The Reserve button has `id="reserve-btn"` and is reachable on Step 3
+
+**Steps the test performs:**
+1. Loads page with `?env=test` and asserts TEST MODE banner
+2. Advances through Step 1, 2a, 2b to Step 3 as a new client
+3. Verifies pre-tick state: Reserve button is disabled, text starts with "Reserve My Spot"
+4. Ticks T&Cs and confirms the button becomes enabled
+5. Clicks Reserve
+6. Uses `expect.poll` with 50/100/200ms intervals on a single `evaluate()` snapshot of `{ disabled, text }` — exits as soon as it sees `{ disabled: true, text: 'Reserving...' }`
+7. Waits for `#success-view.on` so the booking completes and afterEach can clean up
+
+**What a fail would mean:** The submit-once protection has regressed and a user double-clicking the Reserve button could trigger two simultaneous booking attempts. The DB unique index would still block the second one, but the user would see a confusing error toast.
+
+**Cleanup:** `afterEach` calls `deleteCustomerCascade` on the per-run customer.
+
+---
+
+### EC-10 — Capacity bar resets when bookings are bulk-deleted via SQL
+
+**What this proves:** The documented bulk-delete + manual resync workflow correctly brings the capacity bar back to "0 of cap spots taken" after a page reload. This is the workflow Mark uses when wiping test data between manual test sessions.
+
+**Preconditions:**
+- mon-current exists with seeded bookings (returning-one and returning-two confirmed)
+- Direct pg access via `admin-db.js`
+
+**Mechanism note:** `trg_sync_block_booked_count` does fire on raw DELETE in the current schema, so `blocks.booked` drops to 0 automatically as soon as the DELETE runs. The Excel scenario predates a schema change but the workflow it tests (bulk-delete + run resync SQL + reload) is still meaningful — it verifies the resync SQL produces the correct count and the UI reflects it after reload.
+
+**Steps the test performs:**
+1. Loads page with `?env=test` and asserts TEST MODE banner
+2. Snapshots the seeded bookings on mon-current (saves them for restoration)
+3. Asserts the Monday card's `.cap-txt` shows `N of cap spots taken` with N > 0
+4. Bulk-deletes all bookings on mon-current via raw SQL (`DELETE FROM bookings WHERE block_id = $1`)
+5. Runs the resync SQL from the Excel scenario (`UPDATE blocks SET booked = (SELECT COUNT(*)...) WHERE id = $1`)
+6. Direct-pg verifies `blocks.booked = 0` and `COUNT(*) = 0` for bookings on this block
+7. Reloads the page
+8. Asserts the Monday card now shows `0 of <cap> spots taken`
+
+**What a fail would mean:** Either the resync SQL is broken (would leave `blocks.booked` out of sync with reality, breaking the capacity bar and capacity checks across the entire app), or the UI is somehow caching a stale booked count across page reloads.
+
+**Cleanup:** `afterEach` re-inserts the saved bookings with `ON CONFLICT DO NOTHING` and resyncs `blocks.booked`. Mon-current returns to its seeded state.
+
+---
+
+### EC-11 — Capacity bar updates automatically when a booking is made through the app
+
+**What this proves:** `trg_sync_block_booked_count` fires correctly on the app-level INSERT path (via `book_if_available` RPC) and the updated `blocks.booked` value is fetched correctly on the next page load.
+
+**Preconditions:**
+- fri-upcoming exists with a known `booked` count
+- Standard new-client booking flow is working
+
+**Steps the test performs:**
+1. Loads page with `?env=test` and asserts TEST MODE banner
+2. Snapshots `blocks.booked` and `blocks.cap` for fri-upcoming via direct pg
+3. Snapshots the Friday card's `.cap-txt` text and verifies it matches the DB
+4. Completes a full UI booking on fri-upcoming as a new client
+5. Waits for `#success-view.on`
+6. Looks up the customer ID for cleanup
+7. Direct-pg verifies `blocks.booked` has incremented to `preBooked + 1`
+8. Reloads the page
+9. Asserts the Friday card's `.cap-txt` now shows `<preBooked + 1> of <cap> spots taken`
+
+**What a fail would mean:** Either the trigger has regressed (would leave `blocks.booked` stuck at the seeded value, eventually allowing overbookings since `book_if_available` checks against it), or the front-end is caching block data across page reloads.
+
+**Cleanup:** `afterEach` calls `deleteCustomerCascade` — fri-upcoming returns to its seeded state.
+
+---
+
+### EC-12 — DB-level duplicate booking protection: direct SQL insert rejected
+
+**What this proves:** The partial unique index `bookings_unique_active_per_block` rejects any direct INSERT attempt that would create a second non-cancelled booking for the same (customer, block) pair. This is the last-line defence behind the RPC and the front-end early-detection — if anything else regresses, this still holds the line.
+
+**Preconditions:**
+- mon-current has at least one seeded non-cancelled booking
+- Direct pg access via `admin-db.js`
+
+**Steps the test performs:**
+1. Loads page with `?env=test` and asserts TEST MODE banner (defence-in-depth)
+2. Looks up mon-current via `getBlockByRole`
+3. Queries for a known seeded (customer_id, class_id, block_id) pair on mon-current
+4. Snapshots row count for that pair
+5. Attempts a direct INSERT of `(class_id, block_id, customer_id, 'reserved', 60)` via direct pg
+6. Asserts the INSERT throws an error
+7. Asserts `error.code === '23505'` and `error.constraint === 'bookings_unique_active_per_block'`
+8. Asserts the row count for the pair is unchanged
+
+**What a fail would mean:** The partial unique index has been dropped or its WHERE clause changed. Without it, race conditions in `book_if_available` (or any future direct-DB write path) could create duplicate bookings.
+
+**Cleanup:** None — the INSERT is rejected, no state created.
+
+---
+
+### EC-13 — book_if_available RPC returns ALREADY_BOOKED on duplicate
+
+**What this proves:** The RPC wraps the raw unique-violation into a stable `ALREADY_BOOKED` error message that the front-end can pattern-match. EC-12 tests the underlying DB constraint; this test confirms the RPC layer's translation is intact.
+
+**Preconditions:**
+- mon-current has at least one seeded non-cancelled booking
+- `book_if_available` RPC is granted to anon
+
+**Steps the test performs:**
+1. Loads page with `?env=test` and asserts TEST MODE banner
+2. Queries for a known seeded (customer, class, block) pair on mon-current
+3. Snapshots row count for the pair
+4. Calls `sb.rpc('book_if_available', { p_block_id, p_class_id, p_customer_id, p_amount_due: 60 })` via the anon client
+5. Asserts `data === null` and `error.message` matches `/ALREADY_BOOKED/`
+6. Asserts the row count is unchanged
+
+**What a fail would mean:** The RPC's EXCEPTION handler has regressed. The unique-violation would propagate up to the front-end as a generic error code instead of the friendly ALREADY_BOOKED string, breaking the user-facing toast.
+
+**Cleanup:** None — RPC raises before any insert.
+
+---
+
+### EC-14 — DB refuses rows with NULL on critical columns
+
+**What this proves:** NOT NULL constraints on 10 critical columns across `customers`, `bookings`, `blocks`, and `classes` reject any INSERT that omits a required value with SQLSTATE 23502. This test covers 3 of those columns as representative samples (one per table that's directly user-facing).
+
+**Preconditions:**
+- Direct pg access via `admin-db.js`
+
+**Steps the test performs (three sub-tests):**
+
+1. `customers.email NOT NULL`: attempts `INSERT INTO customers (first_name, last_name) VALUES ('Test', 'User')` — omits email. Asserts `error.code === '23502'` and `error.column === 'email'`.
+2. `classes.name NOT NULL`: attempts `INSERT INTO classes (day, venue) VALUES ('Mon', 'Test Venue')` — omits name. Asserts `error.code === '23502'` and `error.column === 'name'`.
+3. `blocks.class_id NOT NULL`: attempts `INSERT INTO blocks (class_id, weeks) VALUES (NULL, 6)` — explicit NULL. Asserts `error.code === '23502'` and `error.column === 'class_id'`.
+
+**What a fail would mean:** A NOT NULL constraint has been dropped or relaxed. The app code assumes these columns are always populated; missing values would cause runtime errors in unrelated UI paths far from where the bad row was inserted.
+
+**Cleanup:** None — all INSERTs are rejected.
+
+---
+
 
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary table and per-tab tables give the full breakdown by Excel tab; the Suggested Batches table lays out the planned grouping for upcoming sessions.
 
-**Outstanding totals:** 70 scenarios across 5 tabs (17 May 2026).
+**Outstanding totals:** 63 scenarios across 4 tabs (18 May 2026).
 
-**Next session focus:** Batch 12 — Edge Cases (part 2). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 13 — Block Warnings (BLW). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 

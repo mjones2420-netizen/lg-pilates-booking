@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 17 May 2026
+Last updated: 18 May 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -396,9 +396,9 @@ tests-playwright/
     ├── acl-*.spec.js            # 2 ACL spec files covering 2 of 2 genuine scenarios
     ├── bw-*.spec.js             # 3 BW spec files covering 3 of 3 genuine scenarios
     ├── sec-*.spec.js            # 3 SEC spec files covering 3 of 3 genuine scenarios
-    └── ec-*.spec.js             # 6 EC spec files covering 6 of 13 genuine scenarios (Batch 11)
+    └── ec-*.spec.js             # 13 EC spec files covering 13 of 13 genuine scenarios
 
-CURRENT TEST COUNT: 87 tests (all passing — Session 24, Batch 11 complete)
+CURRENT TEST COUNT: 96 tests (all passing — Session 25, Batch 12 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
@@ -409,9 +409,11 @@ CURRENT TEST COUNT: 87 tests (all passing — Session 24, Batch 11 complete)
   SEC:   6 tests in 3 spec files covering 3 of 3 genuine SEC scenarios
          (SEC-02 has 2 sub-tests, SEC-06 has 3 sub-tests, SEC-07 has 1.
           SEC-01/03/04/05 are red-filled in Excel as duplicates of other specs.)
-  EC:    6 tests covering 6 of 13 genuine EC scenarios (Batch 11 — EC-01,
-         EC-03, EC-04, EC-05, EC-06, EC-07. EC-02 red-filled in Excel as
-         duplicate of CB-31. Remaining 7 in Batch 12.)
+  EC:    15 tests in 13 spec files covering 13 of 13 genuine EC scenarios
+         (EC-14 has 3 sub-tests for the 3 NOT NULL constraint columns.
+          Batch 11 — EC-01, EC-03, EC-04, EC-05, EC-06, EC-07.
+          Batch 12 — EC-08, EC-09, EC-10, EC-11, EC-12, EC-13, EC-14.
+          EC-02 red-filled in Excel as duplicate of CB-31. EC suite complete.)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -797,6 +799,24 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
         block with cap-1 REAL booking rows before modal open, inserts one
         more post-Step-3 to bump booked to cap, asserts CLASS_FULL toast
         on Reserve. EC-02 red-filled in Excel as duplicate of CB-31.
+   - ✅ Batch 12 (Session 25) — Edge Cases (part 2), 7 of 7 remaining EC
+        scenarios automated. EC suite now complete (13 of 13 genuine
+        scenarios). EC-08 server-side ALREADY_BOOKED via direct RPC after
+        a successful UI booking — simulates a second-tab race. EC-09
+        transient "Reserving..." button state via expect.poll on
+        disabled+text snapshot, 50/100/200ms intervals. EC-10 bulk-delete
+        of mon-current bookings via raw SQL + resync SQL workflow; cap-txt
+        shows "0 of cap" after reload; afterEach restores the deleted
+        bookings via ON CONFLICT DO NOTHING. EC-11 full UI booking on
+        fri-upcoming → trigger increments blocks.booked → reload → cap-txt
+        reflects new count. EC-12 direct INSERT of duplicate (customer,
+        block) pair → SQLSTATE 23505 unique-violation on
+        bookings_unique_active_per_block. EC-13 sb.rpc('book_if_available')
+        called directly with a known-duplicate pair → ALREADY_BOOKED error
+        message. EC-14 three sub-tests for NOT NULL on customers.email,
+        classes.name, blocks.class_id (each asserted with SQLSTATE 23502
+        AND the violated column name). No Excel scenario wording changes
+        needed this batch — scenarios were already accurate.
 
    DUPLICATE SENSE-CHECK (10 May 2026, updated 16 May 2026):
    11 Excel rows red-filled as no longer requiring automation — see
@@ -806,7 +826,6 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    BW-* → BLW-* to disambiguate from Booking Windows tab.
 
    UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
-   - Batch 12 — Edge Cases (part 2)
    - Batch 13 — Block Warnings (BLW)
    - Batch 14 — Settings & Export
    - Batch 15 — Admin Bookings (part 1)
@@ -816,9 +835,8 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — start Batch 12 (Edge Cases part 2):
-   - BATCH 12 — 7 EC scenarios (EC-08, EC-09, EC-10, EC-11, EC-12, EC-13,
-     EC-14). Capacity + DB-level integrity tests. Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 13 (Block Warnings):
+   - BATCH 13 — Block Warnings (BLW) scenarios. Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -1299,5 +1317,59 @@ SESSION 24 LEARNINGS — TRIGGER OVERRIDES DIRECT UPDATE, SUCCESS-VIEW OVERLAY, 
   call window.openAddBlockModal(classId) via page.evaluate. Useful when
   the test doesn't care about how the modal was reached, only what it
   does.
+
+SESSION 25 LEARNINGS — DUPLICATE DETECTION LAYERS, TRANSIENT UI STATE, FIXTURE-PRESERVING CLEANUP
+-------------------------------------------------------------------------------------------------
+- Duplicate-booking protection has THREE independent layers that EC-08,
+  EC-12, EC-13 each cover separately:
+    (1) Front-end Step-1 early-detection — has_active_booking_on_block RPC
+        called from goStep2() for RETURNING clients. Surfaces the friendly
+        "You're already booked!" view BEFORE the user fills the rest of
+        the form. Covered by CB-31.
+    (2) RPC layer — book_if_available catches the partial unique index
+        violation in PL/pgSQL and re-raises as RAISE EXCEPTION
+        'ALREADY_BOOKED'. The front-end keys on this exact string at
+        index.html line 1533. Covered by EC-13 (RPC behaviour) and
+        EC-08 (front-end response when RPC is called directly from a
+        race condition).
+    (3) Partial unique index bookings_unique_active_per_block — fires on
+        any direct INSERT (including outside the RPC). Last-line defence.
+        Covered by EC-12.
+  When any of these three regresses, a different test will catch it,
+  but each layer needs its own test to avoid silent gaps.
+- Transient UI state (EC-09's "Reserving..." button text) requires
+  expect.poll with short intervals (50/100/200ms) and a small timeout
+  (4s). The polled callback must snapshot both fields in a single
+  evaluate() so they reflect the same moment — otherwise the disabled
+  flag and text content can be read on different microtasks and one
+  might already be reset. Pattern:
+      await expect.poll(
+        () => page.locator('#reserve-btn').evaluate(btn => ({
+          disabled: btn.disabled,
+          text:     (btn.textContent || '').trim()
+        })),
+        { timeout: 4000, intervals: [50, 100, 200] }
+      ).toEqual({ disabled: true, text: 'Reserving...' });
+- Fixture-preserving cleanup for "destructive setup" specs (EC-10): when
+  a spec needs to delete real fixture bookings as test setup, the
+  afterEach pattern is to snapshot the rows pre-delete and re-INSERT them
+  with ON CONFLICT DO NOTHING in cleanup. Works because bookings rows
+  have no auto-only fields that change on re-insert (the serial id is
+  the only one and is not preserved). Combined with
+  resyncBlockBookedCount this restores the fixture to a state
+  indistinguishable from the seeded version. Use sparingly — entry-side
+  pg INSERT of pre-existing rows is cheaper than full reseed but more
+  expensive than the standard afterEach + deleteCustomerCascade pattern.
+- pg error objects expose .code (SQLSTATE), .constraint (constraint
+  name), and .column (column name for 23502 not-null violations). All
+  three are stable identifiers worth asserting on — independent of
+  Postgres locale or version-specific wording. EC-12 and EC-14 use all
+  three; future DB-constraint specs should follow the same pattern.
+- The Excel scenarios DO NOT track spec filenames in the Notes column —
+  TEST-PLAN.md's Coverage Tracker is the source of truth for the
+  scenario-to-spec mapping. When updating the Excel after a batch, only
+  wording/SQL gets touched, never the Notes column unless the scenario
+  itself needs a clarifying note. EC-08 to EC-14 scenarios needed zero
+  Excel updates this batch — their wording was already accurate.
 
 ============================================================
