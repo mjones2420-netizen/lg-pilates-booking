@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 18 May 2026
+Last updated: 21 May 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -396,9 +396,10 @@ tests-playwright/
     ├── acl-*.spec.js            # 2 ACL spec files covering 2 of 2 genuine scenarios
     ├── bw-*.spec.js             # 3 BW spec files covering 3 of 3 genuine scenarios
     ├── sec-*.spec.js            # 3 SEC spec files covering 3 of 3 genuine scenarios
-    └── ec-*.spec.js             # 13 EC spec files covering 13 of 13 genuine scenarios
+    ├── ec-*.spec.js             # 13 EC spec files covering 13 of 13 genuine scenarios
+    └── blw-*.spec.js            # 8 BLW spec files covering 8 of 8 genuine scenarios
 
-CURRENT TEST COUNT: 96 tests (all passing — Session 25, Batch 12 complete)
+CURRENT TEST COUNT: 104 tests (all passing — Session 26, Batch 13 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
@@ -414,6 +415,7 @@ CURRENT TEST COUNT: 96 tests (all passing — Session 25, Batch 12 complete)
           Batch 11 — EC-01, EC-03, EC-04, EC-05, EC-06, EC-07.
           Batch 12 — EC-08, EC-09, EC-10, EC-11, EC-12, EC-13, EC-14.
           EC-02 red-filled in Excel as duplicate of CB-31. EC suite complete.)
+  BLW:   8 tests covering 8 of 8 BLW scenarios (BLW suite complete)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -817,6 +819,17 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
         classes.name, blocks.class_id (each asserted with SQLSTATE 23502
         AND the violated column name). No Excel scenario wording changes
         needed this batch — scenarios were already accurate.
+   - ✅ Batch 13 (Session 26) — Block Warnings (BLW), all 8 scenarios
+        automated. BLW suite complete. All specs use admin login +
+        direct-pg visibility toggles. Key fixture insight: Wed and Fri
+        already trigger the yellow advisory in the clean fixture state
+        (each has only 1 visible block), so BLW-02/05/07 use Thursday
+        (thu-locked) as a clean on/off switch for the advisory. BLW-03
+        uses Wed for red + Thu for yellow. BLW-06 inserts second upcoming
+        blocks for Wed and Fri via direct SQL to create a genuinely
+        fully-covered state, then removes them in afterEach. BLW-05 adds
+        a real Thu block via the UI and deletes it in afterEach by
+        class_id + start_date.
 
    DUPLICATE SENSE-CHECK (10 May 2026, updated 16 May 2026):
    11 Excel rows red-filled as no longer requiring automation — see
@@ -826,7 +839,6 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    BW-* → BLW-* to disambiguate from Booking Windows tab.
 
    UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
-   - Batch 13 — Block Warnings (BLW)
    - Batch 14 — Settings & Export
    - Batch 15 — Admin Bookings (part 1)
    - Batch 16 — Admin Bookings (part 2)
@@ -835,8 +847,8 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — start Batch 13 (Block Warnings):
-   - BATCH 13 — Block Warnings (BLW) scenarios. Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 14 (Settings & Export):
+   - BATCH 14 — Settings & Export (SE) scenarios. Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -1371,5 +1383,33 @@ SESSION 25 LEARNINGS — DUPLICATE DETECTION LAYERS, TRANSIENT UI STATE, FIXTURE
   wording/SQL gets touched, never the Notes column unless the scenario
   itself needs a clarifying note. EC-08 to EC-14 scenarios needed zero
   Excel updates this batch — their wording was already accurate.
+
+SESSION 26 LEARNINGS — FIXTURE ADVISORY STATE, VISIBILITY TOGGLES, BLW SUITE
+-----------------------------------------------------------------------------
+- The clean fixture already triggers the yellow advisory for Wednesday and
+  Friday — each has only one visible block (wed-upcoming and fri-upcoming
+  respectively). Any spec that wants to control the advisory state must
+  account for this baseline. Monday is not a clean switch either (3 visible
+  blocks). Thursday is the reliable on/off switch: it has both thu-current
+  (active) and thu-locked (upcoming), so hiding thu-locked creates the
+  advisory for Thursday without disturbing the Wed/Fri baseline.
+- `visible=false` is the correct column for hiding blocks from the client
+  grid AND from renderBlockWarnings(). The status column is irrelevant to
+  both (confirmed again in BLW work — renderBlockWarnings filters on
+  `b.visible !== false` and `end_date >= today`, not on status).
+- The `+ Add Block` button in yellow advisory rows calls
+  `openAddBlockModal(classId, prefillDate)` where prefillDate = activeBlock
+  .end_date + 7 days (YYYY-MM-DD). The red banner rows call
+  `openAddBlockModal(classId)` with no prefill. Both open the same modal;
+  the prefill is the distinguishing factor tested by BLW-04 vs BLW-07.
+- BLW-06 inserts second upcoming blocks for Wed and Fri via direct pg
+  (not through the UI) with `ARRAY[]::text[]` for the dates column (nullable
+  in the schema — safe to omit). afterEach deletes by class_id + start_date.
+  This is the pattern for any future test that needs to create a "fully
+  covered" state without going through the admin UI.
+- BLW-03 asserts `bannerCount >= 2` rather than `=== 2` because the
+  Wed/Fri advisory baseline means the yellow banner may list 3 classes (Wed,
+  Fri, and the one we controlled). Exact count assertions on banners are
+  fragile in this fixture — prefer `>= N` or text-content assertions.
 
 ============================================================

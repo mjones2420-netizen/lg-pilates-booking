@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 18 May 2026
-**Total tests:** 96 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC)
+**Last updated:** 21 May 2026
+**Total tests:** 104 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -22,9 +22,9 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
 | Settings & Export (SE) | 9 | 0 | 9 | 0 | 9 |
 | Edge Cases (EC) | 14 | 1 | 13 | 13 | 0 |
-| Block Warnings (BLW) | 8 | 0 | 8 | 0 | 8 |
+| Block Warnings (BLW) | 8 | 0 | 8 | 8 | 0 |
 | Security (SEC) | 7 | 4 | 3 | 3 | 0 |
-| **Totals** | **144** | **11** | **133** | **70** | **63** |
+| **Totals** | **144** | **11** | **133** | **78** | **55** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -230,18 +230,20 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | EC-13 | book_if_available RPC returns ALREADY_BOOKED on duplicate | ✅ ec-13.spec.js | Batch 12 |
 | EC-14 | DB refuses rows with NULL on critical columns | ✅ ec-14.spec.js | Batch 12 |
 
-### Block Warnings (BLW)
+### Block Warnings (BLW) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
 |---|---|---|---|
-| BLW-01 | Red alert — class with no block at all | ⬜ Outstanding | Batch 13 |
-| BLW-02 | Yellow advisory — active block but no next block | ⬜ Outstanding | Batch 13 |
-| BLW-03 | Both banners show when both conditions exist | ⬜ Outstanding | Batch 13 |
-| BLW-04 | + Add Block button opens correct modal | ⬜ Outstanding | Batch 13 |
-| BLW-05 | Banner disappears after block is added | ⬜ Outstanding | Batch 13 |
-| BLW-06 | No banners shown when all classes are covered | ⬜ Outstanding | Batch 13 |
-| BLW-07 | Yellow advisory — Add Block prefills date automatically | ⬜ Outstanding | Batch 13 |
-| BLW-08 | Class and time both shown in warning banner row | ⬜ Outstanding | Batch 13 |
+| BLW-01 | Red alert — class with no block at all | ✅ blw-01.spec.js | Batch 13 |
+| BLW-02 | Yellow advisory — active block but no next block | ✅ blw-02.spec.js | Batch 13 |
+| BLW-03 | Both banners show when both conditions exist | ✅ blw-03.spec.js | Batch 13 |
+| BLW-04 | + Add Block button opens correct modal | ✅ blw-04.spec.js | Batch 13 |
+| BLW-05 | Banner disappears after block is added | ✅ blw-05.spec.js | Batch 13 |
+| BLW-06 | No banners shown when all classes are covered | ✅ blw-06.spec.js | Batch 13 |
+| BLW-07 | Yellow advisory — Add Block prefills date automatically | ✅ blw-07.spec.js | Batch 13 |
+| BLW-08 | Class and time both shown in warning banner row | ✅ blw-08.spec.js | Batch 13 |
+
+> **Fixture note (21 May 2026):** Wednesday and Friday each have only one visible block in the clean fixture, so the yellow advisory already fires for both in the base state. BLW-02, 05, and 07 use Thursday (class_id=4) as a clean on/off switch — hiding `thu-locked` makes Thursday "expiring" without disturbing the Wed/Fri advisory state. BLW-03 uses Wednesday for the red condition and Thursday for the yellow condition. BLW-06 inserts a second upcoming block for both Wed and Fri via direct SQL to create a genuinely fully-covered state, then removes them in afterEach.
 
 ### Security (SEC) — Complete ✅
 
@@ -268,7 +270,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 10 ✅ | Security (remaining) | 3 specs (6 tests) | SEC-02 anon-settings read + bank details on payment screen, SEC-06 admin login + all 4 tabs + 3 below-tab sections render, SEC-07 anon grant matrix audit via direct pg. SEC-03 reclassified as duplicate of CB-01 (removed from genuine total). |
 | Batch 11 ✅ | Edge Cases (part 1) | 6 | Validation + boundary tests. EC-01 full-class prevention via direct booked-count update (new `setBlockBookedCount` helper added to admin-db.js). EC-03 invalid-email validation toast. EC-04 wrong-day rejection in Add Block modal. EC-05 empty-state page when all blocks hidden via `visible=false` (Excel SQL updated — old hint used invalid `status='archived'`). EC-06 long-text input cap at maxlength=50 and admin row render. EC-07 overbooking race condition via real booking rows (trigger overrides direct UPDATE on `blocks.booked`, so the test fills with cap-1 real rows then inserts one more mid-flow). |
 | Batch 12 ✅ | Edge Cases (part 2) | 7 | Capacity + DB-level integrity tests. EC-08 server-side ALREADY_BOOKED via direct RPC after a successful UI booking. EC-09 transient "Reserving..." button state via expect.poll on disabled+text snapshot. EC-10 bulk-delete + resync workflow on mon-current with bookings restored in afterEach. EC-11 trigger increments blocks.booked after a UI booking, asserted via cap-txt after reload. EC-12 direct INSERT of duplicate (customer, block) → 23505 unique-violation on bookings_unique_active_per_block. EC-13 sb.rpc('book_if_available') with duplicate pair → ALREADY_BOOKED error message. EC-14 three sub-tests for NOT NULL on customers.email, classes.name, blocks.class_id (23502 with correct column name). |
-| Batch 13 | Block Warnings | 8 | Dashboard banner regressions. Needs admin login. |
+| Batch 13 ✅ | Block Warnings | 8 | Dashboard banner regressions. All 8 specs use admin login + direct-pg visibility toggles (visible=false/true) for setup/teardown. BLW-02/05/07 use Thursday (thu-locked) as the yellow-advisory switch — Wed and Fri already fire the advisory in the clean fixture state. BLW-06 inserts second blocks for Wed and Fri to create a fully-covered state. BLW-05 adds a real Thu block via the UI and deletes it in afterEach. |
 | Batch 14 | Settings & Export | 9 | Bank details + CSV export tests. Needs admin login. |
 | Batch 15 | Admin Bookings (part 1) | 7 | Login + table + booking lifecycle. |
 | Batch 16 | Admin Bookings (part 2) | 8 | Refund flows + cancellations report. |
@@ -2693,11 +2695,195 @@ Someone has changed the anon grant matrix without updating the docs. If anon has
 
 ---
 
+# Block Warnings (BLW)
+
+*These tests prove the admin dashboard's block warnings banner correctly surfaces classes that need attention — either because they have no block at all (red alert) or because their only block will expire soon with nothing behind it (yellow advisory).*
+
+*All BLW specs require admin login. Setup uses direct-pg visibility toggles (`visible=false/true`) on fixture blocks. No new customers or bookings are created.*
+
+---
+
+### BLW-01 — Red alert: class has no active or upcoming block
+
+**What this proves:** The red 🚫 banner appears when a class has no visible active or upcoming block — meaning it has already vanished from the client-facing booking page. Louise needs to see this immediately when she logs into the dashboard.
+
+**Preconditions:**
+- Admin is logged in
+- All blocks for the Wednesday class (class_id=2) are hidden (`visible=false`)
+
+**Steps the test performs:**
+1. Sets `visible=false` on all Wed blocks via direct pg
+2. Loads page and asserts TEST MODE banner
+3. Logs in as admin and waits for `#ctbody` to populate
+4. Asserts `#block-warnings` is visible
+5. Asserts `.block-warning-title` contains "no active or upcoming block"
+6. Asserts a `.block-warning-row` containing "Wednesday" is visible
+
+**What a fail would mean:** The red alert banner has regressed. Louise would have no in-dashboard warning that a class has disappeared from the booking page.
+
+**Cleanup:** `afterEach` restores `visible=true` on all Wed blocks.
+
+---
+
+### BLW-02 — Yellow advisory: active block but no next block
+
+**What this proves:** The yellow ⚠ advisory appears when a class has an active block running but no upcoming block behind it — meaning the class will vanish from the booking page when the current block ends.
+
+**Preconditions:**
+- Admin is logged in
+- `thu-locked` is hidden so Thursday has only `thu-current` (active, no next block)
+
+**Steps the test performs:**
+1. Looks up `thu-locked` via `getBlockByRole` and sets `visible=false`
+2. Loads page and asserts TEST MODE banner
+3. Logs in as admin and waits for `#ctbody` to populate
+4. Asserts `#block-warnings` is visible
+5. Asserts `#block-warnings` contains "active block but no next block"
+6. Asserts a `.block-warning-row` containing "Thursday" is visible
+
+**What a fail would mean:** Louise would have no warning that a class is about to disappear from the booking page when its current block ends.
+
+**Fixture note:** Thursday is used as the on/off switch because Wed and Fri already trigger the advisory in the clean fixture state (each has only one visible block). Thursday has both `thu-current` and `thu-locked`, making it a clean controlled test subject.
+
+**Cleanup:** `afterEach` restores `visible=true` on `thu-locked`.
+
+---
+
+### BLW-03 — Both red and yellow banners render simultaneously
+
+**What this proves:** When one class needs a block entirely and another class has an active block but no next one, both banners appear in `#block-warnings` at the same time — neither suppresses the other.
+
+**Preconditions:**
+- All Wed blocks hidden (red condition)
+- `thu-locked` hidden (yellow condition for Thursday)
+
+**Steps the test performs:**
+1. Sets `visible=false` on all Wed blocks and on `thu-locked`
+2. Loads page and asserts TEST MODE banner
+3. Logs in as admin and waits for `#ctbody`
+4. Asserts `#block-warnings` is visible
+5. Asserts `.block-warning` count ≥ 2
+6. Asserts both "no active or upcoming block" and "active block but no next block" text present
+7. Asserts Wednesday row and Thursday row both visible
+
+**What a fail would mean:** One condition is suppressing the other in `renderBlockWarnings()`, causing Louise to miss a warning.
+
+**Cleanup:** `afterEach` restores `visible=true` on all Wed blocks and `thu-locked`.
+
+---
+
+### BLW-04 — "+ Add Block" button in warning banner opens correct modal
+
+**What this proves:** The "+ Add Block" button in the red warning banner calls `openAddBlockModal` scoped to the correct class — so Louise is taken directly to adding a block for the affected class, not a random one.
+
+**Preconditions:**
+- Red banner showing for Wednesday (all Wed blocks hidden)
+
+**Steps the test performs:**
+1. Hides all Wed blocks
+2. Logs in as admin and waits for banner
+3. Clicks "+ Add Block" in the Wednesday warning row
+4. Asserts `#add-block-overlay.on` is visible
+5. Asserts `#ab-sub` contains "Wednesday"
+6. Asserts `#ab-start` is empty (red banner buttons don't prefill a date)
+
+**What a fail would mean:** The "+ Add Block" button is wired to the wrong class ID, or `openAddBlockModal` isn't being called at all.
+
+**Cleanup:** `afterEach` restores `visible=true` on all Wed blocks.
+
+---
+
+### BLW-05 — Banner row disappears after block is added
+
+**What this proves:** After Louise adds a new block via the advisory banner, `renderBlockWarnings()` re-runs with the updated blocks list and the warning row for that class disappears — confirming the dashboard reflects the change immediately without a page reload.
+
+**Preconditions:**
+- `thu-locked` hidden so Thursday triggers the yellow advisory
+- Admin can save a new block via the UI
+
+**Steps the test performs:**
+1. Hides `thu-locked` → Thursday shows in yellow advisory
+2. Logs in as admin; confirms Thursday row visible in banner
+3. Clicks "+ Add Block" in the Thursday advisory row
+4. Fills a far-future Thursday start date (300+ days out) and submits
+5. Asserts modal closes and "Block added!" toast appears
+6. Asserts no `.block-warning-row` containing "Thursday" remains
+
+**What a fail would mean:** The dashboard doesn't re-render after a successful block add, or the new block isn't being picked up by `renderBlockWarnings()`.
+
+**Cleanup:** `afterEach` restores `thu-locked` visibility AND deletes the newly inserted block by `class_id + start_date`.
+
+---
+
+### BLW-06 — No banners shown when all classes are covered
+
+**What this proves:** When every class has at least two visible blocks, `renderBlockWarnings()` sets `#block-warnings` to `display:none` with no content — the clean, warning-free state Louise should see when everything is in order.
+
+**Preconditions:**
+- A second upcoming block exists for both Wednesday and Friday (normally each has only one)
+- Thursday already has two blocks (thu-current + thu-locked)
+- Monday already has three blocks
+
+**Steps the test performs:**
+1. Inserts a second upcoming block for Wed (~400 days out) and Fri (~400 days out) via direct pg
+2. Loads page and asserts TEST MODE banner
+3. Logs in as admin and waits for `#ctbody`
+4. Asserts `#block-warnings` is NOT visible
+
+**What a fail would mean:** `renderBlockWarnings()` is incorrectly flagging a class as expiring or hidden even when it has adequate coverage.
+
+**Cleanup:** `afterEach` deletes both inserted blocks by `class_id + start_date`.
+
+---
+
+### BLW-07 — Yellow advisory "+ Add Block" prefills the suggested start date
+
+**What this proves:** The "+ Add Block" button in the yellow advisory banner pre-populates `#ab-start` with a suggested date — one week after the current block ends — saving Louise the mental arithmetic of working out when the next block should start.
+
+**Preconditions:**
+- `thu-locked` hidden so Thursday shows in the yellow advisory
+- `thu-current.end_date` known for computing the expected prefill
+
+**Steps the test performs:**
+1. Looks up `thu-current` and `thu-locked` via `getBlockByRole`
+2. Computes expected prefill = `thu-current.end_date + 7 days` (YYYY-MM-DD)
+3. Hides `thu-locked` → advisory fires for Thursday
+4. Logs in as admin; confirms advisory and Thursday row visible
+5. Clicks "+ Add Block" in the Thursday advisory row
+6. Asserts `#ab-start` value equals the expected prefill date
+7. Asserts `#ab-sub` contains "Thursday"
+8. Closes modal without saving
+
+**What a fail would mean:** The date prefill calculation has broken, or `openAddBlockModal` isn't receiving the prefill argument from `renderBlockWarnings()`.
+
+**Cleanup:** `afterEach` restores `visible=true` on `thu-locked`.
+
+---
+
+### BLW-08 — Class name and time both shown in warning banner row
+
+**What this proves:** Each warning row identifies the class clearly by name AND its day/time (`.block-warning-class`) and venue/location (`.block-warning-meta`) — so Louise knows exactly which class she's looking at without having to cross-reference another screen.
+
+**Preconditions:**
+- Red banner showing for Wednesday (all Wed blocks hidden)
+
+**Steps the test performs:**
+1. Hides all Wed blocks
+2. Logs in as admin; confirms banner and Wednesday row visible
+3. Asserts `.block-warning-class` inside the Wednesday row contains "Beginner" and "Wednesday"
+4. Asserts `.block-warning-meta` inside the Wednesday row contains "Guiseley"
+
+**What a fail would mean:** The warning row is showing incomplete class info — Louise can't tell which class needs attention from the banner alone.
+
+**Cleanup:** `afterEach` restores `visible=true` on all Wed blocks.
+
+---
+
 
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary table and per-tab tables give the full breakdown by Excel tab; the Suggested Batches table lays out the planned grouping for upcoming sessions.
 
-**Outstanding totals:** 63 scenarios across 4 tabs (18 May 2026).
+**Outstanding totals:** 55 scenarios across 4 tabs (21 May 2026).
 
 **Next session focus:** Batch 13 — Block Warnings (BLW). See the Suggested Batches table for full batch sequence.
 
