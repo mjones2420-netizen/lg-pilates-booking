@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 21 May 2026
+Last updated: 29 May 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -397,9 +397,10 @@ tests-playwright/
     ├── bw-*.spec.js             # 3 BW spec files covering 3 of 3 genuine scenarios
     ├── sec-*.spec.js            # 3 SEC spec files covering 3 of 3 genuine scenarios
     ├── ec-*.spec.js             # 13 EC spec files covering 13 of 13 genuine scenarios
-    └── blw-*.spec.js            # 8 BLW spec files covering 8 of 8 genuine scenarios
+    ├── blw-*.spec.js            # 8 BLW spec files covering 8 of 8 genuine scenarios
+    └── se-*.spec.js             # 9 SE spec files covering 9 of 9 scenarios
 
-CURRENT TEST COUNT: 104 tests (all passing — Session 26, Batch 13 complete)
+CURRENT TEST COUNT: 113 tests (all passing — Session 27, Batch 14 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
@@ -416,6 +417,7 @@ CURRENT TEST COUNT: 104 tests (all passing — Session 26, Batch 13 complete)
           Batch 12 — EC-08, EC-09, EC-10, EC-11, EC-12, EC-13, EC-14.
           EC-02 red-filled in Excel as duplicate of CB-31. EC suite complete.)
   BLW:   8 tests covering 8 of 8 BLW scenarios (BLW suite complete)
+  SE:    9 tests covering 9 of 9 SE scenarios (SE suite complete)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -839,7 +841,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    BW-* → BLW-* to disambiguate from Booking Windows tab.
 
    UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
-   - Batch 14 — Settings & Export
+   - ✅ Batch 14 — Settings & Export (complete, Session 27)
    - Batch 15 — Admin Bookings (part 1)
    - Batch 16 — Admin Bookings (part 2)
    - Batch 17 — Admin Bookings (part 3)
@@ -847,8 +849,8 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — start Batch 14 (Settings & Export):
-   - BATCH 14 — Settings & Export (SE) scenarios. Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 15 (Admin Bookings part 1):
+   - BATCH 15 — Admin Bookings (AB-01 to AB-07). Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -1411,5 +1413,30 @@ SESSION 26 LEARNINGS — FIXTURE ADVISORY STATE, VISIBILITY TOGGLES, BLW SUITE
   Wed/Fri advisory baseline means the yellow banner may list 3 classes (Wed,
   Fri, and the one we controlled). Exact count assertions on banners are
   fragile in this fixture — prefer `>= N` or text-content assertions.
+
+SESSION 27 LEARNINGS — SETTINGS TABLE, MODAL OPEN PATTERN, GOSTE2 VALIDATION
+-----------------------------------------------------------------------------
+- settings table uses `key` as the PRIMARY KEY (text). ON CONFLICT (key) DO
+  UPDATE is the correct upsert pattern. There is no separate `id` column.
+  Specs that seed/restore settings values should use this pattern in both
+  beforeEach and afterEach.
+- openModal(classId, blockId) must only be called AFTER the schedule has
+  rendered — i.e. after at least one `.card` is visible. Calling it via
+  page.evaluate() earlier (when typeof openModal === 'function' but the
+  blocks[] array is still empty) crashes with "Cannot read properties of
+  undefined (reading 'dates')". The correct wait is:
+    await page.locator('.card').first().waitFor({ state: 'visible', timeout: 10000 });
+    await page.evaluate(({ classId, blockId }) => openModal(classId, blockId), { ... });
+  This is now the canonical pattern for specs that need to open a modal on
+  a class that doesn't have a simple "Book Current Block" card button
+  (e.g. upcoming-as-current cards like fri-upcoming).
+- goStep2() silently rejects the form if ANY of the four Step 1 fields
+  (first name, last name, email, phone) are empty or invalid. It shows a
+  validation toast and returns — no network call is made, step-3 never
+  appears. Specs that want to test the returning-client payment step must
+  fill ALL FOUR fields, not just email. The phone must be 11+ digits.
+- The Supabase test project pauses after inactivity. If the drift-check
+  query times out at session start, check the project is active in the
+  Supabase dashboard before retrying.
 
 ============================================================
