@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 21 May 2026
-**Total tests:** 104 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW)
+**Last updated:** 29 May 2026
+**Total tests:** 113 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -20,11 +20,11 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Admin Classes (AC) | 24 | 0 | 24 | 0 | 24 |
 | Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
 | Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
-| Settings & Export (SE) | 9 | 0 | 9 | 0 | 9 |
+| Settings & Export (SE) | 9 | 0 | 9 | 9 | 0 |
 | Edge Cases (EC) | 14 | 1 | 13 | 13 | 0 |
 | Block Warnings (BLW) | 8 | 0 | 8 | 8 | 0 |
 | Security (SEC) | 7 | 4 | 3 | 3 | 0 |
-| **Totals** | **144** | **11** | **133** | **78** | **55** |
+| **Totals** | **144** | **11** | **133** | **87** | **46** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -197,19 +197,19 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SD-05 | Reset to All Classes | ✅ Automated | Batch 7 |
 | SD-06 | Class without blocks is hidden | ✅ Automated | Batch 7 |
 
-### Settings & Export (SE)
+### Settings & Export (SE) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
 |---|---|---|---|
-| SE-01 | Save bank details | ⬜ Outstanding | Batch 14 |
-| SE-02 | Bank details appear on booking payment screen | ⬜ Outstanding | Batch 14 |
-| SE-03 | Bank details appear on success/confirmation screen | ⬜ Outstanding | Batch 14 |
-| SE-04 | Export Classes CSV | ⬜ Outstanding | Batch 14 |
-| SE-05 | Export Blocks CSV | ⬜ Outstanding | Batch 14 |
-| SE-06 | Export Customers CSV | ⬜ Outstanding | Batch 14 |
-| SE-07 | Export Bookings CSV | ⬜ Outstanding | Batch 14 |
-| SE-08 | Export Everything — full backup | ⬜ Outstanding | Batch 14 |
-| SE-09 | CSV export — formula injection protection | ⬜ Outstanding | Batch 14 |
+| SE-01 | Save bank details | ✅ se-01-save-bank-details.spec.js | Batch 14 |
+| SE-02 | Bank details appear on booking payment screen | ✅ se-02-bank-details-payment-screen.spec.js | Batch 14 |
+| SE-03 | Bank details appear on success/confirmation screen | ✅ se-03-bank-details-success-screen.spec.js | Batch 14 |
+| SE-04 | Export Classes CSV | ✅ se-04-export-classes-csv.spec.js | Batch 14 |
+| SE-05 | Export Blocks CSV | ✅ se-05-export-blocks-csv.spec.js | Batch 14 |
+| SE-06 | Export Customers CSV | ✅ se-06-export-customers-csv.spec.js | Batch 14 |
+| SE-07 | Export Bookings CSV | ✅ se-07-export-bookings-csv.spec.js | Batch 14 |
+| SE-08 | Export Everything — full backup | ✅ se-08-export-everything.spec.js | Batch 14 |
+| SE-09 | CSV export — formula injection protection | ✅ se-09-csv-formula-injection.spec.js | Batch 14 |
 
 ### Edge Cases (EC)
 
@@ -271,7 +271,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 11 ✅ | Edge Cases (part 1) | 6 | Validation + boundary tests. EC-01 full-class prevention via direct booked-count update (new `setBlockBookedCount` helper added to admin-db.js). EC-03 invalid-email validation toast. EC-04 wrong-day rejection in Add Block modal. EC-05 empty-state page when all blocks hidden via `visible=false` (Excel SQL updated — old hint used invalid `status='archived'`). EC-06 long-text input cap at maxlength=50 and admin row render. EC-07 overbooking race condition via real booking rows (trigger overrides direct UPDATE on `blocks.booked`, so the test fills with cap-1 real rows then inserts one more mid-flow). |
 | Batch 12 ✅ | Edge Cases (part 2) | 7 | Capacity + DB-level integrity tests. EC-08 server-side ALREADY_BOOKED via direct RPC after a successful UI booking. EC-09 transient "Reserving..." button state via expect.poll on disabled+text snapshot. EC-10 bulk-delete + resync workflow on mon-current with bookings restored in afterEach. EC-11 trigger increments blocks.booked after a UI booking, asserted via cap-txt after reload. EC-12 direct INSERT of duplicate (customer, block) → 23505 unique-violation on bookings_unique_active_per_block. EC-13 sb.rpc('book_if_available') with duplicate pair → ALREADY_BOOKED error message. EC-14 three sub-tests for NOT NULL on customers.email, classes.name, blocks.class_id (23502 with correct column name). |
 | Batch 13 ✅ | Block Warnings | 8 | Dashboard banner regressions. All 8 specs use admin login + direct-pg visibility toggles (visible=false/true) for setup/teardown. BLW-02/05/07 use Thursday (thu-locked) as the yellow-advisory switch — Wed and Fri already fire the advisory in the clean fixture state. BLW-06 inserts second blocks for Wed and Fri to create a fully-covered state. BLW-05 adds a real Thu block via the UI and deletes it in afterEach. |
-| Batch 14 | Settings & Export | 9 | Bank details + CSV export tests. Needs admin login. |
+| Batch 14 ✅ | Settings & Export | 9 | Bank details CRUD (SE-01 to SE-03), CSV exports (SE-04 to SE-08), formula injection protection (SE-09). SE-01/03 use direct-pg settings seed/restore in afterEach. SE-03 self-cleans the booking it creates. SE-09 inserts an injection-candidate customer via direct pg and deletes in afterEach. |
 | Batch 15 | Admin Bookings (part 1) | 7 | Login + table + booking lifecycle. |
 | Batch 16 | Admin Bookings (part 2) | 8 | Refund flows + cancellations report. |
 | Batch 17 | Admin Bookings (part 3) | 7 | CSV export + Missing PAR-Q banner. |
@@ -2883,9 +2883,9 @@ Someone has changed the anon grant matrix without updating the docs. If anon has
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary table and per-tab tables give the full breakdown by Excel tab; the Suggested Batches table lays out the planned grouping for upcoming sessions.
 
-**Outstanding totals:** 55 scenarios across 4 tabs (21 May 2026).
+**Outstanding totals:** 46 scenarios across 3 tabs (29 May 2026).
 
-**Next session focus:** Batch 13 — Block Warnings (BLW). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 15 — Admin Bookings part 1 (AB-01 to AB-07). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 
@@ -2893,6 +2893,152 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 - GitHub Actions CI (run tests automatically on every code push)
 - Mobile Safari project for proper mobile coverage (currently CB-29/CB-30 use shrunken desktop viewports as a proxy)
 - ~~Admin login helper~~ ✅ Added in Session 17 (`tests/helpers/admin-auth.js` + `tests/helpers/admin-db.js`)
+
+---
+
+---
+
+### SE-01 — Save bank details
+
+**What this proves:** An admin can update the bank name, sort code, and account number in the Settings section and see them persisted to the `settings` table, with a confirmation toast.
+
+**Preconditions:** Admin logged in. Known starting values seeded directly via pg in `beforeEach`.
+
+**Steps the test performs:**
+1. Seeds known starting values via direct pg
+2. Logs in as admin, scrolls to Settings
+3. Fills bank name, sort code, account number with new values
+4. Clicks "Save Bank Details"
+5. Asserts "Bank details saved!" toast
+6. Queries `settings` table directly and asserts all three keys hold the new values
+
+**What a fail would mean:** The save flow is broken — Louise can't update her payment details.
+
+**Cleanup:** `afterEach` restores original values via direct pg regardless of pass/fail.
+
+---
+
+### SE-02 — Bank details appear on booking payment screen
+
+**What this proves:** Bank details seeded in settings are rendered on the payment step (step-3) of the booking modal so the client can see where to send payment.
+
+**Preconditions:** Known bank details seeded via direct pg. `returning-one` has no booking on `fri-upcoming`.
+
+**Steps the test performs:**
+1. Seeds known bank details via direct pg
+2. Opens Friday class booking modal
+3. Enters `returning-one@test.example` and advances (returning client jumps directly to step-3)
+4. Asserts `#bank-name-1`, `#bank-sort-1`, `#bank-acc-1` match the seeded values
+
+**What a fail would mean:** Bank details aren't rendering on the payment screen — clients can't see where to pay.
+
+**Cleanup:** `afterEach` restores original settings values.
+
+---
+
+### SE-03 — Bank details appear on success/confirmation screen
+
+**What this proves:** After a booking completes, the success view shows bank details (`#bank-name-2`, `#bank-sort-2`, `#bank-acc-2`) so the client has payment info on the confirmation screen.
+
+**Preconditions:** Known bank details seeded. `returning-one` has no booking on `fri-upcoming`.
+
+**Steps the test performs:**
+1. Seeds known bank details via direct pg
+2. Opens Friday booking modal as `returning-one`, advances to step-3
+3. Agrees to T&Cs and clicks Reserve
+4. Asserts `#success-view.on` is visible
+5. Asserts bank detail elements on success view match seeded values
+
+**What a fail would mean:** Bank details missing from the confirmation screen — clients don't know how to pay after booking.
+
+**Cleanup:** `afterEach` deletes the created booking via `deleteBookingsForCustomerOnBlock` and restores settings.
+
+---
+
+### SE-04 — Export Classes CSV
+
+**What this proves:** Clicking "Export Classes" in the admin Backup & Export section triggers a file download named `lgpilates-classes-[date].csv` containing non-empty class data with expected column headers.
+
+**Steps the test performs:**
+1. Logs in as admin
+2. Intercepts download event, clicks "Export Classes"
+3. Asserts filename matches `lgpilates-classes-YYYY-MM-DD.csv`
+4. Reads downloaded file, asserts non-empty content and presence of `id` and `name` columns
+
+**What a fail would mean:** The Classes export is broken — Louise can't back up her class definitions.
+
+---
+
+### SE-05 — Export Blocks CSV
+
+**What this proves:** "Export Blocks" downloads a correctly named CSV containing block records including `cap`, `booked`, and `price` columns.
+
+**Steps the test performs:**
+1. Logs in as admin, clicks "Export Blocks"
+2. Asserts filename pattern and non-empty content
+3. Asserts presence of `cap`, `booked`, and `price` column headers
+
+**What a fail would mean:** The Blocks export is broken — Louise loses block scheduling data in a backup scenario.
+
+---
+
+### SE-06 — Export Customers CSV
+
+**What this proves:** "Export Customers" downloads a correctly named CSV containing customer records. Fixture customer `returning-one@test.example` is present as a sanity check.
+
+**Steps the test performs:**
+1. Logs in as admin, clicks "Export Customers"
+2. Asserts filename pattern and non-empty content
+3. Asserts `id`, `email` column headers present
+4. Asserts `returning-one@test.example` appears in the file
+
+**What a fail would mean:** The Customers export is broken or the admin can't access customer data for backup.
+
+---
+
+### SE-07 — Export Bookings CSV
+
+**What this proves:** "Export Bookings" downloads a correctly named CSV with booking records including `status` and `amount_due` columns.
+
+**Steps the test performs:**
+1. Logs in as admin, clicks "Export Bookings"
+2. Asserts filename pattern and non-empty content
+3. Asserts `id`, `status`, `amount_due` column headers present
+
+**What a fail would mean:** The Bookings export is broken — financial and attendance records can't be backed up.
+
+---
+
+### SE-08 — Export Everything — full backup
+
+**What this proves:** "Export Everything" downloads a single file named `lgpilates-full-backup-[date].csv` containing all 5 table sections (CLASSES, BLOCKS, CUSTOMERS, BOOKINGS, PARQ) separated by `### TABLE: X ###` headers, and the export-status message confirms success.
+
+**Steps the test performs:**
+1. Logs in as admin, clicks "Export Everything (single file)"
+2. Asserts filename matches `lgpilates-full-backup-YYYY-MM-DD.csv`
+3. Reads file, asserts all 5 section headers present
+4. Asserts `#export-status` shows "Full backup downloaded"
+
+**What a fail would mean:** The full backup is incomplete — a section is missing and Louise would have a partial backup without knowing it.
+
+---
+
+### SE-09 — CSV export — formula injection protection
+
+**What this proves:** Customer names beginning with formula-triggering characters (`=`, `+`, `-`, `@`) are prefixed with an apostrophe in the exported CSV, preventing them from executing as spreadsheet formulas when Louise opens the file. The raw file contains `'=HYPERLINK(...)` not `=HYPERLINK(...)`.
+
+**Preconditions:** A throwaway customer with `first_name = '=HYPERLINK("http://evil.com")'` inserted via direct pg.
+
+**Steps the test performs:**
+1. Inserts injection-candidate customer via direct pg
+2. Logs in as admin, exports Customers CSV
+3. Reads raw CSV file content
+4. Asserts `'=HYPERLINK` (with apostrophe) is present
+5. Asserts no line contains the un-escaped `=HYPERLINK(...)` form as a standalone cell
+
+**What a fail would mean:** Formula injection protection is broken — malicious customer-name data could execute as a formula in Excel or Google Sheets, potentially loading external content or exfiltrating data.
+
+**Cleanup:** `afterEach` deletes the injection-candidate customer via direct pg.
 
 ---
 
