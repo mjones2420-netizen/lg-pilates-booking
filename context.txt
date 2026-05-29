@@ -398,9 +398,10 @@ tests-playwright/
     ├── sec-*.spec.js            # 3 SEC spec files covering 3 of 3 genuine scenarios
     ├── ec-*.spec.js             # 13 EC spec files covering 13 of 13 genuine scenarios
     ├── blw-*.spec.js            # 8 BLW spec files covering 8 of 8 genuine scenarios
-    └── se-*.spec.js             # 9 SE spec files covering 9 of 9 scenarios
+    ├── se-*.spec.js             # 9 SE spec files covering 9 of 9 scenarios
+    └── ab-*.spec.js             # 5 AB spec files covering 6 of 21 genuine scenarios
 
-CURRENT TEST COUNT: 113 tests (all passing — Session 27, Batch 14 complete)
+CURRENT TEST COUNT: 119 tests (all passing — Session 28, Batch 15 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
@@ -418,6 +419,9 @@ CURRENT TEST COUNT: 113 tests (all passing — Session 27, Batch 14 complete)
           EC-02 red-filled in Excel as duplicate of CB-31. EC suite complete.)
   BLW:   8 tests covering 8 of 8 BLW scenarios (BLW suite complete)
   SE:    9 tests covering 9 of 9 SE scenarios (SE suite complete)
+  AB:    6 tests in 5 spec files covering 6 of 21 genuine AB scenarios
+         (AB-01 red-filled as duplicate of SEC-06.1. AB-02 to AB-07 complete.
+          AB-05 and AB-06 share one spec file.)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -842,15 +846,15 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
 
    UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
    - ✅ Batch 14 — Settings & Export (complete, Session 27)
-   - Batch 15 — Admin Bookings (part 1)
+   - ✅ Batch 15 — Admin Bookings (part 1) (complete, Session 28)
    - Batch 16 — Admin Bookings (part 2)
    - Batch 17 — Admin Bookings (part 3)
    - Batch 18 — Admin Classes (part 1)
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — start Batch 15 (Admin Bookings part 1):
-   - BATCH 15 — Admin Bookings (AB-01 to AB-07). Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 16 (Admin Bookings part 2):
+   - BATCH 16 — Admin Bookings (AB-08 to AB-15). Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -1438,5 +1442,36 @@ SESSION 27 LEARNINGS — SETTINGS TABLE, MODAL OPEN PATTERN, GOSTE2 VALIDATION
 - The Supabase test project pauses after inactivity. If the drift-check
   query times out at session start, check the project is active in the
   Supabase dashboard before retrying.
+
+SESSION 28 LEARNINGS — DASHBOARD TABLE SCOPING, RFB FLOW, WINDOW.CONFIRM
+------------------------------------------------------------------------
+- The admin dashboard contains multiple tables (#btbody, #customers-tbody,
+  #cancellations-tbody, #ctbody). A broad locator like
+  `#pg-dashboard table thead tr th` matches ALL of them (46 th elements).
+  Always scope to the specific table via its tbody ID:
+    page.locator('#btbody').locator('xpath=ancestor::table[1]').locator('thead tr th')
+  This is the canonical pattern for any spec asserting bookings table headers.
+- book_if_available RPC always inserts as status='reserved'. All fixture
+  bookings are seeded as 'confirmed'. AB specs that need a reserved booking
+  must create one per-run via the RPC — no fixture booking will have
+  status='reserved' in a clean fixture state.
+- The RFB modal step flow for 0 sessions attended:
+    Step 1  → select 0 (default) → click Next
+    Step 1b → click "No — not paid" → click Next (button disabled until paid option selected)
+    Step 2  → review screen shows "No refund needed" → click Confirm Removal
+    Step 3  → success message → click Done (not Close — step 3 footer has "Done")
+  The "Done" button calls closeRfbModal(). The step-3 close label is Done,
+  not Close — confusing these is a quick failure mode.
+- window.confirm dialogs (deleteCustomer, deleteBlock, markCancellationRefunded)
+  must be handled with page.once('dialog', d => d.accept()) registered
+  BEFORE the triggering button click. page.once is correct (not page.on) —
+  it auto-removes the handler after first use, preventing leakage to later tests.
+- Direct parq INSERT via admin-db getPool() is the correct setup pattern
+  for any AB spec that needs to assert parq deletion. The anon client has
+  INSERT-only on parq (no SELECT), and the app's rfbConfirm deletes parq
+  via parq.booking_id FK — so the inserted row must use a real booking_id.
+- deleteCustomerCascade is safe to call in afterEach even when the in-app
+  flow already deleted the booking and customer — it deletes 0 rows from
+  bookings then 0 rows from customers without error.
 
 ============================================================
