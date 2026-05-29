@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 29 May 2026
-**Total tests:** 113 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE)
+**Total tests:** 119 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE + 6 AB)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -16,7 +16,7 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Client Booking (CB) | 33 | 0 | 33 | 33 | 0 |
 | Priority Booking (PB) | 10 | 0 | 10 | 10 | 0 |
 | Booking Windows (BW) | 7 | 4 | 3 | 3 | 0 |
-| Admin Bookings (AB) | 22 | 0 | 22 | 0 | 22 |
+| Admin Bookings (AB) | 22 | 1 | 21 | 6 | 15 |
 | Admin Classes (AC) | 24 | 0 | 24 | 0 | 24 |
 | Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
 | Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
@@ -123,13 +123,13 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 
 | ID | Scenario | Status | Suggested Batch |
 |---|---|---|---|
-| AB-01 | Admin can log in | ⬜ Outstanding | Batch 15 |
-| AB-02 | All Bookings tab loads correctly | ⬜ Outstanding | Batch 15 |
-| AB-03 | View booking details | ⬜ Outstanding | Batch 15 |
-| AB-04 | Confirm a reserved booking | ⬜ Outstanding | Batch 15 |
-| AB-05 | Cancel a booking | ⬜ Outstanding | Batch 15 |
-| AB-06 | Remove from Block — booking + health form deleted, customer kept | ⬜ Outstanding | Batch 15 |
-| AB-07 | Permanently Delete Customer — all data removed | ⬜ Outstanding | Batch 15 |
+| AB-01 | Admin can log in | 🔴 Duplicate of SEC-06.1 | — |
+| AB-02 | All Bookings tab loads correctly | ✅ ab-02-all-bookings-tab.spec.js | Batch 15 |
+| AB-03 | View booking details | ✅ ab-03-view-booking-details.spec.js | Batch 15 |
+| AB-04 | Confirm a reserved booking | ✅ ab-04-confirm-reserved-booking.spec.js | Batch 15 |
+| AB-05 | Cancel a booking | ✅ ab-05-06-remove-from-block.spec.js | Batch 15 |
+| AB-06 | Remove from Block — booking + health form deleted, customer kept | ✅ ab-05-06-remove-from-block.spec.js | Batch 15 |
+| AB-07 | Permanently Delete Customer — all data removed | ✅ ab-07-delete-customer.spec.js | Batch 15 |
 | AB-08 | Remove from Block — 0 sessions attended, client has not paid | ⬜ Outstanding | Batch 16 |
 | AB-09 | Remove from Block — 0 sessions attended, client has paid | ⬜ Outstanding | Batch 16 |
 | AB-10 | By Class tab groups bookings by block | ⬜ Outstanding | Batch 16 |
@@ -272,7 +272,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 12 ✅ | Edge Cases (part 2) | 7 | Capacity + DB-level integrity tests. EC-08 server-side ALREADY_BOOKED via direct RPC after a successful UI booking. EC-09 transient "Reserving..." button state via expect.poll on disabled+text snapshot. EC-10 bulk-delete + resync workflow on mon-current with bookings restored in afterEach. EC-11 trigger increments blocks.booked after a UI booking, asserted via cap-txt after reload. EC-12 direct INSERT of duplicate (customer, block) → 23505 unique-violation on bookings_unique_active_per_block. EC-13 sb.rpc('book_if_available') with duplicate pair → ALREADY_BOOKED error message. EC-14 three sub-tests for NOT NULL on customers.email, classes.name, blocks.class_id (23502 with correct column name). |
 | Batch 13 ✅ | Block Warnings | 8 | Dashboard banner regressions. All 8 specs use admin login + direct-pg visibility toggles (visible=false/true) for setup/teardown. BLW-02/05/07 use Thursday (thu-locked) as the yellow-advisory switch — Wed and Fri already fire the advisory in the clean fixture state. BLW-06 inserts second blocks for Wed and Fri to create a fully-covered state. BLW-05 adds a real Thu block via the UI and deletes it in afterEach. |
 | Batch 14 ✅ | Settings & Export | 9 | Bank details CRUD (SE-01 to SE-03), CSV exports (SE-04 to SE-08), formula injection protection (SE-09). SE-01/03 use direct-pg settings seed/restore in afterEach. SE-03 self-cleans the booking it creates. SE-09 inserts an injection-candidate customer via direct pg and deletes in afterEach. |
-| Batch 15 | Admin Bookings (part 1) | 7 | Login + table + booking lifecycle. |
+| Batch 15 ✅ | Admin Bookings (part 1) | 6 specs (6 tests) | AB-01 reclassified as duplicate of SEC-06.1 (red-filled). AB-02 bookings table 7-column header + fixture rows. AB-03 View overlay with booking details + "no health form" for returning clients. AB-04 Confirm reserved booking via per-run RPC booking. AB-05/AB-06 combined — RFB flow (0 sessions, not paid) deletes booking + parq, customer survives. AB-07 Del Customer flow with window.confirm dialog accept. |
 | Batch 16 | Admin Bookings (part 2) | 8 | Refund flows + cancellations report. |
 | Batch 17 | Admin Bookings (part 3) | 7 | CSV export + Missing PAR-Q banner. |
 | Batch 18 | Admin Classes (part 1) | 8 | CRUD on classes + blocks. |
@@ -2883,9 +2883,9 @@ Someone has changed the anon grant matrix without updating the docs. If anon has
 
 The Coverage Tracker at the top of this document is the authoritative view of outstanding work. The summary table and per-tab tables give the full breakdown by Excel tab; the Suggested Batches table lays out the planned grouping for upcoming sessions.
 
-**Outstanding totals:** 46 scenarios across 3 tabs (29 May 2026).
+**Outstanding totals:** 40 scenarios across 3 tabs (29 May 2026).
 
-**Next session focus:** Batch 15 — Admin Bookings part 1 (AB-01 to AB-07). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 16 — Admin Bookings part 2 (AB-08 to AB-15). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 
@@ -3039,6 +3039,114 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 **What a fail would mean:** Formula injection protection is broken — malicious customer-name data could execute as a formula in Excel or Google Sheets, potentially loading external content or exfiltrating data.
 
 **Cleanup:** `afterEach` deletes the injection-candidate customer via direct pg.
+
+---
+
+## Admin Bookings specs (Batch 15)
+
+### AB-02 — All Bookings tab loads correctly
+
+**File:** `tests/ab-02-all-bookings-tab.spec.js`
+**Scenario:** After admin login, the All Bookings tab is active by default. The table renders with exactly 7 columns (Client, Class, When, Block, Paid, Status, Actions) in the documented order. At least one fixture booking row appears with a status pill and all three action buttons (View, Remove from Block, Del Customer).
+
+**What this proves:** The admin bookings table renders correctly and Louise can see her booking data in the expected structure.
+
+1. Navigate to app, verify TEST MODE banner
+2. Log in as admin via `loginAsAdmin`
+3. Assert `#tab-bookings.on` is visible
+4. Assert 7 `thead th` elements with correct text
+5. Wait for `#btbody` to stop showing "Loading..."
+6. Assert `Returning One` row visible with `.pill`, View, Remove from Block, Del Customer buttons
+
+**Cleanup:** None — read-only.
+
+---
+
+### AB-03 — View booking details modal
+
+**File:** `tests/ab-03-view-booking-details.spec.js`
+**Scenario:** Clicking the View button on a booking row opens the `#view-overlay` modal. The title shows the client's name, and the body renders booking fields (Status, Email, Amount Due) after the async load. For returning customers, the "no health form required" message appears instead of a PAR-Q.
+
+**What this proves:** The View overlay correctly fetches and renders booking + customer details, and handles the no-parq case gracefully.
+
+1. Log in as admin
+2. Find first `Returning One` row in `#btbody`
+3. Click View button
+4. Assert `#view-overlay.on` visible, `#view-title` = "Returning One"
+5. Wait for `#view-body` to finish loading
+6. Assert Status, Email, Amount Due sections present; `returning-one@test.example` visible
+7. Assert "no health form required" text
+8. Click Close, assert overlay hidden
+
+**Cleanup:** None — read-only.
+
+---
+
+### AB-04 — Confirm a reserved booking
+
+**File:** `tests/ab-04-confirm-reserved-booking.spec.js`
+**Scenario:** A booking with status `reserved` shows a Confirm button in the Actions column. Clicking it calls `confirmBookingAdmin()` which updates status to `confirmed`, shows a toast, re-renders the dashboard, and the Confirm button disappears.
+
+**What this proves:** The admin can confirm reserved bookings and the status reflects correctly in the table.
+
+**Pre-conditions:** Per-run customer + `reserved` booking created via `upsert_customer` + `book_if_available` RPCs (all fixture bookings are `confirmed`, so a per-run one is needed).
+
+1. Create per-run customer + `reserved` booking via RPC (track `createdCustomerId`)
+2. Navigate and log in as admin
+3. Find `Ab04 Reserved` row, assert `.pill` shows `reserved`
+4. Assert `button.act-confirm` is visible
+5. Click Confirm, wait for toast containing "confirmed"
+6. Assert `.pill` now shows `confirmed`, Confirm button gone
+
+**Cleanup:** `afterEach` calls `deleteCustomerCascade(createdCustomerId)`.
+
+---
+
+### AB-05/AB-06 — Remove from Block
+
+**File:** `tests/ab-05-06-remove-from-block.spec.js`
+**Covers:** AB-05 (RFB flow completes) and AB-06 (booking + parq deleted, customer kept).
+
+**Scenario:** Admin opens the RFB modal, selects 0 sessions attended, indicates the client has not paid, confirms removal. The booking row disappears from the table. The booking and parq rows are deleted from the DB; the customer record survives.
+
+**RFB flow used:** Step 1 (0 sessions → Next) → Step 1b (Not paid → Next) → Step 2 (Review, "No refund needed" → Confirm Removal) → Step 3 (Done).
+
+**Pre-conditions:** Per-run customer + `reserved` booking + parq row created via RPC + direct pg.
+
+1. Create per-run customer, booking, parq row (track `createdCustomerId`, `bookingId`)
+2. Assert parq row exists in DB before test
+3. Navigate and log in as admin
+4. Open RFB modal for `Ab05 Removable` row
+5. Step 1: click Next (0 sessions default)
+6. Step 1b: click "No — not paid" → Next
+7. Step 2: assert "No refund needed" → click Confirm Removal
+8. Step 3: assert "removed from the block" → click Done
+9. Assert `Ab05 Removable` row gone from `#btbody` (AB-05)
+10. Assert parq row deleted from DB (AB-06)
+11. Assert customer row still exists in DB (AB-06)
+
+**Cleanup:** `afterEach` calls `deleteCustomerCascade(createdCustomerId)` — safe even when booking already deleted.
+
+---
+
+### AB-07 — Permanently Delete Customer
+
+**File:** `tests/ab-07-delete-customer.spec.js`
+**Scenario:** Clicking Del Customer fires a `window.confirm` dialog. On acceptance, the app deletes the parq, all bookings, and the customer record. The row disappears from the bookings table. All three DB tables confirm deletion.
+
+**What this proves:** The permanent delete path removes all data and the UI reflects it immediately.
+
+**Pre-conditions:** Per-run customer + `reserved` booking + parq row created via RPC + direct pg. `page.once('dialog', d => d.accept())` registered before button click.
+
+1. Create per-run customer, booking, parq row
+2. Navigate and log in as admin
+3. Register dialog accept handler
+4. Click Del Customer on `Ab07 Deletable` row
+5. Wait for toast "Customer deleted"
+6. Assert row gone from `#btbody`
+7. Assert customer, booking, parq all deleted from DB
+
+**Cleanup:** `afterEach` calls `deleteCustomerCascade(createdCustomerId)` as safety net — no-op if already deleted.
 
 ---
 
