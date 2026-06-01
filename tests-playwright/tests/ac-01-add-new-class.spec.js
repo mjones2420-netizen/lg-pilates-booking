@@ -7,7 +7,9 @@
 // appear in the #ctbody table after creation. It is NOT visible on the
 // public booking page yet (no block added).
 //
-// Cleanup: the created class is deleted in afterEach via direct pg.
+// Cleanup: the unique class name is set in beforeEach so afterEach can
+// always query and delete by name, regardless of whether the test passed
+// or failed before the ID was captured.
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
@@ -19,24 +21,24 @@ if (!process.env.TEST_APP_URL) {
 }
 
 test.describe('AC-01 — Add a new class', () => {
-  let createdClassId = null;
+  let uniqueName = null;
 
   test.beforeEach(async ({ page }) => {
-    createdClassId = null;
+    // Set the name here so afterEach can always clean up by name,
+    // even if the test fails before the class is created or the ID captured.
+    uniqueName = `AC01 Test ${Date.now()}`;
     await page.goto(APP_PATH);
     await expect(page.locator('#test-mode-banner.on')).toBeVisible();
     await loginAsAdmin(page);
   });
 
   test.afterEach(async () => {
-    if (createdClassId) {
-      await getPool().query('DELETE FROM classes WHERE id = $1', [createdClassId]);
+    if (uniqueName) {
+      await getPool().query('DELETE FROM classes WHERE name = $1', [uniqueName]);
     }
   });
 
   test('new class appears in Upcoming Classes table after creation', async ({ page }) => {
-    const uniqueName = `AC01 Test ${Date.now()}`;
-
     // Click + Add New Class button
     await page.getByRole('button', { name: '+ Add New Class' }).click();
     await expect(page.locator('#add-class-overlay.on')).toBeVisible();
@@ -66,12 +68,5 @@ test.describe('AC-01 — Add a new class', () => {
     await page.locator('#nb-schedule').click();
     await expect(page.locator('#pg-schedule.on')).toBeVisible();
     await expect(page.locator('.card').filter({ hasText: uniqueName })).not.toBeVisible();
-
-    // Capture ID for cleanup
-    const { rows } = await getPool().query(
-      'SELECT id FROM classes WHERE name = $1 ORDER BY id DESC LIMIT 1',
-      [uniqueName]
-    );
-    if (rows.length > 0) createdClassId = rows[0].id;
   });
 });
