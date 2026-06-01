@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 1 Jun 2026
-**Total tests:** 134 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE + 21 AB)
+**Total tests:** 142 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE + 21 AB + 8 AC)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -150,14 +150,14 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 
 | ID | Scenario | Status | Suggested Batch |
 |---|---|---|---|
-| AC-01 | Add a new class | ⬜ Outstanding | Batch 18 |
-| AC-02 | Add a block to a class | ⬜ Outstanding | Batch 18 |
-| AC-03 | Block start date must match class day | ⬜ Outstanding | Batch 18 |
-| AC-04 | Edit a block | ⬜ Outstanding | Batch 18 |
-| AC-05 | Delete a block | ⬜ Outstanding | Batch 18 |
-| AC-06 | Edit a class slot | ⬜ Outstanding | Batch 18 |
-| AC-07 | Delete a class | ⬜ Outstanding | Batch 18 |
-| AC-08 | Class hidden when it has no blocks | ⬜ Outstanding | Batch 18 |
+| AC-01 | Add a new class | ✅ ac-01-add-new-class.spec.js | Batch 18 |
+| AC-02 | Add a block to a class | ✅ ac-02-add-block-to-class.spec.js | Batch 18 |
+| AC-03 | Block start date must match class day | ✅ ac-03-block-start-day-mismatch.spec.js | Batch 18 |
+| AC-04 | Edit a block | ✅ ac-04-edit-block.spec.js | Batch 18 |
+| AC-05 | Delete a block | ✅ ac-05-delete-block.spec.js | Batch 18 |
+| AC-06 | Edit a class slot | ✅ ac-06-edit-class-slot.spec.js | Batch 18 |
+| AC-07 | Delete a class | ✅ ac-07-delete-class.spec.js | Batch 18 |
+| AC-08 | Class hidden when it has no blocks | ✅ ac-08-class-hidden-no-blocks.spec.js | Batch 18 |
 | AC-09 | Add class rejected when not logged in | ⬜ Outstanding | Batch 19 |
 | AC-10 | Edit class rejected when not logged in | ⬜ Outstanding | Batch 19 |
 | AC-11 | Add block rejected when not logged in | ⬜ Outstanding | Batch 19 |
@@ -275,7 +275,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 15 ✅ | Admin Bookings (part 1) | 6 specs (6 tests) | AB-01 reclassified as duplicate of SEC-06.1 (red-filled). AB-02 bookings table 7-column header + fixture rows. AB-03 View overlay with booking details + "no health form" for returning clients. AB-04 Confirm reserved booking via per-run RPC booking. AB-05/AB-06 combined — RFB flow (0 sessions, not paid) deletes booking + parq, customer survives. AB-07 Del Customer flow with window.confirm dialog accept. |
 | Batch 16 ✅ | Admin Bookings (part 2) | 8 specs (8 tests) | RFB flows: AB-08/09 zero-sessions (not paid / paid), AB-10 By Class tab accordion, AB-11/12 sessions-attended refund + override, AB-13/14/15 cancellations tab + Mark Refunded button + DB update. AB-10 required a fix on first run — double-click collapse bug when Monday was also the first group. |
 | Batch 17 ✅ | Admin Bookings (part 3) | 7 specs (7 tests) | AB-16 CSV export download + filename regex, AB-17/18 button layout regression + sign-in reset, AB-19/20/21 missing-PAR-Q banner (hidden / singular / plural + highlight), AB-22 sign_date friendly date format in View modal. AB suite complete. |
-| Batch 18 | Admin Classes (part 1) | 8 | CRUD on classes + blocks. |
+| Batch 18 ✅ | Admin Classes (part 1) | 8 specs (8 tests) | AC-01 add class + ctbody row. AC-02 add block + By Class accordion + schedule visible. AC-03 wrong-day date rejected with red error. AC-04 edit block price/cap. AC-05 delete block + class hidden. AC-06 edit class slot + schedule updated. AC-07 delete class. AC-08 class hidden when no blocks remain. All use per-run class/block setup via direct pg. |
 | Batch 19 | Admin Classes (part 2) | 8 | Auth gates + overlap validation. |
 | Batch 20 | Admin Classes (part 3) | 8 | Time formatting + delete-cascade tests. |
 
@@ -2885,7 +2885,7 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 **Outstanding totals:** 40 scenarios across 3 tabs (29 May 2026).
 
-**Next session focus:** Batch 18 — Admin Classes part 1 (AC-01 to AC-08). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 19 — Admin Classes part 2 (AC-09 to AC-16). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 

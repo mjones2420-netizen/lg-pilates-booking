@@ -399,9 +399,10 @@ tests-playwright/
     ├── ec-*.spec.js             # 13 EC spec files covering 13 of 13 genuine scenarios
     ├── blw-*.spec.js            # 8 BLW spec files covering 8 of 8 genuine scenarios
     ├── se-*.spec.js             # 9 SE spec files covering 9 of 9 scenarios
-    └── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
+    ├── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
+    └── ac-*.spec.js             # 8 AC spec files covering 8 of 8 Batch 18 scenarios
 
-CURRENT TEST COUNT: 134 tests (all passing — Session 29, Batch 17 complete)
+CURRENT TEST COUNT: 142 tests (all passing — Session 30, Batch 18 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
@@ -423,6 +424,7 @@ CURRENT TEST COUNT: 134 tests (all passing — Session 29, Batch 17 complete)
          (AB-01 red-filled as duplicate of SEC-06.1. AB-02 to AB-22 complete.
           AB-05 and AB-06 share one spec file. AB-08/09, AB-11/12, AB-13/14/15,
           AB-17/18, AB-19/20/21 each share one spec file.)
+  AC:    8 tests in 8 spec files covering AC-01 to AC-08 (Batch 18 complete)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -838,6 +840,15 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
         a real Thu block via the UI and deletes it in afterEach by
         class_id + start_date.
 
+   - ✅ Batch 18 (Session 30) — Admin Classes (part 1), all 8 scenarios
+        automated. AC-01 add class via UI + ctbody row assertion. AC-02 add
+        block via UI + By Class accordion + schedule visible. AC-03 wrong-day
+        date rejected with red error in #ab-date-val. AC-04 edit block price/cap.
+        AC-05 delete block + class hidden on schedule. AC-06 edit class slot +
+        schedule updated. AC-07 delete class. AC-08 class hidden when no blocks
+        remain. All specs use per-run class/block setup via direct pg; Saturday
+        class used for AC-02/04 to avoid fixture overlap check.
+
    DUPLICATE SENSE-CHECK (10 May 2026, updated 16 May 2026):
    11 Excel rows red-filled as no longer requiring automation — see
    TEST-PLAN.md Coverage Tracker for which scenarios are covered by which
@@ -849,14 +860,12 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - ✅ Batch 15 — Admin Bookings (part 1) (complete, Session 28)
    - ✅ Batch 16 — Admin Bookings (part 2) (complete, Session 29)
    - ✅ Batch 17 — Admin Bookings (part 3) (complete, Session 29)
-   - Batch 18 — Admin Classes (part 1)
-   - Batch 17 — Admin Bookings (part 3)
-   - Batch 18 — Admin Classes (part 1)
+   - ✅ Batch 18 — Admin Classes (part 1) (complete, Session 30)
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — start Batch 18 (Admin Classes part 1):
-   - BATCH 18 — Admin Classes (AC-01 to AC-08). Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 19 (Admin Classes part 2):
+   - BATCH 19 — Admin Classes (AC-09 to AC-16). Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -1498,5 +1507,38 @@ SESSION 29 LEARNINGS — AB SUITE COMPLETE, ACCORDION DOUBLE-CLICK BUG
   const [download] = await Promise.all([page.waitForEvent('download'), btn.click()]).
 - AB suite is now complete: 21 of 21 genuine scenarios automated across
   13 spec files (AB-01 red-filled as duplicate of SEC-06.1).
+
+SESSION 30 LEARNINGS — AC SUITE, DATE TIMEZONE BUG, ACCORDION MECHANICS
+------------------------------------------------------------------------
+- Nav button for the public schedule is #nb-schedule, NOT #nb-home. Using
+  #nb-home causes an immediate 30s timeout — the element doesn't exist.
+- Classes and blocks inserted via direct pg before page.goto ARE loaded into
+  the app's in-memory arrays on page init. Insert before goto; do not insert
+  after. If a class is inserted after goto, the app won't know about it and
+  validateAbDate() will silently fail to find the class for day-of-week check.
+- toISOString() on a local midnight Date converts to UTC, shifting the date
+  one day back in BST (UTC+1). For any date string passed into a browser date
+  input where the app checks the day of week, always use toLocalISO():
+    function toLocalISO(d) {
+      return d.getFullYear() + '-'
+        + String(d.getMonth() + 1).padStart(2, '0') + '-'
+        + String(d.getDate()).padStart(2, '0');
+    }
+  This affects any test that calls validateAbDate() via the browser — i.e.
+  any spec that fills #ab-start and triggers day validation. Direct pg inserts
+  are unaffected (the DB doesn't validate day of week).
+- toggleClassGroup() uses style.display directly ('block'/'none'), NOT a CSS
+  class toggle. The .on class is defined in CSS but never added by the JS.
+  Assert toBeVisible() (computed display) not toHaveClass(/on/).
+- To expand a class group accordion reliably, target it by its onclick
+  attribute: page.locator(`[onclick="toggleClassGroup('cg-${classId}')"]`).
+  Filtering .class-group-header by hasText is unreliable — the click may
+  land on a child element and fail to fire the handler.
+- After saveNewBlock() fires renderDashboard(), the By Class accordion is
+  rebuilt from scratch with all groups closed. Switching tabs (bookings →
+  classes) re-renders the accordion but the in-memory blocks array state
+  is not always reliable immediately post-save. Safest pattern for asserting
+  By Class accordion contents after a UI block save: reload the full page
+  so the app re-fetches from DB, then re-login, then expand the group.
 
 ============================================================
