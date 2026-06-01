@@ -17,7 +17,7 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Priority Booking (PB) | 10 | 0 | 10 | 10 | 0 |
 | Booking Windows (BW) | 7 | 4 | 3 | 3 | 0 |
 | Admin Bookings (AB) | 22 | 1 | 21 | 21 | 0 |
-| Admin Classes (AC) | 24 | 0 | 24 | 0 | 24 |
+| Admin Classes (AC) | 24 | 0 | 24 | 8 | 16 |
 | Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
 | Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
 | Settings & Export (SE) | 9 | 0 | 9 | 9 | 0 |
@@ -3239,6 +3239,96 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 **What this proves:** The date formatting helper is wired up correctly in the admin view and does not regress to showing raw ISO dates.
 
 **Pre-conditions:** Per-run `new`-type customer + booking + parq row with `sign_date = '2026-06-01'` inserted via direct pg. Expected display: "1 Jun 2026".
+
+---
+
+## Admin Classes specs (Batch 18)
+
+### AC-01 — Add a new class
+
+**File:** `tests/ac-01-add-new-class.spec.js`
+**Scenario:** An admin clicks "+ Add New Class", fills in the day, level, times, venue, and location, and clicks Create Class. The new class appears in the Upcoming Classes table (`#ctbody`). It is not yet visible on the public booking page because no block has been added.
+
+**What this proves:** The add-class form submits correctly, the class is saved to the database, and the dashboard table reflects it immediately. The public schedule correctly omits blockless classes.
+
+**Pre-conditions:** Admin logged in. Class created per-run with a unique timestamped name; deleted in `afterEach` via direct pg.
+
+---
+
+### AC-02 — Add a block to a class
+
+**File:** `tests/ac-02-add-block-to-class.spec.js`
+**Scenario:** An admin clicks "+ Block" next to a class in the Upcoming Classes table, fills in a start date, weeks, price, and capacity, and saves. The block appears under the class in the By Class accordion, and the class becomes visible on the public booking page.
+
+**What this proves:** The add-block flow saves to the database, the By Class tab reflects the new block, and the public schedule shows the class once a block exists.
+
+**Pre-conditions:** A Saturday class is created via direct pg before page load (so the app fetches it into memory on init). Saturday is used to avoid the overlap check firing against fixture blocks on other days. The page is reloaded after saving the block so the By Class accordion renders from a clean DB-fetched state.
+
+---
+
+### AC-03 — Block start date must match class day
+
+**File:** `tests/ac-03-block-start-day-mismatch.spec.js`
+**Scenario:** An admin opens the Add Block modal for a Monday class and enters a Wednesday start date. The `#ab-date-val` element shows a red error naming the wrong day and prompting for a Monday. Clicking Save shows a further error in `#ab-err` and the modal stays open.
+
+**What this proves:** The `validateAbDate()` day-of-week check catches mismatched dates before the block is saved, at both the field-change and save-click stages.
+
+**Pre-conditions:** Uses the Monday Mixed fixture class (class_id=1) via the `+ Block` button in `#ctbody`. No DB state is created. Date set via `evaluate()` to fire `onchange` atomically in page context.
+
+---
+
+### AC-04 — Edit a block
+
+**File:** `tests/ac-04-edit-block.spec.js`
+**Scenario:** An admin expands a class group in the By Class tab, clicks "Edit Block", changes the price and capacity, and saves. The updated values appear in the By Class accordion immediately.
+
+**What this proves:** The edit-block flow updates the correct DB row and the dashboard re-renders with the new values.
+
+**Pre-conditions:** A Saturday class + block created via direct pg before page load. Saturday avoids fixture overlap. The existing start date is re-fired via `evaluate()` so `validateAbDate()` confirms the day before the save button is clicked.
+
+---
+
+### AC-05 — Delete a block
+
+**File:** `tests/ac-05-delete-block.spec.js`
+**Scenario:** An admin expands a class group in the By Class tab and clicks "Delete Block", accepting the confirm dialog. A toast confirms deletion. The class group shows "No blocks yet", and the class no longer appears on the public booking page.
+
+**What this proves:** Block deletion removes the row from the DB, the dashboard reflects the empty state, and the public schedule hides the class when it has no blocks.
+
+**Pre-conditions:** Fresh class + block per-run via direct pg. `page.once('dialog')` registered before the delete click. `afterEach` cleans up the class if the test fails before deletion.
+
+---
+
+### AC-06 — Edit a class slot
+
+**File:** `tests/ac-06-edit-class-slot.spec.js`
+**Scenario:** An admin clicks "Edit" next to a class in the Upcoming Classes table, changes the venue and start time, and saves. The updated time appears on the class card on the public booking page.
+
+**What this proves:** The edit-class flow updates the correct DB row and the public schedule renders the new details.
+
+**Pre-conditions:** Fresh Wednesday class + block per-run via direct pg (so the class is visible on the schedule). `afterEach` deletes the class.
+
+---
+
+### AC-07 — Delete a class
+
+**File:** `tests/ac-07-delete-class.spec.js`
+**Scenario:** An admin clicks "Delete" next to a class in the Upcoming Classes table and accepts the confirm dialog. A toast confirms deletion. The class row disappears from `#ctbody` and the class no longer appears on the public booking page.
+
+**What this proves:** Class deletion removes the class and its blocks from the DB, the dashboard table reflects the removal, and the public schedule no longer shows the class.
+
+**Pre-conditions:** Fresh Tuesday class + block per-run via direct pg. `createdClassId` is set to `null` after successful deletion so `afterEach` skips cleanup.
+
+---
+
+### AC-08 — Class hidden when it has no blocks
+
+**File:** `tests/ac-08-class-hidden-no-blocks.spec.js`
+**Scenario:** A class with one block IS visible on the public schedule. The admin deletes that block via the By Class tab. After reloading the public schedule, the class card no longer appears.
+
+**What this proves:** The public schedule's block-filter logic correctly hides classes with no visible blocks, and that the hiding is durable across a page reload (not just a client-side state change).
+
+**Pre-conditions:** Fresh Thursday class + block per-run. The spec first confirms the class IS visible, then deletes the block via the dashboard, then reloads and asserts absence.
 
 ---
 
