@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 29 May 2026
-**Total tests:** 119 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE + 6 AB)
+**Last updated:** 1 Jun 2026
+**Total tests:** 134 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE + 21 AB)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -16,7 +16,7 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Client Booking (CB) | 33 | 0 | 33 | 33 | 0 |
 | Priority Booking (PB) | 10 | 0 | 10 | 10 | 0 |
 | Booking Windows (BW) | 7 | 4 | 3 | 3 | 0 |
-| Admin Bookings (AB) | 22 | 1 | 21 | 6 | 15 |
+| Admin Bookings (AB) | 22 | 1 | 21 | 21 | 0 |
 | Admin Classes (AC) | 24 | 0 | 24 | 0 | 24 |
 | Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
 | Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
@@ -24,7 +24,7 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Edge Cases (EC) | 14 | 1 | 13 | 13 | 0 |
 | Block Warnings (BLW) | 8 | 0 | 8 | 8 | 0 |
 | Security (SEC) | 7 | 4 | 3 | 3 | 0 |
-| **Totals** | **144** | **11** | **133** | **87** | **46** |
+| **Totals** | **144** | **11** | **133** | **102** | **31** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -130,21 +130,21 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | AB-05 | Cancel a booking | ✅ ab-05-06-remove-from-block.spec.js | Batch 15 |
 | AB-06 | Remove from Block — booking + health form deleted, customer kept | ✅ ab-05-06-remove-from-block.spec.js | Batch 15 |
 | AB-07 | Permanently Delete Customer — all data removed | ✅ ab-07-delete-customer.spec.js | Batch 15 |
-| AB-08 | Remove from Block — 0 sessions attended, client has not paid | ⬜ Outstanding | Batch 16 |
-| AB-09 | Remove from Block — 0 sessions attended, client has paid | ⬜ Outstanding | Batch 16 |
-| AB-10 | By Class tab groups bookings by block | ⬜ Outstanding | Batch 16 |
-| AB-11 | Remove from Block — sessions attended, refund calculated | ⬜ Outstanding | Batch 16 |
-| AB-12 | Remove from Block — refund override changes saved amount | ⬜ Outstanding | Batch 16 |
-| AB-13 | Cancellations report — all removals appear in table | ⬜ Outstanding | Batch 16 |
-| AB-14 | Mark Refunded — button appears for unrefunded records | ⬜ Outstanding | Batch 16 |
-| AB-15 | Mark Refunded — clicking button updates record | ⬜ Outstanding | Batch 16 |
-| AB-16 | Cancellations report — CSV export downloads correctly | ⬜ Outstanding | Batch 17 |
-| AB-17 | Del Customer button — still present alongside Remove from Block | ⬜ Outstanding | Batch 17 |
-| AB-18 | Sign-in button resets correctly on subsequent sign-in | ⬜ Outstanding | Batch 17 |
-| AB-19 | Missing PAR-Q banner — hidden when all PAR-Qs present | ⬜ Outstanding | Batch 17 |
-| AB-20 | Missing PAR-Q banner — appears when a PAR-Q is missing | ⬜ Outstanding | Batch 17 |
-| AB-21 | Missing PAR-Q banner — plural count + click-to-scroll highlight | ⬜ Outstanding | Batch 17 |
-| AB-22 | Admin PAR-Q view renders friendly date format | ⬜ Outstanding | Batch 17 |
+| AB-08 | Remove from Block — 0 sessions attended, client has not paid | ✅ ab-08-09-rfb-zero-sessions.spec.js | Batch 16 |
+| AB-09 | Remove from Block — 0 sessions attended, client has paid | ✅ ab-08-09-rfb-zero-sessions.spec.js | Batch 16 |
+| AB-10 | By Class tab groups bookings by block | ✅ ab-10-by-class-tab.spec.js | Batch 16 |
+| AB-11 | Remove from Block — sessions attended, refund calculated | ✅ ab-11-12-rfb-sessions-attended.spec.js | Batch 16 |
+| AB-12 | Remove from Block — refund override changes saved amount | ✅ ab-11-12-rfb-sessions-attended.spec.js | Batch 16 |
+| AB-13 | Cancellations report — all removals appear in table | ✅ ab-13-14-15-cancellations-tab.spec.js | Batch 16 |
+| AB-14 | Mark Refunded — button appears for unrefunded records | ✅ ab-13-14-15-cancellations-tab.spec.js | Batch 16 |
+| AB-15 | Mark Refunded — clicking button updates record | ✅ ab-13-14-15-cancellations-tab.spec.js | Batch 16 |
+| AB-16 | Cancellations report — CSV export downloads correctly | ✅ ab-16-cancellations-csv-export.spec.js | Batch 17 |
+| AB-17 | Del Customer button — still present alongside Remove from Block | ✅ ab-17-18-dashboard-buttons.spec.js | Batch 17 |
+| AB-18 | Sign-in button resets correctly on subsequent sign-in | ✅ ab-17-18-dashboard-buttons.spec.js | Batch 17 |
+| AB-19 | Missing PAR-Q banner — hidden when all PAR-Qs present | ✅ ab-19-20-21-missing-parq-banner.spec.js | Batch 17 |
+| AB-20 | Missing PAR-Q banner — appears when a PAR-Q is missing | ✅ ab-19-20-21-missing-parq-banner.spec.js | Batch 17 |
+| AB-21 | Missing PAR-Q banner — plural count + click-to-scroll highlight | ✅ ab-19-20-21-missing-parq-banner.spec.js | Batch 17 |
+| AB-22 | Admin PAR-Q view renders friendly date format | ✅ ab-22-parq-date-format.spec.js | Batch 17 |
 
 ### Admin Classes (AC)
 
@@ -273,8 +273,8 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 13 ✅ | Block Warnings | 8 | Dashboard banner regressions. All 8 specs use admin login + direct-pg visibility toggles (visible=false/true) for setup/teardown. BLW-02/05/07 use Thursday (thu-locked) as the yellow-advisory switch — Wed and Fri already fire the advisory in the clean fixture state. BLW-06 inserts second blocks for Wed and Fri to create a fully-covered state. BLW-05 adds a real Thu block via the UI and deletes it in afterEach. |
 | Batch 14 ✅ | Settings & Export | 9 | Bank details CRUD (SE-01 to SE-03), CSV exports (SE-04 to SE-08), formula injection protection (SE-09). SE-01/03 use direct-pg settings seed/restore in afterEach. SE-03 self-cleans the booking it creates. SE-09 inserts an injection-candidate customer via direct pg and deletes in afterEach. |
 | Batch 15 ✅ | Admin Bookings (part 1) | 6 specs (6 tests) | AB-01 reclassified as duplicate of SEC-06.1 (red-filled). AB-02 bookings table 7-column header + fixture rows. AB-03 View overlay with booking details + "no health form" for returning clients. AB-04 Confirm reserved booking via per-run RPC booking. AB-05/AB-06 combined — RFB flow (0 sessions, not paid) deletes booking + parq, customer survives. AB-07 Del Customer flow with window.confirm dialog accept. |
-| Batch 16 | Admin Bookings (part 2) | 8 | Refund flows + cancellations report. |
-| Batch 17 | Admin Bookings (part 3) | 7 | CSV export + Missing PAR-Q banner. |
+| Batch 16 ✅ | Admin Bookings (part 2) | 8 specs (8 tests) | RFB flows: AB-08/09 zero-sessions (not paid / paid), AB-10 By Class tab accordion, AB-11/12 sessions-attended refund + override, AB-13/14/15 cancellations tab + Mark Refunded button + DB update. AB-10 required a fix on first run — double-click collapse bug when Monday was also the first group. |
+| Batch 17 ✅ | Admin Bookings (part 3) | 7 specs (7 tests) | AB-16 CSV export download + filename regex, AB-17/18 button layout regression + sign-in reset, AB-19/20/21 missing-PAR-Q banner (hidden / singular / plural + highlight), AB-22 sign_date friendly date format in View modal. AB suite complete. |
 | Batch 18 | Admin Classes (part 1) | 8 | CRUD on classes + blocks. |
 | Batch 19 | Admin Classes (part 2) | 8 | Auth gates + overlap validation. |
 | Batch 20 | Admin Classes (part 3) | 8 | Time formatting + delete-cascade tests. |
@@ -2885,7 +2885,7 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 **Outstanding totals:** 40 scenarios across 3 tabs (29 May 2026).
 
-**Next session focus:** Batch 16 — Admin Bookings part 2 (AB-08 to AB-15). See the Suggested Batches table for full batch sequence.
+**Next session focus:** Batch 18 — Admin Classes part 1 (AC-01 to AC-08). See the Suggested Batches table for full batch sequence.
 
 > **Unblocked in Session 17:** The admin-login helper (`tests/helpers/admin-auth.js`) and direct-pg fixture helper (`tests/helpers/admin-db.js`) are reusable for the entire AB suite, all admin-driven Block Warnings / Settings / Admin Classes batches.
 
@@ -3147,6 +3147,98 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 7. Assert customer, booking, parq all deleted from DB
 
 **Cleanup:** `afterEach` calls `deleteCustomerCascade(createdCustomerId)` as safety net — no-op if already deleted.
+
+---
+
+## Admin Bookings specs (Batch 16)
+
+### AB-08/AB-09 — RFB: 0 sessions attended
+
+**File:** `tests/ab-08-09-rfb-zero-sessions.spec.js`
+**Covers:** AB-08 (0 sessions, not paid → no refund) and AB-09 (0 sessions, paid → full £60 refund).
+
+**What this proves:** The RFB Step 1b "Has this client paid?" screen routes correctly and the cancellations record stores the right refund_amount in both cases.
+
+**Pre-conditions:** Per-run returning customer + `reserved` booking on `fri-upcoming` (£10/session, 6 weeks). AB-09 sets status to `confirmed` via `setBookingStatus`.
+
+**Cleanup:** `afterEach` calls `deleteCustomerCascade`. Cancellations rows are audit records and are not deleted.
+
+---
+
+### AB-10 — By Class tab
+
+**File:** `tests/ab-10-by-class-tab.spec.js`
+**Scenario:** The By Class tab renders a class accordion. Each group starts collapsed; clicking its header opens it to reveal blocks, a mini booking table, and Edit Block / Delete Block buttons.
+
+**What this proves:** The By Class tab renders correctly with fixture data and the accordion expand works.
+
+**Note:** First run failed due to a double-click collapse bug — Monday was also the first group, so the generic first-group click and the Monday click toggled it open then immediately closed. Fixed by clicking Monday directly once.
+
+---
+
+### AB-11/AB-12 — RFB: sessions attended
+
+**File:** `tests/ab-11-12-rfb-sessions-attended.spec.js`
+**Covers:** AB-11 (3 sessions attended → £30 refund) and AB-12 (2 sessions attended, override to £25).
+
+**What this proves:** Sessions > 0 skips Step 1b; the refund calculation (remaining × price) is correct; the override field saves the overridden amount, not the calculated amount.
+
+**Pre-conditions:** Per-run confirmed booking on `fri-upcoming` (£10/session, 6 weeks).
+
+---
+
+### AB-13/AB-14/AB-15 — Cancellations tab and Mark Refunded
+
+**File:** `tests/ab-13-14-15-cancellations-tab.spec.js`
+**Covers:** AB-13 (record appears after removal), AB-14 (Mark Refunded button present only for owed refunds), AB-15 (clicking Mark Refunded updates UI and DB).
+
+**What this proves:** The cancellations tab renders removal records in reverse chronological order. The Mark Refunded button renders conditionally and the `window.confirm` dialog + DB update work correctly. After marking, the amount turns green and the "Refunded" label appears.
+
+**Pre-conditions:** AB-13 uses a zero-refund removal. AB-14/AB-15 use a paid removal (0 sessions, confirmed booking) to produce a refund_amount > 0 record.
+
+---
+
+## Admin Bookings specs (Batch 17)
+
+### AB-16 — Cancellations CSV export
+
+**File:** `tests/ab-16-cancellations-csv-export.spec.js`
+**Scenario:** Clicking "Export CSV" on the Cancellations tab triggers a browser download. The filename matches `lgpilates-cancellations-YYYY-MM-DD.csv`.
+
+**What this proves:** The export fires without error and the filename format is correct. Column content verification is a manual step (noted in Excel).
+
+---
+
+### AB-17/AB-18 — Dashboard button layout and sign-in reset
+
+**File:** `tests/ab-17-18-dashboard-buttons.spec.js`
+**Covers:** AB-17 (correct action buttons per row, no stale Cancel/Refund buttons) and AB-18 (sign-in button resets to "Sign In" after sign-out + re-login without page reload).
+
+**What this proves:** The button layout regression is caught (Cancel/Refund were removed in a prior session). The sign-in button state resets correctly on the second login — a regression check for a prior bug fix.
+
+---
+
+### AB-19/AB-20/AB-21 — Missing PAR-Q banner
+
+**File:** `tests/ab-19-20-21-missing-parq-banner.spec.js`
+**Covers:** AB-19 (banner hidden when all PAR-Qs present), AB-20 (singular wording "1 booking is missing a health form"), AB-21 (plural wording + `.parq-missing-highlight` class added to affected rows on banner click).
+
+**What this proves:** The missing-PAR-Q safety alert fires correctly for new-client bookings without parq rows, uses correct singular/plural wording, and highlights the right rows. The CSS animation (orange pulse) is not asserted — the class addition is the testable signal.
+
+**Pre-conditions:** Per-run `new`-type customers + bookings on `mon-current`. AB-19 also inserts a parq row to confirm the banner stays hidden. AB-20/AB-21 omit the parq row to trigger the banner.
+
+**Note:** AB-19 (banner hidden) can fail if stray `new`-type customers without parq rows accumulate from interrupted test runs. A `npm run seed` clears this.
+
+---
+
+### AB-22 — Admin PAR-Q view date format
+
+**File:** `tests/ab-22-parq-date-format.spec.js`
+**Scenario:** The Declaration section of the booking View modal shows `sign_date` in "D MMM YYYY" format (e.g. "1 Jun 2026"), not the raw ISO format stored in the DB ("2026-06-01"). The app applies `formatDateDisplay()` when rendering the modal.
+
+**What this proves:** The date formatting helper is wired up correctly in the admin view and does not regress to showing raw ISO dates.
+
+**Pre-conditions:** Per-run `new`-type customer + booking + parq row with `sign_date = '2026-06-01'` inserted via direct pg. Expected display: "1 Jun 2026".
 
 ---
 

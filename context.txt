@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 29 May 2026
+Last updated: 1 Jun 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -399,9 +399,9 @@ tests-playwright/
     ├── ec-*.spec.js             # 13 EC spec files covering 13 of 13 genuine scenarios
     ├── blw-*.spec.js            # 8 BLW spec files covering 8 of 8 genuine scenarios
     ├── se-*.spec.js             # 9 SE spec files covering 9 of 9 scenarios
-    └── ab-*.spec.js             # 5 AB spec files covering 6 of 21 genuine scenarios
+    └── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
 
-CURRENT TEST COUNT: 119 tests (all passing — Session 28, Batch 15 complete)
+CURRENT TEST COUNT: 134 tests (all passing — Session 29, Batch 17 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
@@ -419,9 +419,10 @@ CURRENT TEST COUNT: 119 tests (all passing — Session 28, Batch 15 complete)
           EC-02 red-filled in Excel as duplicate of CB-31. EC suite complete.)
   BLW:   8 tests covering 8 of 8 BLW scenarios (BLW suite complete)
   SE:    9 tests covering 9 of 9 SE scenarios (SE suite complete)
-  AB:    6 tests in 5 spec files covering 6 of 21 genuine AB scenarios
-         (AB-01 red-filled as duplicate of SEC-06.1. AB-02 to AB-07 complete.
-          AB-05 and AB-06 share one spec file.)
+  AB:    21 tests in 13 spec files covering 21 of 21 genuine AB scenarios
+         (AB-01 red-filled as duplicate of SEC-06.1. AB-02 to AB-22 complete.
+          AB-05 and AB-06 share one spec file. AB-08/09, AB-11/12, AB-13/14/15,
+          AB-17/18, AB-19/20/21 each share one spec file.)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -845,16 +846,17 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    BW-* → BLW-* to disambiguate from Booking Windows tab.
 
    UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
-   - ✅ Batch 14 — Settings & Export (complete, Session 27)
    - ✅ Batch 15 — Admin Bookings (part 1) (complete, Session 28)
-   - Batch 16 — Admin Bookings (part 2)
+   - ✅ Batch 16 — Admin Bookings (part 2) (complete, Session 29)
+   - ✅ Batch 17 — Admin Bookings (part 3) (complete, Session 29)
+   - Batch 18 — Admin Classes (part 1)
    - Batch 17 — Admin Bookings (part 3)
    - Batch 18 — Admin Classes (part 1)
    - Batch 19 — Admin Classes (part 2)
    - Batch 20 — Admin Classes (part 3)
 
-   NEXT SESSION FOCUS — start Batch 16 (Admin Bookings part 2):
-   - BATCH 16 — Admin Bookings (AB-08 to AB-15). Scope per TEST-PLAN.md.
+   NEXT SESSION FOCUS — start Batch 18 (Admin Classes part 1):
+   - BATCH 18 — Admin Classes (AC-01 to AC-08). Scope per TEST-PLAN.md.
 
    INFRASTRUCTURE BACKLOG (post-batches):
    - GitHub Actions CI for auto-run on push
@@ -1473,5 +1475,28 @@ SESSION 28 LEARNINGS — DASHBOARD TABLE SCOPING, RFB FLOW, WINDOW.CONFIRM
 - deleteCustomerCascade is safe to call in afterEach even when the in-app
   flow already deleted the booking and customer — it deletes 0 rows from
   bookings then 0 rows from customers without error.
+
+SESSION 29 LEARNINGS — AB SUITE COMPLETE, ACCORDION DOUBLE-CLICK BUG
+--------------------------------------------------------------------
+- AB-10 failed on first run due to a double-click collapse bug: the spec
+  clicked the "first group" header generically, then clicked the Monday
+  group header — but Monday IS the first group, so the second click
+  immediately collapsed it again. Fix: always click the target group
+  directly once, never combine a generic "expand first" click with a
+  named-group click. If a spec needs to verify a specific group, find
+  and click that group only.
+- The RFB "sessions > 0" path skips Step 1b entirely (rfbGoNext goes
+  directly to step 2 when sessionsAttended > 0). Specs for sessions > 0
+  must not wait for the "Has this client paid?" screen — it never appears.
+- The missing PAR-Q banner (AB-19/hidden state) is sensitive to stray
+  `new`-type customers without parq rows from interrupted test runs.
+  If AB-19 fails unexpectedly, run `npm run seed` to clear stale state.
+  This is a known limitation of the hidden-state assertion pattern.
+- AB-16 CSV export: Playwright's page.waitForEvent('download') must be
+  set up in a Promise.all with the triggering click — registering it before
+  the click and awaiting separately races the event. Canonical pattern:
+  const [download] = await Promise.all([page.waitForEvent('download'), btn.click()]).
+- AB suite is now complete: 21 of 21 genuine scenarios automated across
+  13 spec files (AB-01 red-filled as duplicate of SEC-06.1).
 
 ============================================================
