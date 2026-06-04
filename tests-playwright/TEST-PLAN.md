@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 1 Jun 2026
-**Total tests:** 150 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE + 21 AB + 16 AC)
+**Total tests:** 161 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE + 21 AB + 27 AC)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -17,14 +17,14 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Priority Booking (PB) | 10 | 0 | 10 | 10 | 0 |
 | Booking Windows (BW) | 7 | 4 | 3 | 3 | 0 |
 | Admin Bookings (AB) | 22 | 1 | 21 | 21 | 0 |
-| Admin Classes (AC) | 24 | 0 | 24 | 16 | 8 |
+| Admin Classes (AC) | 24 | 0 | 24 | 24 | 0 |
 | Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
 | Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
 | Settings & Export (SE) | 9 | 0 | 9 | 9 | 0 |
 | Edge Cases (EC) | 14 | 1 | 13 | 13 | 0 |
 | Block Warnings (BLW) | 8 | 0 | 8 | 8 | 0 |
 | Security (SEC) | 7 | 4 | 3 | 3 | 0 |
-| **Totals** | **144** | **11** | **133** | **110** | **23** |
+| **Totals** | **144** | **11** | **133** | **133** | **0** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -166,14 +166,14 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | AC-14 | Auto start date prefill from advisory warning | ✅ ac-14-prefill-from-advisory.spec.js | Batch 19 |
 | AC-15 | Red warning banner — Add Block does NOT prefill date | ✅ ac-15-red-banner-no-prefill.spec.js | Batch 19 |
 | AC-16 | Prevent overlapping block dates | ✅ ac-16-prevent-overlap.spec.js | Batch 19 |
-| AC-17 | Prevent new block starting on same day existing block ends | ⬜ Outstanding | Batch 20 |
-| AC-18 | Edit block — overlap validation also applies | ⬜ Outstanding | Batch 20 |
-| AC-19 | Auto am/pm — 24hr time converted on blur | ⬜ Outstanding | Batch 20 |
-| AC-20 | Auto am/pm — bare hour and minute input | ⬜ Outstanding | Batch 20 |
-| AC-21 | Auto am/pm — already formatted input left unchanged | ⬜ Outstanding | Batch 20 |
-| AC-22 | Auto am/pm applies to End Time field as well | ⬜ Outstanding | Batch 20 |
-| AC-23 | Delete class with bookings + PAR-Qs — completes cleanly | ⬜ Outstanding | Batch 20 |
-| AC-24 | Block validation — rejects negative / zero price, cap, weeks | ⬜ Outstanding | Batch 20 |
+| AC-17 | Prevent new block starting on same day existing block ends | ✅ ac-17-prevent-same-day-start.spec.js | Batch 20 |
+| AC-18 | Edit block — overlap validation also applies | ✅ ac-18-edit-block-overlap.spec.js | Batch 20 |
+| AC-19 | Auto am/pm — 24hr time converted on blur | ✅ ac-19-20-21-22-auto-ampm.spec.js | Batch 20 |
+| AC-20 | Auto am/pm — bare hour and minute input | ✅ ac-19-20-21-22-auto-ampm.spec.js | Batch 20 |
+| AC-21 | Auto am/pm — already formatted input left unchanged | ✅ ac-19-20-21-22-auto-ampm.spec.js | Batch 20 |
+| AC-22 | Auto am/pm applies to End Time field as well | ✅ ac-19-20-21-22-auto-ampm.spec.js | Batch 20 |
+| AC-23 | Delete class with bookings + PAR-Qs — completes cleanly | ✅ ac-23-delete-class-with-bookings.spec.js | Batch 20 |
+| AC-24 | Block validation — rejects negative / zero price, cap, weeks | ✅ ac-24-block-validation.spec.js | Batch 20 |
 
 ### Admin Clients (ACL) — Complete ✅
 
@@ -3419,6 +3419,90 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 **What this proves:** The `validateBlockOverlap()` check in `saveNewBlock()` fires before any DB insert and surfaces the correct error message.
 
 **Pre-conditions:** Admin logged in. Uses the Monday Mixed fixture class (class_id=1) which has `mon-upcoming` as an existing block. Start date is `mon-upcoming.start_date + 7 days` (mid-block overlap). No DB state created.
+
+---
+
+## Admin Classes specs (Batch 20)
+
+### AC-17 — Prevent new block starting on same day existing block ends
+
+**File:** `tests/ac-17-prevent-same-day-start.spec.js`
+**Scenario:** Entering a start date equal to an existing block's `end_date` and clicking Add Block shows the same-day error in `#ab-err`: "This block cannot start on … — that is the same day an existing block ends. Please choose a later date." Modal stays open; no block is saved.
+
+**What this proves:** The same-day guard in `saveNewBlock()` fires before the overlap check and surfaces the correct error.
+
+**Pre-conditions:** Admin logged in. Uses Monday fixture class (class_id=1); `mon-upcoming.end_date` is the conflicting date. No DB state created.
+
+---
+
+### AC-18 — Edit block — overlap validation also applies
+
+**File:** `tests/ac-18-edit-block-overlap.spec.js`
+**Scenario:** Opening Edit Block for an existing block and changing its start date to overlap a sibling block shows the overlap error in `#ab-err`. The block is not updated.
+
+**What this proves:** `saveEditBlock()` runs the same `validateBlockOverlap()` logic as `saveNewBlock()`.
+
+**Pre-conditions:** Per-run Saturday class + two non-overlapping blocks created via direct pg. Edit Block opened on Block B; start date changed to mid-Block-A. Both blocks and the class deleted in `afterEach`.
+
+---
+
+### AC-19 — Auto am/pm — 24hr time converted on blur
+
+**File:** `tests/ac-19-20-21-22-auto-ampm.spec.js`
+**Scenario:** Typing `18:30` in the Start Time field and tabbing away updates the field to `6:30pm`.
+
+**What this proves:** `onTimeBlur('ac-time')` calls `formatTimeInput()` which converts 24hr notation to 12hr + am/pm suffix.
+
+**Pre-conditions:** Admin logged in; Add New Class modal open. No DB state created.
+
+---
+
+### AC-20 — Auto am/pm — bare hour and minute input
+
+**File:** `tests/ac-19-20-21-22-auto-ampm.spec.js`
+**Scenario:** Typing `9:45` (no suffix) and blurring updates the field to `9:45am`.
+
+**What this proves:** `formatTimeInput()` adds `am` when the hour is less than 12 and no suffix is present.
+
+---
+
+### AC-21 — Auto am/pm — already formatted input left unchanged
+
+**File:** `tests/ac-19-20-21-22-auto-ampm.spec.js`
+**Scenario:** Typing `10:00am` and blurring leaves the field as `10:00am` — no double-formatting.
+
+**What this proves:** `formatTimeInput()` returns early when the value already ends in `am` or `pm`.
+
+---
+
+### AC-22 — Auto am/pm applies to End Time field as well
+
+**File:** `tests/ac-19-20-21-22-auto-ampm.spec.js`
+**Scenario:** Typing `19:15` in the End Time field (`#ac-end`) and blurring updates it to `7:15pm`.
+
+**What this proves:** `onTimeBlur('ac-end')` is wired up the same way as `onTimeBlur('ac-time')`.
+
+---
+
+### AC-23 — Delete class with bookings + PAR-Qs — completes cleanly
+
+**File:** `tests/ac-23-delete-class-with-bookings.spec.js`
+**Scenario:** Deleting a class that has a booking with a PAR-Q row succeeds. Toast shows "Class deleted.", the class row disappears from `#ctbody`, and the class is gone from the public schedule.
+
+**What this proves:** `deleteClass()` correctly deletes PAR-Q rows before bookings before the class, and the cascade completes without a foreign-key error.
+
+**Pre-conditions:** Per-run Wednesday class + block + customer + booking + parq row created via direct pg. `afterEach` cleans up if the test fails before deletion.
+
+---
+
+### AC-24 — Block validation — rejects negative / zero price, cap, weeks
+
+**File:** `tests/ac-24-block-validation.spec.js`
+**Covers:** AC-24a (price = -5), AC-24b (capacity = 0), AC-24c (weeks = 0). Three sub-tests.
+
+**What this proves:** `saveNewBlock()` validates numeric fields before any DB call and surfaces "Please enter a valid start date, weeks (min 1), price (non-negative), and capacity (min 1)." in `#ab-err`. Modal stays open in all three cases.
+
+**Pre-conditions:** Admin logged in; Monday fixture class used. Valid start date ~180 days out avoids fixture overlap. No DB state created.
 
 ---
 
