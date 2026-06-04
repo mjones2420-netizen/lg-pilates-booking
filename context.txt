@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 1 Jun 2026
+Last updated: 4 Jun 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -400,9 +400,9 @@ tests-playwright/
     ├── blw-*.spec.js            # 8 BLW spec files covering 8 of 8 genuine scenarios
     ├── se-*.spec.js             # 9 SE spec files covering 9 of 9 scenarios
     ├── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
-    └── ac-*.spec.js             # 8 AC spec files covering 8 of 8 Batch 18 scenarios
+    └── ac-*.spec.js             # 24 AC spec files covering 24 of 24 scenarios
 
-CURRENT TEST COUNT: 142 tests (all passing — Session 30, Batch 18 complete)
+CURRENT TEST COUNT: 161 tests (all passing — Session 31, Batch 20 complete — AC suite complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
   PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
@@ -414,17 +414,13 @@ CURRENT TEST COUNT: 142 tests (all passing — Session 30, Batch 18 complete)
          (SEC-02 has 2 sub-tests, SEC-06 has 3 sub-tests, SEC-07 has 1.
           SEC-01/03/04/05 are red-filled in Excel as duplicates of other specs.)
   EC:    15 tests in 13 spec files covering 13 of 13 genuine EC scenarios
-         (EC-14 has 3 sub-tests for the 3 NOT NULL constraint columns.
-          Batch 11 — EC-01, EC-03, EC-04, EC-05, EC-06, EC-07.
-          Batch 12 — EC-08, EC-09, EC-10, EC-11, EC-12, EC-13, EC-14.
-          EC-02 red-filled in Excel as duplicate of CB-31. EC suite complete.)
+         (EC-14 has 3 sub-tests. EC-02 red-filled as duplicate of CB-31.)
   BLW:   8 tests covering 8 of 8 BLW scenarios (BLW suite complete)
   SE:    9 tests covering 9 of 9 SE scenarios (SE suite complete)
   AB:    21 tests in 13 spec files covering 21 of 21 genuine AB scenarios
-         (AB-01 red-filled as duplicate of SEC-06.1. AB-02 to AB-22 complete.
-          AB-05 and AB-06 share one spec file. AB-08/09, AB-11/12, AB-13/14/15,
-          AB-17/18, AB-19/20/21 each share one spec file.)
-  AC:    8 tests in 8 spec files covering AC-01 to AC-08 (Batch 18 complete)
+         (AB-01 red-filled as duplicate of SEC-06.1.)
+  AC:    27 tests in 24 spec files covering 24 of 24 AC scenarios (AC suite complete)
+         (AC-19/20/21/22 share one spec file — 4 tests. AC-24 has 3 sub-tests.)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -617,14 +613,12 @@ Terminal tab 2:
 
 TEST DATA ACCUMULATION
 ----------------------
-Playwright specs don't clean up after themselves. Each full run adds 3+
-test customers (cb01-{timestamp}@test.example etc.). Harmless functionally
-as each uses a unique timestamped email, but flag to Mark when Mon block
-booked count climbs toward 10.
+Most specs self-clean via afterEach (deleteCustomerCascade or
+deleteBookingsForCustomerOnBlock). A small number of older CB specs use
+entry-side cleanup instead. If stray test customers accumulate over many
+runs, the cleanest reset is `npm run seed`.
 
-Cleanest reset: re-run `npm run seed`.
-
-Manual cleanup SQL alternative (test DB only):
+Manual cleanup SQL (test DB only):
   DELETE FROM parq WHERE customer_id IN (SELECT id FROM customers WHERE email LIKE 'cb%-%@test.example');
   DELETE FROM bookings WHERE customer_id IN (SELECT id FROM customers WHERE email LIKE 'cb%-%@test.example');
   DELETE FROM customers WHERE email LIKE 'cb%-%@test.example';
@@ -688,9 +682,6 @@ C. Check test DB fixture STATE drift
    - Note: the seeded mon-full block is intentionally cap=2/booked=2 — the
      `cap > 2` filter excludes it.
 
-   Once Batch 6 (self-cleaning afterEach rollout) is complete, this
-   check becomes mostly redundant — specs will clean up after themselves.
-
    Report combined result for B + C as a single line near the top of the
    opening response:
      ✅ "Test DB fixture looks healthy — all booking windows covered, no state drift."
@@ -744,137 +735,32 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
 8. TO DO (priority order)
 ============================================================
 
-1. PLAYWRIGHT TESTS — continue expanding coverage:
+1. PLAYWRIGHT TESTS — ALL EXCEL SCENARIOS COMPLETE ✅
 
-   The full per-tab and per-batch breakdown lives in
-   tests-playwright/TEST-PLAN.md. That's the source of truth for what's
-   automated, what's outstanding, and which scenarios are duplicates that
-   have been red-filled in LG_Pilates_Test_Scenarios.xlsx.
+   All 133 genuine Excel scenarios across all 12 tabs are now automated.
+   161 tests across 14 suites, all passing.
 
-   COMPLETED SUITES:
-   - ✅ Client Booking — 33 of 33 Excel scenarios automated (Batches 1-5)
-   - ✅ Priority Booking — 10 of 10 Excel scenarios automated (Batches 1-2)
-        + 5 PB-X gap-analysis tests (Batch 3, Session 18)
-   - ✅ Batch 6 (Sessions 19-20) — self-cleaning afterEach rolled out to 6 specs:
-        cb-01 (5 tests inside), cb-03, cb-13, cb-32, pb-09, pb-10.
-        Pattern: per-run customers tracked in describe-scope createdCustomerIds[]
-        with deleteCustomerCascade in afterEach; fixture customers + per-test
-        bookings tracked in createdBooking={customerId,blockId} with
-        deleteBookingsForCustomerOnBlock in afterEach.
-        cb-02, cb-31, pb-x4 left as-is (cb-02/cb-31 create no state, pb-x4
-        is the canonical afterEach example we modelled on).
-        CB-33 strengthening completed Session 20 — see Session 20 learnings.
-   - ✅ Schedule Display — 6 of 6 Excel scenarios automated (Batch 7, Session 21).
-        SD-01 to SD-05 are pure UI filter tests with no DB state. SD-06 hides
-        wed-upcoming via `visible=false` with a self-cleaning afterEach that
-        restores the original value regardless of pass/fail.
-   - ✅ Admin Clients — 2 of 2 genuine scenarios automated (Batch 8, Session 22).
-        ACL-01 asserts the customer table renders with the live 6-column schema
-        and all seeded fixture clients appear. ACL-02 asserts the three-state
-        overall priority badge (Manual / Auto / Standard) renders correctly per
-        client state, with a self-cleaning per-run Standard-state customer.
-        Excel wording updated in same session — old text referenced the
-        deprecated global customers.priority column and a two-state badge model;
-        live UI uses per-class priority via customer_class_priority and three
-        badge states with manual > auto > standard precedence.
-   - ✅ Booking Windows — 3 of 3 genuine scenarios automated (Batch 9, Session 22).
-        BW-01 asserts a single-block class card has no next-block panel.
-        BW-02 asserts the active block's date pills match the dates[] array in
-        chronological order. BW-06 asserts a block with start_date <= today
-        renders as current (via getActiveBlock's date logic, not status column).
-        All read-only — no DB writes. fixture-lookup.js extended to include
-        `dates` column in its SELECT for BW-02 (pure addition, no existing
-        spec read that field).
-   - ✅ Security — 3 of 3 genuine scenarios automated (Batch 10, Session 23).
-        SEC-02 (2 tests) confirms anon SELECT on settings table directly AND
-        the functional consequence — bank details render on the payment screen.
-        SEC-06 (3 tests) confirms admin login works, all 4 dashboard tabs
-        render their panels, and the 3 below-tab sections (Upcoming Classes,
-        Settings, Backup & Export) render their headings + primary controls.
-        SEC-07 (1 test) audits the live anon grant matrix via direct pg
-        against information_schema.role_table_grants — fails loudly if anon
-        gains unexpected grants OR loses expected ones. Excel updated in same
-        session: SEC-03 red-filled as duplicate of CB-01; SEC-06 wording
-        corrected from "every tab loads (incl. Settings, Backup & Export)"
-        to "4 tabs + 3 below-tab sections".
-   - ✅ Batch 11 (Session 24) — Edge Cases (part 1), 6 of 13 genuine EC
-        scenarios automated. EC-01 full-class prevention (new
-        setBlockBookedCount helper added to admin-db.js for direct UI-state
-        tests). EC-03 invalid email format rejected with validation toast.
-        EC-04 wrong-day rejection in admin Add Block flow (admin login
-        required). EC-05 empty-state when all blocks hidden via
-        visible=false (Excel SQL updated — old hint used invalid
-        status='archived'; same fix pattern as SD-06). EC-06 long-text
-        input capped at maxlength=50 with full booking flow + admin row
-        render assertion. EC-07 overbooking race condition — fills the
-        block with cap-1 REAL booking rows before modal open, inserts one
-        more post-Step-3 to bump booked to cap, asserts CLASS_FULL toast
-        on Reserve. EC-02 red-filled in Excel as duplicate of CB-31.
-   - ✅ Batch 12 (Session 25) — Edge Cases (part 2), 7 of 7 remaining EC
-        scenarios automated. EC suite now complete (13 of 13 genuine
-        scenarios). EC-08 server-side ALREADY_BOOKED via direct RPC after
-        a successful UI booking — simulates a second-tab race. EC-09
-        transient "Reserving..." button state via expect.poll on
-        disabled+text snapshot, 50/100/200ms intervals. EC-10 bulk-delete
-        of mon-current bookings via raw SQL + resync SQL workflow; cap-txt
-        shows "0 of cap" after reload; afterEach restores the deleted
-        bookings via ON CONFLICT DO NOTHING. EC-11 full UI booking on
-        fri-upcoming → trigger increments blocks.booked → reload → cap-txt
-        reflects new count. EC-12 direct INSERT of duplicate (customer,
-        block) pair → SQLSTATE 23505 unique-violation on
-        bookings_unique_active_per_block. EC-13 sb.rpc('book_if_available')
-        called directly with a known-duplicate pair → ALREADY_BOOKED error
-        message. EC-14 three sub-tests for NOT NULL on customers.email,
-        classes.name, blocks.class_id (each asserted with SQLSTATE 23502
-        AND the violated column name). No Excel scenario wording changes
-        needed this batch — scenarios were already accurate.
-   - ✅ Batch 13 (Session 26) — Block Warnings (BLW), all 8 scenarios
-        automated. BLW suite complete. All specs use admin login +
-        direct-pg visibility toggles. Key fixture insight: Wed and Fri
-        already trigger the yellow advisory in the clean fixture state
-        (each has only 1 visible block), so BLW-02/05/07 use Thursday
-        (thu-locked) as a clean on/off switch for the advisory. BLW-03
-        uses Wed for red + Thu for yellow. BLW-06 inserts second upcoming
-        blocks for Wed and Fri via direct SQL to create a genuinely
-        fully-covered state, then removes them in afterEach. BLW-05 adds
-        a real Thu block via the UI and deletes it in afterEach by
-        class_id + start_date.
+   Full per-suite detail and spec-to-scenario mapping lives in
+   tests-playwright/TEST-PLAN.md (Coverage Tracker at the top).
 
-   - ✅ Batch 18 (Session 30) — Admin Classes (part 1), all 8 scenarios
-        automated. AC-01 add class via UI + ctbody row assertion. AC-02 add
-        block via UI + By Class accordion + schedule visible. AC-03 wrong-day
-        date rejected with red error in #ab-date-val. AC-04 edit block price/cap.
-        AC-05 delete block + class hidden on schedule. AC-06 edit class slot +
-        schedule updated. AC-07 delete class. AC-08 class hidden when no blocks
-        remain. All specs use per-run class/block setup via direct pg; Saturday
-        class used for AC-02/04 to avoid fixture overlap check.
+   SUITE SUMMARY:
+   - ✅ Client Booking (CB)     — 34 tests, 33 scenarios + CB-16b gap
+   - ✅ Priority Booking (PB)   — 16 tests, 10 scenarios + 5 PB-X gap-analysis
+   - ✅ Booking Windows (BW)    — 3 tests, 3 genuine scenarios
+   - ✅ Admin Bookings (AB)     — 21 tests, 21 scenarios
+   - ✅ Admin Classes (AC)      — 27 tests, 24 scenarios (Batches 18-20)
+   - ✅ Admin Clients (ACL)     — 2 tests, 2 genuine scenarios
+   - ✅ Schedule Display (SD)   — 6 tests, 6 scenarios
+   - ✅ Settings & Export (SE)  — 9 tests, 9 scenarios
+   - ✅ Edge Cases (EC)         — 15 tests, 13 genuine scenarios
+   - ✅ Block Warnings (BLW)    — 8 tests, 8 scenarios
+   - ✅ Security (SEC)          — 6 tests, 3 genuine scenarios
+   - ✅ Smoke                   — 14 tests
 
-   DUPLICATE SENSE-CHECK (10 May 2026, updated 16 May 2026):
-   11 Excel rows red-filled as no longer requiring automation — see
-   TEST-PLAN.md Coverage Tracker for which scenarios are covered by which
-   existing tests. Affected: BW-03, BW-04, BW-05, BW-07, EC-02, SEC-01,
-   SEC-03, SEC-04, SEC-05, ACL-03, ACL-04. Block Warnings tab IDs renamed
-   BW-* → BLW-* to disambiguate from Booking Windows tab.
-
-   UPCOMING BATCHES (priority order, full detail in TEST-PLAN.md):
-   - ✅ Batch 15 — Admin Bookings (part 1) (complete, Session 28)
-   - ✅ Batch 16 — Admin Bookings (part 2) (complete, Session 29)
-   - ✅ Batch 17 — Admin Bookings (part 3) (complete, Session 29)
-   - ✅ Batch 18 — Admin Classes (part 1) (complete, Session 30)
-   - Batch 19 — Admin Classes (part 2)
-   - Batch 20 — Admin Classes (part 3)
-
-   NEXT SESSION FOCUS — start Batch 19 (Admin Classes part 2):
-   - BATCH 19 — Admin Classes (AC-09 to AC-16). Scope per TEST-PLAN.md.
-
-   INFRASTRUCTURE BACKLOG (post-batches):
+   INFRASTRUCTURE BACKLOG:
    - GitHub Actions CI for auto-run on push
    - Mobile Safari Playwright project for proper mobile coverage
-     (currently CB-29/CB-30 use shrunken desktop viewport at 480x700 as
-     a proxy — works but doesn't catch real mobile-specific issues)
-
-   REMINDER: TEST-PLAN.md must be updated in the same session as any new
-   test, BUT only after tests are verified passing (Session 16 learning).
+     (CB-29/CB-30 currently use shrunken desktop viewport at 480x700)
 
 2. INDEX.HTML — minor cosmetic bug:
    Line 476 still reads "Step 1 of 3 — Your Details" — leftover from the
@@ -1540,5 +1426,21 @@ SESSION 30 LEARNINGS — AC SUITE, DATE TIMEZONE BUG, ACCORDION MECHANICS
   is not always reliable immediately post-save. Safest pattern for asserting
   By Class accordion contents after a UI block save: reload the full page
   so the app re-fetches from DB, then re-login, then expand the group.
+
+SESSION 31 LEARNINGS — AC SUITE COMPLETE, PARQ COLUMN NAMES
+------------------------------------------------------------
+- parq table column names do NOT match the front-end question labels. The
+  actual columns are: q1_heart, q2_circulatory, q3_blood_pressure,
+  q4_chest_pain, q5_joint, q6_dizziness, q7_pregnant, q8_doctor_advised,
+  q9_spinal, q10_medication, q11_asthma, q12_other_reasons. When writing
+  any spec that inserts a parq row via direct pg, always verify column
+  names against the DB schema first — do not guess from form labels.
+- The yellow advisory banner (classes with 1 visible block) is used by
+  AC-12/13/14/15 specs. Wednesday is the reliable fixture target (class_id=2,
+  always has exactly 1 visible block in the clean fixture).
+- Edit Block reuses the same Add Block modal (#add-block-overlay, #ab-start,
+  #ab-err, #ab-btn). openEditBlockModal() sets ab-btn.onclick to saveEditBlock
+  and ab-btn.textContent to "Save Block". Assertions on modal state after
+  Edit Block opens work identically to after Add Block opens.
 
 ============================================================

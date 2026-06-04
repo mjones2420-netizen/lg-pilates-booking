@@ -1,11 +1,43 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 1 Jun 2026
+**Last updated:** 4 Jun 2026
 **Total tests:** 161 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE + 21 AB + 27 AC)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
 ---
+
+## Contents
+
+- [Coverage Tracker — Summary](#coverage-tracker--summary)
+- [Coverage Tracker — Per-tab detail](#coverage-tracker--per-tab-detail)
+  - [Client Booking (CB)](#client-booking-cb--complete-)
+  - [Priority Booking (PB)](#priority-booking-pb--complete-)
+  - [Booking Windows (BW)](#booking-windows-bw--complete-)
+  - [Admin Bookings (AB)](#admin-bookings-ab)
+  - [Admin Classes (AC)](#admin-classes-ac--complete-)
+  - [Admin Clients (ACL)](#admin-clients-acl--complete-)
+  - [Schedule Display (SD)](#schedule-display-sd--complete-)
+  - [Settings & Export (SE)](#settings--export-se--complete-)
+  - [Edge Cases (EC)](#edge-cases-ec)
+  - [Block Warnings (BLW)](#block-warnings-blw--complete-)
+  - [Security (SEC)](#security-sec--complete-)
+- [Suggested Batches](#suggested-batches)
+- [How to use this document](#how-to-use-this-document)
+- [Fixture roles](#fixture-roles-the-seeded-test-data)
+- [Smoke specs](#smoke-specs)
+- [Client Booking specs](#client-booking-specs)
+- [Priority Booking specs](#priority-booking-specs)
+- [Schedule Display specs](#schedule-display-specs)
+- [Admin Clients specs](#admin-clients-specs)
+- [Booking Windows specs](#booking-windows-specs)
+- [Security specs](#security-specs)
+- [Edge Cases specs](#edge-cases-specs)
+- [Block Warnings specs](#block-warnings-specs)
+- [Settings & Export specs](#settings--export-specs)
+- [Admin Bookings specs](#admin-bookings-specs)
+- [Admin Classes specs](#admin-classes-specs)
+- [Glossary](#glossary)
 
 ## Coverage Tracker — Summary
 
@@ -40,6 +72,9 @@ Each table below lists every scenario in that Excel tab with its current status 
 - 🔁 **Duplicate of [X]** — covered by an existing automated test; red-filled in Excel; no new spec needed
 - 🚮 **Housekeeping** — not a real test scenario; red-filled in Excel
 - ⬜ **Outstanding** — yet to be automated; suggested batch column shows planned grouping
+
+<details>
+<summary><strong>Client Booking (CB) — 33 scenarios ✅</strong></summary>
 
 ### Client Booking (CB) — Complete ✅
 
@@ -80,6 +115,12 @@ Each table below lists every scenario in that Excel tab with its current status 
 | CB-32 | Returning client NOT on this block — welcome-back flow | ✅ cb-32.spec.js |
 | CB-33 | PAR-Q sign_date stored as proper DATE type | ✅ cb-33.spec.js (strengthened Session 20 — direct parq row assertion) |
 
+
+</details>
+
+<details>
+<summary><strong>Priority Booking (PB) — 10 scenarios + 5 gap-analysis ✅</strong></summary>
+
 ### Priority Booking (PB) — Complete ✅
 
 Excel scenarios:
@@ -107,6 +148,12 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | PB-X4 | Cancelled previous-block booking does not grant priority | ✅ pb-x4.spec.js |
 | PB-X5 | Manual priority grant/remove cycle via admin panel | ✅ pb-x5.spec.js |
 
+
+</details>
+
+<details>
+<summary><strong>Booking Windows (BW) — 3 genuine scenarios ✅</strong></summary>
+
 ### Booking Windows (BW) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
@@ -118,6 +165,12 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | BW-05 | Next block 0-7 days — standard open | 🔁 Duplicate of PB-05 | — |
 | BW-06 | Next block becomes active (start date = today) | ✅ bw-06.spec.js | Batch 9 |
 | BW-07 | Reset all test dates when done | 🚮 Housekeeping (not a real test) | — |
+
+
+</details>
+
+<details>
+<summary><strong>Admin Bookings (AB) — 21 scenarios ✅</strong></summary>
 
 ### Admin Bookings (AB)
 
@@ -146,7 +199,13 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | AB-21 | Missing PAR-Q banner — plural count + click-to-scroll highlight | ✅ ab-19-20-21-missing-parq-banner.spec.js | Batch 17 |
 | AB-22 | Admin PAR-Q view renders friendly date format | ✅ ab-22-parq-date-format.spec.js | Batch 17 |
 
-### Admin Classes (AC)
+
+</details>
+
+<details>
+<summary><strong>Admin Classes (AC) — 24 scenarios ✅</strong></summary>
+
+### Admin Classes (AC) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
 |---|---|---|---|
@@ -175,6 +234,12 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | AC-23 | Delete class with bookings + PAR-Qs — completes cleanly | ✅ ac-23-delete-class-with-bookings.spec.js | Batch 20 |
 | AC-24 | Block validation — rejects negative / zero price, cap, weeks | ✅ ac-24-block-validation.spec.js | Batch 20 |
 
+
+</details>
+
+<details>
+<summary><strong>Admin Clients (ACL) — 2 genuine scenarios ✅</strong></summary>
+
 ### Admin Clients (ACL) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
@@ -186,6 +251,12 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 
 > **Excel wording note (15 May 2026):** ACL-01 and ACL-02 originally referenced the deprecated global `customers.priority` column and a two-state "Priority/Standard" badge model. The live UI uses per-class priority via `customer_class_priority` and renders a three-state overall badge: "Manual priority", "Auto priority", or "Standard". The automated specs test the live behaviour; the Excel wording should be updated in line with this at end of session.
 
+
+</details>
+
+<details>
+<summary><strong>Schedule Display (SD) — 6 scenarios ✅</strong></summary>
+
 ### Schedule Display (SD) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
@@ -196,6 +267,12 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SD-04 | Filter by day within a location | ✅ Automated | Batch 7 |
 | SD-05 | Reset to All Classes | ✅ Automated | Batch 7 |
 | SD-06 | Class without blocks is hidden | ✅ Automated | Batch 7 |
+
+
+</details>
+
+<details>
+<summary><strong>Settings & Export (SE) — 9 scenarios ✅</strong></summary>
 
 ### Settings & Export (SE) — Complete ✅
 
@@ -210,6 +287,12 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SE-07 | Export Bookings CSV | ✅ se-07-export-bookings-csv.spec.js | Batch 14 |
 | SE-08 | Export Everything — full backup | ✅ se-08-export-everything.spec.js | Batch 14 |
 | SE-09 | CSV export — formula injection protection | ✅ se-09-csv-formula-injection.spec.js | Batch 14 |
+
+
+</details>
+
+<details>
+<summary><strong>Edge Cases (EC) — 13 genuine scenarios ✅</strong></summary>
 
 ### Edge Cases (EC)
 
@@ -230,6 +313,12 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | EC-13 | book_if_available RPC returns ALREADY_BOOKED on duplicate | ✅ ec-13.spec.js | Batch 12 |
 | EC-14 | DB refuses rows with NULL on critical columns | ✅ ec-14.spec.js | Batch 12 |
 
+
+</details>
+
+<details>
+<summary><strong>Block Warnings (BLW) — 8 scenarios ✅</strong></summary>
+
 ### Block Warnings (BLW) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
@@ -245,6 +334,12 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 
 > **Fixture note (21 May 2026):** Wednesday and Friday each have only one visible block in the clean fixture, so the yellow advisory already fires for both in the base state. BLW-02, 05, and 07 use Thursday (class_id=4) as a clean on/off switch — hiding `thu-locked` makes Thursday "expiring" without disturbing the Wed/Fri advisory state. BLW-03 uses Wednesday for the red condition and Thursday for the yellow condition. BLW-06 inserts a second upcoming block for both Wed and Fri via direct SQL to create a genuinely fully-covered state, then removes them in afterEach.
 
+
+</details>
+
+<details>
+<summary><strong>Security (SEC) — 3 genuine scenarios ✅</strong></summary>
+
 ### Security (SEC) — Complete ✅
 
 | ID | Scenario | Status | Suggested Batch |
@@ -257,7 +352,13 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SEC-06 | Admin sign-in promotes session → full dashboard access | ✅ sec-06.spec.js | Batch 10 |
 | SEC-07 | Grant matrix matches context.txt spec (one-off verification) | ✅ sec-07.spec.js | Batch 10 |
 
+</details>
+
+
 ---
+
+<details>
+<summary><strong>Suggested Batches</strong></summary>
 
 ## Suggested Batches
 
@@ -280,6 +381,11 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 20 | Admin Classes (part 3) | 8 | Time formatting + delete-cascade tests. |
 
 ---
+
+</details>
+
+<details>
+<summary><strong>How to use this document</strong></summary>
 
 ## How to use this document
 
@@ -319,6 +425,11 @@ Every test now has a full video, trace, and step-by-step screenshots (not just f
 
 ---
 
+</details>
+
+<details>
+<summary><strong>Fixture roles (the seeded test data)</strong></summary>
+
 ## Fixture roles (the seeded test data)
 
 Every test runs against 11 pre-seeded blocks across 4 classes (Migration 09 base + Migration 11 Thursday class). Roles are stable, block IDs are not — so tests look up blocks by role, not ID.
@@ -343,6 +454,14 @@ Every test runs against 11 pre-seeded blocks across 4 classes (Migration 09 base
 - `admin-dummy@test.example` — confirmed on Mon full (to fill cap-2)
 
 ---
+
+</details>
+
+
+## Smoke specs
+
+<details>
+<summary><strong>Smoke specs — 14 tests</strong></summary>
 
 # Smoke 01 — Anonymous reads
 
@@ -643,6 +762,14 @@ Some classes aren't rendering. Customers wouldn't see every class they could boo
 The test-mode switch is broken. Subsequent CB tests would either write to PRODUCTION (serious) or fail immediately (the correct protective behaviour).
 
 ---
+
+</details>
+
+
+## Client Booking specs
+
+<details>
+<summary><strong>Client Booking specs — 34 tests (Batches 1–6)</strong></summary>
 
 # CB-01 — New client happy path
 
@@ -1555,6 +1682,14 @@ A returning client trying to book a new class would be wrongly told they're alre
 
 ---
 
+</details>
+
+
+## Priority Booking specs
+
+<details>
+<summary><strong>Priority Booking specs — 16 tests (Batches 1–3) + Schedule Display specs — 6 tests (Batch 7)</strong></summary>
+
 # Priority Booking (PB) — Batch 1
 
 *These tests cover the priority-booking gate UI in three booking windows (locked / priority / standard) plus the granted-vs-denied paths through the priority RPC.*
@@ -2126,6 +2261,18 @@ A class with no active/upcoming blocks would still appear on the public page —
 
 ---
 
+</details>
+
+## Schedule Display specs
+
+*(included in Priority Booking specs section above)*
+
+
+## Admin Clients specs
+
+<details>
+<summary><strong>Admin Clients specs — 2 tests (Batch 8)</strong></summary>
+
 # Admin Clients (ACL) — Batch 8
 
 ### ACL-01 — Clients tab lists all customers
@@ -2179,6 +2326,14 @@ The visual signal Louise relies on to identify priority clients would be wrong: 
 **Excel wording note:** The Excel scenario lists only two badge states ("green Priority / grey Standard"). The live UI renders three states with manual > auto > standard precedence. The spec tests the live behaviour; the Excel will be updated to match.
 
 ---
+
+</details>
+
+
+## Booking Windows specs
+
+<details>
+<summary><strong>Booking Windows specs — 3 tests (Batch 9)</strong></summary>
 
 # Booking Windows (BW) — Batch 9
 
@@ -2244,6 +2399,14 @@ Monday is the only class in the seeded fixture with BOTH an active block AND a s
 Either the date logic in `getActiveBlock()` has slipped (so a block that's started isn't being shown as current — clients see "Book Next Block" for a block that's already running), or a future block is being incorrectly promoted to current (clients see a class as bookable now when it hasn't started yet). Both are serious schedule-display bugs.
 
 ---
+
+</details>
+
+
+## Security specs
+
+<details>
+<summary><strong>Security specs — 6 tests (Batch 10)</strong></summary>
 
 # Security (SEC) — Batch 10
 
@@ -2376,6 +2539,12 @@ A regression in the dashboard HTML (likely from a layout change) has broken one 
 Someone has changed the anon grant matrix without updating the docs. If anon has gained grants on a forbidden table (e.g. `bookings`), it's a serious security regression — every customer's bookings could be exposed publicly. If anon has lost grants on an expected table, the public booking flow breaks silently. Either way, this spec catches it before it reaches production.
 
 ---
+
+
+## Edge Cases specs
+
+<details>
+<summary><strong>Edge Cases specs — 15 tests (Batches 11–12)</strong></summary>
 
 ### EC-01 — Booking a full class is prevented
 
@@ -2695,6 +2864,16 @@ Someone has changed the anon grant matrix without updating the docs. If anon has
 
 ---
 
+</details>
+
+</details>
+
+
+## Block Warnings specs
+
+<details>
+<summary><strong>Block Warnings specs — 8 tests (Batch 13)</strong></summary>
+
 # Block Warnings (BLW)
 
 *These tests prove the admin dashboard's block warnings banner correctly surfaces classes that need attention — either because they have no block at all (red alert) or because their only block will expire soon with nothing behind it (yellow advisory).*
@@ -2898,6 +3077,14 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 ---
 
+</details>
+
+
+## Settings & Export specs
+
+<details>
+<summary><strong>Settings & Export specs — 9 tests (Batch 14)</strong></summary>
+
 ### SE-01 — Save bank details
 
 **What this proves:** An admin can update the bank name, sort code, and account number in the Settings section and see them persisted to the `settings` table, with a confirmation toast.
@@ -3042,7 +3229,14 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 ---
 
-## Admin Bookings specs (Batch 15)
+</details>
+
+
+## Admin Bookings specs
+
+<details>
+<summary><strong>Admin Bookings specs — 21 tests (Batches 15–17)</strong></summary>
+
 
 ### AB-02 — All Bookings tab loads correctly
 
@@ -3150,7 +3344,6 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 ---
 
-## Admin Bookings specs (Batch 16)
 
 ### AB-08/AB-09 — RFB: 0 sessions attended
 
@@ -3198,7 +3391,6 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 ---
 
-## Admin Bookings specs (Batch 17)
 
 ### AB-16 — Cancellations CSV export
 
@@ -3242,7 +3434,14 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 ---
 
-## Admin Classes specs (Batch 18)
+</details>
+
+
+## Admin Classes specs
+
+<details>
+<summary><strong>Admin Classes specs — 27 tests (Batches 18–20)</strong></summary>
+
 
 ### AC-01 — Add a new class
 
@@ -3332,7 +3531,6 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 ---
 
-## Admin Classes specs (Batch 19)
 
 ### AC-09 — Add class rejected when not logged in
 
@@ -3422,7 +3620,6 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 ---
 
-## Admin Classes specs (Batch 20)
 
 ### AC-17 — Prevent new block starting on same day existing block ends
 
@@ -3505,6 +3702,8 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 **Pre-conditions:** Admin logged in; Monday fixture class used. Valid start date ~180 days out avoids fixture overlap. No DB state created.
 
 ---
+
+</details>
 
 ## Glossary
 
