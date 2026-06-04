@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 1 Jun 2026
-**Total tests:** 142 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE + 21 AB + 8 AC)
+**Total tests:** 150 (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + 15 EC + 8 BLW + 9 SE + 21 AB + 16 AC)
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -17,14 +17,14 @@ The table below summarises the state of every Excel test-scenarios tab. "Removed
 | Priority Booking (PB) | 10 | 0 | 10 | 10 | 0 |
 | Booking Windows (BW) | 7 | 4 | 3 | 3 | 0 |
 | Admin Bookings (AB) | 22 | 1 | 21 | 21 | 0 |
-| Admin Classes (AC) | 24 | 0 | 24 | 8 | 16 |
+| Admin Classes (AC) | 24 | 0 | 24 | 16 | 8 |
 | Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
 | Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
 | Settings & Export (SE) | 9 | 0 | 9 | 9 | 0 |
 | Edge Cases (EC) | 14 | 1 | 13 | 13 | 0 |
 | Block Warnings (BLW) | 8 | 0 | 8 | 8 | 0 |
 | Security (SEC) | 7 | 4 | 3 | 3 | 0 |
-| **Totals** | **144** | **11** | **133** | **102** | **31** |
+| **Totals** | **144** | **11** | **133** | **110** | **23** |
 
 > **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
 
@@ -158,14 +158,14 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | AC-06 | Edit a class slot | ✅ ac-06-edit-class-slot.spec.js | Batch 18 |
 | AC-07 | Delete a class | ✅ ac-07-delete-class.spec.js | Batch 18 |
 | AC-08 | Class hidden when it has no blocks | ✅ ac-08-class-hidden-no-blocks.spec.js | Batch 18 |
-| AC-09 | Add class rejected when not logged in | ⬜ Outstanding | Batch 19 |
-| AC-10 | Edit class rejected when not logged in | ⬜ Outstanding | Batch 19 |
-| AC-11 | Add block rejected when not logged in | ⬜ Outstanding | Batch 19 |
-| AC-12 | Warning banner shows class time in name | ⬜ Outstanding | Batch 19 |
-| AC-13 | Add block modal subtitle shows class time | ⬜ Outstanding | Batch 19 |
-| AC-14 | Auto start date prefill from advisory warning | ⬜ Outstanding | Batch 19 |
-| AC-15 | Red warning banner — Add Block does NOT prefill date | ⬜ Outstanding | Batch 19 |
-| AC-16 | Prevent overlapping block dates | ⬜ Outstanding | Batch 19 |
+| AC-09 | Add class rejected when not logged in | ✅ ac-09-add-class-anon-rejected.spec.js | Batch 19 |
+| AC-10 | Edit class rejected when not logged in | ✅ ac-10-edit-class-anon-rejected.spec.js | Batch 19 |
+| AC-11 | Add block rejected when not logged in | ✅ ac-11-add-block-anon-rejected.spec.js | Batch 19 |
+| AC-12 | Warning banner shows class time in name | ✅ ac-12-warning-banner-shows-time.spec.js | Batch 19 |
+| AC-13 | Add block modal subtitle shows class time | ✅ ac-13-add-block-modal-subtitle.spec.js | Batch 19 |
+| AC-14 | Auto start date prefill from advisory warning | ✅ ac-14-prefill-from-advisory.spec.js | Batch 19 |
+| AC-15 | Red warning banner — Add Block does NOT prefill date | ✅ ac-15-red-banner-no-prefill.spec.js | Batch 19 |
+| AC-16 | Prevent overlapping block dates | ✅ ac-16-prevent-overlap.spec.js | Batch 19 |
 | AC-17 | Prevent new block starting on same day existing block ends | ⬜ Outstanding | Batch 20 |
 | AC-18 | Edit block — overlap validation also applies | ⬜ Outstanding | Batch 20 |
 | AC-19 | Auto am/pm — 24hr time converted on blur | ⬜ Outstanding | Batch 20 |
@@ -3329,6 +3329,96 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 **What this proves:** The public schedule's block-filter logic correctly hides classes with no visible blocks, and that the hiding is durable across a page reload (not just a client-side state change).
 
 **Pre-conditions:** Fresh Thursday class + block per-run. The spec first confirms the class IS visible, then deletes the block via the dashboard, then reloads and asserts absence.
+
+---
+
+## Admin Classes specs (Batch 19)
+
+### AC-09 — Add class rejected when not logged in
+
+**File:** `tests/ac-09-add-class-anon-rejected.spec.js`
+**Scenario:** A direct INSERT on the `classes` table as the anon role is rejected by RLS with SQLSTATE 42501. Confirms the `admin_insert_classes` RLS policy restricts inserts to authenticated users only.
+
+**What this proves:** The anon role cannot create class records directly, regardless of how the request is made.
+
+**Pre-conditions:** Direct pg connection; `SET LOCAL ROLE anon` inside a transaction that always ROLLBACKs. No UI interaction.
+
+---
+
+### AC-10 — Edit class rejected when not logged in
+
+**File:** `tests/ac-10-edit-class-anon-rejected.spec.js`
+**Scenario:** A direct UPDATE on the `classes` table as the anon role is rejected by RLS with SQLSTATE 42501. Confirms the `admin_update_classes` RLS policy.
+
+**What this proves:** The anon role cannot modify class records directly.
+
+**Pre-conditions:** Direct pg; `SET LOCAL ROLE anon`; always ROLLBACKs. No UI interaction.
+
+---
+
+### AC-11 — Add block rejected when not logged in
+
+**File:** `tests/ac-11-add-block-anon-rejected.spec.js`
+**Scenario:** A direct INSERT on the `blocks` table as the anon role is rejected by RLS with SQLSTATE 42501. Confirms the `admin_insert_blocks` RLS policy.
+
+**What this proves:** The anon role cannot create block records directly.
+
+**Pre-conditions:** Direct pg; `SET LOCAL ROLE anon`; always ROLLBACKs. No UI interaction.
+
+---
+
+### AC-12 — Warning banner shows class time in name
+
+**File:** `tests/ac-12-warning-banner-shows-time.spec.js`
+**Scenario:** The admin dashboard block-warnings banner shows class names in the format "Name — Day Time" (e.g. "Mixed Ability — Tuesday 8:00am") in both the red (hidden) and yellow (advisory) banners.
+
+**What this proves:** The `renderBlockWarnings()` function includes `c.time` in the `.block-warning-class` text for both banner types.
+
+**Pre-conditions:** A per-run blockless class is inserted via direct pg to trigger the red banner. The clean fixture's Wednesday class is in the advisory (yellow) state. Per-run class deleted in `afterEach`.
+
+---
+
+### AC-13 — Add block modal subtitle shows class time
+
+**File:** `tests/ac-13-add-block-modal-subtitle.spec.js`
+**Scenario:** Clicking "+ Add Block" from the yellow advisory banner opens the Add Block modal with `#ab-sub` reading "Add a block to [Name] — [Day] [Time]". The time is part of the subtitle.
+
+**What this proves:** `openAddBlockModal()` sets `#ab-sub` using `c.name + " — " + c.day + " " + c.time`.
+
+**Pre-conditions:** Admin logged in. Clean fixture Wednesday class is in advisory state. No DB state created.
+
+---
+
+### AC-14 — Auto start date prefill from advisory warning
+
+**File:** `tests/ac-14-prefill-from-advisory.spec.js`
+**Scenario:** Clicking "+ Add Block" from the yellow advisory banner pre-fills `#ab-start` with the active block's `end_date + 7 days`. The day-validation indicator fires automatically and shows "confirmed" (green tick).
+
+**What this proves:** The `nextStartDate` calculation in `renderBlockWarnings()` is correct, and `openAddBlockModal(classId, prefillDate)` passes it to `validateAbDate()` on open.
+
+**Pre-conditions:** Admin logged in. Uses `getBlockByRole('wed-upcoming')` to compute the expected prefill date. No DB state created.
+
+---
+
+### AC-15 — Red warning banner — Add Block does NOT prefill date
+
+**File:** `tests/ac-15-red-banner-no-prefill.spec.js`
+**Scenario:** Clicking "+ Add Block" from the red (hidden) warning banner opens the Add Block modal with `#ab-start` empty and `#ab-date-val` hidden. There is no active block to derive a prefill date from.
+
+**What this proves:** `openAddBlockModal(classId)` with no `prefillDate` argument leaves the date field blank — prefill only applies to the yellow advisory banner.
+
+**Pre-conditions:** Per-run blockless class inserted via direct pg to trigger the red banner. Deleted in `afterEach`.
+
+---
+
+### AC-16 — Prevent overlapping block dates
+
+**File:** `tests/ac-16-prevent-overlap.spec.js`
+**Scenario:** Entering a start date that falls within an existing block's date range and clicking "Add Block" shows the overlap error in `#ab-err`: "These dates overlap with an existing block … Please choose dates that do not clash with an existing block." The modal stays open; no block is saved.
+
+**What this proves:** The `validateBlockOverlap()` check in `saveNewBlock()` fires before any DB insert and surfaces the correct error message.
+
+**Pre-conditions:** Admin logged in. Uses the Monday Mixed fixture class (class_id=1) which has `mon-upcoming` as an existing block. Start date is `mon-upcoming.start_date + 7 days` (mid-block overlap). No DB state created.
 
 ---
 
