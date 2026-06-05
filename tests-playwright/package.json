@@ -14,7 +14,7 @@
     "schema-check": "node scripts/schema-check.js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.47.0",
+    "@playwright/test": "^1.60.0",
     "@supabase/supabase-js": "^2.39.3",
     "dotenv": "^16.6.1",
     "pg": "^8.20.0"
