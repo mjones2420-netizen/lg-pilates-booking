@@ -5,29 +5,180 @@
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
-| Suite | Tests |
-|---|---:|
-| Smoke | 14 |
-| Client Booking (CB) | 33 |
-| Priority Booking (PB) | 16 |
-| Booking Windows (BW) | 3 |
-| Admin Bookings (AB) | 21 |
-| Admin Classes (AC) | 26 |
-| Admin Clients (ACL) | 2 |
-| Schedule Display (SD) | 6 |
-| Settings & Export (SE) | 9 |
-| Edge Cases (EC) | 15 |
-| Block Warnings (BLW) | 8 |
-| Security (SEC) | 6 |
-| **Total** | **159** |
+| Suite | Spec files | Tests |
+|---|---:|---:|
+| Smoke | 4 | 14 |
+| Client Booking (CB) | 27 | 33 |
+| Priority Booking (PB) | 14 | 16 |
+| Booking Windows (BW) | 3 | 3 |
+| Admin Bookings (AB) | 13 | 21 |
+| Admin Classes (AC) | 24 | 26 |
+| Admin Clients (ACL) | 2 | 2 |
+| Schedule Display (SD) | 6 | 6 |
+| Settings & Export (SE) | 9 | 9 |
+| Edge Cases (EC) | 13 | 15 |
+| Block Warnings (BLW) | 8 | 8 |
+| Security (SEC) | 3 | 6 |
+| **Total** | **126** | **159** |
 
-> Some suites have more individual tests than Excel scenarios — e.g. CB-01 covers 7 scenarios in one spec, AC-24 has 3 sub-tests, EC-14 has 3 sub-tests. The Coverage Tracker below counts **Excel scenarios (133)**; the table above counts **individual Playwright tests (159)** as reported by `npm test`.
+> Tests exceed spec files where one file covers multiple scenarios (e.g. cb-01 has 7 sub-tests, ac-24 has 3, ec-14 has 3, sec-06 has 3). Tests exceed Excel scenarios because smoke tests and PB-X gap-analysis tests are not in the Excel sheet, and some Excel scenarios share a spec file (e.g. CB-12 covered by cb-01, PB-03 covered by pb-10).
+
+<details>
+<summary><strong>Full spec file list by suite</strong></summary>
+
+**Smoke (4 files, 14 tests)**
+- `smoke-01-anon-reads.spec.js` — 3 tests
+- `smoke-02-anon-rpcs.spec.js` — 4 tests
+- `smoke-03-rls-enforcement.spec.js` — 4 tests
+- `smoke-04-ui-page-loads.spec.js` — 3 tests
+
+**Client Booking (27 files, 33 tests)**
+- `cb-01-new-client-happy-path.spec.js` — 7 tests (CB-01, CB-04, CB-05, CB-07, CB-12, CB-21, CB-28, CB-33)
+- `cb-02-parq-yes-shows-details.spec.js` — 1 test
+- `cb-03-returning-client-skips-parq.spec.js` — 1 test
+- `cb-06-required-fields-validation.spec.js` — 1 test
+- `cb-08-tcs-button-disabled-by-default.spec.js` — 1 test
+- `cb-09-tcs-checkbox-enables-button.spec.js` — 1 test
+- `cb-10-tcs-untick-disables-button.spec.js` — 1 test
+- `cb-11-tcs-resets-on-back-and-return.spec.js` — 1 test
+- `cb-13-tcs-returning-client-completes-booking.spec.js` — 1 test
+- `cb-14-step-indicator-on-open.spec.js` — 1 test
+- `cb-15-step1-ticks-on-advance.spec.js` — 1 test
+- `cb-16-step2-ticks-on-advance.spec.js` — 1 test
+- `cb-16b-step3-ticks-on-advance.spec.js` — 1 test
+- `cb-17-back-from-payment.spec.js` — 1 test
+- `cb-18-returning-client-2step.spec.js` — 1 test
+- `cb-19-returning-back-from-payment.spec.js` — 1 test
+- `cb-20-modal-reopen-resets.spec.js` — 1 test
+- `cb-22-medical-step-layout.spec.js` — 1 test
+- `cb-23-age-validation.spec.js` — 2 tests
+- `cb-24-declaration-required.spec.js` — 1 test
+- `cb-25-emergency-step-label.spec.js` — 1 test
+- `cb-26-emergency-phone-validation.spec.js` — 1 test
+- `cb-27-back-nav-emergency-to-details.spec.js` — 1 test
+- `cb-29-sticky-header.spec.js` — 1 test
+- `cb-30-medical-form-scrollable.spec.js` — 1 test
+- `cb-31-duplicate-booking-already-booked-screen.spec.js` — 1 test
+- `cb-32-returning-client-not-on-block-welcome-back.spec.js` — 1 test
+
+**Priority Booking (14 files, 16 tests)**
+- `pb-01-locked-window-not-open-yet.spec.js` — 1 test
+- `pb-02-priority-window-email-gate-shown.spec.js` — 1 test
+- `pb-04-priority-denied-ineligible-email.spec.js` — 1 test
+- `pb-05-standard-window-direct-book.spec.js` — 1 test
+- `pb-06-grant-manual-priority.spec.js` — 1 test
+- `pb-07-remove-manual-priority.spec.js` — 1 test
+- `pb-08-manual-priority-allows-early-access.spec.js` — 1 test
+- `pb-09-reserved-booking-priority-denied.spec.js` — 1 test
+- `pb-10-confirmed-booking-priority-granted.spec.js` — 1 test
+- `pb-x1-gate-input-validation.spec.js` — 3 tests
+- `pb-x2-prefill-survives-close.spec.js` — 1 test
+- `pb-x3-class-isolation.spec.js` — 1 test
+- `pb-x4-cancelled-no-priority.spec.js` — 1 test
+- `pb-x5-grant-remove-cycle.spec.js` — 1 test
+
+**Booking Windows (3 files, 3 tests)**
+- `bw-01-only-one-block-no-next-section.spec.js` — 1 test
+- `bw-02-current-block-session-dates-listed.spec.js` — 1 test
+- `bw-06-upcoming-becomes-active-on-start-date.spec.js` — 1 test
+
+**Admin Bookings (13 files, 21 tests)**
+- `ab-02-all-bookings-tab.spec.js` — 1 test
+- `ab-03-view-booking-details.spec.js` — 1 test
+- `ab-04-confirm-reserved-booking.spec.js` — 1 test
+- `ab-05-06-remove-from-block.spec.js` — 1 test
+- `ab-07-delete-customer.spec.js` — 1 test
+- `ab-08-09-rfb-zero-sessions.spec.js` — 2 tests
+- `ab-10-by-class-tab.spec.js` — 1 test
+- `ab-11-12-rfb-sessions-attended.spec.js` — 2 tests
+- `ab-13-14-15-cancellations-tab.spec.js` — 3 tests
+- `ab-16-cancellations-csv-export.spec.js` — 1 test
+- `ab-17-18-dashboard-buttons.spec.js` — 2 tests
+- `ab-19-20-21-missing-parq-banner.spec.js` — 3 tests
+- `ab-22-parq-date-format.spec.js` — 1 test
+
+**Admin Classes (24 files, 26 tests)**
+- `ac-01-add-new-class.spec.js` — 1 test
+- `ac-02-add-block-to-class.spec.js` — 1 test
+- `ac-03-block-start-day-mismatch.spec.js` — 1 test
+- `ac-04-edit-block.spec.js` — 1 test
+- `ac-05-delete-block.spec.js` — 1 test
+- `ac-06-edit-class-slot.spec.js` — 1 test
+- `ac-07-delete-class.spec.js` — 1 test
+- `ac-08-class-hidden-no-blocks.spec.js` — 1 test
+- `ac-09-add-class-anon-rejected.spec.js` — 1 test
+- `ac-10-edit-class-anon-rejected.spec.js` — 1 test
+- `ac-11-add-block-anon-rejected.spec.js` — 1 test
+- `ac-12-warning-banner-shows-time.spec.js` — 1 test
+- `ac-13-add-block-modal-subtitle.spec.js` — 1 test
+- `ac-14-prefill-from-advisory.spec.js` — 1 test
+- `ac-15-red-banner-no-prefill.spec.js` — 1 test
+- `ac-16-prevent-overlap.spec.js` — 1 test
+- `ac-17-prevent-same-day-start.spec.js` — 1 test
+- `ac-18-edit-block-overlap.spec.js` — 1 test
+- `ac-19-20-21-22-auto-ampm.spec.js` — 4 tests
+- `ac-23-delete-class-with-bookings.spec.js` — 1 test
+- `ac-24-block-validation.spec.js` — 3 tests
+
+**Admin Clients (2 files, 2 tests)**
+- `acl-01-clients-tab-lists-customers.spec.js` — 1 test
+- `acl-02-priority-badges-display.spec.js` — 1 test
+
+**Schedule Display (6 files, 6 tests)**
+- `sd-01-all-classes-load.spec.js` — 1 test
+- `sd-02-filter-by-baildon.spec.js` — 1 test
+- `sd-03-filter-by-guiseley.spec.js` — 1 test
+- `sd-04-filter-by-day.spec.js` — 1 test
+- `sd-05-reset-all-classes.spec.js` — 1 test
+- `sd-06-class-without-blocks-hidden.spec.js` — 1 test
+
+**Settings & Export (9 files, 9 tests)**
+- `se-01-save-bank-details.spec.js` — 1 test
+- `se-02-bank-details-payment-screen.spec.js` — 1 test
+- `se-03-bank-details-success-screen.spec.js` — 1 test
+- `se-04-export-classes-csv.spec.js` — 1 test
+- `se-05-export-blocks-csv.spec.js` — 1 test
+- `se-06-export-customers-csv.spec.js` — 1 test
+- `se-07-export-bookings-csv.spec.js` — 1 test
+- `se-08-export-everything.spec.js` — 1 test
+- `se-09-csv-formula-injection.spec.js` — 1 test
+
+**Edge Cases (13 files, 15 tests)**
+- `ec-01-full-class-booking-prevented.spec.js` — 1 test
+- `ec-03-invalid-email-format.spec.js` — 1 test
+- `ec-04-block-wrong-day-rejected.spec.js` — 1 test
+- `ec-05-page-no-active-classes.spec.js` — 1 test
+- `ec-06-long-text-in-booking-form.spec.js` — 1 test
+- `ec-07-overbooking-race-condition.spec.js` — 1 test
+- `ec-08-duplicate-booking-server-side.spec.js` — 1 test
+- `ec-09-reserve-button-disabled-during-submission.spec.js` — 1 test
+- `ec-10-capacity-bar-resets-after-bulk-delete.spec.js` — 1 test
+- `ec-11-capacity-bar-updates-after-app-booking.spec.js` — 1 test
+- `ec-12-db-unique-index-rejects-duplicate.spec.js` — 1 test
+- `ec-13-rpc-returns-already-booked.spec.js` — 1 test
+- `ec-14-not-null-constraints.spec.js` — 3 tests
+
+**Block Warnings (8 files, 8 tests)**
+- `blw-01-red-alert-no-block.spec.js` — 1 test
+- `blw-02-yellow-advisory-no-next-block.spec.js` — 1 test
+- `blw-03-both-banners.spec.js` — 1 test
+- `blw-04-add-block-button-opens-modal.spec.js` — 1 test
+- `blw-05-banner-disappears-after-add.spec.js` — 1 test
+- `blw-06-no-banners-all-covered.spec.js` — 1 test
+- `blw-07-yellow-advisory-prefills-date.spec.js` — 1 test
+- `blw-08-class-name-and-time-in-row.spec.js` — 1 test
+
+**Security (3 files, 6 tests)**
+- `sec-02-anon-settings-read.spec.js` — 2 tests
+- `sec-06-admin-dashboard-tour.spec.js` — 3 tests
+- `sec-07-anon-grant-matrix.spec.js` — 1 test
+
+</details>
 
 ---
 
 ## Contents
 
-- [Coverage Tracker — Summary](#coverage-tracker--summary)
 - [Coverage Tracker — Per-tab detail](#coverage-tracker--per-tab-detail)
   - [Client Booking (CB)](#client-booking-cb--complete-)
   - [Priority Booking (PB)](#priority-booking-pb--complete-)
@@ -57,32 +208,9 @@
 - [Admin Classes specs](#admin-classes-specs)
 - [Glossary](#glossary)
 
-## Coverage Tracker — Summary
-
-The table below summarises the state of every Excel test-scenarios tab. "Removed" counts scenarios that were either flagged as duplicates of existing automated tests (during the 10 May 2026 sense-check) or marked as housekeeping rather than real tests. Removed scenarios are red-filled in `LG_Pilates_Test_Scenarios.xlsx` so they don't get picked up in future batches.
-
-| Excel Tab | Total in Excel | Removed | Genuine total | Automated | Outstanding |
-|---|---:|---:|---:|---:|---:|
-| Client Booking (CB) | 33 | 0 | 33 | 33 | 0 |
-| Priority Booking (PB) | 10 | 0 | 10 | 10 | 0 |
-| Booking Windows (BW) | 7 | 4 | 3 | 3 | 0 |
-| Admin Bookings (AB) | 22 | 1 | 21 | 21 | 0 |
-| Admin Classes (AC) | 24 | 0 | 24 | 24 | 0 |
-| Admin Clients (ACL) | 4 | 2 | 2 | 2 | 0 |
-| Schedule Display (SD) | 6 | 0 | 6 | 6 | 0 |
-| Settings & Export (SE) | 9 | 0 | 9 | 9 | 0 |
-| Edge Cases (EC) | 14 | 1 | 13 | 13 | 0 |
-| Block Warnings (BLW) | 8 | 0 | 8 | 8 | 0 |
-| Security (SEC) | 7 | 4 | 3 | 3 | 0 |
-| **Totals** | **144** | **11** | **133** | **133** | **0** |
-
-> **PB also includes 5 gap-analysis tests** (PB-X1 to PB-X5, totalling 7 individual test cases) that aren't in the Excel sheet. They're listed in the Priority Booking per-tab table below for completeness.
-
-> **Naming note (10 May 2026):** The "Block Warnings" tab IDs were renamed from `BW-` to `BLW-` to avoid collision with the "Booking Windows" tab. References to BLW-01 to BLW-08 in this document refer to the Block Warnings dashboard banners, not the booking-window UI states.
-
----
-
 ## Coverage Tracker — Per-tab detail
+
+> **Naming note (10 May 2026):** The "Block Warnings" tab IDs were renamed from `BW-` to `BLW-` to avoid collision with the "Booking Windows" tab. References to BLW-01 to BLW-08 refer to the Block Warnings dashboard banners; BW-01 to BW-06 refer to the booking-window UI states.
 
 Each table below lists every scenario in that Excel tab with its current status and (for outstanding scenarios) the suggested batch. Status legend:
 
@@ -92,7 +220,7 @@ Each table below lists every scenario in that Excel tab with its current status 
 - ⬜ **Outstanding** — yet to be automated; suggested batch column shows planned grouping
 
 <details>
-<summary><strong>Client Booking (CB) — 33 scenarios ✅</strong></summary>
+<summary><strong>Client Booking (CB) — 27 spec files, 33 tests ✅</strong></summary>
 
 ### Client Booking (CB) — Complete ✅
 
@@ -137,7 +265,7 @@ Each table below lists every scenario in that Excel tab with its current status 
 </details>
 
 <details>
-<summary><strong>Priority Booking (PB) — 10 scenarios + 5 gap-analysis ✅</strong></summary>
+<summary><strong>Priority Booking (PB) — 14 spec files, 16 tests ✅</strong></summary>
 
 ### Priority Booking (PB) — Complete ✅
 
@@ -170,7 +298,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Booking Windows (BW) — 3 genuine scenarios ✅</strong></summary>
+<summary><strong>Booking Windows (BW) — 3 spec files, 3 tests ✅</strong></summary>
 
 ### Booking Windows (BW) — Complete ✅
 
@@ -188,7 +316,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Admin Bookings (AB) — 21 scenarios ✅</strong></summary>
+<summary><strong>Admin Bookings (AB) — 13 spec files, 21 tests ✅</strong></summary>
 
 ### Admin Bookings (AB)
 
@@ -221,7 +349,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Admin Classes (AC) — 24 scenarios ✅</strong></summary>
+<summary><strong>Admin Classes (AC) — 24 spec files, 26 tests ✅</strong></summary>
 
 ### Admin Classes (AC) — Complete ✅
 
@@ -256,7 +384,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Admin Clients (ACL) — 2 genuine scenarios ✅</strong></summary>
+<summary><strong>Admin Clients (ACL) — 2 spec files, 2 tests ✅</strong></summary>
 
 ### Admin Clients (ACL) — Complete ✅
 
@@ -273,7 +401,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Schedule Display (SD) — 6 scenarios ✅</strong></summary>
+<summary><strong>Schedule Display (SD) — 6 spec files, 6 tests ✅</strong></summary>
 
 ### Schedule Display (SD) — Complete ✅
 
@@ -290,7 +418,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Settings & Export (SE) — 9 scenarios ✅</strong></summary>
+<summary><strong>Settings & Export (SE) — 9 spec files, 9 tests ✅</strong></summary>
 
 ### Settings & Export (SE) — Complete ✅
 
@@ -310,7 +438,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Edge Cases (EC) — 13 genuine scenarios ✅</strong></summary>
+<summary><strong>Edge Cases (EC) — 13 spec files, 15 tests ✅</strong></summary>
 
 ### Edge Cases (EC)
 
@@ -335,7 +463,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Block Warnings (BLW) — 8 scenarios ✅</strong></summary>
+<summary><strong>Block Warnings (BLW) — 8 spec files, 8 tests ✅</strong></summary>
 
 ### Block Warnings (BLW) — Complete ✅
 
@@ -356,7 +484,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Security (SEC) — 3 genuine scenarios ✅</strong></summary>
+<summary><strong>Security (SEC) — 3 spec files, 6 tests ✅</strong></summary>
 
 ### Security (SEC) — Complete ✅
 
