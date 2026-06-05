@@ -43,7 +43,7 @@ jobs:
 
       - name: Install browser system dependencies
         working-directory: tests-playwright
-        run: npx playwright install-deps chromium
+        run: sudo npx playwright install-deps chromium
 
       - name: Start local server
         run: |
