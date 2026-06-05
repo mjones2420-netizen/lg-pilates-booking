@@ -1,0 +1,57 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: tests-playwright
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: tests-playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Start local dev server
+        run: |
+          python3 -m http.server 8000 &
+          echo "Server started"
+          sleep 2
+
+      - name: Run Playwright tests (includes auto-reseed via pretest)
+        working-directory: tests-playwright
+        env:
+          TEST_APP_URL: http://localhost:8000/?env=test
+          TEST_SUPABASE_PROJECT_ID: ${{ secrets.TEST_SUPABASE_PROJECT_ID }}
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          TEST_SUPABASE_DB_URL: ${{ secrets.TEST_SUPABASE_DB_URL }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          PROD_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
+          PROD_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+        run: npm test
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests-playwright/playwright-report/
+          retention-days: 7

@@ -703,14 +703,40 @@ DURING SESSION
   update the per-tab <summary> header to "X spec files, Y tests ✅", and add
   the new spec file(s) to the collapsible full spec file list.
 
+FEATURE DEVELOPMENT FLOW
+------------------------
+Every index.html change follows this loop without exception:
+
+1. Upload latest index.html to start the session
+2. Mockup produced → Mark signs off
+3. Code change made in session
+4. New Playwright specs written in the same session (see rule below)
+5. Download updated index.html → replace ~/dev/lg-pilates-booking/index.html
+6. Run `npm test` locally — this reseeds the DB automatically, then runs
+   the full suite including the new specs
+7. If all tests pass → git push
+8. GitHub Actions runs the suite again on push as a safety net
+
+HARD RULE: No git push until local `npm test` is green, including any
+new specs for the new feature.
+
+NEW SPECS RULE: New or changed functionality always gets new Playwright
+specs written in the same session as the code change — not deferred to
+a follow-up session. The only exception is a purely cosmetic fix where
+no behaviour changes and no spec is warranted (e.g. a label typo fix).
+
+TEST-PLAN.md must be updated in the same session as any new spec.
+
 AFTER SESSION — MARK'S STEPS
 ----------------------------
-1. Download the output index.html from Claude
+1. Download the output index.html (and any new spec files) from Claude
 2. Replace ~/dev/lg-pilates-booking/index.html with the downloaded file
-3. Push to GitHub:
+3. Copy any new spec files into tests-playwright/tests/
+4. Run `npm test` locally — confirm all tests pass before pushing
+5. Push to GitHub:
 
      cd ~/dev/lg-pilates-booking
-     git status                    # confirm only index.html is modified
+     git status                    # confirm only expected files are modified
      git add index.html
      git commit -m "TITLE"         # use the title Claude provides
      git push
@@ -763,7 +789,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - ✅ Smoke                   — 14 tests
 
    INFRASTRUCTURE BACKLOG:
-   - GitHub Actions CI for auto-run on push
+   - ✅ GitHub Actions CI for auto-run on push (Session 32)
    - Mobile Safari Playwright project for proper mobile coverage
      (CB-29/CB-30 currently use shrunken desktop viewport at 480x700)
 
