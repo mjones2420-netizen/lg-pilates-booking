@@ -761,6 +761,8 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
 - Don't offer "I can do this next time" as a buried aside — if it matters,
   track it in context.txt or the TO DO list
 - Shorter overall; less narrative; still helpful but focused
+- Whenever a file is presented for download, always provide ready-to-copy
+  git commands to commit and push it, even outside of a formal end-of-session
 
 ============================================================
 8. TO DO (priority order)
