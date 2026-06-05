@@ -7,6 +7,29 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 
 ---
 
+## Priority Summary
+
+| # | ID | Feature / Task | Description | Tier |
+|---|---|---|---|---|
+| 1 | T1-01 | Fix "Step 1 of 3" label | Booking modal shows wrong step count — trivial one-line fix | 🔴 Tier 1 |
+| 2 | T1-03 | Bank details | Louise to enter real bank details via admin Settings — no code needed | 🔴 Tier 1 |
+| 3 | T1-04 | Netlify migration + custom domain | Move to Netlify, private repo, `book.lg-pilates.co.uk` subdomain | 🔴 Tier 1 |
+| 4 | T1-02 | Email notifications | Booking confirmations to clients + new booking alerts to Louise via Resend | 🔴 Tier 1 |
+| 5 | T3-04 | Supabase Pro decision | Free tier auto-pauses after inactivity — decide whether to upgrade or add a keep-alive ping | 🔴 Tier 1* |
+| 6 | T3-06 | Leaked password protection | One toggle in Supabase Auth dashboard — protects Louise's admin account | 🔴 Tier 1* |
+| 7 | T2-01 | Class register | Printable/on-screen attendance register per block for Louise | 🟡 Tier 2 |
+| 8 | T2-02 | Waitlist | Let clients join a waitlist when a block is full; notify on vacancy | 🟡 Tier 2 |
+| 9 | T2-03 | Honeypot anti-bot | Hidden form field to block automated spam bookings | 🟡 Tier 2 |
+| 10 | T2-04 | Mobile Safari test coverage | Add real mobile browser to Playwright suite (currently desktop viewport only) | 🟡 Tier 2 |
+| 11 | T3-01 | Demo file updates | 11 demo files are outdated — rebuild after Netlify + email are stable | 🟢 Tier 3 |
+| 12 | T3-02 | User guide PDF update | Update Louise's user guide once email and Netlify are live | 🟢 Tier 3 |
+| 13 | T3-05 | Swap Supabase anon key | Migrate to newer publishable key format — do alongside Netlify migration | 🟢 Tier 3 |
+| 14 | T3-03 | File split | Split `index.html` into separate CSS/JS/HTML files at a future milestone | 🟢 Tier 3 |
+
+*T3-04 and T3-06 are listed as Tier 3 IDs but are urgent enough to act on before the system goes live with real clients.
+
+---
+
 ## How to use this document
 
 - **Work top-to-bottom within each tier** unless a dependency forces a different order (noted inline).
