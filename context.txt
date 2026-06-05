@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 4 Jun 2026
+Last updated: 5 Jun 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -390,7 +390,7 @@ tests-playwright/
     ├── smoke-02-anon-rpcs.spec.js
     ├── smoke-03-rls-enforcement.spec.js
     ├── smoke-04-ui-page-loads.spec.js
-    ├── cb-*.spec.js             # 23 CB spec files covering 34 of 34 scenarios
+    ├── cb-*.spec.js             # 27 CB spec files, 33 tests (CB suite complete)
     ├── pb-*.spec.js             # 14 PB spec files covering 10 Excel scenarios + 5 PB-X gap-analysis tests
     ├── sd-*.spec.js             # 6 SD spec files covering 6 of 6 scenarios
     ├── acl-*.spec.js            # 2 ACL spec files covering 2 of 2 genuine scenarios
@@ -404,9 +404,10 @@ tests-playwright/
 
 CURRENT TEST COUNT: 159 tests (all passing — Session 31, Batch 20 complete — AC suite complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
-  CB:    34 tests covering 34 of 34 CB scenarios (CB suite complete)
-  PB:    16 tests — 9 cover 10 of 10 PB Excel scenarios + 7 gap-analysis tests
-         (PB-X1 has 3 sub-tests, PB-X2 through PB-X5 have 1 each)
+  CB:    33 tests covering 33 of 33 CB scenarios (CB suite complete)
+  PB:    16 tests — 9 individual Excel-scenario specs + 7 gap-analysis tests
+         (PB-03 covered by PB-10, no standalone spec. PB-X1 has 3 sub-tests,
+          PB-X2 through PB-X5 have 1 each.)
   SD:    6 tests covering 6 of 6 SD scenarios (SD suite complete)
   ACL:   2 tests covering 2 of 2 genuine ACL scenarios (ACL suite complete)
   BW:    3 tests covering 3 of 3 genuine BW scenarios (BW suite complete)
@@ -697,6 +698,10 @@ DURING SESSION
 - Copy final output to /mnt/user-data/outputs/index.html for Mark to download
 - If any Playwright test is added or substantially modified, TEST-PLAN.md
   MUST be updated in the same session. Non-negotiable.
+- When updating TEST-PLAN.md after adding tests, keep the header suite table
+  in sync: update the spec file count and test count for the affected suite,
+  update the per-tab <summary> header to "X spec files, Y tests ✅", and add
+  the new spec file(s) to the collapsible full spec file list.
 
 AFTER SESSION — MARK'S STEPS
 ----------------------------
