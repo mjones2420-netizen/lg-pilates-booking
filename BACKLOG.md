@@ -11,20 +11,21 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 
 | # | ID | Feature / Task | Description | Tier |
 |---|---|---|---|---|
-| 1 | T1-01 | [Fix "Step 1 of 3" label](#t1-01--fix-step-1-of-3-label-bug-️) | Booking modal shows wrong step count — trivial one-line fix | 🔴 Tier 1 |
-| 2 | T1-03 | [Bank details](#t1-03--replace-bank-details-placeholder-with-louises-real-details) | Louise to enter real bank details via admin Settings — no code needed | 🔴 Tier 1 |
-| 3 | T1-04 | [Netlify migration + custom domain](#t1-04--hosting-migration-to-netlify--custom-domain) | Move to Netlify, private repo, `book.lg-pilates.co.uk` subdomain | 🔴 Tier 1 |
-| 4 | T1-02 | [Email notifications](#t1-02--email-notifications-via-resend) | Booking confirmations to clients + new booking alerts to Louise via Resend | 🔴 Tier 1 |
-| 5 | T3-04 | [Supabase Pro decision](#t3-04--supabase-pro-upgrade-decision) | Free tier auto-pauses after inactivity — decide whether to upgrade or add a keep-alive ping | 🔴 Tier 1* |
-| 6 | T3-06 | [Leaked password protection](#t3-06--enable-leaked-password-protection-in-supabase-auth) | One toggle in Supabase Auth dashboard — protects Louise's admin account | 🔴 Tier 1* |
-| 7 | T2-01 | [Class register](#t2-01--class-register-feature) | Printable/on-screen attendance register per block for Louise | 🟡 Tier 2 |
-| 8 | T2-02 | [Waitlist](#t2-02--waitlist-feature) | Let clients join a waitlist when a block is full; notify on vacancy | 🟡 Tier 2 |
-| 9 | T2-03 | [Honeypot anti-bot](#t2-03--honeypot-anti-bot-protection) | Hidden form field to block automated spam bookings | 🟡 Tier 2 |
-| 10 | T2-04 | [Mobile Safari test coverage](#t2-04--mobile-safari-playwright-coverage) | Add real mobile browser to Playwright suite (currently desktop viewport only) | 🟡 Tier 2 |
-| 11 | T3-01 | [Demo file updates](#t3-01--demo-file-updates) | 11 demo files are outdated — rebuild after Netlify + email are stable | 🟢 Tier 3 |
-| 12 | T3-02 | [User guide PDF update](#t3-02--user-guide-pdf-update) | Update Louise's user guide once email and Netlify are live | 🟢 Tier 3 |
-| 13 | T3-05 | [Swap Supabase anon key](#t3-05--swap-supabase-anon-key-to-newer-publishable-key-format) | Migrate to newer publishable key format — do alongside Netlify migration | 🟢 Tier 3 |
-| 14 | T3-03 | [File split](#t3-03--file-split) | Split `index.html` into separate CSS/JS/HTML files at a future milestone | 🟢 Tier 3 |
+| 1 | T1-05 | [Fix class time input format](#t1-05--fix-class-time-input-to-use-native-time-picker) | Admin Add Class form accepts free text — switch to `<input type="time">` to enforce HH:MM | 🔴 Tier 1 |
+| 2 | T1-01 | [Fix "Step 1 of 3" label](#t1-01--fix-step-1-of-3-label-bug-️) | Booking modal shows wrong step count — trivial one-line fix | 🔴 Tier 1 |
+| 3 | T1-03 | [Bank details](#t1-03--replace-bank-details-placeholder-with-louises-real-details) | Louise to enter real bank details via admin Settings — no code needed | 🔴 Tier 1 |
+| 4 | T1-04 | [Netlify migration + custom domain](#t1-04--hosting-migration-to-netlify--custom-domain) | Move to Netlify, private repo, `book.lg-pilates.co.uk` subdomain | 🔴 Tier 1 |
+| 5 | T1-02 | [Email notifications](#t1-02--email-notifications-via-resend) | Booking confirmations to clients + new booking alerts to Louise via Resend | 🔴 Tier 1 |
+| 6 | T3-04 | [Supabase Pro decision](#t3-04--supabase-pro-upgrade-decision) | Free tier auto-pauses after inactivity — decide whether to upgrade or add a keep-alive ping | 🔴 Tier 1* |
+| 7 | T3-06 | [Leaked password protection](#t3-06--enable-leaked-password-protection-in-supabase-auth) | One toggle in Supabase Auth dashboard — protects Louise's admin account | 🔴 Tier 1* |
+| 8 | T2-01 | [Class register](#t2-01--class-register-feature) | Printable/on-screen attendance register per block for Louise | 🟡 Tier 2 |
+| 9 | T2-02 | [Waitlist](#t2-02--waitlist-feature) | Let clients join a waitlist when a block is full; notify on vacancy | 🟡 Tier 2 |
+| 10 | T2-03 | [Honeypot anti-bot](#t2-03--honeypot-anti-bot-protection) | Hidden form field to block automated spam bookings | 🟡 Tier 2 |
+| 11 | T2-04 | [Mobile Safari test coverage](#t2-04--mobile-safari-playwright-coverage) | Add real mobile browser to Playwright suite (currently desktop viewport only) | 🟡 Tier 2 |
+| 12 | T3-01 | [Demo file updates](#t3-01--demo-file-updates) | 11 demo files are outdated — rebuild after Netlify + email are stable | 🟢 Tier 3 |
+| 13 | T3-02 | [User guide PDF update](#t3-02--user-guide-pdf-update) | Update Louise's user guide once email and Netlify are live | 🟢 Tier 3 |
+| 14 | T3-05 | [Swap Supabase anon key](#t3-05--swap-supabase-anon-key-to-newer-publishable-key-format) | Migrate to newer publishable key format — do alongside Netlify migration | 🟢 Tier 3 |
+| 15 | T3-03 | [File split](#t3-03--file-split) | Split `index.html` into separate CSS/JS/HTML files at a future milestone | 🟢 Tier 3 |
 
 *T3-04 and T3-06 are listed as Tier 3 IDs but are urgent enough to act on before the system goes live with real clients.
 
@@ -41,6 +42,14 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 ---
 
 ## Tier 1 — Fix now / essential for production confidence
+
+### T1-05 · Fix class time input to use native time picker
+**What:** The Add Class and Edit Class forms in the admin dashboard use plain text inputs for start and end time. This allows free-text entry like `6:30pm` or `9.45am` which gets saved to the database in the wrong format. The app expects `HH:MM` (24-hour).
+**Why it matters:** Incorrectly formatted times could cause display or sorting issues on the public schedule. Louise already hit this when adding her first two classes manually.
+**Effort:** Trivial — swap the time inputs to `<input type="time">`. The browser enforces `HH:MM` automatically; no typing, no format errors.
+**Dependencies:** None.
+
+---
 
 ### T1-01 · Fix "Step 1 of 3" label bug ✏️
 **What:** Line 476 of `index.html` still reads "Step 1 of 3 — Your Details" — a leftover from the old 3-step booking flow. Lines 501, 558, 576 correctly say "Step 2 of 4", "Step 3 of 4", "Step 4 of 4". The pip indicator itself is correct; only this text label is wrong.
