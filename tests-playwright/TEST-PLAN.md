@@ -5,42 +5,23 @@
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
-### How the 159 total is reached
+| Suite | Tests |
+|---|---:|
+| Smoke | 14 |
+| Client Booking (CB) | 33 |
+| Priority Booking (PB) | 16 |
+| Booking Windows (BW) | 3 |
+| Admin Bookings (AB) | 21 |
+| Admin Classes (AC) | 26 |
+| Admin Clients (ACL) | 2 |
+| Schedule Display (SD) | 6 |
+| Settings & Export (SE) | 9 |
+| Edge Cases (EC) | 15 |
+| Block Warnings (BLW) | 8 |
+| Security (SEC) | 6 |
+| **Total** | **159** |
 
-The Coverage Tracker summary below counts **Excel scenarios automated (133)**. That number is lower than 159 because:
-
-1. **Smoke tests (14)** are not in the Excel sheet at all — they test infrastructure, not scenarios.
-2. **Gap-analysis tests (7)** cover paths not in the Excel sheet (PB-X1 to PB-X5, where PB-X1 has 3 sub-tests).
-3. **Multi-test specs** — some specs contain multiple individual test cases for a single scenario:
-   - CB-01: 7 individual tests (one per new-client sub-step)
-   - SEC-02: 2 sub-tests; SEC-06: 3 sub-tests
-   - EC-14: 3 sub-tests (NULL violation on 3 different columns)
-   - AC-19/20/21/22: 4 individual tests in one spec file
-   - AC-24: 3 sub-tests (negative price, zero cap, zero weeks)
-   - AB-19/20/21: 3 individual tests in one spec file; AB-08/09, AB-05/06, AB-11/12, AB-13/14/15, AB-17/18 similarly share spec files but each scenario is one test
-
-**133 scenarios + 14 smoke + 7 PB-X gap tests + 5 extra sub-tests from multi-test specs = 159**
-
-| Suite | Scenarios automated | Individual tests |
-|---|---:|---:|
-| Smoke | — | 14 |
-| Client Booking (CB) | 33 | 34\* |
-| Priority Booking (PB) | 10 + 5 gap | 16 |
-| Booking Windows (BW) | 3 | 3 |
-| Admin Bookings (AB) | 21 | 21 |
-| Admin Classes (AC) | 24 | 26† |
-| Admin Clients (ACL) | 2 | 2 |
-| Schedule Display (SD) | 6 | 6 |
-| Settings & Export (SE) | 9 | 9 |
-| Edge Cases (EC) | 13 | 15‡ |
-| Block Warnings (BLW) | 8 | 8 |
-| Security (SEC) | 3 | 6§ |
-| **Total** | **133 + 19 non-Excel** | **159** |
-
-\* CB-01 spec contains 7 individual tests; CB-16b is a gap scenario not in Excel — suite total = 34 individual tests across 33 Excel scenarios.
-† AC-19/20/21/22 share one spec file (4 tests); AC-24 has 3 sub-tests — 24 scenarios yield 26 individual tests.
-‡ EC-14 has 3 sub-tests — 13 scenarios yield 15 individual tests.
-§ SEC-02 has 2 sub-tests, SEC-06 has 3 sub-tests — 3 scenarios yield 6 individual tests.
+> Some suites have more individual tests than Excel scenarios — e.g. CB-01 covers 7 scenarios in one spec, AC-24 has 3 sub-tests, EC-14 has 3 sub-tests. The Coverage Tracker below counts **Excel scenarios (133)**; the table above counts **individual Playwright tests (159)** as reported by `npm test`.
 
 ---
 
