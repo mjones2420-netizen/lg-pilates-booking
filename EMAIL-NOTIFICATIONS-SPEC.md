@@ -1,5 +1,5 @@
 # LG Pilates — Email Notifications Spec
-**Status:** Scoped — awaiting build  
+**Status:** Pre-build complete — ready for Session 1  
 **Last updated:** June 2026
 
 ---
@@ -28,10 +28,10 @@ These are the events that send an email automatically:
 
 ## Sender address
 
-- **Sent from:** `bookings@lgpilates.co.uk`
-- **Replies go to:** `bookings@lgpilates.co.uk`, which forwards to Louise's Hotmail via GoDaddy
+- **Sent from:** `bookings@lg-pilates.co.uk`
+- **Replies go to:** `bookings@lg-pilates.co.uk`, which forwards to Mark's inbox (mjones970@live.co.uk) during testing — to be changed to Louise's email once live
 - **Note:** When Louise replies to a client, it will show her personal email as the sender. This is acceptable for now.
-- **Nice to have (future):** Set up a full mailbox at `bookings@lgpilates.co.uk` so Louise can send and receive from that address directly (~£3–5/month via GoDaddy).
+- **Mailbox:** A GoDaddy Microsoft 365 Email Essentials mailbox exists at `bookings@lg-pilates.co.uk`. This is the "nice to have full mailbox" item from the original spec — purchased during pre-build setup.
 
 ---
 
@@ -71,13 +71,13 @@ The Resend API key is stored as a **secret** on Supabase — not in the code, no
 
 ## Domain setup (one-time, before build)
 
-Before any emails can be sent from `bookings@lgpilates.co.uk`, the domain needs to be **verified with Resend**. This proves to email providers (Gmail, Hotmail, etc.) that Resend is authorised to send on behalf of `lgpilates.co.uk`.
+Before any emails can be sent from `bookings@lg-pilates.co.uk`, the domain needs to be **verified with Resend**. This proves to email providers (Gmail, Hotmail, etc.) that Resend is authorised to send on behalf of `lg-pilates.co.uk`.
 
 **What's involved:**
 1. Log in to GoDaddy
 2. Add a few DNS records that Resend provides (copy/paste job — no technical knowledge needed)
 3. Resend verifies the domain (usually within minutes)
-4. Set up email forwarding on GoDaddy: `bookings@lgpilates.co.uk` → Louise's Hotmail
+4. Set up email forwarding/mailbox on GoDaddy: `bookings@lg-pilates.co.uk`
 
 This is a one-time setup step, done before Session 1 of the build.
 
@@ -89,14 +89,12 @@ The build is split across multiple sessions. Each session has a clear goal and a
 
 ---
 
-### Pre-build: Domain & Resend setup (done outside Claude)
+### Pre-build: Domain & Resend setup ✅ COMPLETE
 
-- [ ] Verify `lgpilates.co.uk` with Resend (DNS records via GoDaddy)
-- [ ] Set up email forwarding on GoDaddy (`bookings@lgpilates.co.uk` → Hotmail)
-- [ ] Create Resend account and get live + test API keys
-- [ ] Store API keys as Supabase secrets on both production and test projects
-
-**Sign-off required before Session 1 begins.**
+- [x] Verify `lg-pilates.co.uk` with Resend (DNS records via GoDaddy)
+- [x] Set up GoDaddy Microsoft 365 mailbox at `bookings@lg-pilates.co.uk`, forwarding to Mark's inbox for testing
+- [x] Create Resend account and get live + test API keys
+- [x] Store API keys as Supabase secrets on both production and test projects
 
 ---
 
@@ -192,7 +190,7 @@ Steps:
 - End-to-end test of all 5 triggers in test mode
 - End-to-end test of all 5 triggers in production mode (to a safe test address)
 - Check all emails render correctly on mobile and desktop
-- Check forwarding works (Louise receives admin alerts in her Hotmail)
+- Check forwarding works (Louise receives admin alerts in her inbox)
 - Sign off and go live
 
 ---
@@ -201,7 +199,7 @@ Steps:
 
 - [ ] Exact wording for each email template — to be agreed with Louise before each session
 - [ ] Whether to include a "what to bring" section in the booking confirmation — Louise to decide
-- [ ] Full mailbox vs forwarding-only — parked as nice to have
+- [ ] When to switch forwarding from Mark's inbox to Louise's personal email
 
 ---
 
