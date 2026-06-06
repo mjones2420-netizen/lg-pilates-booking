@@ -205,6 +205,25 @@ Steps:
 
 ---
 
+## Future consideration — third-party payments (e.g. Stripe)
+
+The current booking flow has a two-step process: client reserves a spot, Louise manually confirms once payment is received. This is why triggers #1 and #2 exist as separate emails.
+
+When a payment tool like Stripe is added, this will change significantly:
+
+- The reserved/confirmed split will collapse into a single paid booking
+- Triggers #1 and #2 will be replaced by a single "payment successful" confirmation email
+- Cancellations and refunds may be handled by the payment tool, changing or removing triggers #3 and #4
+- The new booking alert to Louise (trigger #5) is likely to remain unchanged
+
+**What this means for phase one:**
+
+The Edge Function itself is payment-agnostic — it receives a payload and sends an email. The templates and the Function won't need rebuilding when Stripe arrives. Only the trigger points in index.html will need rewiring.
+
+Triggers #1 and #2 should be treated as deliberately simple placeholders. Do not over-engineer the reserved/confirmed email templates — they will be redesigned when payments are introduced.
+
+---
+
 ## Out of scope for MVP — future features
 
 ### Group email to all clients on a block
