@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 5 Jun 2026
+Last updated: 6 Jun 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -816,6 +816,17 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    only this in-app step-label text needs fixing.
 
 3. EMAIL NOTIFICATIONS via Resend
+   Fully scoped. Spec file: EMAIL-NOTIFICATIONS-SPEC.md (repo root).
+   Pre-build steps required before Session 1:
+   - Verify lgpilates.co.uk with Resend (DNS records via GoDaddy)
+   - Set up email forwarding: bookings@lgpilates.co.uk → Louise's Hotmail
+   - Create Resend account, get live + test API keys
+   - Store API keys as Supabase secrets on both prod and test projects
+   Build plan: 6 sessions + final review. See spec file for full session breakdown.
+   Playwright tests written per session where meaningful — not all deferred to end.
+   Nice to have (post-MVP): full mailbox at bookings@lgpilates.co.uk (~£3-5/month GoDaddy).
+   Future feature (out of MVP scope): group email to all clients on a block.
+
 4. CLASS REGISTER FEATURE
 5. DEMO FILE UPDATES (multiple outdated since per-class priority + pro-rata + 4-step flow)
 6. HONEYPOT anti-bot protection

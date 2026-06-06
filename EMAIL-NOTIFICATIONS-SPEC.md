@@ -1,0 +1,249 @@
+# LG Pilates — Email Notifications Spec
+**Status:** Scoped — awaiting build  
+**Last updated:** June 2026
+
+---
+
+## What this feature does
+
+When clients book a class, get cancelled, or receive a refund — they'll automatically receive a confirmation email. Louise will also receive alert emails when new bookings come in.
+
+Emails are sent via **Resend** — a third-party email sending service. Think of it like a Royal Mail sorting office: we hand it a letter, it delivers it. We don't send directly from the website.
+
+---
+
+## Email triggers
+
+These are the events that send an email automatically:
+
+| # | Event | Who receives it |
+|---|-------|----------------|
+| 1 | Client reserves a booking | Client |
+| 2 | Louise confirms a booking (manual, in the dashboard) | Client |
+| 3 | Louise cancels a client (via Remove From Block) | Client + Louise |
+| 4 | Louise marks a refund as paid (Cancellations tab) | Client + Louise |
+| 5 | Any new booking is made | Louise only (includes PAR-Q flag for new clients) |
+
+---
+
+## Sender address
+
+- **Sent from:** `bookings@lgpilates.co.uk`
+- **Replies go to:** `bookings@lgpilates.co.uk`, which forwards to Louise's Hotmail via GoDaddy
+- **Note:** When Louise replies to a client, it will show her personal email as the sender. This is acceptable for now.
+- **Nice to have (future):** Set up a full mailbox at `bookings@lgpilates.co.uk` so Louise can send and receive from that address directly (~£3–5/month via GoDaddy).
+
+---
+
+## Louise's email address
+
+- Stored in the **settings table** (existing database table)
+- Editable via the **Settings tab** in the admin dashboard
+- Used as the recipient for trigger #3, #4, and #5
+
+---
+
+## Test mode behaviour
+
+- When the app is running in test mode (`?env=test`), emails are **not delivered**
+- The Resend **test API key** is used instead — emails go through the motions but nothing is sent
+- This protects against test runs firing real emails to Louise or clients
+- The live Resend API key is used in production only
+
+---
+
+## Architecture (plain English)
+
+The booking system is a single HTML file — it runs in the user's browser. We can't store a secret API key in a file that anyone can view in their browser.
+
+Instead, we use a **Supabase Edge Function** — a small piece of server-side code that lives securely on Supabase (the same service that runs the database). The HTML file calls the Edge Function, the Edge Function calls Resend, Resend sends the email. The API key never touches the browser.
+
+```
+Browser (index.html)
+  → calls Supabase Edge Function (server-side, secure)
+    → calls Resend API
+      → email delivered to recipient
+```
+
+The Resend API key is stored as a **secret** on Supabase — not in the code, not in GitHub.
+
+---
+
+## Domain setup (one-time, before build)
+
+Before any emails can be sent from `bookings@lgpilates.co.uk`, the domain needs to be **verified with Resend**. This proves to email providers (Gmail, Hotmail, etc.) that Resend is authorised to send on behalf of `lgpilates.co.uk`.
+
+**What's involved:**
+1. Log in to GoDaddy
+2. Add a few DNS records that Resend provides (copy/paste job — no technical knowledge needed)
+3. Resend verifies the domain (usually within minutes)
+4. Set up email forwarding on GoDaddy: `bookings@lgpilates.co.uk` → Louise's Hotmail
+
+This is a one-time setup step, done before Session 1 of the build.
+
+---
+
+## Build plan
+
+The build is split across multiple sessions. Each session has a clear goal and a sign-off checkpoint before moving on.
+
+---
+
+### Pre-build: Domain & Resend setup (done outside Claude)
+
+- [ ] Verify `lgpilates.co.uk` with Resend (DNS records via GoDaddy)
+- [ ] Set up email forwarding on GoDaddy (`bookings@lgpilates.co.uk` → Hotmail)
+- [ ] Create Resend account and get live + test API keys
+- [ ] Store API keys as Supabase secrets on both production and test projects
+
+**Sign-off required before Session 1 begins.**
+
+---
+
+### Session 1 — Settings & Edge Function foundation
+
+**Goal:** Louise's email is stored in the database, and a working Edge Function exists that can send a test email.
+
+Steps:
+1. Add `admin_email` key to the settings table (both production and test)
+2. Add Louise's email field to the Settings tab in the admin dashboard
+3. Create the Supabase Edge Function (`send-email`) — a basic version that accepts a payload and calls Resend
+4. Test manually: call the Edge Function and confirm a test email arrives
+
+**Sign-off required before Session 2 begins.**
+
+---
+
+### Session 2 — Booking reserved email (trigger #1)
+
+**Goal:** Client receives a confirmation email when they complete a booking.
+
+Steps:
+1. Decide on email content (class name, venue, dates, amount due, bank details, what to bring)
+2. Build the email template
+3. Wire the Edge Function call into the Reserve button handler in `index.html`
+4. Test end-to-end in test mode (Resend test key — no real email sent)
+5. Test in production mode (real email sent to a test address)
+
+**Sign-off required before Session 3 begins.**
+
+---
+
+### Session 3 — Booking confirmed email (trigger #2)
+
+**Goal:** Client receives an email when Louise manually confirms their booking in the dashboard.
+
+Steps:
+1. Identify where in the dashboard the "Confirm" action happens
+2. Wire the Edge Function call into the confirm action
+3. Decide on email content (different tone to the reserved email — this one is the "you're confirmed" message)
+4. Test end-to-end
+
+**Sign-off required before Session 4 begins.**
+
+---
+
+### Session 4 — New booking alert to Louise (trigger #5)
+
+**Goal:** Louise receives an email whenever a client books, including a PAR-Q flag for new clients.
+
+Steps:
+1. Build the admin alert email template
+2. Wire it into the Reserve button handler alongside the client email (trigger #1)
+3. Include PAR-Q required flag (true for `customer_type = 'new'`)
+4. Test end-to-end
+
+**Sign-off required before Session 5 begins.**
+
+---
+
+### Session 5 — Cancellation emails (trigger #3)
+
+**Goal:** Both the client and Louise receive an email when a client is removed via the Remove From Block modal.
+
+Steps:
+1. Identify the confirm step in the RFB modal where cancellation is finalised
+2. Build the client cancellation email template (class, dates, refund amount if applicable)
+3. Build the Louise cancellation alert template
+4. Wire both Edge Function calls into the RFB confirm handler
+5. Test end-to-end
+
+**Sign-off required before Session 6 begins.**
+
+---
+
+### Session 6 — Refund confirmation emails (trigger #4)
+
+**Goal:** Both the client and Louise receive an email when a refund is marked as paid.
+
+Steps:
+1. Identify the "Mark as Refunded" action in the Cancellations tab
+2. Build the client refund confirmation email template
+3. Build the Louise refund alert template
+4. Wire both Edge Function calls into the refund action
+5. Test end-to-end
+
+**Sign-off required before final review.**
+
+---
+
+### Final review session
+
+- End-to-end test of all 5 triggers in test mode
+- End-to-end test of all 5 triggers in production mode (to a safe test address)
+- Check all emails render correctly on mobile and desktop
+- Check forwarding works (Louise receives admin alerts in her Hotmail)
+- Sign off and go live
+
+---
+
+## Open decisions (to resolve before or during build)
+
+- [ ] Exact wording for each email template — to be agreed with Louise before each session
+- [ ] Whether to include a "what to bring" section in the booking confirmation — Louise to decide
+- [ ] Full mailbox vs forwarding-only — parked as nice to have
+
+---
+
+## Out of scope for MVP — future features
+
+### Group email to all clients on a block
+
+Louise will sometimes need to notify all clients booked onto a block at once (e.g. class cancelled, venue change). Rather than emailing clients individually, she should be able to send one message from the dashboard that goes to everyone on that block.
+
+**Privacy requirement:** Each client must only see their own email address. Emails are sent individually to each client (one send per person), not as a group CC or BCC. This is standard practice for transactional email and is both more reliable and more professional.
+
+**Where it lives:** A "Email this block" button in the admin dashboard (By Class tab or Bookings tab — to be decided at design time).
+
+---
+
+## Out of scope (for now)
+
+- PAR-Q submission confirmation email (PAR-Q is submitted as part of booking — covered by the booking confirmation)
+- Waitlist notification emails (waitlist feature not yet built)
+- Email open/click tracking
+- Unsubscribe links (not required for transactional emails under UK law)
+
+---
+
+## Automation testing approach
+
+Playwright tests are written alongside the build — not all at the end.
+
+**Per-session rule:**
+- At the end of each build session, assess what can be meaningfully tested with Playwright
+- Not every session will produce testable output (e.g. Edge Function internals can't be driven via the browser)
+- Where tests can be written, they are written in the same session and run locally before any push
+- TEST-PLAN.md is updated in the same session as any new test
+
+**What is likely testable:**
+- Settings tab — Louise's email field saves and displays correctly
+- Booking flow — Edge Function is called at the Reserve step (can be verified via Resend test mode dashboard or a mock)
+- Admin dashboard actions — confirm, cancel, refund actions trigger the correct calls
+- Group email UI (future) — button exists, modal opens, sends correctly
+
+**What is not directly testable via Playwright:**
+- Actual email delivery (Resend handles this — we rely on Resend test mode to verify payloads)
+- Edge Function internals (tested manually or via Supabase logs)
+
+The call on what to test is made at the end of each session based on what was built.
