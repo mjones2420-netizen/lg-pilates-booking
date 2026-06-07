@@ -402,7 +402,7 @@ tests-playwright/
     ├── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
     └── ac-*.spec.js             # 24 AC spec files covering 24 of 24 scenarios
 
-CURRENT TEST COUNT: 159 tests (all passing — Session 31, Batch 20 complete — AC suite complete)
+CURRENT TEST COUNT: 162 tests (all passing — Session 34, Batch 22 complete — SE-12 booking reserved email)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    33 tests covering 33 of 33 CB scenarios (CB suite complete)
   PB:    16 tests — 9 individual Excel-scenario specs + 7 gap-analysis tests
@@ -821,7 +821,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - ✅ Admin Classes (AC)      — 26 tests, 24 scenarios (Batches 18-20)
    - ✅ Admin Clients (ACL)     — 2 tests, 2 genuine scenarios
    - ✅ Schedule Display (SD)   — 6 tests, 6 scenarios
-   - ✅ Settings & Export (SE)  — 11 tests, 11 scenarios
+   - ✅ Settings & Export (SE)  — 12 tests, 12 scenarios (Batches 14, 21, 22)
    - ✅ Edge Cases (EC)         — 15 tests, 13 genuine scenarios
    - ✅ Block Warnings (BLW)    — 8 tests, 8 scenarios
    - ✅ Security (SEC)          — 6 tests, 3 genuine scenarios
@@ -847,7 +847,14 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - Deployed to both Supabase projects. Verified: prod delivers to real inbox, test redirects to delivered@resend.dev
    - Supabase CLI (v2.105.0) and Docker Desktop installed on Mark's Mac
    - SE suite extended: SE-10 (email field loads), SE-11 (email field saves). SE-01 toast text updated. 161 tests total.
-   **Session 2 next:** Booking reserved email (trigger #1) — client confirmation on Reserve click.
+   **Session 2 complete (7 Jun 2026):**
+   - `buildReservedEmailHtml()` helper — table-based HTML email with branding, reserved alert banner, booking summary, bank details, 48-hour payment deadline, what to bring
+   - `sendBookingEmail()` async helper — calls Edge Function, non-fatal (booking succeeds regardless)
+   - `appSettings` global populated at load so bank details available to email builder
+   - `IS_NO_EMAIL` flag (`?noemail=1`) suppresses email call in test runs — `APP_PATH` in app-url.js updated to include flag; `APP_PATH_EMAIL` added for SE-12 only
+   - SE-12 spec: intercepts Edge Function via page.route(), asserts recipient/subject/isTest/HTML content
+   - Verified in production: real email delivered to mjones970@live.co.uk. 162 tests total.
+   **Session 3 next:** Booking confirmed email (trigger #2) — client email when Louise confirms in dashboard.
    Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md for full session breakdown.
    Test mode: `isTest: true` in payload redirects all recipients to delivered@resend.dev (no separate Resend test key — both projects use live keys).
    Resend API keys stored as RESEND_API_KEY secret on both Supabase projects (different keys per project).
@@ -1552,5 +1559,28 @@ SESSION 33 LEARNINGS — EMAIL NOTIFICATIONS SESSION 1, SUPABASE CLI, RESEND
 - .insert().select() pitfall on settings table: existing pattern uses
   .upsert() with ON CONFLICT (key) DO UPDATE — this is correct. Never add
   a trailing .select() to anon writes on tables where anon lacks SELECT.
+
+SESSION 34 LEARNINGS — EMAIL TRIGGER 1, NOEMAIL FLAG, TEST NOISE
+----------------------------------------------------------------
+- Every spec that completes a booking via the UI (CB-01, CB-03, CB-13 etc.)
+  now triggers the email call in confirmBooking(). Without a suppression
+  mechanism, every CI and local test run generates Resend log entries for
+  delivered@resend.dev — noisy and undesirable once the system is live.
+  Fixed via IS_NO_EMAIL flag: app-url.js APP_PATH includes ?noemail=1
+  automatically; sendBookingEmail() returns early if IS_NO_EMAIL is true.
+- SE-12 uses APP_PATH_EMAIL (no noemail flag) so page.route() can intercept
+  the fetch and assert the payload. The intercept prevents any real network
+  call reaching Resend even on APP_PATH_EMAIL.
+- buildReservedEmailHtml() uses table-based HTML (not CSS flexbox/grid) for
+  maximum email client compatibility. Outlook compatibility caveat: monospace
+  font on bank details and border-left on the alert banner may render slightly
+  differently, but the email is clean and readable in all major clients.
+- The booking flow step structure for new clients:
+    Step 1 → goStep2() button (no id — use button[onclick="goStep2()"])
+    Step 2a (PAR-Q) → requires age, print name, AND #b-declaration checked
+                   → goStep2b() button (button[onclick="goStep2b()"])
+    Step 2b (emergency) → goStep3() button (button[onclick="goStep3()"])
+    Step 3 (payment) → #tcs-agree + #reserve-btn
+  Missing #b-declaration check caused SE-12 to fail on first two attempts.
 
 ============================================================

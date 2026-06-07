@@ -1,5 +1,5 @@
 # LG Pilates — Email Notifications Spec
-**Status:** Session 1 complete — ready for Session 2  
+**Status:** Session 2 complete — ready for Session 3  
 **Last updated:** 7 Jun 2026
 
 ---
@@ -50,6 +50,7 @@ These are the events that send an email automatically:
 - The email goes through Resend (visible in the Resend dashboard logs) but is never delivered to a real inbox
 - Both Supabase projects use live Resend API keys — there is no separate test key type in Resend
 - The `isTest` flag is set by `index.html` based on which Supabase project is active (`?env=test` = test project)
+- **`?noemail=1` flag:** Adding this to the URL suppresses the email call entirely — nothing reaches the Edge Function or Resend. All Playwright specs use `APP_PATH` which includes this flag automatically, keeping the Resend dashboard log clean. SE-12 uses `APP_PATH_EMAIL` (without the flag) so its `page.route()` intercept can still assert the wiring.
 
 ---
 
@@ -116,18 +117,26 @@ Steps:
 
 ---
 
-### Session 2 — Booking reserved email (trigger #1)
+### Session 2 — Booking reserved email (trigger #1) ✅ COMPLETE
 
 **Goal:** Client receives a confirmation email when they complete a booking.
 
 Steps:
-1. Decide on email content (class name, venue, dates, amount due, bank details, what to bring)
-2. Build the email template
-3. Wire the Edge Function call into the Reserve button handler in `index.html`
-4. Test end-to-end in test mode (Resend test key — no real email sent)
-5. Test in production mode (real email sent to a test address)
+1. ✅ Email template designed and approved (mockup reviewed by Mark)
+2. ✅ `buildReservedEmailHtml()` helper built — table-based HTML email with LG Pilates branding, reserved alert banner, booking summary, bank details, 48-hour payment deadline, what to bring
+3. ✅ `sendBookingEmail()` async helper wired into `confirmBooking()` as a non-fatal Step 4 (booking succeeds regardless of email outcome)
+4. ✅ `appSettings` global added so bank details are available to the email builder at reserve time
+5. ✅ `IS_NO_EMAIL` flag added (`?noemail=1`) — suppresses email call in test runs; `APP_PATH` in test helpers updated to include flag automatically; `APP_PATH_EMAIL` added for SE-12 only
+6. ✅ SE-12 spec written — intercepts Edge Function call via `page.route()`, asserts correct recipient, subject, `isTest: true`, first name in HTML, "48 hours" in HTML
+7. ✅ Tested in production — real email delivered to `mjones970@live.co.uk`, rendered correctly
 
-**Sign-off required before Session 3 begins.**
+**Notes:**
+- Email template content: class name, venue, day/time, block date range, amount due, bank details, payment reference (`FirstName LastName Day`), 48-hour deadline, what to bring
+- "What to bring" wording agreed: arrive no more than 10 minutes before the session starts
+- `page.route()` intercept in SE-12 means CI runs never touch Resend — zero log noise
+- `bookings@lg-pilates.co.uk` replies forward to Mark's inbox during testing
+
+**Sign-off:** ✅ Complete — Session 3 next.
 
 ---
 
@@ -201,8 +210,8 @@ Steps:
 
 ## Open decisions (to resolve before or during build)
 
-- [ ] Exact wording for each email template — to be agreed with Louise before each session
-- [ ] Whether to include a "what to bring" section in the booking confirmation — Louise to decide
+- [x] "What to bring" section included — wording agreed Session 2 (arrive no more than 10 minutes before the session starts)
+- [ ] Exact wording for remaining email templates (triggers #2–#5) — to be agreed with Louise before each session
 - [ ] When to switch forwarding from Mark's inbox to Louise's personal email
 
 ---
