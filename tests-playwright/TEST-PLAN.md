@@ -142,6 +142,8 @@
 - `se-07-export-bookings-csv.spec.js` — 1 test
 - `se-08-export-everything.spec.js` — 1 test
 - `se-09-csv-formula-injection.spec.js` — 1 test
+- `se-10-notification-email-loads.spec.js` — 1 test
+- `se-11-notification-email-saves.spec.js` — 1 test
 
 **Edge Cases (13 files, 15 tests)**
 - `ec-01-full-class-booking-prevented.spec.js` — 1 test
@@ -3232,7 +3234,7 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 ## Settings & Export specs
 
 <details>
-<summary><strong>Settings & Export specs — 9 tests (Batch 14)</strong></summary>
+<summary><strong>Settings & Export specs — 11 tests (Batches 14, 21)</strong></summary>
 
 ### SE-01 — Save bank details
 
@@ -3375,6 +3377,52 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 **What a fail would mean:** Formula injection protection is broken — malicious customer-name data could execute as a formula in Excel or Google Sheets, potentially loading external content or exfiltrating data.
 
 **Cleanup:** `afterEach` deletes the injection-candidate customer via direct pg.
+
+---
+
+### SE-10 — Notification email field loads on dashboard login
+
+**File:** `tests/se-10-notification-email-loads.spec.js`
+**Scenario:** After admin login, the `#setting-admin-email` input in the Settings section is populated with the `admin_email` value stored in the `settings` table.
+
+**What this proves:** The notification email address saved in the database is correctly loaded into the admin UI on login, so Louise can see and edit the current value.
+
+**Preconditions:** `admin_email` seeded to `mjones970@live.co.uk` in `beforeEach` via direct pg.
+
+**Steps the test performs:**
+1. Seeds `admin_email` value via direct pg
+2. Navigates to app, verifies TEST MODE banner
+3. Logs in as admin
+4. Scrolls `#setting-admin-email` into view
+5. Asserts input has value `mjones970@live.co.uk`
+
+**What a fail would mean:** The notification email field isn't being loaded from the database — Louise would see a blank field and not know what address is currently configured.
+
+**Cleanup:** `afterEach` restores `admin_email` to original value via direct pg.
+
+---
+
+### SE-11 — Notification email field saves and persists
+
+**File:** `tests/se-11-notification-email-saves.spec.js`
+**Scenario:** An admin updates the notification email address in the Settings section, clicks Save Settings, and the new value is persisted to the `settings` table.
+
+**What this proves:** The notification email field saves correctly to the database when Louise clicks Save Settings.
+
+**Preconditions:** `admin_email` seeded to `mjones970@live.co.uk` in `beforeEach` via direct pg.
+
+**Steps the test performs:**
+1. Seeds `admin_email` value via direct pg
+2. Navigates to app, verifies TEST MODE banner
+3. Logs in as admin
+4. Fills `#setting-admin-email` with a new test address
+5. Clicks Save Settings button
+6. Asserts toast contains "Settings saved!"
+7. Queries DB directly and asserts `admin_email` value matches the new address
+
+**What a fail would mean:** The notification email field isn't saving — Louise's changes to the notification address would be silently lost.
+
+**Cleanup:** `afterEach` restores `admin_email` to original value via direct pg.
 
 ---
 
