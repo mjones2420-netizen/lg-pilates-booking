@@ -810,7 +810,8 @@ var addingBlockClassId = null;
 // tests and local admin testing. On any other URL (including the live domain),
 // the production branch is taken and behaviour is identical to before this
 // switch was added — no new behaviour for real clients.
-var IS_TEST_ENV = new URLSearchParams(window.location.search).get('env') === 'test';
+var IS_TEST_ENV  = new URLSearchParams(window.location.search).get('env') === 'test';
+var IS_NO_EMAIL  = new URLSearchParams(window.location.search).get('noemail') === '1';
 
 const PROD_SUPABASE_URL = "https://mrlooyixnlxzcfmvnqme.supabase.co";
 const PROD_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ybG9veWl4bmx4emNmbXZucW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM2MDAsImV4cCI6MjA4ODQ4OTYwMH0.k1LbLenXS29NosaayGnQn3SR2G1xXVDBICeH7w7bD_c";
@@ -1550,6 +1551,7 @@ function buildReservedEmailHtml(opts){
 }
 
 async function sendBookingEmail(to, subject, html){
+  if(IS_NO_EMAIL) return;
   try{
     var res=await fetch(SUPABASE_URL+"/functions/v1/send-email",{
       method:"POST",

@@ -10,11 +10,14 @@
 //   the JSON payload. The route then responds with a 200 OK so the booking
 //   flow completes normally. Assertions run against the captured payload.
 //
+//   APP_PATH_EMAIL is used instead of APP_PATH — it omits the ?noemail=1 flag
+//   so the email call is not suppressed and the intercept can capture it.
+//
 // Cleanup:
 //   Per-run customer created via UI — deleted in afterEach via deleteCustomerCascade.
 
 const { test, expect } = require('@playwright/test');
-const { APP_PATH } = require('./helpers/app-url');
+const { APP_PATH_EMAIL } = require('./helpers/app-url');
 const { deleteCustomerCascade } = require('./helpers/admin-db');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const { sb } = require('./helpers/supabase');
@@ -29,7 +32,7 @@ test.describe('SE-12 — Booking reserved email fires on reserve', () => {
 
   test.beforeEach(async ({ page }) => {
     createdCustomerId = null;
-    await page.goto(APP_PATH);
+    await page.goto(APP_PATH_EMAIL);
     await expect(page.locator('#test-mode-banner.on')).toBeVisible();
   });
 
@@ -40,7 +43,6 @@ test.describe('SE-12 — Booking reserved email fires on reserve', () => {
   });
 
   test('Edge Function called with correct recipient, subject, and isTest flag', async ({ page }) => {
-    // Look up a bookable block
     const block = await getBlockByRole('fri-upcoming');
 
     // Intercept the Edge Function call — capture payload, return 200 OK
@@ -66,7 +68,6 @@ test.describe('SE-12 — Booking reserved email fires on reserve', () => {
     // Step 2a — PAR-Q (age, health questions, declaration, print name)
     await expect(page.locator('#step-2a')).toBeVisible();
     await page.locator('#b-age').fill('30');
-    // Health questions default to No — no action needed
     await page.locator('#b-print-name').fill(FIRST + ' ' + LAST);
     await page.locator('#b-declaration').check();
     await page.locator('button[onclick="goStep2b()"]').click();
@@ -86,7 +87,7 @@ test.describe('SE-12 — Booking reserved email fires on reserve', () => {
     // Wait for success view
     await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 15000 });
 
-    // Assert Edge Function was called
+    // Assert Edge Function was called with correct payload
     expect(capturedPayload, 'send-email was not called').not.toBeNull();
     expect(capturedPayload.to).toBe(EMAIL);
     expect(capturedPayload.subject).toContain('reserved');
