@@ -56,11 +56,11 @@ test('SE-01 — admin saves bank details and sees confirmation toast', async ({ 
   await page.locator('#setting-bank-sort').fill(NEW.sort);
   await page.locator('#setting-bank-acc').fill(NEW.acc);
 
-  // Click Save Bank Details
+  // Click Save Settings
   await page.locator('button[onclick="saveSettings()"]').click();
 
   // Toast confirms save
-  await expect(page.locator('#toastEl')).toContainText('Bank details saved!');
+  await expect(page.locator('#toastEl')).toContainText('Settings saved!');
 
   // DB should now hold new values
   const { rows } = await pool.query(

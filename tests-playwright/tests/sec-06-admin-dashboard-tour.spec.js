@@ -105,7 +105,7 @@ test.describe('SEC-06 — Admin sign-in unlocks full dashboard', () => {
     await expect(page.locator('#setting-bank-name')).toBeVisible();
     await expect(page.locator('#setting-bank-sort')).toBeVisible();
     await expect(page.locator('#setting-bank-acc')).toBeVisible();
-    await expect(page.getByRole('button', { name: /Save Bank Details/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Save Settings/i })).toBeVisible();
 
     // Backup & Export section — heading + at least one export button
     await expect(page.getByText(/Backup & Export/i).first()).toBeVisible();

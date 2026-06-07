@@ -414,7 +414,13 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
         <label class="flbl">Account Number</label>
         <input type="text" class="finp" id="setting-bank-acc" placeholder="00000000" maxlength="15" style="margin-bottom:0">
       </div>
-      <button class="step-btn" onclick="saveSettings()" style="width:auto;padding:10px 24px;">Save Bank Details</button>
+      <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
+      <div style="font-size:13px; color:var(--mid); margin-bottom:14px;">Notification emails (new bookings, cancellations, refunds) are sent to this address.</div>
+      <div style="margin-bottom:20px;">
+        <label class="flbl">Notification Email</label>
+        <input type="email" class="finp" id="setting-admin-email" maxlength="200" style="margin-bottom:0">
+      </div>
+      <button class="step-btn" onclick="saveSettings()" style="width:auto;padding:10px 24px;">Save Settings</button>
     </div>
 
     <div class="sec-title" style="margin-top:40px">Backup &amp; Export</div>
@@ -2691,15 +2697,18 @@ function saveSettings(){
   var bn=document.getElementById("setting-bank-name").value.trim();
   var bs=document.getElementById("setting-bank-sort").value.trim();
   var ba=document.getElementById("setting-bank-acc").value.trim();
+  var ae=document.getElementById("setting-admin-email").value.trim();
   if(!bn||!bs||!ba){ showToast("Please fill in all bank details."); return; }
   showToast("Saving...");
   (async function(){
     try{
-      await sb.from("settings").upsert([{key:"bank_name",value:bn},{key:"bank_sort_code",value:bs},{key:"bank_account_no",value:ba}]);
+      var rows=[{key:"bank_name",value:bn},{key:"bank_sort_code",value:bs},{key:"bank_account_no",value:ba}];
+      if(ae) rows.push({key:"admin_email",value:ae});
+      await sb.from("settings").upsert(rows);
       ["bank-name-1","bank-name-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bn; });
       ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
       ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
-      showToast("Bank details saved!");
+      showToast("Settings saved!");
     }catch(err){ console.error(err); showToast("Error saving settings."); }
   })();
 }
@@ -2836,7 +2845,7 @@ function onTimeBlur(fieldId){
     var{data:settingsRows}=await sb.from("settings").select("key,value");
     if(settingsRows){
       var s={}; settingsRows.forEach(function(r){ s[r.key]=r.value; });
-      var bn=s.bank_name||"", bs=s.bank_sort_code||"", ba=s.bank_account_no||"";
+      var bn=s.bank_name||"", bs=s.bank_sort_code||"", ba=s.bank_account_no||"", ae=s.admin_email||"";
       ["bank-name-1","bank-name-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bn; });
       ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
       ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
@@ -2844,6 +2853,7 @@ function onTimeBlur(fieldId){
       e=document.getElementById("setting-bank-name"); if(e) e.value=bn;
       e=document.getElementById("setting-bank-sort"); if(e) e.value=bs;
       e=document.getElementById("setting-bank-acc"); if(e) e.value=ba;
+      e=document.getElementById("setting-admin-email"); if(e) e.value=ae;
     }
   }catch(err){ console.error("Settings error:",err); }
 

@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 4 Jun 2026
-**Total tests:** 159
+**Last updated:** 7 Jun 2026
+**Total tests:** 161
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -15,11 +15,11 @@
 | Admin Classes (AC) | 24 | 26 |
 | Admin Clients (ACL) | 2 | 2 |
 | Schedule Display (SD) | 6 | 6 |
-| Settings & Export (SE) | 9 | 9 |
+| Settings & Export (SE) | 11 | 11 |
 | Edge Cases (EC) | 13 | 15 |
 | Block Warnings (BLW) | 8 | 8 |
 | Security (SEC) | 3 | 6 |
-| **Total** | **126** | **159** |
+| **Total** | **128** | **161** |
 
 > Tests exceed spec files where one file covers multiple scenarios (e.g. cb-01 has 7 sub-tests, ac-24 has 3, ec-14 has 3, sec-06 has 3). Tests exceed Excel scenarios because smoke tests and PB-X gap-analysis tests are not in the Excel sheet, and some Excel scenarios share a spec file (e.g. CB-12 covered by cb-01, PB-03 covered by pb-10).
 
@@ -418,7 +418,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Settings & Export (SE) — 9 spec files, 9 tests ✅</strong></summary>
+<summary><strong>Settings & Export (SE) — 11 spec files, 11 tests ✅</strong></summary>
 
 ### Settings & Export (SE) — Complete ✅
 
@@ -433,6 +433,8 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SE-07 | Export Bookings CSV | ✅ se-07-export-bookings-csv.spec.js | Batch 14 |
 | SE-08 | Export Everything — full backup | ✅ se-08-export-everything.spec.js | Batch 14 |
 | SE-09 | CSV export — formula injection protection | ✅ se-09-csv-formula-injection.spec.js | Batch 14 |
+| SE-10 | Notification email field loads on dashboard login | ✅ se-10-notification-email-loads.spec.js | Batch 21 |
+| SE-11 | Notification email field saves and persists | ✅ se-11-notification-email-saves.spec.js | Batch 21 |
 
 
 </details>
@@ -525,6 +527,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 18 ✅ | Admin Classes (part 1) | 8 specs (8 tests) | AC-01 add class + ctbody row. AC-02 add block + By Class accordion + schedule visible. AC-03 wrong-day date rejected with red error. AC-04 edit block price/cap. AC-05 delete block + class hidden. AC-06 edit class slot + schedule updated. AC-07 delete class. AC-08 class hidden when no blocks remain. All use per-run class/block setup via direct pg. |
 | Batch 19 | Admin Classes (part 2) | 8 | Auth gates + overlap validation. |
 | Batch 20 | Admin Classes (part 3) | 8 | Time formatting + delete-cascade tests. |
+| Batch 21 ✅ | Settings & Export (email) | 2 | SE-10 notification email field loads on dashboard login. SE-11 notification email field saves and persists to DB. SE-01 toast text updated from "Bank details saved!" to "Settings saved!" to match renamed button. |
 
 ---
 
