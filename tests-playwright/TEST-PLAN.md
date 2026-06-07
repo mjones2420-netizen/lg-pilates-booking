@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 7 Jun 2026
-**Total tests:** 161
+**Total tests:** 162
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -15,11 +15,11 @@
 | Admin Classes (AC) | 24 | 26 |
 | Admin Clients (ACL) | 2 | 2 |
 | Schedule Display (SD) | 6 | 6 |
-| Settings & Export (SE) | 11 | 11 |
+| Settings & Export (SE) | 12 | 12 |
 | Edge Cases (EC) | 13 | 15 |
 | Block Warnings (BLW) | 8 | 8 |
 | Security (SEC) | 3 | 6 |
-| **Total** | **128** | **161** |
+| **Total** | **129** | **162** |
 
 > Tests exceed spec files where one file covers multiple scenarios (e.g. cb-01 has 7 sub-tests, ac-24 has 3, ec-14 has 3, sec-06 has 3). Tests exceed Excel scenarios because smoke tests and PB-X gap-analysis tests are not in the Excel sheet, and some Excel scenarios share a spec file (e.g. CB-12 covered by cb-01, PB-03 covered by pb-10).
 
@@ -132,7 +132,7 @@
 - `sd-05-reset-all-classes.spec.js` — 1 test
 - `sd-06-class-without-blocks-hidden.spec.js` — 1 test
 
-**Settings & Export (9 files, 9 tests)**
+**Settings & Export (12 files, 12 tests)**
 - `se-01-save-bank-details.spec.js` — 1 test
 - `se-02-bank-details-payment-screen.spec.js` — 1 test
 - `se-03-bank-details-success-screen.spec.js` — 1 test
@@ -144,6 +144,7 @@
 - `se-09-csv-formula-injection.spec.js` — 1 test
 - `se-10-notification-email-loads.spec.js` — 1 test
 - `se-11-notification-email-saves.spec.js` — 1 test
+- `se-12-booking-reserved-email.spec.js` — 1 test
 
 **Edge Cases (13 files, 15 tests)**
 - `ec-01-full-class-booking-prevented.spec.js` — 1 test
@@ -420,7 +421,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Settings & Export (SE) — 11 spec files, 11 tests ✅</strong></summary>
+<summary><strong>Settings & Export (SE) — 12 spec files, 12 tests ✅</strong></summary>
 
 ### Settings & Export (SE) — Complete ✅
 
@@ -437,6 +438,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SE-09 | CSV export — formula injection protection | ✅ se-09-csv-formula-injection.spec.js | Batch 14 |
 | SE-10 | Notification email field loads on dashboard login | ✅ se-10-notification-email-loads.spec.js | Batch 21 |
 | SE-11 | Notification email field saves and persists | ✅ se-11-notification-email-saves.spec.js | Batch 21 |
+| SE-12 | Booking reserved email — Edge Function called on reserve | ✅ se-12-booking-reserved-email.spec.js | Batch 22 |
 
 
 </details>
@@ -530,6 +532,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 19 | Admin Classes (part 2) | 8 | Auth gates + overlap validation. |
 | Batch 20 | Admin Classes (part 3) | 8 | Time formatting + delete-cascade tests. |
 | Batch 21 ✅ | Settings & Export (email) | 2 | SE-10 notification email field loads on dashboard login. SE-11 notification email field saves and persists to DB. SE-01 toast text updated from "Bank details saved!" to "Settings saved!" to match renamed button. |
+| Batch 22 ✅ | Email notifications (trigger 1) | 1 | SE-12 booking reserved email — verifies the send-email Edge Function is called with correct recipient, subject, isTest flag, and HTML content when a client completes a booking. Uses page.route() to intercept the fetch without needing a real inbox. |
 
 ---
 
@@ -3234,7 +3237,7 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 ## Settings & Export specs
 
 <details>
-<summary><strong>Settings & Export specs — 11 tests (Batches 14, 21)</strong></summary>
+<summary><strong>Settings & Export specs — 12 tests (Batches 14, 21, 22)</strong></summary>
 
 ### SE-01 — Save bank details
 
@@ -3426,10 +3429,34 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 ---
 
+### SE-12 — Booking reserved email — Edge Function called on reserve
+
+**File:** `tests/se-12-booking-reserved-email.spec.js`
+**Scenario:** When a new client completes the full booking flow and clicks Reserve, the `send-email` Edge Function is called with the client's email as recipient, a subject containing "reserved", `isTest: true`, and HTML containing the client's first name and the 48-hour payment deadline.
+
+**What this proves:** The email wiring in `confirmBooking()` fires after a successful booking. The payload is correctly assembled from the booking form data. `isTest: true` is set in test mode, so no real email is sent. The call is non-fatal — the booking succeeds regardless.
+
+**Preconditions:** `page.route()` intercepts `**/functions/v1/send-email` and captures the request payload, responding with a 200 OK. No Resend account or inbox required.
+
+**Steps the test performs:**
+1. Navigates to app in test mode, verifies TEST MODE banner
+2. Intercepts the Edge Function URL via `page.route()`
+3. Opens booking modal for `fri-upcoming` via `page.evaluate(openModal, ...)`
+4. Completes full new-client flow: name, email, phone → PAR-Q → emergency contact → T&Cs → Reserve
+5. Asserts `#success-view.on` is visible (booking completed)
+6. Asserts `capturedPayload.to` equals the test email address
+7. Asserts `capturedPayload.subject` contains "reserved"
+8. Asserts `capturedPayload.isTest` is `true`
+9. Asserts `capturedPayload.html` is truthy, contains the client's first name, and contains "48 hours"
+
+**What a fail would mean:** The email wiring is broken — clients won't receive a confirmation email when they reserve a spot.
+
+**Cleanup:** `afterEach` calls `deleteCustomerCascade(createdCustomerId)` to remove the per-run customer and their booking.
+
+---
+
 </details>
 
-
-## Admin Bookings specs
 
 <details>
 <summary><strong>Admin Bookings specs — 21 tests (Batches 15–17)</strong></summary>

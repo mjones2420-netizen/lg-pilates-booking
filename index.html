@@ -795,6 +795,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 var classes = [];   // permanent class slots
 var blocks  = [];   // all blocks loaded from DB
 var bookings = [];
+var appSettings = {};      // bank details + admin email, loaded at startup
 var selected = null;       // selected class
 var selectedBlock = null;  // selected block for booking
 var activeFilter = "all";
@@ -1475,6 +1476,90 @@ function getParqAnswers(){
 function updateYesSection(){ document.getElementById("parq-yes-section").style.display=hasAnyYes()?"block":"none"; }
 function toggleHealthForm(){}
 
+// ─── Email helpers ────────────────────────────────────────────────────────────
+function buildReservedEmailHtml(opts){
+  // opts: { firstName, lastName, className, venue, loc, day, time, endTime,
+  //         blockDates, amountDue, bankName, bankSortCode, bankAccountNo }
+  var ref=opts.firstName+" "+opts.lastName+" "+opts.day;
+  var blockRange=opts.blockDates.length>0
+    ? opts.blockDates[0]+" \u2013 "+opts.blockDates[opts.blockDates.length-1]
+    : "";
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
+    +'<tr><td align="center">'
+    +'<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">'
+
+    // Header
+    +'<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">'
+    +'<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>'
+    +'<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>'
+    +'</td></tr>'
+
+    // Reserved alert banner
+    +'<tr><td style="background:#fef3e8;border-left:4px solid #e07b4a;padding:18px 32px;">'
+    +'<div style="font-size:15px;font-weight:600;color:#b35c2a;margin-bottom:6px;">Your spot is reserved &mdash; not yet confirmed</div>'
+    +'<div style="font-size:13px;color:#7a4420;line-height:1.6;">To secure your place, please make a bank transfer within <strong>48 hours</strong>. Louise will send a confirmation email once payment has been received.</div>'
+    +'</td></tr>'
+
+    // Body
+    +'<tr><td style="padding:24px 32px;">'
+
+    // Greeting
+    +'<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi '+opts.firstName+',</p>'
+
+    // Booking summary
+    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Booking summary</div>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.className+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.venue+', '+opts.loc+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.day+', '+opts.time+' &ndash; '+opts.endTime+'</td></tr>'
+    +(blockRange?'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Block dates</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+blockRange+'</td></tr>':"")
+    +'<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Amount due</td><td style="padding:6px 0;font-size:15px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;'+opts.amountDue+'</td></tr>'
+    +'</table>'
+
+    // How to pay
+    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">How to pay</div>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #cde0e0;border-radius:6px;padding:16px 20px;margin-bottom:20px;">'
+    +(opts.bankName?'<tr><td style="padding:5px 0;border-bottom:1px solid #eef5f5;font-size:13px;color:#4a6060;">Bank</td><td style="padding:5px 0;border-bottom:1px solid #eef5f5;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;font-family:monospace;">'+opts.bankName+'</td></tr>':"")
+    +'<tr><td style="padding:5px 0;border-bottom:1px solid #eef5f5;font-size:13px;color:#4a6060;">Sort code</td><td style="padding:5px 0;border-bottom:1px solid #eef5f5;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;font-family:monospace;">'+opts.bankSortCode+'</td></tr>'
+    +'<tr><td style="padding:5px 0;font-size:13px;color:#4a6060;">Account number</td><td style="padding:5px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;font-family:monospace;">'+opts.bankAccountNo+'</td></tr>'
+    +'</table>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:4px;padding:8px 12px;margin-bottom:20px;">'
+    +'<tr><td style="font-size:13px;color:#2a6b6b;">Payment reference: <strong style="color:#1a2e2e;">'+ref+'</strong></td></tr>'
+    +'</table>'
+
+    // Deadline
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#fff8f5;border:1px solid #f0c8aa;border-radius:6px;padding:12px 16px;margin-bottom:20px;">'
+    +'<tr><td style="font-size:13px;color:#7a4420;line-height:1.6;"><strong style="color:#b35c2a;">Payment deadline:</strong> Please transfer within 48 hours to hold your spot. If payment is not received in time, your reservation may be released.</td></tr>'
+    +'</table>'
+
+    // What to bring
+    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">What to bring</div>'
+    +'<p style="font-size:13px;color:#4a6060;line-height:1.7;margin:0 0 20px;">Please wear comfortable, stretchy clothing suitable for movement. Bring a yoga mat if you have one &mdash; mats are also available to borrow at the studio. Grip socks are recommended but not essential. Please arrive no more than 10 minutes before the session starts.</p>'
+
+    +'</td></tr>'
+
+    // Footer
+    +'<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">'
+    +'<div style="font-size:11px;color:#8aabab;line-height:1.6;">Questions? Reply to this email or contact Louise at <a href="mailto:bookings@lg-pilates.co.uk" style="color:#3a8a8a;text-decoration:none;">bookings@lg-pilates.co.uk</a><br>LG Pilates &middot; Baildon &amp; Guiseley</div>'
+    +'</td></tr>'
+
+    +'</table>'
+    +'</td></tr></table>'
+    +'</body></html>';
+}
+
+async function sendBookingEmail(to, subject, html){
+  try{
+    var res=await fetch(SUPABASE_URL+"/functions/v1/send-email",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPABASE_KEY},
+      body:JSON.stringify({to:to,subject:subject,html:html,isTest:IS_TEST_ENV})
+    });
+    if(!res.ok){ console.warn("Email send failed (non-fatal):",res.status,await res.text()); }
+  }catch(emailErr){ console.warn("Email send error (non-fatal):",emailErr); }
+}
+
 function confirmBooking(){
   var c=selected, blk=selectedBlock;
   var fn=document.getElementById("b-firstname").value.trim();
@@ -1568,7 +1653,22 @@ function confirmBooking(){
         }catch(parqErr){ console.error("PAR-Q save error (booking still saved):",parqErr); }
       }
 
-      // Step 4: Show success screen
+      // Step 4: Send booking reserved email (non-fatal — booking already saved)
+      try{
+        var emailHtml=buildReservedEmailHtml({
+          firstName:fn, lastName:ln,
+          className:c.name, venue:c.venue, loc:c.loc,
+          day:c.day, time:c.time, endTime:c.end_time,
+          blockDates:blk.dates||[],
+          amountDue:String(calcProrata(blk).totalPrice),
+          bankName:appSettings.bankName||"",
+          bankSortCode:appSettings.bankSortCode||"",
+          bankAccountNo:appSettings.bankAccountNo||""
+        });
+        await sendBookingEmail(em,"Your LG Pilates booking is reserved — "+c.name,emailHtml);
+      }catch(emailErr){ console.warn("Email step error (non-fatal):",emailErr); }
+
+      // Step 5: Show success screen
       var html="";
       html+="<div class=\"srow\"><span>Name</span><span>"+sanitise(fn)+" "+sanitise(ln)+"</span></div>";
       html+="<div class=\"srow\"><span>Class</span><span>"+sanitise(c.name)+"</span></div>";
@@ -2846,6 +2946,7 @@ function onTimeBlur(fieldId){
     if(settingsRows){
       var s={}; settingsRows.forEach(function(r){ s[r.key]=r.value; });
       var bn=s.bank_name||"", bs=s.bank_sort_code||"", ba=s.bank_account_no||"", ae=s.admin_email||"";
+      appSettings={bankName:bn,bankSortCode:bs,bankAccountNo:ba,adminEmail:ae};
       ["bank-name-1","bank-name-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bn; });
       ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
       ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
