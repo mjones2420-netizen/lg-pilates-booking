@@ -701,7 +701,14 @@ DURING SESSION
 - Make all changes to /home/claude/index.html
 - Copy final output to /mnt/user-data/outputs/index.html for Mark to download
 - If any Playwright test is added or substantially modified, TEST-PLAN.md
-  MUST be updated in the same session. Non-negotiable.
+  MUST be updated in the same session. Non-negotiable. This means ALL of:
+  (1) suite table spec file count and test count
+  (2) per-suite collapsible summary header ("X spec files, Y tests ✅")
+  (3) scenario table row(s) with spec filename and batch
+  (4) spec file list entry (e.g. "- `se-10-...spec.js` — 1 test")
+  (5) full spec detail entry with What this proves / Steps / What a fail means
+  (6) batch log entry
+  (7) overall total count in header and totals row
 - When updating TEST-PLAN.md after adding tests, keep the header suite table
   in sync: update the spec file count and test count for the affected suite,
   update the per-tab <summary> header to "X spec files, Y tests ✅", and add
