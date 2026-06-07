@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 6 Jun 2026 (Session 32 — email pre-build)
+Last updated: 7 Jun 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -97,7 +97,7 @@ parq                     — health forms (id, booking_id, customer_id, age, eme
                            NOTE: sign_date is DATE type. Front-end stores ISO (YYYY-MM-DD) in a data-iso
                            attribute on the display element and sends that direct to the DB.
                            Admin PAR-Q view uses formatDateDisplay() to render "18 Apr 2026".
-settings                 — key/value store for bank details (bank_name, bank_sort_code, bank_account_no)
+settings                 — key/value store for bank details and admin email (bank_name, bank_sort_code, bank_account_no, admin_email)
 waitlist                 — placeholder for future waitlist feature (id, class_id, customer_id, created_at)
                            RLS enabled. Empty — not yet connected to booking flow.
 cancellations            — audit trail of all client removals from blocks
@@ -594,6 +594,10 @@ MAC SETUP
 - Local server: python3 -m http.server 8000 (from repo root)
 - TEST_APP_URL=http://localhost:8000/?env=test
 - devDependencies: @playwright/test, @supabase/supabase-js, dotenv, pg
+- Supabase CLI v2.105.0 (installed via Homebrew, Session 33)
+- Docker Desktop installed (required by Supabase CLI for Edge Function bundling, Session 33)
+- Supabase CLI login: use `export SUPABASE_ACCESS_TOKEN=...` if keychain blocks `supabase login`
+  (Token created at https://supabase.com/dashboard/account/tokens)
 
 RUNNING TESTS
 -------------
@@ -727,6 +731,18 @@ no behaviour changes and no spec is warranted (e.g. a label typo fix).
 
 TEST-PLAN.md must be updated in the same session as any new spec.
 
+END OF SESSION — FILES TO UPDATE
+---------------------------------
+At the end of every session, check whether each of these files needs updating
+— not just context.txt. Claude should flag which ones are affected before
+producing output files.
+
+- context.txt              — always update
+- BACKLOG.md               — if a feature advanced, completed, or a new item was identified
+- EMAIL-NOTIFICATIONS-SPEC.md — if an email session completed or spec details changed
+- TEST-PLAN.md             — if any tests were added or modified (non-negotiable companion step)
+- LG_Pilates_Test_Scenarios.xlsx — if scenario wording changed
+
 AFTER SESSION — MARK'S STEPS
 ----------------------------
 1. Download the output index.html (and any new spec files) from Claude
@@ -785,7 +801,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
 1. PLAYWRIGHT TESTS — ALL EXCEL SCENARIOS COMPLETE ✅
 
    All 133 genuine Excel scenarios across all 12 tabs are now automated.
-   159 tests across 14 suites, all passing.
+   161 tests across 14 suites, all passing.
 
    Full per-suite detail and spec-to-scenario mapping lives in
    tests-playwright/TEST-PLAN.md (Coverage Tracker at the top).
@@ -798,7 +814,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - ✅ Admin Classes (AC)      — 26 tests, 24 scenarios (Batches 18-20)
    - ✅ Admin Clients (ACL)     — 2 tests, 2 genuine scenarios
    - ✅ Schedule Display (SD)   — 6 tests, 6 scenarios
-   - ✅ Settings & Export (SE)  — 9 tests, 9 scenarios
+   - ✅ Settings & Export (SE)  — 11 tests, 11 scenarios
    - ✅ Edge Cases (EC)         — 15 tests, 13 genuine scenarios
    - ✅ Block Warnings (BLW)    — 8 tests, 8 scenarios
    - ✅ Security (SEC)          — 6 tests, 3 genuine scenarios
@@ -816,17 +832,18 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    only this in-app step-label text needs fixing.
 
 3. EMAIL NOTIFICATIONS via Resend
-   Spec file: EMAIL-NOTIFICATIONS-SPEC.md (repo root).
-   Pre-build complete ✅ — ready for Session 1.
-   Infrastructure in place:
-   - lg-pilates.co.uk verified with Resend (DNS records in GoDaddy)
-   - GoDaddy Microsoft 365 mailbox at bookings@lg-pilates.co.uk
-     (forwarding to mjones970@live.co.uk during testing — change to Louise's email before go-live)
-   - Resend live + test API keys stored as secrets on both Supabase projects
-   - Domain is lg-pilates.co.uk (hyphenated) — note this differs from earlier spec wording
-   Build plan: 6 sessions + final review. See spec file for full session breakdown.
-   Playwright tests written per session where meaningful — not all deferred to end.
-   Future feature (out of MVP scope): group email to all clients on a block.
+   Fully scoped. Spec file: EMAIL-NOTIFICATIONS-SPEC.md (repo root).
+   **Session 1 complete (7 Jun 2026):**
+   - `admin_email` key added to settings table (both prod and test), seeded with mjones970@live.co.uk
+   - Notification Email field added to Settings tab in admin dashboard (#setting-admin-email)
+   - `send-email` Edge Function created at supabase/functions/send-email/index.ts
+   - Deployed to both Supabase projects. Verified: prod delivers to real inbox, test redirects to delivered@resend.dev
+   - Supabase CLI (v2.105.0) and Docker Desktop installed on Mark's Mac
+   - SE suite extended: SE-10 (email field loads), SE-11 (email field saves). SE-01 toast text updated. 161 tests total.
+   **Session 2 next:** Booking reserved email (trigger #1) — client confirmation on Reserve click.
+   Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md for full session breakdown.
+   Test mode: `isTest: true` in payload redirects all recipients to delivered@resend.dev (no separate Resend test key — both projects use live keys).
+   Resend API keys stored as RESEND_API_KEY secret on both Supabase projects (different keys per project).
 
 4. CLASS REGISTER FEATURE
 5. DEMO FILE UPDATES (multiple outdated since per-class priority + pro-rata + 4-step flow)
@@ -1501,5 +1518,32 @@ SESSION 31 LEARNINGS — AC SUITE COMPLETE, PARQ COLUMN NAMES
   #ab-err, #ab-btn). openEditBlockModal() sets ab-btn.onclick to saveEditBlock
   and ab-btn.textContent to "Save Block". Assertions on modal state after
   Edit Block opens work identically to after Add Block opens.
+
+SESSION 33 LEARNINGS — EMAIL NOTIFICATIONS SESSION 1, SUPABASE CLI, RESEND
+--------------------------------------------------------------------------
+- Resend does not offer a dedicated test API key type. All keys are live and
+  deliver real emails. The test/prod distinction is handled by passing
+  `isTest: true` in the Edge Function payload — the function redirects all
+  recipients to `delivered@resend.dev` (Resend's silent sink). This is
+  visible in the Resend dashboard logs but nothing lands in a real inbox.
+- Supabase CLI requires Docker Desktop to bundle Edge Functions. Both must
+  be installed and Docker must be running before `supabase functions deploy`.
+- `supabase login` may fail silently if macOS Keychain blocks the token.
+  Workaround: create a personal access token at
+  https://supabase.com/dashboard/account/tokens and set it via:
+    export SUPABASE_ACCESS_TOKEN=your_token_here
+  This env var is session-scoped — must be re-set in each new terminal.
+- `supabase link --project-ref <id>` only needs to be run once per project
+  per machine. After that, `supabase functions deploy <name> --project-ref <id>`
+  is the deploy command. The `--project-ref` flag must be supplied explicitly
+  to target a specific project (prod vs test).
+- Edge Function lives at `supabase/functions/send-email/index.ts`. This path
+  is the Supabase CLI convention — do not move it.
+- The `send-email` Edge Function payload: `{ to, subject, html, isTest }`.
+  `isTest` must be explicitly passed from index.html — the function has no
+  way to detect the environment itself.
+- .insert().select() pitfall on settings table: existing pattern uses
+  .upsert() with ON CONFLICT (key) DO UPDATE — this is correct. Never add
+  a trailing .select() to anon writes on tables where anon lacks SELECT.
 
 ============================================================

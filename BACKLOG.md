@@ -1,6 +1,6 @@
 # LG Pilates Booking System — Feature & Task Backlog
 
-Last updated: 5 Jun 2026
+Last updated: 7 Jun 2026
 
 This document is the single source of truth for outstanding work on the LG Pilates booking system.
 It is organised by priority tier. Items should be marked ✅ when complete and updated in `context.txt` at the same time.
@@ -69,6 +69,8 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 - New booking notification → Louise (client name, class, block, amount due).
 - Consider a PAR-Q reminder email if the PAR-Q has not been completed 24 hours before the first session.
 - User guide (T3-02) should be updated once email is live.
+- **Session 1 complete (7 Jun 2026):** `admin_email` in settings table, Notification Email field in Settings tab, `send-email` Edge Function deployed to both Supabase projects. Supabase CLI + Docker Desktop installed. See `EMAIL-NOTIFICATIONS-SPEC.md` for full session breakdown.
+- **Session 2 next:** Booking reserved email (trigger #1) — client confirmation on Reserve.
 
 ---
 
@@ -199,6 +201,7 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 |---|---|---|
 | Playwright test suite | All 133 genuine Excel scenarios automated (159 tests) | Session 31 |
 | GitHub Actions CI | Auto-run on push | Session 32 |
+| Email notifications — Session 1 | Settings email field + send-email Edge Function deployed to prod and test | Session 33 |
 | Per-class priority | Replaced global `customers.priority` with `customer_class_priority` | Earlier |
 | Pro-rata pricing | Sessions-remaining calculation on active blocks | Earlier |
 | 4-step booking flow | New client flow extended from 3 to 4 steps | Earlier |

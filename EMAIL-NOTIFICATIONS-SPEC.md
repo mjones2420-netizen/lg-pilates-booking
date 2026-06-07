@@ -1,6 +1,6 @@
 # LG Pilates — Email Notifications Spec
-**Status:** Pre-build complete — ready for Session 1  
-**Last updated:** June 2026
+**Status:** Session 1 complete — ready for Session 2  
+**Last updated:** 7 Jun 2026
 
 ---
 
@@ -45,10 +45,11 @@ These are the events that send an email automatically:
 
 ## Test mode behaviour
 
-- When the app is running in test mode (`?env=test`), emails are **not delivered**
-- The Resend **test API key** is used instead — emails go through the motions but nothing is sent
-- This protects against test runs firing real emails to Louise or clients
-- The live Resend API key is used in production only
+- When the app is running in test mode (`?env=test`), the Edge Function is called with `isTest: true`
+- The Edge Function redirects all recipients to `delivered@resend.dev` — Resend's silent sink address
+- The email goes through Resend (visible in the Resend dashboard logs) but is never delivered to a real inbox
+- Both Supabase projects use live Resend API keys — there is no separate test key type in Resend
+- The `isTest` flag is set by `index.html` based on which Supabase project is active (`?env=test` = test project)
 
 ---
 
@@ -98,17 +99,20 @@ The build is split across multiple sessions. Each session has a clear goal and a
 
 ---
 
-### Session 1 — Settings & Edge Function foundation
+### Session 1 — Settings & Edge Function foundation ✅ COMPLETE
 
 **Goal:** Louise's email is stored in the database, and a working Edge Function exists that can send a test email.
 
 Steps:
-1. Add `admin_email` key to the settings table (both production and test)
-2. Add Louise's email field to the Settings tab in the admin dashboard
-3. Create the Supabase Edge Function (`send-email`) — a basic version that accepts a payload and calls Resend
-4. Test manually: call the Edge Function and confirm a test email arrives
+1. ✅ Add `admin_email` key to the settings table (both production and test) — seeded with `mjones970@live.co.uk`
+2. ✅ Add Louise's email field to the Settings tab in the admin dashboard (`#setting-admin-email`)
+3. ✅ Create the Supabase Edge Function (`send-email`) — deployed to both prod and test projects
+4. ✅ Test manually: production email delivered to `mjones970@live.co.uk`; test mode redirected to `delivered@resend.dev`
 
-**Sign-off required before Session 2 begins.**
+**Notes:**
+- Supabase CLI (v2.105.0) and Docker Desktop installed on Mark's Mac during this session
+- Edge Function lives at `supabase/functions/send-email/index.ts` in the repo
+- `isTest` flag in the payload drives the `delivered@resend.dev` redirect — no separate Resend test key needed
 
 ---
 
