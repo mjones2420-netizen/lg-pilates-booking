@@ -45,11 +45,10 @@ test.describe('SE-12 — Booking reserved email fires on reserve', () => {
   test('Edge Function called with correct recipient, subject, and isTest flag', async ({ page }) => {
     const block = await getBlockByRole('fri-upcoming');
 
-    // Intercept the Edge Function call — capture payload, return 200 OK
-    let capturedPayload = null;
+    // Intercept the Edge Function call — collect all payloads (index 0 = client email, index 1 = admin alert)
+    const capturedPayloads = [];
     await page.route('**/functions/v1/send-email', async route => {
-      const body = route.request().postDataJSON();
-      capturedPayload = body;
+      capturedPayloads.push(route.request().postDataJSON());
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'test-intercepted' }) });
     });
 
@@ -87,8 +86,9 @@ test.describe('SE-12 — Booking reserved email fires on reserve', () => {
     // Wait for success view
     await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 15000 });
 
-    // Assert Edge Function was called with correct payload
-    expect(capturedPayload, 'send-email was not called').not.toBeNull();
+    // Assert Edge Function was called — index 0 is the client email, index 1 is the admin alert
+    expect(capturedPayloads.length, 'send-email was not called').toBeGreaterThanOrEqual(1);
+    const capturedPayload = capturedPayloads[0];
     expect(capturedPayload.to).toBe(EMAIL);
     expect(capturedPayload.subject).toContain('reserved');
     expect(capturedPayload.isTest).toBe(true);

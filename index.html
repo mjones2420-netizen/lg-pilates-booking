@@ -1603,6 +1603,65 @@ function buildConfirmedEmailHtml(opts){
     +'</body></html>';
 }
 
+function buildAdminAlertEmailHtml(opts){
+  // opts: { firstName, lastName, className, venue, loc, day, time, endTime,
+  //         blockDates, amountDue, customerType, dashboardUrl }
+  var blockRange=opts.blockDates&&opts.blockDates.length>0
+    ? opts.blockDates[0]+' \u2013 '+opts.blockDates[opts.blockDates.length-1]
+    : '';
+  var isNew=opts.customerType==='new';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
+    +'<tr><td align="center">'
+    +'<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">'
+
+    // Header
+    +'<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">'
+    +'<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>'
+    +'<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>'
+    +'</td></tr>'
+
+    // New booking banner
+    +'<tr><td style="background:#e8f0fb;border-left:4px solid #3a6abf;padding:18px 32px;">'
+    +'<div style="font-size:15px;font-weight:600;color:#1a3a7a;margin-bottom:6px;">New booking</div>'
+    +'<div style="font-size:13px;color:#2a4a8a;line-height:1.6;">A new booking has been made.</div>'
+    +'</td></tr>'
+
+    // Body
+    +'<tr><td style="padding:24px 32px;">'
+
+    // Booking summary table
+    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Booking details</div>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Client</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.firstName+' '+opts.lastName+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.className+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.venue+', '+opts.loc+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.day+', '+opts.time+' &ndash; '+opts.endTime+'</td></tr>'
+    +(blockRange?'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Block dates</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+blockRange+'</td></tr>':'')
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Client type</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+(isNew?'New client':'Returning client')+'</td></tr>'
+    +'<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Amount due</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;'+opts.amountDue+'</td></tr>'
+    +'</table>'
+
+    // PAR-Q flag (new clients only)
+    +(isNew?'<table width="100%" cellpadding="0" cellspacing="0" style="background:#fff8e8;border-left:4px solid #e07b4a;border-radius:0 6px 6px 0;margin-bottom:20px;">'
+    +'<tr><td style="padding:14px 18px;font-size:13px;color:#7a4010;">&#9888;&nbsp; A PAR-Q health form has been submitted with this booking. You can view it in the dashboard.</td></tr>'
+    +'</table>':'')
+
+    // Dashboard link
+    +'<p style="font-size:13px;color:#4a6060;margin:0 0 8px;"><a href="'+opts.dashboardUrl+'" style="color:#3a8a8a;font-weight:600;text-decoration:none;">View full details in the dashboard &rarr;</a></p>'
+
+    +'</td></tr>'
+
+    // Footer
+    +'<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">'
+    +'<div style="font-size:11px;color:#8aabab;line-height:1.6;">LG Pilates &middot; Baildon &amp; Guiseley</div>'
+    +'</td></tr>'
+
+    +'</table>'
+    +'</td></tr></table>'
+    +'</body></html>';
+}
+
 async function sendBookingEmail(to, subject, html){
   if(IS_NO_EMAIL) return;
   try{
@@ -1721,6 +1780,21 @@ function confirmBooking(){
           bankAccountNo:appSettings.bankAccountNo||""
         });
         await sendBookingEmail(em,"Your LG Pilates booking is reserved — "+c.name,emailHtml);
+
+        // Send new booking alert to Louise (trigger #5) — non-fatal
+        if(appSettings.adminEmail){
+          var dashUrl=window.location.origin+window.location.pathname+'#dashboard';
+          var adminHtml=buildAdminAlertEmailHtml({
+            firstName:fn, lastName:ln,
+            className:c.name, venue:c.venue, loc:c.loc,
+            day:c.day, time:c.time, endTime:c.end_time,
+            blockDates:blk.dates||[],
+            amountDue:String(calcProrata(blk).totalPrice),
+            customerType:customerType,
+            dashboardUrl:dashUrl
+          });
+          await sendBookingEmail(appSettings.adminEmail,"New booking — "+fn+" "+ln+", "+c.day+" "+c.time+", "+c.venue,adminHtml);
+        }
       }catch(emailErr){ console.warn("Email step error (non-fatal):",emailErr); }
 
       // Step 5: Show success screen

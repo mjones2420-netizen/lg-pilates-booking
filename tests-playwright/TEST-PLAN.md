@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 8 Jun 2026
-**Total tests:** 163
+**Total tests:** 165
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -15,11 +15,11 @@
 | Admin Classes (AC) | 24 | 26 |
 | Admin Clients (ACL) | 2 | 2 |
 | Schedule Display (SD) | 6 | 6 |
-| Settings & Export (SE) | 13 | 13 |
+| Settings & Export (SE) | 15 | 15 |
 | Edge Cases (EC) | 13 | 15 |
 | Block Warnings (BLW) | 8 | 8 |
 | Security (SEC) | 3 | 6 |
-| **Total** | **130** | **163** |
+| **Total** | **132** | **165** |
 
 > Tests exceed spec files where one file covers multiple scenarios (e.g. cb-01 has 7 sub-tests, ac-24 has 3, ec-14 has 3, sec-06 has 3). Tests exceed Excel scenarios because smoke tests and PB-X gap-analysis tests are not in the Excel sheet, and some Excel scenarios share a spec file (e.g. CB-12 covered by cb-01, PB-03 covered by pb-10).
 
@@ -132,7 +132,7 @@
 - `sd-05-reset-all-classes.spec.js` — 1 test
 - `sd-06-class-without-blocks-hidden.spec.js` — 1 test
 
-**Settings & Export (13 files, 13 tests)**
+**Settings & Export (15 files, 15 tests)**
 - `se-01-save-bank-details.spec.js` — 1 test
 - `se-02-bank-details-payment-screen.spec.js` — 1 test
 - `se-03-bank-details-success-screen.spec.js` — 1 test
@@ -146,6 +146,7 @@
 - `se-11-notification-email-saves.spec.js` — 1 test
 - `se-12-booking-reserved-email.spec.js` — 1 test
 - `se-13-booking-confirmed-email.spec.js` — 1 test
+- `se-14-admin-alert-email.spec.js` — 2 tests
 
 **Edge Cases (13 files, 15 tests)**
 - `ec-01-full-class-booking-prevented.spec.js` — 1 test
@@ -422,7 +423,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Settings & Export (SE) — 13 spec files, 13 tests ✅</strong></summary>
+<summary><strong>Settings & Export (SE) — 15 spec files, 15 tests ✅</strong></summary>
 
 ### Settings & Export (SE) — Complete ✅
 
@@ -441,6 +442,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SE-11 | Notification email field saves and persists | ✅ se-11-notification-email-saves.spec.js | Batch 21 |
 | SE-12 | Booking reserved email — Edge Function called on reserve | ✅ se-12-booking-reserved-email.spec.js | Batch 22 |
 | SE-13 | Booking confirmed email — Edge Function called on admin confirm | ✅ se-13-booking-confirmed-email.spec.js | Batch 23 |
+| SE-14 | New booking admin alert to Louise — Edge Function called on reserve, with PAR-Q flag for new clients | ✅ se-14-admin-alert-email.spec.js | Batch 24 |
 
 
 </details>
@@ -536,6 +538,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 21 ✅ | Settings & Export (email) | 2 | SE-10 notification email field loads on dashboard login. SE-11 notification email field saves and persists to DB. SE-01 toast text updated from "Bank details saved!" to "Settings saved!" to match renamed button. |
 | Batch 22 ✅ | Email notifications (trigger 1) | 1 | SE-12 booking reserved email — verifies the send-email Edge Function is called with correct recipient, subject, isTest flag, and HTML content when a client completes a booking. Uses page.route() to intercept the fetch without needing a real inbox. |
 | Batch 23 ✅ | Email notifications (trigger 2) | 1 | SE-13 booking confirmed email — verifies the send-email Edge Function is called with correct recipient, subject, isTest flag, and HTML content when Louise clicks Confirm on a reserved booking in the admin dashboard. Uses page.route() to intercept the fetch. |
+| Batch 24 ✅ | Email notifications (trigger 5) | 2 | SE-14 new booking admin alert — verifies the send-email Edge Function is called a second time on reserve with Louise's admin email as recipient, correct subject containing client name, isTest: true, "New booking" in HTML. Two sub-tests: new client (asserts PAR-Q flag present) and returning client (asserts PAR-Q flag absent). |
 
 ---
 
@@ -3240,7 +3243,7 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 ## Settings & Export specs
 
 <details>
-<summary><strong>Settings & Export specs — 12 tests (Batches 14, 21, 22)</strong></summary>
+<summary><strong>Settings & Export specs — 14 tests (Batches 14, 21, 22, 23, 24)</strong></summary>
 
 ### SE-01 — Save bank details
 
@@ -3455,6 +3458,42 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 **What a fail would mean:** The email wiring is broken — clients won't receive a confirmation email when they reserve a spot.
 
 **Cleanup:** `afterEach` calls `deleteCustomerCascade(createdCustomerId)` to remove the per-run customer and their booking.
+
+---
+
+### SE-14 — New booking admin alert email — Edge Function called on reserve
+
+**File:** `tests/se-14-admin-alert-email.spec.js`
+**Scenario:** When a client reserves a booking, the `send-email` Edge Function is called a second time with Louise's admin email as recipient, a subject containing the client's name, `isTest: true`, and HTML containing "New booking" and the client name. For new clients, a PAR-Q flag is present in the HTML; for returning clients it is absent.
+
+**What this proves:** The admin alert wiring in `confirmBooking()` fires after a successful reserve. The payload is correctly assembled including client type and PAR-Q flag. `isTest: true` is set in test mode. The call is non-fatal and Louise's email is read dynamically from `appSettings.adminEmail`.
+
+**Preconditions:** `admin_email` is set in the test DB settings table. `page.route()` intercepts all calls to `**/functions/v1/send-email`, capturing payloads in order (index 0 = client email, index 1 = admin alert). Uses `APP_PATH_EMAIL` so the call is not suppressed.
+
+**Sub-test 1 — New client (PAR-Q flag present):**
+1. Intercepts Edge Function via `page.route()`, collecting all payloads
+2. Navigates to app in test mode (`APP_PATH_EMAIL`), verifies TEST MODE banner
+3. Opens booking modal for `fri-upcoming` via `page.evaluate(openModal(...))`
+4. Fills Step 1 (new client details), advances via `goStep2()`
+5. Fills Step 2a (age, print name, declaration), advances via `goStep2b()`
+6. Fills Step 2b (emergency contact), advances via `goStep3()`
+7. Checks T&Cs, clicks Reserve — waits for `#success-view.on`
+8. Waits for second Edge Function call (admin alert payload)
+9. Asserts `adminPayload.to` equals `admin_email` from settings
+10. Asserts `adminPayload.subject` contains client first and last name
+11. Asserts `adminPayload.isTest` is `true`
+12. Asserts `adminPayload.html` contains "New booking", client name, "New client", "#dashboard"
+13. Asserts `adminPayload.html` contains "PAR-Q health form has been submitted"
+**Cleanup:** `afterEach` calls `deleteCustomerCascade` on the per-run customer.
+
+**Sub-test 2 — Returning client (no PAR-Q flag):**
+1–8. Same intercept and flow, using fixture customer `returning-one@test.example`
+9. Asserts `adminPayload.html` does NOT contain "PAR-Q health form has been submitted"
+10. Asserts `adminPayload.html` contains "Returning client"
+11. Asserts `adminPayload.isTest` is `true` and HTML contains "New booking"
+**Cleanup:** `afterEach` calls `deleteBookingsForCustomerOnBlock` on the fixture customer's booking — the fixture customer row itself is preserved.
+
+**What a fail would mean:** The admin alert wiring in the reserve handler is broken — Louise won't receive notifications of new bookings, or the PAR-Q flag logic is incorrect.
 
 ---
 
