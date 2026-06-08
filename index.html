@@ -1550,6 +1550,59 @@ function buildReservedEmailHtml(opts){
     +'</body></html>';
 }
 
+function buildConfirmedEmailHtml(opts){
+  // opts: { firstName, className, venue, loc, day, time, endTime, blockDates }
+  var blockRange=opts.blockDates&&opts.blockDates.length>0
+    ? opts.blockDates[0]+' \u2013 '+opts.blockDates[opts.blockDates.length-1]
+    : '';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
+    +'<tr><td align="center">'
+    +'<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">'
+
+    // Header
+    +'<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">'
+    +'<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>'
+    +'<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>'
+    +'</td></tr>'
+
+    // Confirmed banner
+    +'<tr><td style="background:#e8f5e8;border-left:4px solid #3a8a6a;padding:18px 32px;">'
+    +'<div style="font-size:15px;font-weight:600;color:#2a6a4a;margin-bottom:6px;">Booking confirmed</div>'
+    +'<div style="font-size:13px;color:#2a5a3a;line-height:1.6;">Payment received, your booking is now confirmed. We look forward to seeing you.</div>'
+    +'</td></tr>'
+
+    // Body
+    +'<tr><td style="padding:24px 32px;">'
+
+    // Greeting
+    +'<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi '+opts.firstName+',</p>'
+
+    // Booking summary
+    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Your booking</div>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.className+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.venue+', '+opts.loc+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.day+', '+opts.time+' &ndash; '+opts.endTime+'</td></tr>'
+    +(blockRange?'<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Block dates</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+blockRange+'</td></tr>':'')
+    +'</table>'
+
+    // What to bring
+    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">What to bring</div>'
+    +'<p style="font-size:13px;color:#4a6060;line-height:1.7;margin:0 0 20px;">Please wear comfortable, fitted clothing and bring a water bottle. Please arrive no more than 10 minutes before the session starts.</p>'
+
+    +'</td></tr>'
+
+    // Footer
+    +'<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">'
+    +'<div style="font-size:11px;color:#8aabab;line-height:1.6;">Questions? Reply to this email or contact Louise at <a href="mailto:bookings@lg-pilates.co.uk" style="color:#3a8a8a;text-decoration:none;">bookings@lg-pilates.co.uk</a><br>LG Pilates &middot; Baildon &amp; Guiseley</div>'
+    +'</td></tr>'
+
+    +'</table>'
+    +'</td></tr></table>'
+    +'</body></html>';
+}
+
 async function sendBookingEmail(to, subject, html){
   if(IS_NO_EMAIL) return;
   try{
@@ -2427,7 +2480,31 @@ function confirmBookingAdmin(idx){
   var b=bookings[idx];
   showToast("Confirming...");
   (async function(){
-    try{ await sb.from("bookings").update({status:"confirmed"}).eq("id",b.dbId).select(); showToast("Booking confirmed for "+b.client+"!"); renderDashboard(); }
+    try{
+      await sb.from("bookings").update({status:"confirmed"}).eq("id",b.dbId).select();
+      showToast("Booking confirmed for "+b.client+"!");
+
+      // Send booking confirmed email (non-fatal — booking already confirmed)
+      try{
+        var cls=classes.find(function(c){ return c.id===b.classId; })||{};
+        var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
+        var firstName=(b.client||"").split(" ")[0]||"";
+        var subject="Your booking is confirmed \u2014 "+cls.time+", "+(cls.venue||"");
+        var emailHtml=buildConfirmedEmailHtml({
+          firstName:firstName,
+          className:cls.name||b.cls,
+          venue:cls.venue||"",
+          loc:cls.loc||"",
+          day:cls.day||b.day,
+          time:cls.time||"",
+          endTime:cls.end_time||"",
+          blockDates:blk.dates||[]
+        });
+        await sendBookingEmail(b.email,subject,emailHtml);
+      }catch(emailErr){ console.warn("Confirmed email error (non-fatal):",emailErr); }
+
+      renderDashboard();
+    }
     catch(err){ console.error(err); showToast("Error confirming booking."); }
   })();
 }
