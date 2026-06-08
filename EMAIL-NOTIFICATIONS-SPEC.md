@@ -1,5 +1,5 @@
 # LG Pilates — Email Notifications Spec
-**Status:** Session 4 complete — ready for Session 5  
+**Status:** Session 5 complete — ready for Session 6  
 **Last updated:** 8 Jun 2026
 
 ---
@@ -182,18 +182,24 @@ Steps:
 
 ---
 
-### Session 5 — Cancellation emails (trigger #3)
+### Session 5 — Cancellation emails (trigger #3) ✅ COMPLETE
 
 **Goal:** Both the client and Louise receive an email when a client is removed via the Remove From Block modal.
 
 Steps:
-1. Identify the confirm step in the RFB modal where cancellation is finalised
-2. Build the client cancellation email template (class, dates, refund amount if applicable)
-3. Build the Louise cancellation alert template
-4. Wire both Edge Function calls into the RFB confirm handler
-5. Test end-to-end
+1. ✅ Identified the confirm step in `rfbConfirm()` where cancellation is finalised
+2. ✅ `buildCancelledClientEmailHtml()` helper built — red banner ("Your booking has been cancelled"), booking summary table, refund breakdown (sessions attended/remaining, price per session, refund due) if refund > £0, or "No refund required as payment had not yet been received" if £0. Footer includes "If you have any questions, please reply to this email."
+3. ✅ `buildCancelledAdminEmailHtml()` helper built — slate banner ("Booking cancelled"), full details table (client name, email, class, venue, day/time, block dates, sessions attended, price per session, refund amount), dashboard link
+4. ✅ Both Edge Function calls wired into `rfbConfirm()` after successful DB operations — non-fatal, guarded by `if(cancelOpts.email)` and `if(appSettings.adminEmail)`
+5. ✅ SE-15 spec written — per-run customer + confirmed booking on mon-current; drives RFB flow with 2 sessions attended; asserts both payloads via array intercept pattern (index 0 = client, index 1 = Louise)
 
-**Sign-off required before Session 6 begins.**
+**Notes:**
+- Subject lines: client "Your booking has been cancelled — [Day], [Time], [Venue]"; Louise "Booking cancelled — [First] [Last], [Day] [Time], [Venue]"
+- `secondCallPromise` pattern used — resolves inside page.route() callback when capturedPayloads.length >= 2
+- The no-refund path (£0) is template-only branching — covered by the mock review, not by a separate sub-test
+- Verified in production: to be done at next session start
+
+**Sign-off:** ✅ Complete — Session 6 next.
 
 ---
 
