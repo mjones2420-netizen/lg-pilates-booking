@@ -2489,7 +2489,7 @@ function confirmBookingAdmin(idx){
         var cls=classes.find(function(c){ return c.id===b.classId; })||{};
         var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
         var firstName=(b.client||"").split(" ")[0]||"";
-        var subject="Your booking is confirmed \u2014 "+cls.time+", "+(cls.venue||"");
+        var subject="Your booking is confirmed \u2014 "+cls.day+" "+cls.time+", "+(cls.venue||"");
         var emailHtml=buildConfirmedEmailHtml({
           firstName:firstName,
           className:cls.name||b.cls,
