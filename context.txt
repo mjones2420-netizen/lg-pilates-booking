@@ -402,7 +402,7 @@ tests-playwright/
     ├── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
     └── ac-*.spec.js             # 24 AC spec files covering 24 of 24 scenarios
 
-CURRENT TEST COUNT: 163 tests (all passing — Session 35, Batch 23 complete — SE-13 booking confirmed email)
+CURRENT TEST COUNT: 165 tests (all passing — Session 36, Batch 24 complete — SE-14 new booking admin alert email)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    33 tests covering 33 of 33 CB scenarios (CB suite complete)
   PB:    16 tests — 9 individual Excel-scenario specs + 7 gap-analysis tests
@@ -860,7 +860,15 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - Subject line: "Your booking is confirmed — [Day] [Time], [Venue]"
    - SE-13 spec: creates reserved booking via RPC in beforeEach, logs in as admin, clicks Confirm, asserts intercepted payload (recipient, subject contains "confirmed", isTest true, HTML contains first name and "Payment received"). Uses emailPromise pattern to wait for the async call rather than the immediate toast.
    - Verified in production: real confirmed email delivered correctly. 163 tests total.
-   **Session 4 next:** New booking alert to Louise (trigger #5) — Louise receives email on every new booking, with PAR-Q flag for new clients.
+   **Session 4 complete (8 Jun 2026):**
+   - `buildAdminAlertEmailHtml()` helper — blue "New booking" banner, booking summary table (client name, class, venue, day/time, block dates, client type, amount due), PAR-Q flag row (new clients only, orange banner), dynamic dashboard link (`window.location.origin + pathname + '#dashboard'`), LG Pilates footer
+   - Admin alert wired into `confirmBooking()` after client reserved email — fires only if `appSettings.adminEmail` is set, non-fatal
+   - Subject line: "New booking — [First] [Last], [Day] [Time], [Venue]"
+   - Dashboard URL built dynamically from `window.location` — works on GitHub Pages, Netlify, or any host without code changes
+   - SE-12 updated: route intercept now collects into array; client email asserted at index 0, admin alert at index 1
+   - SE-14 spec (2 tests): new-client reserve asserts PAR-Q flag present; returning-client reserve asserts PAR-Q flag absent. Uses array intercept pattern. Fixture returning client (`returning-one@test.example`) used for test 2; cleanup via `deleteBookingsForCustomerOnBlock` only.
+   - Verified in production: real admin alert delivered to mjones970@live.co.uk. 165 tests total.
+   **Session 5 next:** Cancellation emails (trigger #3) — client and Louise both receive email when client is removed via Remove From Block modal.
    Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md for full session breakdown.
    Test mode: `isTest: true` in payload redirects all recipients to delivered@resend.dev (no separate Resend test key — both projects use live keys).
    Resend API keys stored as RESEND_API_KEY secret on both Supabase projects (different keys per project).
@@ -1605,5 +1613,27 @@ SESSION 35 LEARNINGS — EMAIL TRIGGER 2, EMAILPROMISE PATTERN
   Actions) can occur without any code change — a momentary connection
   hiccup between GitHub's servers and Supabase. Re-running the job resolves
   it. Not worth investigating unless it recurs consistently.
+
+SESSION 36 LEARNINGS — EMAIL TRIGGER 5, ARRAY INTERCEPT PATTERN, DYNAMIC DASHBOARD URL
+---------------------------------------------------------------------------------------
+- When multiple Edge Function calls fire in the same booking flow (client email + admin
+  alert), a single `capturedPayload` variable in page.route() will be overwritten by the
+  last call. Always collect into an array when more than one call is expected:
+    `const capturedPayloads = []; ... capturedPayloads.push(body);`
+  Assert by index: index 0 = first call (client), index 1 = second call (admin).
+  SE-12 was broken by the addition of trigger #5 and fixed with this pattern.
+- Dashboard URL in admin alert emails is built dynamically:
+    `window.location.origin + window.location.pathname + '#dashboard'`
+  This works correctly on GitHub Pages, Netlify (`book.lg-pilates.co.uk`), or any
+  other host — no hardcoded domain needed.
+- The admin alert `if(appSettings.adminEmail)` guard means no send attempt if Louise's
+  email isn't configured in the settings table. Safe default.
+- For SE-14 test 2 (returning client), using the fixture customer `returning-one@test.example`
+  means `lookup_customer` finds them and skips PAR-Q. Cleanup must use
+  `deleteBookingsForCustomerOnBlock` (not `deleteCustomerCascade`) to preserve the fixture
+  customer row. Track the block ID via `getBlockByRole('fri-upcoming')` in the cleanup.
+- GitHub Actions Node.js 20 deprecation warning: `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
+  must be set as a top-level `env:` in the workflow file, not inside a step's env block,
+  for it to apply to the action runners themselves. Fixed in `.github/workflows/playwright.yml`.
 
 ============================================================

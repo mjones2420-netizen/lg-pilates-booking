@@ -1,5 +1,5 @@
 # LG Pilates — Email Notifications Spec
-**Status:** Session 3 complete — ready for Session 4  
+**Status:** Session 4 complete — ready for Session 5  
 **Last updated:** 8 Jun 2026
 
 ---
@@ -160,17 +160,25 @@ Steps:
 
 ---
 
-### Session 4 — New booking alert to Louise (trigger #5)
+### Session 4 — New booking alert to Louise (trigger #5) ✅ COMPLETE
 
 **Goal:** Louise receives an email whenever a client books, including a PAR-Q flag for new clients.
 
 Steps:
-1. Build the admin alert email template
-2. Wire it into the Reserve button handler alongside the client email (trigger #1)
-3. Include PAR-Q required flag (true for `customer_type = 'new'`)
-4. Test end-to-end
+1. ✅ `buildAdminAlertEmailHtml()` helper built — blue "New booking" banner, booking summary table (client, class, venue, day/time, block dates, client type, amount due), PAR-Q flag (new clients only, orange banner), dynamic dashboard link, LG Pilates footer
+2. ✅ Admin alert wired into `confirmBooking()` after client reserved email — `if(appSettings.adminEmail)` guard, non-fatal
+3. ✅ Subject: "New booking — [First] [Last], [Day] [Time], [Venue]"
+4. ✅ Dashboard URL built dynamically from `window.location` — works on GitHub Pages, Netlify, or any host
+5. ✅ SE-12 updated to use array intercept pattern (index 0 = client, index 1 = admin alert)
+6. ✅ SE-14 spec (2 tests): new-client asserts PAR-Q flag present; returning-client asserts absent
+7. ✅ Verified in production: real admin alert delivered to mjones970@live.co.uk
 
-**Sign-off required before Session 5 begins.**
+**Notes:**
+- PAR-Q flag shown for `customer_type = 'new'` only — plain text notice, no form details
+- Dashboard link opens `[base URL]#dashboard` — Louise goes straight to the login screen
+- SE-12 broken by this change (single payload variable overwritten) — fixed with array pattern
+
+**Sign-off:** ✅ Complete — Session 5 next.
 
 ---
 
