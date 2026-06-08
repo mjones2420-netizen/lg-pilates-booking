@@ -402,7 +402,7 @@ tests-playwright/
     ├── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
     └── ac-*.spec.js             # 24 AC spec files covering 24 of 24 scenarios
 
-CURRENT TEST COUNT: 162 tests (all passing — Session 34, Batch 22 complete — SE-12 booking reserved email)
+CURRENT TEST COUNT: 163 tests (all passing — Session 35, Batch 23 complete — SE-13 booking confirmed email)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    33 tests covering 33 of 33 CB scenarios (CB suite complete)
   PB:    16 tests — 9 individual Excel-scenario specs + 7 gap-analysis tests
@@ -854,7 +854,13 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - `IS_NO_EMAIL` flag (`?noemail=1`) suppresses email call in test runs — `APP_PATH` in app-url.js updated to include flag; `APP_PATH_EMAIL` added for SE-12 only
    - SE-12 spec: intercepts Edge Function via page.route(), asserts recipient/subject/isTest/HTML content
    - Verified in production: real email delivered to mjones970@live.co.uk. 162 tests total.
-   **Session 3 next:** Booking confirmed email (trigger #2) — client email when Louise confirms in dashboard.
+   **Session 3 complete (8 Jun 2026):**
+   - `buildConfirmedEmailHtml()` helper — green banner ("Booking confirmed"), greeting by first name, booking summary table, what to bring. No bank details (payment already received)
+   - `confirmBookingAdmin()` wired to call Edge Function after successful DB update (non-fatal)
+   - Subject line: "Your booking is confirmed — [Day] [Time], [Venue]"
+   - SE-13 spec: creates reserved booking via RPC in beforeEach, logs in as admin, clicks Confirm, asserts intercepted payload (recipient, subject contains "confirmed", isTest true, HTML contains first name and "Payment received"). Uses emailPromise pattern to wait for the async call rather than the immediate toast.
+   - Verified in production: real confirmed email delivered correctly. 163 tests total.
+   **Session 4 next:** New booking alert to Louise (trigger #5) — Louise receives email on every new booking, with PAR-Q flag for new clients.
    Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md for full session breakdown.
    Test mode: `isTest: true` in payload redirects all recipients to delivered@resend.dev (no separate Resend test key — both projects use live keys).
    Resend API keys stored as RESEND_API_KEY secret on both Supabase projects (different keys per project).
@@ -1582,5 +1588,22 @@ SESSION 34 LEARNINGS — EMAIL TRIGGER 1, NOEMAIL FLAG, TEST NOISE
     Step 2b (emergency) → goStep3() button (button[onclick="goStep3()"])
     Step 3 (payment) → #tcs-agree + #reserve-btn
   Missing #b-declaration check caused SE-12 to fail on first two attempts.
+
+SESSION 35 LEARNINGS — EMAIL TRIGGER 2, EMAILPROMISE PATTERN
+-------------------------------------------------------------
+- confirmBookingAdmin() fires a "Confirming..." toast immediately (synchronous),
+  then the async function updates the DB and calls sendBookingEmail(). A spec
+  that waits for `#toastEl.on` will resolve on the FIRST toast before the email
+  call has run, leaving capturedPayload null. Fix: use a Promise that resolves
+  inside the page.route() callback (emailPromise pattern). The test awaits
+  emailPromise, which only resolves when the intercept fires — guaranteeing
+  the payload is captured before assertions run.
+- The emailPromise pattern is now the canonical approach for any spec that
+  needs to assert an email call triggered by an async admin action. SE-13
+  is the reference implementation.
+- Transient CI seed failures (exit code 1 during npm run seed on GitHub
+  Actions) can occur without any code change — a momentary connection
+  hiccup between GitHub's servers and Supabase. Re-running the job resolves
+  it. Not worth investigating unless it recurs consistently.
 
 ============================================================

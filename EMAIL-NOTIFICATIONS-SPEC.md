@@ -1,6 +1,6 @@
 # LG Pilates — Email Notifications Spec
-**Status:** Session 2 complete — ready for Session 3  
-**Last updated:** 7 Jun 2026
+**Status:** Session 3 complete — ready for Session 4  
+**Last updated:** 8 Jun 2026
 
 ---
 
@@ -140,17 +140,23 @@ Steps:
 
 ---
 
-### Session 3 — Booking confirmed email (trigger #2)
+### Session 3 — Booking confirmed email (trigger #2) ✅ COMPLETE
 
 **Goal:** Client receives an email when Louise manually confirms their booking in the dashboard.
 
 Steps:
-1. Identify where in the dashboard the "Confirm" action happens
-2. Wire the Edge Function call into the confirm action
-3. Decide on email content (different tone to the reserved email — this one is the "you're confirmed" message)
-4. Test end-to-end
+1. ✅ Identified confirm action in `confirmBookingAdmin()` in the admin dashboard
+2. ✅ `buildConfirmedEmailHtml()` helper built — green banner, greeting by first name, booking summary (class, venue, day/time, block dates), what to bring. No bank details needed.
+3. ✅ Edge Function call wired into `confirmBookingAdmin()` as non-fatal step (booking confirmed regardless)
+4. ✅ Subject line: "Your booking is confirmed — [Day] [Time], [Venue]"
+5. ✅ SE-13 spec written — creates reserved booking via RPC, logs in as admin, clicks Confirm, asserts payload via emailPromise pattern
+6. ✅ Verified in production: real confirmed email delivered correctly
 
-**Sign-off required before Session 4 begins.**
+**Notes:**
+- `emailPromise` pattern used in SE-13 (resolves when route intercept fires) rather than toast assertion — the immediate "Confirming..." toast fires before the async email call completes
+- Green banner distinguishes confirmed email visually from the orange reserved email banner
+
+**Sign-off:** ✅ Complete — Session 4 next.
 
 ---
 
