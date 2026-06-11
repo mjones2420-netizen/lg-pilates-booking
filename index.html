@@ -104,8 +104,10 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .card-when-time-val { font-family:'Barlow',sans-serif; font-size:18px; font-weight:700; color:#2a6b6b; letter-spacing:0.02em; }
 .card-when-divider { width:2px; background:#cde0e0; border-radius:2px; align-self:stretch; margin:2px 0; flex-shrink:0; }
 .card-when-info { flex:1; }
-.card-when-day { font-family:'Barlow',sans-serif; font-size:17px; font-weight:700; color:#3a8a8a; letter-spacing:0.04em; display:block; }
-.card-when-name { font-family:'Barlow',sans-serif; font-size:22px; font-weight:800; color:var(--charcoal); text-transform:uppercase; letter-spacing:0.03em; line-height:1.15; display:block; margin-bottom:2px; }
+.card-when-day { font-family:'Barlow',sans-serif; font-size:17px; font-weight:700; color:#3a8a8a; letter-spacing:0.04em; }
+.card-when-name { font-family:'Barlow',sans-serif; font-size:22px; font-weight:800; color:var(--charcoal); text-transform:uppercase; letter-spacing:0.03em; line-height:1.15; display:block; margin-bottom:4px; }
+.card-when-day-row { display:flex; align-items:center; gap:8px; }
+.card-loc-pill { font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; background:#eef5f5; color:#2a6b6b; padding:2px 8px; border-radius:100px; white-space:nowrap; }
 .card-meta-row { display:flex; flex-direction:column; gap:9px; padding:14px 22px; border-bottom:0.5px solid #eef5f5; }
 .card-spaces-row { display:flex; align-items:center; gap:8px; font-size:15px; color:var(--mid); }
 .card-spaces-dot { width:10px; height:10px; border-radius:50%; background:#3a8a6a; display:inline-block; flex-shrink:0; }
@@ -1003,13 +1005,11 @@ function renderGrid() {
     html+='<div class="card-when">';
     html+='<div class="card-when-time-col"><span class="card-when-time-val">'+sanitise(c.time)+'</span><span class="card-when-time-val">'+sanitise(c.end_time)+'</span></div>';
     html+='<div class="card-when-divider"></div>';
-    html+='<div class="card-when-info"><span class="card-when-name">'+sanitise(c.name)+'</span><span class="card-when-day">'+sanitise(c.day)+'</span></div>';
+    html+='<div class="card-when-info"><span class="card-when-name">'+sanitise(c.name)+'</span><div class="card-when-day-row"><span class="card-when-day">'+sanitise(c.day)+'</span><span class="card-loc-pill">'+sanitise(c.loc)+'</span></div></div>';
     html+='</div>';
-
-    // Hidden location hook for Playwright SD filter tests
     html+='<span class="card-loc" style="display:none;">'+sanitise(c.loc)+'</span>';
 
-    // Meta: venue + spaces (b-full badge visible inline when full)
+    // Meta: venue + spaces
     html+='<div class="card-meta-row">';
     html+='<div class="card-spaces-row"><i class="ti ti-map-pin" style="font-size:17px;color:var(--sage);flex-shrink:0;" aria-hidden="true"></i> '+sanitise(c.venue)+'</div>';
     html+='<div class="card-spaces-row"><span class="card-spaces-dot'+( dotCls?' '+dotCls:'')+'"></span> '+spacesText+(full?' <span class="badge b-full">Full</span>':'')+'</div>';

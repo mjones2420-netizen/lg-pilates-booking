@@ -258,23 +258,58 @@ STYLING GUIDE
 Fonts:
   - Headings, logo, large numbers: Raleway (300, 400, 500, 600)
   - Body text, labels, buttons: Open Sans (300, 400, 500)
+  - Class cards (new design): Barlow (700, 800) — loaded via Google Fonts
+  - Tabler Icons webfont loaded via cdn.jsdelivr.net for card map-pin icon
 
 Border radius:
-  - Standard: 4px (sharp — cards, modals, inputs, buttons)
+  - Standard: 4px (sharp — modals, inputs, buttons)
+  - Cards: 12px (new card design)
   - Pills/badges only: 100px
   - Circular avatars/icons: 50%
 
 Spacing:
   - Page padding: 40px horizontal desktop / 18px mobile
-  - Card padding: 26px
+  - Card padding: handled per-section (header 20px 22px, meta 14px 22px, etc.)
   - Modal body padding: 20px 28px
 
 Buttons:
-  Primary:        var(--charcoal) bg, white, border:none, Open Sans 12-14px,
-                  letter-spacing 0.1em, text-transform uppercase, border-radius 2px,
-                  padding 13-16px
+  Primary:        var(--sage) bg, white, border:none, Open Sans 12-14px,
+                  letter-spacing 0.1em, text-transform uppercase, border-radius 4px,
+                  padding 14px — NOTE: changed from charcoal to sage in card redesign
   Secondary/back: transparent bg, 1px solid var(--border), var(--mid)
   Sage variant:   var(--sage-dk) bg (admin export buttons)
+  Full/disabled:  background #f0b0b0, color #7a1a1a (light red for full blocks)
+
+CLASS CARD DESIGN (redesigned Session 38)
+-----------------------------------------
+Cards now use a structured section layout (not flat padding):
+  - Header (.card-when): time column | vertical divider | class name + day row
+    - Time column: two Barlow 700 18px teal time values stacked
+    - Class name: .card-when-name — Barlow 800 22px uppercase charcoal
+    - Day row (.card-when-day-row): day name (.card-when-day, Barlow 700 17px teal)
+      + town pill (.card-loc-pill, teal pill showing c.loc e.g. "Baildon")
+  - Meta row (.card-meta-row): venue with map-pin icon, spaces left with dot
+    - Spaces dot colours: green (#3a8a6a) = available, orange (clay) = ≥80% full,
+      red (#c04040) = full
+    - .badge.b-full rendered inline in spaces row when full (visible, light red)
+  - Block section (.card-block-section): "Current Block" label, date range (15px),
+    date pills (13px teal pills, past=grey, today=dark teal)
+    - Sessions remaining (pro-rata) shown below pills in muted text
+  - Price row (.card-price-row): price + block length left, book button right
+    - flex-grow:1 on price row pushes next block toggle to card bottom
+  - Next block toggle (.next-blk-toggle): collapsible, background #e8f0f0
+  - Card border: 1.5px solid #a8c8c8 (darker than before for card separation)
+  - Card is display:flex flex-direction:column so all cards in a row are equal height
+
+PLAYWRIGHT SELECTOR HOOKS (hidden elements, must not be removed)
+-----------------------------------------------------------------
+These elements are display:none but required by the Playwright test suite:
+  - .card-loc          — contains c.loc (e.g. "Baildon") — used by SD-02/03/04
+  - .cap-txt           — contains "N of M spots taken" — used by EC-10/11, CB-07
+  - .badge.b-full      — visible (not hidden) inline in spaces row when full — EC-01
+  - .priority-info     — class on locked window and priority window divs — PB-01/02
+  - .card-when-day     — must contain c.day (day name) NOT c.name — all CB/BW/PB/EC specs
+  - Book button labels: "Book Current Block" and "Book Next Block" (not "Book Now") — booking-flow.js
 
 Booking modal:
   - .modal: max-width 500px, max-height 92vh, overflow-y auto (single scroll container)
@@ -299,9 +334,10 @@ SHARED JS HELPERS
 COMPLETED FEATURES
 ------------------
 Client-facing:
-- Class cards with day/time prominent, venue/level, current block panel
+- Class cards — redesigned (Session 38): Barlow font, time|divider|name layout,
+  town pill, clean meta rows, no capacity bar, teal book button, collapsible next block
 - Date pills: past/today/upcoming awareness
-- Pro-rata pricing
+- Pro-rata pricing (sessions remaining shown below date pills)
 - Next block collapsible toggle with priority/standard/locked icons
 - Booking modal — 4 steps new / 2 steps returning
 - Already-booked early detection view (returning client step 1)
@@ -315,7 +351,7 @@ Admin dashboard (password protected via Supabase Auth):
 - Upcoming Classes section — add/edit classes and blocks
 - Settings — bank details
 - Backup & Export — CSV with formula-injection protection
-- Block warnings banner — red/yellow advisories
+- Block warnings banner — red/yellow advisories + orange pending refund warning
 - Block overlap prevention
 - Test-mode env switch (URL query param ?env=test)
 
@@ -402,7 +438,7 @@ tests-playwright/
     ├── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
     └── ac-*.spec.js             # 24 AC spec files covering 24 of 24 scenarios
 
-CURRENT TEST COUNT: 169 tests (all passing — Session 37, Batch 27 complete — BLW-09 pending refund warning)
+CURRENT TEST COUNT: 169 tests (all passing — Session 38 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    33 tests covering 33 of 33 CB scenarios (CB suite complete)
   PB:    16 tests — 9 individual Excel-scenario specs + 7 gap-analysis tests
@@ -412,23 +448,15 @@ CURRENT TEST COUNT: 169 tests (all passing — Session 37, Batch 27 complete —
   ACL:   2 tests covering 2 of 2 genuine ACL scenarios (ACL suite complete)
   BW:    3 tests covering 3 of 3 genuine BW scenarios (BW suite complete)
   SEC:   6 tests in 3 spec files covering 3 of 3 genuine SEC scenarios
-         (SEC-02 has 2 sub-tests, SEC-06 has 3 sub-tests, SEC-07 has 1.
-          SEC-01/03/04/05 are red-filled in Excel as duplicates of other specs.)
   EC:    15 tests in 13 spec files covering 13 of 13 genuine EC scenarios
-         (EC-14 has 3 sub-tests. EC-02 red-filled as duplicate of CB-31.)
   BLW:   10 tests covering 9 of 9 BLW scenarios (BLW suite complete)
   SE:    17 tests covering 17 SE scenarios
   AB:    21 tests in 13 spec files covering 21 of 21 genuine AB scenarios
-         (AB-01 red-filled as duplicate of SEC-06.1.)
   AC:    26 tests in 24 spec files covering 24 of 24 AC scenarios (AC suite complete)
-         (AC-19/20/21/22 share one spec file — 4 tests. AC-24 has 3 sub-tests.)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
-CB-16b covers Step 3 → Step 4 advance — a transition not present in the old
-3-step Excel scenarios but real in the current 4-step booking flow.
-PB-03 is covered by PB-10 (positive-path priority granted via confirmed booking
-on previous block — same assertion as PB-03's eligible-client scenario).
+PB-03 is covered by PB-10 (confirmed booking on previous block grants priority).
 
 Coverage Tracker is in tests-playwright/TEST-PLAN.md at the top — that file
 is the authoritative view of automation progress for all CB and PB scenarios.
@@ -570,16 +598,6 @@ When to run:
 - Before a release or deployment milestone
 - Quarterly as a routine health check
 
-Gaps the helper does NOT catch:
-- Project-level Auth settings (test has its own admin user, prod doesn't)
-- Per-project secrets and config (CORS, Resend keys, etc.)
-- Data-level differences — fixture data is intentionally different from
-  production data; only structure is compared.
-
-Future schema changes to production should also be applied to the test
-project, and a `npm run schema-check` run afterwards confirms they landed
-in both places.
-
 MAC SETUP
 ---------
 - Node.js v24.15.0 (via nodejs.org LTS)
@@ -639,7 +657,7 @@ Run ALL THREE of these EVERY session, regardless of whether the session
 looks test-related:
 
 A. Confirm index.html is present
-   - Check line count (~2,889 lines post-Session 7)
+   - Check line count (~3,430 lines post-Session 38)
    - Copy to /home/claude/index.html as the working file
 
 B. Check test DB fixture TIME drift
@@ -760,8 +778,8 @@ AFTER SESSION — MARK'S STEPS
 
      cd ~/dev/lg-pilates-booking
      git status                    # confirm only expected files are modified
-     git add index.html
-     git commit -m "TITLE"         # use the title Claude provides
+     git add index.html context.txt
+     git commit -m "TITLE"
      git push
 
    Multi-line commit messages with em-dashes or backticks can get tangled
@@ -808,7 +826,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
 1. PLAYWRIGHT TESTS — ALL EXCEL SCENARIOS COMPLETE ✅
 
    All 133 genuine Excel scenarios across all 12 tabs are now automated.
-   161 tests across 14 suites, all passing.
+   169 tests across 14 suites, all passing.
 
    Full per-suite detail and spec-to-scenario mapping lives in
    tests-playwright/TEST-PLAN.md (Coverage Tracker at the top).
@@ -838,59 +856,12 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    "Step 3 of 4", "Step 4 of 4". The pip indicator itself is correct;
    only this in-app step-label text needs fixing.
 
-3. EMAIL NOTIFICATIONS via Resend
+3. EMAIL NOTIFICATIONS via Resend — Session 8 (final review) next
    Fully scoped. Spec file: EMAIL-NOTIFICATIONS-SPEC.md (repo root).
-   **Session 1 complete (7 Jun 2026):**
-   - `admin_email` key added to settings table (both prod and test), seeded with mjones970@live.co.uk
-   - Notification Email field added to Settings tab in admin dashboard (#setting-admin-email)
-   - `send-email` Edge Function created at supabase/functions/send-email/index.ts
-   - Deployed to both Supabase projects. Verified: prod delivers to real inbox, test redirects to delivered@resend.dev
-   - Supabase CLI (v2.105.0) and Docker Desktop installed on Mark's Mac
-   - SE suite extended: SE-10 (email field loads), SE-11 (email field saves). SE-01 toast text updated. 161 tests total.
-   **Session 2 complete (7 Jun 2026):**
-   - `buildReservedEmailHtml()` helper — table-based HTML email with branding, reserved alert banner, booking summary, bank details, 48-hour payment deadline, what to bring
-   - `sendBookingEmail()` async helper — calls Edge Function, non-fatal (booking succeeds regardless)
-   - `appSettings` global populated at load so bank details available to email builder
-   - `IS_NO_EMAIL` flag (`?noemail=1`) suppresses email call in test runs — `APP_PATH` in app-url.js updated to include flag; `APP_PATH_EMAIL` added for SE-12 only
-   - SE-12 spec: intercepts Edge Function via page.route(), asserts recipient/subject/isTest/HTML content
-   - Verified in production: real email delivered to mjones970@live.co.uk. 162 tests total.
-   **Session 3 complete (8 Jun 2026):**
-   - `buildConfirmedEmailHtml()` helper — green banner ("Booking confirmed"), greeting by first name, booking summary table, what to bring. No bank details (payment already received)
-   - `confirmBookingAdmin()` wired to call Edge Function after successful DB update (non-fatal)
-   - Subject line: "Your booking is confirmed — [Day] [Time], [Venue]"
-   - SE-13 spec: creates reserved booking via RPC in beforeEach, logs in as admin, clicks Confirm, asserts intercepted payload (recipient, subject contains "confirmed", isTest true, HTML contains first name and "Payment received"). Uses emailPromise pattern to wait for the async call rather than the immediate toast.
-   - Verified in production: real confirmed email delivered correctly. 163 tests total.
-   **Session 4 complete (8 Jun 2026):**
-   - `buildAdminAlertEmailHtml()` helper — blue "New booking" banner, booking summary table (client name, class, venue, day/time, block dates, client type, amount due), PAR-Q flag row (new clients only, orange banner), dynamic dashboard link (`window.location.origin + pathname + '#dashboard'`), LG Pilates footer
-   - Admin alert wired into `confirmBooking()` after client reserved email — fires only if `appSettings.adminEmail` is set, non-fatal
-   - Subject line: "New booking — [First] [Last], [Day] [Time], [Venue]"
-   - Dashboard URL built dynamically from `window.location` — works on GitHub Pages, Netlify, or any host without code changes
-   - SE-12 updated: route intercept now collects into array; client email asserted at index 0, admin alert at index 1
-   - SE-14 spec (2 tests): new-client reserve asserts PAR-Q flag present; returning-client reserve asserts PAR-Q flag absent. Uses array intercept pattern. Fixture returning client (`returning-one@test.example`) used for test 2; cleanup via `deleteBookingsForCustomerOnBlock` only.
-   - Verified in production: real admin alert delivered to mjones970@live.co.uk. 165 tests total.
-   **Session 5 complete (8 Jun 2026):**
-   - `buildCancelledClientEmailHtml()` built then **removed** in Session 7 wording review
-   - `buildCancelledAdminEmailHtml()` helper — slate banner, full details table, dashboard link
-   - Admin-only alert wired into `rfbConfirm()` — non-fatal, guarded by `if(appSettings.adminEmail)`
-   - SE-15 spec (1 test): asserts only admin alert fires on RFB (no client email). 167 tests total.
-   **Session 6 complete (11 Jun 2026):**
-   - `buildRefundClientEmailHtml()` helper — red banner ("Your booking has been cancelled and you've been removed from this block"), booking summary, optional green refund box with "Refund of £X has been processed — please allow 3–5 working days" (shown when refund > £0 only)
-   - Client email wired into `markCancellationRefunded()` after successful DB update — non-fatal
-   - Zero-refund auto-send: if `refund === 0`, client email fires immediately from `rfbConfirm()` so client always gets notified
-   - Admin cancel and refund alert emails removed — Louise uses dashboard cancellations tab instead
-   - `buildRefundAdminEmailHtml` and `buildCancelledAdminEmailHtml` remain in code (unused) — remove at tidy-up
-   - SE-16 spec (1 test): drives RFB flow, resets intercept via `page.unroute()`, clicks Mark Refunded, asserts 1 payload (client only). 168 tests total.
-   **Session 7 (11 Jun 2026) — email wording review + additional features:**
-   - All 6 email templates reviewed and wording agreed
-   - Session date pills replace block dates row in reserved and admin alert emails (past=grey, upcoming=teal)
-   - Pending refund warning added to block warnings banner — orange advisory showing count + "View Cancellations" button
-   - BLW-09 spec (2 tests): asserts banner appears with count, View Cancellations navigates to tab, count decreases after marking refunded. 169 tests total.
-   - GitHub Actions CI paths filter narrowed — doc-only pushes no longer trigger test run
-   **Session 8 next (final review):** End-to-end production verification, mobile/desktop render check, forwarding to Louise's inbox.
-   Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md for full session breakdown.
-   Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md for full session breakdown.
-   Test mode: `isTest: true` in payload redirects all recipients to delivered@resend.dev (no separate Resend test key — both projects use live keys).
-   Resend API keys stored as RESEND_API_KEY secret on both Supabase projects (different keys per project).
+   Sessions 1–7 complete. All 6 email templates built and verified in production.
+   Session 8 next: end-to-end production verification, mobile/desktop render
+   check, forwarding to Louise's inbox.
+   Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md.
 
 4. CLASS REGISTER FEATURE
 5. DEMO FILE UPDATES (multiple outdated since per-class priority + pro-rata + 4-step flow)
@@ -964,34 +935,34 @@ PLAYWRIGHT / TEST INFRA
 - openBookingModal helper signature is (page, day, which) — `day` is a
   string like "Monday", NOT a numeric class_id. `which` is 'current'
   (default) or 'next'.
-- Button labels on class cards depend on block state:
+- Button labels on class cards:
     "Book Current Block"  — active blocks AND upcoming when no active block
     "Book Next Block"     — only in standard window (0-7 days out)
     "Check My Priority"   — priority window (8-14 days out), no direct book
-  When in doubt, use 'current' as the openBookingModal arg.
+  IMPORTANT: These labels must not be changed — booking-flow.js clicks by
+  exact text. The displayed button says "Book Current Block" not "Book Now".
+- .card-when-day must contain the DAY NAME (e.g. "Monday"), not the class
+  name. Class name is in .card-when-name. Swapping these breaks every spec
+  that filters cards by day.
+- .card-loc must remain as a hidden span containing c.loc — SD filter tests
+  rely on it. The visible location pill (.card-loc-pill) is separate.
+- .cap-txt must remain as a hidden span with "N of M spots taken" text —
+  EC-10/11 and CB-07 assert on its text content.
+- .priority-info class must remain on the locked window and priority window
+  divs in the next block panel — PB-01/02 assert on it.
 - Step pip mechanism: completed steps swap textContent from the number to
   a tick (\u2713). Assertions need toHaveText('\u2713'), not just a class
   check. The .done class is added but the visual change comes from BOTH.
-- Step pip back-nav for returning clients: goStepBack3() returns to step 1
-  directly (no intermediate step in 2-step layout). The "Payment" label on
-  pip 2 persists across back/forward — only resets on full modal close + reopen.
-- Modal scroll-to-top uses scrollTo({behavior:'smooth'}). Playwright
-  assertions need expect.poll on scrollTop with a short timeout (~2s).
-  Hard-asserting toBe(0) immediately will race the smooth scroll.
 - CB-13 uses test.skip() (not expect().toBe(false)) on its pre-flight
   already-booked check, so a successful first run leaves the suite green
   on the second run.
-- CB-21 and CB-28 already test parts of step pip behaviour. Batch 3 specs
-  (CB-14, CB-15, CB-16b) overlap. Decision: keep both. Atomic Batch 3
-  specs make failures clearer; slight redundancy is the price for diagnostic clarity.
 - Priority gate UI is rendered ONLY on a class card's nextBlk panel — a
   class needs both a current block AND an upcoming block for the gate to
   appear. In Migration 09 only Monday meets this (mon-current active +
   mon-upcoming). Wed and Fri have one upcoming block each which renders as
   "current" via getActiveBlock fallback — no nextBlk panel, no gate. Always
   verify the rendering path actually fires on the chosen card BEFORE writing
-  a spec — Session 16 burned a debug cycle on this when PB-02/PB-04 were
-  pointed at Wednesday based on data-layer eligibility alone.
+  a spec.
 - check_priority_access RPC selects "previous block" as the most-recent
   end_date < the upcoming block's start_date — this can be an active block
   (mon-current is the previous block for mon-upcoming, NOT mon-past). When
@@ -1017,38 +988,94 @@ PLAYWRIGHT / TEST INFRA
   or waitlist. Calls against those tables return null/empty silently rather
   than erroring (RLS behaviour). For fixture writes/reads on admin-only
   tables, use tests/helpers/admin-db.js (Session 17) which opens a direct
-  Postgres connection via TEST_SUPABASE_DB_URL and bypasses RLS. Pattern:
-  `const { grantManualPriority, hasManualPriority } = require('./helpers/admin-db')`
-  Same pg pool also useful for any future AB or stronger CB-33 tests.
+  Postgres connection via TEST_SUPABASE_DB_URL and bypasses RLS.
 - Admin login helper: tests/helpers/admin-auth.js (Session 17) drives the
   dashboard login UI via #dash-email / #dash-password. Requires
-  TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD in .env.test. Session is held
-  in the browser localStorage, not in the test process. signOutAdmin() is
-  also exported. Per-class panel utilities included:
-  expandPerClassPanel, classPriorityButton(cust,cls,'grant'|'remove'),
-  classPriorityBadge(cust,cls).
+  TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD in .env.test.
 - Per-class panel button selectors use the onclick attribute pattern:
   `button[onclick="toggleClassPriority(custId,classId,true|false)"]`.
   Third arg is true=Remove (currently granted), false=Grant (not granted).
-  Stable across UI restructure since onclick wiring is in the rendered HTML.
 - When admin signs out via signOut(), show("schedule") only UN-HIDES the
   existing schedule DOM — it does NOT re-render. Any panels open before the
-  admin session (e.g. next-blk-body toggled open in a pre-admin step) remain
-  open after sign-out, with their input values intact. Re-clicking a toggle
-  in this state will CLOSE it. Either avoid the second toggle click, or
-  expect the panel to already be open. PB-08 hit this in Session 17.
-- Admin login does not work without auth.identities populated. Test admin
-  users MUST be created via the Supabase dashboard "Add user" button —
-  raw INSERTs into auth.users skip the identity row and password sign-in
-  fails silently. (Already documented above under DATABASE & SUPABASE.)
-- Per-class priority gate UI rendering rule (Session 16, re-confirmed
-  Session 17): the gate only renders on a class card that has BOTH an
-  active current block AND an upcoming block. Wednesday (no active in
-  current fixture) and Friday (no priority-window upcoming) do not render
-  the gate. Monday is the only fixture class with a working gate. Verify
-  via `EXISTS(blocks WHERE status='active' AND today between start/end)`
-  AND `EXISTS(blocks WHERE status='upcoming' AND start_date - today
-  BETWEEN 8 AND 14)` BEFORE planning a gate-driven spec.
+  admin session remain open after sign-out.
+- The card.locator('.block-dates-pills .date-pill') pattern grabs pills
+  from BOTH the current-block section AND the next-block panel. When
+  asserting pill counts/order on a card with a next-block panel, scope
+  with `.first()`: `card.locator('.block-dates-pills').first()
+  .locator('.date-pill')`.
+- fixture-lookup.js SELECT returns: id, class_id, status, start_date,
+  end_date, cap, booked, dates. Any future spec needing other block columns
+  (price, weeks, visible) should extend the SELECT.
+- The admin dashboard has 4 tabs + 3 below-tab sections, NOT 6 tabs:
+    Tabs:     #tab-bookings, #tab-classes, #tab-customers, #tab-cancellations
+    Sections: Upcoming Classes (#ctbody), Settings (#setting-bank-*),
+              Backup & Export (Export buttons)
+- trg_sync_block_booked_count fires AFTER any INSERT or DELETE on the
+  bookings table and recalculates blocks.booked. Any direct UPDATE to
+  blocks.booked gets OVERWRITTEN the moment a real booking row is inserted.
+  setBlockBookedCount is only safe for UI-state tests that do NOT cause any
+  subsequent bookings INSERT/DELETE on the same block.
+- The booking success view's overlay (#overlay.on) intercepts clicks on
+  the Dashboard nav button afterwards. Specs that complete a booking and
+  then need to log in as admin MUST click "Back to Schedule" before
+  navigating elsewhere.
+- The admin Bookings table (#btbody) renders 7 columns:
+    Client (first + last, no email), Class, When, Block, Paid, Status, Actions
+  Filter rows by customer name, not email.
+- Duplicate-booking protection has THREE independent layers:
+    (1) Front-end Step-1 early-detection (CB-31)
+    (2) RPC layer ALREADY_BOOKED (EC-13, EC-08)
+    (3) Partial unique index (EC-12)
+- Transient UI state (EC-09's "Reserving..." button text) requires
+  expect.poll with short intervals (50/100/200ms) and a small timeout (4s).
+- fixture-lookup.js had been written before any spec needed the blocks.dates
+  column. When BW-02 needed it, the field was absent from the SELECT and
+  silently undefined. Rule: when a shared helper omits a column a new spec
+  needs, extend the helper rather than a one-off direct query.
+- The clean fixture already triggers the yellow advisory for Wednesday and
+  Friday — each has only one visible block. Thursday is the reliable on/off
+  switch for BLW tests: hiding thu-locked creates the advisory for Thursday
+  without disturbing the Wed/Fri baseline.
+- settings table uses `key` as the PRIMARY KEY (text). ON CONFLICT (key) DO
+  UPDATE is the correct upsert pattern. There is no separate `id` column.
+- openModal(classId, blockId) must only be called AFTER the schedule has
+  rendered — i.e. after at least one `.card` is visible.
+- goStep2() silently rejects the form if ANY of the four Step 1 fields
+  are empty or invalid. Specs that want to test the returning-client payment
+  step must fill ALL FOUR fields, not just email.
+- The admin dashboard contains multiple tables (#btbody, #customers-tbody,
+  #cancellations-tbody, #ctbody). Always scope to the specific table via
+  its tbody ID when asserting headers.
+- book_if_available RPC always inserts as status='reserved'. All fixture
+  bookings are seeded as 'confirmed'. AB specs that need a reserved booking
+  must create one per-run via the RPC.
+- window.confirm dialogs must be handled with page.once('dialog', d =>
+  d.accept()) registered BEFORE the triggering button click.
+- AB-10 double-click collapse bug: always click the target group directly
+  once, never combine a generic "expand first" click with a named-group click.
+- Nav button for the public schedule is #nb-schedule, NOT #nb-home.
+- Classes and blocks inserted via direct pg before page.goto ARE loaded into
+  the app's in-memory arrays on page init. Insert before goto.
+- toISOString() on a local midnight Date converts to UTC, shifting the date
+  one day back in BST. For any date string passed into a browser date input,
+  always use toLocalISO() (getFullYear/getMonth/getDate extraction).
+- toggleClassGroup() uses style.display directly ('block'/'none'), NOT a
+  CSS class toggle. Assert toBeVisible() not toHaveClass(/on/).
+- parq table column names do NOT match the front-end question labels. Always
+  verify column names against the DB schema first.
+
+CARD REDESIGN SELECTOR DISCIPLINE (Session 38)
+----------------------------------------------
+The card redesign (Session 38) changed the HTML structure significantly.
+Key discipline going forward: when making ANY change to card HTML, always
+verify these five selector hooks remain intact and correct:
+  1. .card-when-day contains c.day (day name string)
+  2. .card-loc hidden span contains c.loc (location string)
+  3. .cap-txt hidden span contains "N of M spots taken"
+  4. .badge.b-full is VISIBLE (not display:none) when block is full
+  5. .priority-info class present on locked/priority window divs
+  6. Book button labels: "Book Current Block" / "Book Next Block" (exact)
+Failing any of these will break large swathes of the test suite silently.
 
 CB-12 NOTE
 ----------
@@ -1064,629 +1091,86 @@ eligible-client scenario). Coverage Tracker shows it as ✅ with that note.
 
 PB-08 NOTE
 ----------
-PB-08's Excel scenario originally referenced the Wednesday class. The
-current fixture's Wednesday card has no active block — only an upcoming
-one — which means the priority gate UI does NOT render on it (the gate
-only appears when a class has both an active current block AND an
-upcoming block). Monday is the only fixture class where the gate
-renders, so PB-08 was implemented against Monday using returning-two
-(confirmed on mon-past and mon-full but NOT on mon-current, so denied
-without a manual grant). Excel scenario wording was updated in Session
-17 to match.
+PB-08's Excel scenario originally referenced the Wednesday class. Monday
+is the only fixture class where the priority gate renders (requires both
+an active current block AND an upcoming block). PB-08 was implemented
+against Monday using returning-two. Excel scenario wording updated in
+Session 17 to match.
 
 WORKFLOW DISCIPLINE — SESSION 16 LEARNING
 -----------------------------------------
 Recurring failure mode: Claude making unilateral mid-batch changes
-(deferring specs, updating documentation early, adding "while I'm at it"
-fixes) instead of stopping to ask.
+instead of stopping to ask.
 
 Hard rule going forward: any time the agreed batch scope changes for ANY
-reason — spec deferral, fixture change, obsolete scenario, selector
-mismatch, customer/block pair unworkable — STOP. Surface in two lines.
-Wait for explicit sign-off before acting.
+reason — stop, surface in two lines, wait for explicit sign-off before acting.
 
 Documentation is locked until tests pass: do NOT update TEST-PLAN.md,
 context.txt, or the Excel scenarios sheet during a batch in progress.
-The trigger for updating them is the user explicitly saying tests are
-green or asking for the update.
 
 Self-trigger phrases — if Claude finds itself about to type any of these,
 that's the cue to stop and ask: "I'll just...", "Easiest thing is to...",
 "Let me also...", "While I'm at it...", "It makes sense to...",
 "I'll defer/skip/replace this for now..."
 
-This is captured formally in the playwright-batch-workflow skill (STEP 2.5).
-
-SESSION 18 LEARNINGS — SELECTORS, ASYNC RACES, FIXTURE STATE DRIFT
--------------------------------------------------------------------
-- Class card root selector is `.card`, NOT `.class-card`. Several Session 18
-  specs failed initially because they used `.class-card`. When in doubt,
-  click the toggle by its unique onclick attribute instead of finding the
-  card first: `[onclick="toggleNextBlk('nb-${blockId}')"]` — that selector
-  is stable and tied to the specific block.
-- The admin login helper expects `#tab-bookings.on` after login. After
-  `openClientsTab` is called, the tab classes are sticky and don't reset on
-  signOut. Re-login in the same test fails because tab-bookings is no
-  longer the active tab. Workaround: `page.goto(APP_PATH)` (full reload)
-  before the second loginAsAdmin call. The session was already cleared by
-  signOut, so the reload lands on the login form as expected.
-- toggleClassPriority is a fire-and-forget IIFE: clicking Grant/Remove
-  awaits a DB write, shows a toast, then calls renderCustomersTab() which
-  itself awaits 4 DB reads before swapping tbody innerHTML. Clicking the
-  Per-class button to re-expand the panel BEFORE this re-render completes
-  hits a stale (now-detached) row. Fix: after Grant/Remove click, wait for
-  `#toastEl.on` to be visible AND for the next button (Remove if you just
-  granted, Grant if you just removed) to exist via `toHaveCount(1)`. Then
-  re-expand the panel. PB-X5 has the canonical pattern.
-- Fixture state drift across multiple test runs is a real failure mode.
-  Specs that book the same fixture customer on a fixture block (CB-01,
-  CB-07, CB-13, CB-31, CB-32, CB-33, PB-09, PB-10, PB-X4) accumulate
-  bookings on mon-current and other shared blocks across runs. Session 18
-  hit a CLASS_FULL failure when mon-current reached cap=12 with 13 stray
-  bookings from earlier runs. The trg_sync_block_booked_count trigger
-  keeps blocks.booked accurate, but the UNDERLYING DATA is the problem,
-  not the count. The fix applied (Session 18) was a one-time manual
-  cleanup of mon-current + a self-cleaning afterEach in PB-X4. The full
-  fix (Option B in TO DO) is to add afterEach cleanup to every spec that
-  creates state. Until that lands, expect to occasionally need a manual
-  cleanup or full `npm run seed` after heavy iteration.
-- bookings → customers FK is NOT ON DELETE CASCADE. parq → bookings IS
-  ON DELETE CASCADE. So to delete a customer, delete their bookings
-  first (parq cascades), then delete the customer. context.txt's stated
-  deletion order is the canonical reference: parq → cancellations →
-  bookings → customer_class_priority → customers. (Cancellations are
-  denormalised audit records — they don't get deleted by routine cleanup.)
-- The shared `sb` anon client returns null/empty silently when calling
-  RPCs that fail server-side (e.g. CLASS_FULL). Always check the `error`
-  return, not just `data`. Pattern: `const { data, error } = await sb.rpc(...)`
-  then `expect(error).toBeNull()` BEFORE asserting on `data`.
-- deleteBookingsForCustomerOnBlock only deletes status != 'cancelled'.
-  PB-X4 leaves a cancelled booking by design — that booking is junk
-  state that won't be removed by entry-side self-cleaning, which is why
-  PB-X4 needed an afterEach with deleteCustomerCascade instead. Specs
-  that flip booking status to cancelled MUST clean up via customer
-  cascade, not booking-level delete.
-
-SESSION 19 LEARNINGS — FIXTURE DRIFT EDGE CASES, BATCH 6 ROLLOUT
-----------------------------------------------------------------
-- The session-start fixture drift check was too coarse pre-Session 19.
-  It used bucket counts (priority_window >= 1, etc.) which passed even
-  when a block was ONE DAY from slipping out of its expected window.
-  Session 19 hit this: mon-upcoming was at exactly 8 days at session
-  start (priority_window=1, looked healthy), but ticked over to 7 days
-  during the test run, breaking every PB spec that needed the priority-
-  window UI. The check has been replaced with a per-block boundary-
-  aware query — see Section 7 Check B. Anything with a non-null
-  drift_warning needs a reseed before Playwright work.
-- Batch 6 (self-cleaning afterEach) rolled out to 6 specs:
-    cb-01 — 5 tests inside, each pushes its customer id into a
-            describe-scope createdCustomerIds[] array; afterEach loops
-            and calls deleteCustomerCascade on each.
-    cb-03, cb-13, cb-32, pb-10 — fixture customer + per-run booking;
-            track createdBooking={customerId,blockId}; afterEach calls
-            deleteBookingsForCustomerOnBlock.
-    pb-09 — per-run customer; track createdCustomerId; afterEach calls
-            deleteCustomerCascade.
-  Specs NOT touched: cb-02 (no Reserve click, no state created),
-  cb-31 (verifies already-booked screen without creating new bookings),
-  pb-x4 (already canonical example we modelled on).
-- Pattern: set the tracking variable BEFORE the UI flow runs so afterEach
-  cleans up even if UI assertions fail. Reset in beforeEach.
-- CB-33 STRENGTHENING WAS ATTEMPTED in Session 19 and PARKED — resolved
-  in Session 20 (see below). Original symptom: parq INSERT returning 401
-  from PostgREST (error 42501, permission denied). The fix was a one-line
-  front-end change, not a grant change. See Session 20 learnings for the
-  full diagnosis.
-
-SESSION 20 LEARNINGS — PARQ 401 ROOT CAUSE, .SELECT() CHAINING PITFALL
----------------------------------------------------------------------
-- Root cause of the CB-33 parq 401: the front-end's parq insert was
-  `await sb.from("parq").insert({...}).select()`. The trailing `.select()`
-  makes PostgREST add `RETURNING *`, which requires SELECT permission.
-  Anon has INSERT but not SELECT on parq, so PostgREST returned 42501.
-  The booking flow's try/catch swallowed the error and showed the
-  success view — so the bug was invisible in production. The CB-33 test
-  was the only thing that surfaced it.
-- The lingering production mystery (Del Trotter, Clark Bob parq rows
-  existing post-Item-20 migration despite SQL-layer rollback in tests)
-  was NOT fully chased. At SQL level, INSERT...RETURNING with permission
-  denied DOES roll back the row (verified directly). At PostgREST HTTP
-  level, the row must NOT roll back — that's the only way prod parq
-  rows could exist. The behaviour difference between SQL and PostgREST
-  on RETURNING failures is real but not yet investigated. Not worth
-  chasing further since the .select() removal eliminates the issue
-  entirely.
-- The fix (one line in index.html, line ~1554): drop the `.select()` from
-  the parq insert. The returned value was never consumed. Same data
-  goes in, no RETURNING is requested, no 401 fires. Production now
-  also runs without the silent console error.
-- CB-33 strengthening (deferred from Session 19) landed cleanly: imports
-  `getParqByCustomerId` from admin-db.js, asserts parq row exists with
-  matching customer_id, booking_id, print_name, sign_date, and that
-  q1_heart and q12_other_reasons are 'No'. All 7 tests in
-  cb-01-new-client-happy-path.spec.js pass (33.9s wall clock).
-- Pattern to watch for: any `.insert(...).select()` chain on a table
-  where anon has INSERT but not SELECT will silently fail in production
-  with the same symptom. Search for similar chains before adding new
-  anon-write paths. Currently only parq is affected.
-
-SESSION 21 LEARNINGS — VISIBLE vs STATUS, DOCUMENTATION DISCIPLINE
-------------------------------------------------------------------
-- Front-end block-hiding lever is `blocks.visible`, NOT `blocks.status`.
-  getActiveBlock() at line ~886 of index.html filters with
-  `b.visible !== false` and does NOT check status at all. So flipping
-  status from 'upcoming' to anything else has zero effect on what the
-  public grid shows. Confirmed twice over in Session 21: first via a
-  failed UPDATE to status='archived' (rejected by blocks_status_check;
-  not a valid status anyway), then via UPDATE to status='cancelled'
-  which the constraint allowed but the page still showed the class.
-  Reading the actual filter function on attempt 3 surfaced the right
-  column. Rule: before assuming what column the front-end filters on,
-  read the actual filter function in index.html — the Excel SQL hints
-  (e.g. SD-06's "UPDATE blocks SET status = 'archived'") are not always
-  accurate.
-- blocks_status_check allows ONLY: 'upcoming', 'active', 'completed',
-  'cancelled'. 'archived' is NOT a valid status. The Excel scenario for
-  SD-06 used 'archived' in its example SQL — that wording is wrong and
-  was left as-is in the Excel for now (not a real blocker since the
-  spec mechanism is documented in code and TEST-PLAN.md).
-- Documentation discipline reinforced: I jumped the gun on the
-  TEST-PLAN.md update before the SD-06 spec was green, then had to fix
-  the mechanism description twice after the spec was finally working.
-  Rule (already documented under WORKFLOW DISCIPLINE — SESSION 16
-  LEARNING): do NOT update TEST-PLAN.md, context.txt, or the Excel
-  scenarios during a batch in progress. The trigger is the user
-  explicitly saying tests are green. Re-stating it here because the
-  failure mode keeps recurring.
-- The Excel SD-06 wording references "Run the SQL to remove a block's
-  status" with example SQL setting status='archived'. This is wrong on
-  two counts (invalid status value AND wrong column). If the Excel
-  scenarios are ever revised, SD-06 should be updated to reference
-  `visible = false` as the actual mechanism.
-
-SESSION 22 LEARNINGS — STALE EXCEL WORDING, STRICT-MODE LOCATORS, HELPER COVERAGE
---------------------------------------------------------------------------------
-- The Admin Clients (ACL) and Booking Windows (BW) Excel scenarios were
-  written against the original schema/UI and had drifted from reality.
-  ACL-01/02 referenced the deprecated global `customers.priority` column
-  and a two-state badge model — the live UI uses per-class priority via
-  `customer_class_priority` and renders three badge states (Manual / Auto
-  / Standard) with manual > auto > standard precedence. Excel scenarios
-  updated in the same session, with the spec testing the live behaviour.
-  Lesson: when picking up a long-deferred Excel tab, expect to find stale
-  wording — check what the live system actually does BEFORE locking
-  scope, not after writing the spec.
-- Playwright strict mode bites when a locator matches multiple elements.
-  Pattern that fails: `tbody.locator('tr').not.toHaveText(/Loading.../)`
-  on a multi-row tbody. The fix is to wait for a specific known row to
-  appear via `tbody.locator('tr', { hasText: 'known-email' }).first()`
-  — both proves the render finished AND avoids the multi-match.
-- The card.locator('.block-dates-pills .date-pill') pattern grabs pills
-  from BOTH the current-block section AND the next-block panel (line
-  1041 of index.html puts a second .block-dates-pills inside .next-blk-body).
-  When asserting pill counts/order on a card with a next-block panel,
-  scope with `.first()`: `card.locator('.block-dates-pills').first()
-  .locator('.date-pill')`. The current block always renders first.
-- fixture-lookup.js had been written before any spec needed the blocks.dates
-  column. When BW-02 needed it, the field was absent from the SELECT and
-  silently undefined. Fix was to add `dates` to the SELECT list — pure
-  addition, no existing spec read that field, zero blast radius. Rule:
-  when a shared helper omits a column a new spec needs, prefer extending
-  the helper to a one-off direct query — the helper change is more
-  durable AND lower risk than it looks.
-- The default fixture-lookup helper SELECT now returns: id, class_id,
-  status, start_date, end_date, cap, booked, dates. Any future spec
-  needing other block columns (price, weeks, visible) should extend the
-  SELECT the same way.
-- BW-06 sanity check: Monday is the ONLY fixture class with both an
-  active block AND a separate upcoming block. Any spec wanting to test
-  the active-vs-next distinction must target Monday — Wed/Thu/Fri don't
-  exhibit both states simultaneously.
-- The mockup-first-ui skill applies to UI/feature changes, not to test
-  writing. Don't waste cycles producing a mockup before adding a spec —
-  that's not the skill's intended trigger.
-
-SESSION 23 LEARNINGS — BOOKING FLOW WRITE BOUNDARIES, GRANT MATRIX AUDIT, DASHBOARD STRUCTURE
----------------------------------------------------------------------------------------------
-- Customer is created ONLY at the Reserve click in Step 4, not earlier.
-  goStep2() (the Step 1 → Step 2 advance) calls lookup_customer to detect
-  returning clients, but does NOT call upsert_customer. The upsert + the
-  book_if_available RPC both run inside the Reserve click handler (line
-  ~1505 in index.html). Implication for specs: a spec that stops short of
-  Reserve creates NO customer/booking row, even if it filled Step 1 and
-  advanced through Step 2a/2b. No afterEach cleanup needed in that case
-  (SEC-02 second test is the canonical example). Conversely, a spec that
-  clicks Reserve always creates a customer AND a booking, so cleanup must
-  track both.
-- Direct pg via admin-db.js is the right tool for grant matrix audits.
-  Anon SELECT on information_schema returns role-relative results (anon
-  only sees its OWN grants), which is useless for a "what does anon have"
-  audit. The TEST_SUPABASE_DB_URL pool sees everything. SEC-07's query
-  groups by table_name and aggregates privilege_type — the canonical
-  pattern. The same approach works for grant audits on any role.
-- The admin dashboard has 4 tabs + 3 below-tab sections, NOT 6 tabs:
-    Tabs:     #tab-bookings, #tab-classes, #tab-customers, #tab-cancellations
-    Sections: Upcoming Classes (#ctbody), Settings (#setting-bank-*),
-              Backup & Export (Export buttons)
-  Sections render unconditionally below the tab strip — they're always
-  visible once logged in. Excel scenarios written before this distinction
-  was clear (notably the old SEC-06 wording) referred to all 6 as "tabs".
-  When picking up Admin Settings / Admin Classes batches, target sections
-  by their headings/inputs/buttons rather than expecting a tab-style
-  click-through.
-
-SESSION 24 LEARNINGS — TRIGGER OVERRIDES DIRECT UPDATE, SUCCESS-VIEW OVERLAY, BOOKINGS TABLE COLUMNS
----------------------------------------------------------------------------------------------------
-- trg_sync_block_booked_count fires AFTER any INSERT or DELETE on the
-  bookings table and recalculates blocks.booked from the real (non-
-  cancelled) booking count. This means any direct UPDATE to blocks.booked
-  (e.g. via the new setBlockBookedCount helper) gets OVERWRITTEN the
-  moment a real booking row is inserted. EC-07 hit this on first attempt
-  — set booked=11 directly, then INSERTed a filler booking, and the
-  trigger reset booked to 1 (just the filler row). The fix was to fill
-  the block with REAL booking rows from the start (one INSERT per
-  ephemeral customer) so the trigger keeps booked correct at each step.
-  Rule: setBlockBookedCount is only safe for UI-state tests that do NOT
-  cause any subsequent bookings INSERT/DELETE on the same block. For
-  race-condition tests, fill with real rows.
-- The booking success view's overlay (#overlay.on) intercepts clicks on
-  the Dashboard nav button afterwards. Specs that complete a booking and
-  then need to log in as admin MUST click "Back to Schedule" (which
-  calls closeModal()) before navigating elsewhere. EC-06 hit this — the
-  admin login helper timed out trying to click #nb-dashboard with the
-  overlay still active. Pattern: after asserting #success-view.on, click
-  the Back to Schedule button by role and wait for #overlay.on to be
-  hidden before the next user-facing action.
-- The admin Bookings table (#btbody) renders 7 columns:
-    Client (first + last, no email), Class, When, Block, Paid, Status, Actions
-  Email is stored on the booking's customer record but is NOT shown in
-  the row. Spec assertions that filter rows by email will silently
-  return zero matches. Filter by the customer's name combination
-  instead (which IS in the Client column).
-- New admin-db helper: setBlockBookedCount(blockId, count) — directly
-  UPDATEs blocks.booked, bypassing the bookings table entirely. Pair
-  with resyncBlockBookedCount(blockId) in afterEach to restore.
-  Suitable for: pure UI-state tests like EC-01 where no real bookings
-  are made. NOT suitable for: any test that subsequently triggers an
-  app-level or raw-SQL INSERT/DELETE on bookings for the same block —
-  the trigger will overwrite your value.
-- The Add Block modal can be opened from a test without needing the
-  Upcoming Classes table to have rendered the + Block button — just
-  call window.openAddBlockModal(classId) via page.evaluate. Useful when
-  the test doesn't care about how the modal was reached, only what it
-  does.
-
-SESSION 25 LEARNINGS — DUPLICATE DETECTION LAYERS, TRANSIENT UI STATE, FIXTURE-PRESERVING CLEANUP
--------------------------------------------------------------------------------------------------
-- Duplicate-booking protection has THREE independent layers that EC-08,
-  EC-12, EC-13 each cover separately:
-    (1) Front-end Step-1 early-detection — has_active_booking_on_block RPC
-        called from goStep2() for RETURNING clients. Surfaces the friendly
-        "You're already booked!" view BEFORE the user fills the rest of
-        the form. Covered by CB-31.
-    (2) RPC layer — book_if_available catches the partial unique index
-        violation in PL/pgSQL and re-raises as RAISE EXCEPTION
-        'ALREADY_BOOKED'. The front-end keys on this exact string at
-        index.html line 1533. Covered by EC-13 (RPC behaviour) and
-        EC-08 (front-end response when RPC is called directly from a
-        race condition).
-    (3) Partial unique index bookings_unique_active_per_block — fires on
-        any direct INSERT (including outside the RPC). Last-line defence.
-        Covered by EC-12.
-  When any of these three regresses, a different test will catch it,
-  but each layer needs its own test to avoid silent gaps.
-- Transient UI state (EC-09's "Reserving..." button text) requires
-  expect.poll with short intervals (50/100/200ms) and a small timeout
-  (4s). The polled callback must snapshot both fields in a single
-  evaluate() so they reflect the same moment — otherwise the disabled
-  flag and text content can be read on different microtasks and one
-  might already be reset. Pattern:
-      await expect.poll(
-        () => page.locator('#reserve-btn').evaluate(btn => ({
-          disabled: btn.disabled,
-          text:     (btn.textContent || '').trim()
-        })),
-        { timeout: 4000, intervals: [50, 100, 200] }
-      ).toEqual({ disabled: true, text: 'Reserving...' });
-- Fixture-preserving cleanup for "destructive setup" specs (EC-10): when
-  a spec needs to delete real fixture bookings as test setup, the
-  afterEach pattern is to snapshot the rows pre-delete and re-INSERT them
-  with ON CONFLICT DO NOTHING in cleanup. Works because bookings rows
-  have no auto-only fields that change on re-insert (the serial id is
-  the only one and is not preserved). Combined with
-  resyncBlockBookedCount this restores the fixture to a state
-  indistinguishable from the seeded version. Use sparingly — entry-side
-  pg INSERT of pre-existing rows is cheaper than full reseed but more
-  expensive than the standard afterEach + deleteCustomerCascade pattern.
-- pg error objects expose .code (SQLSTATE), .constraint (constraint
-  name), and .column (column name for 23502 not-null violations). All
-  three are stable identifiers worth asserting on — independent of
-  Postgres locale or version-specific wording. EC-12 and EC-14 use all
-  three; future DB-constraint specs should follow the same pattern.
-- The Excel scenarios DO NOT track spec filenames in the Notes column —
-  TEST-PLAN.md's Coverage Tracker is the source of truth for the
-  scenario-to-spec mapping. When updating the Excel after a batch, only
-  wording/SQL gets touched, never the Notes column unless the scenario
-  itself needs a clarifying note. EC-08 to EC-14 scenarios needed zero
-  Excel updates this batch — their wording was already accurate.
-
-SESSION 26 LEARNINGS — FIXTURE ADVISORY STATE, VISIBILITY TOGGLES, BLW SUITE
------------------------------------------------------------------------------
-- The clean fixture already triggers the yellow advisory for Wednesday and
-  Friday — each has only one visible block (wed-upcoming and fri-upcoming
-  respectively). Any spec that wants to control the advisory state must
-  account for this baseline. Monday is not a clean switch either (3 visible
-  blocks). Thursday is the reliable on/off switch: it has both thu-current
-  (active) and thu-locked (upcoming), so hiding thu-locked creates the
-  advisory for Thursday without disturbing the Wed/Fri baseline.
-- `visible=false` is the correct column for hiding blocks from the client
-  grid AND from renderBlockWarnings(). The status column is irrelevant to
-  both (confirmed again in BLW work — renderBlockWarnings filters on
-  `b.visible !== false` and `end_date >= today`, not on status).
-- The `+ Add Block` button in yellow advisory rows calls
-  `openAddBlockModal(classId, prefillDate)` where prefillDate = activeBlock
-  .end_date + 7 days (YYYY-MM-DD). The red banner rows call
-  `openAddBlockModal(classId)` with no prefill. Both open the same modal;
-  the prefill is the distinguishing factor tested by BLW-04 vs BLW-07.
-- BLW-06 inserts second upcoming blocks for Wed and Fri via direct pg
-  (not through the UI) with `ARRAY[]::text[]` for the dates column (nullable
-  in the schema — safe to omit). afterEach deletes by class_id + start_date.
-  This is the pattern for any future test that needs to create a "fully
-  covered" state without going through the admin UI.
-- BLW-03 asserts `bannerCount >= 2` rather than `=== 2` because the
-  Wed/Fri advisory baseline means the yellow banner may list 3 classes (Wed,
-  Fri, and the one we controlled). Exact count assertions on banners are
-  fragile in this fixture — prefer `>= N` or text-content assertions.
-
-SESSION 27 LEARNINGS — SETTINGS TABLE, MODAL OPEN PATTERN, GOSTE2 VALIDATION
------------------------------------------------------------------------------
-- settings table uses `key` as the PRIMARY KEY (text). ON CONFLICT (key) DO
-  UPDATE is the correct upsert pattern. There is no separate `id` column.
-  Specs that seed/restore settings values should use this pattern in both
-  beforeEach and afterEach.
-- openModal(classId, blockId) must only be called AFTER the schedule has
-  rendered — i.e. after at least one `.card` is visible. Calling it via
-  page.evaluate() earlier (when typeof openModal === 'function' but the
-  blocks[] array is still empty) crashes with "Cannot read properties of
-  undefined (reading 'dates')". The correct wait is:
-    await page.locator('.card').first().waitFor({ state: 'visible', timeout: 10000 });
-    await page.evaluate(({ classId, blockId }) => openModal(classId, blockId), { ... });
-  This is now the canonical pattern for specs that need to open a modal on
-  a class that doesn't have a simple "Book Current Block" card button
-  (e.g. upcoming-as-current cards like fri-upcoming).
-- goStep2() silently rejects the form if ANY of the four Step 1 fields
-  (first name, last name, email, phone) are empty or invalid. It shows a
-  validation toast and returns — no network call is made, step-3 never
-  appears. Specs that want to test the returning-client payment step must
-  fill ALL FOUR fields, not just email. The phone must be 11+ digits.
-- The Supabase test project pauses after inactivity. If the drift-check
-  query times out at session start, check the project is active in the
-  Supabase dashboard before retrying.
-
-SESSION 28 LEARNINGS — DASHBOARD TABLE SCOPING, RFB FLOW, WINDOW.CONFIRM
-------------------------------------------------------------------------
-- The admin dashboard contains multiple tables (#btbody, #customers-tbody,
-  #cancellations-tbody, #ctbody). A broad locator like
-  `#pg-dashboard table thead tr th` matches ALL of them (46 th elements).
-  Always scope to the specific table via its tbody ID:
-    page.locator('#btbody').locator('xpath=ancestor::table[1]').locator('thead tr th')
-  This is the canonical pattern for any spec asserting bookings table headers.
-- book_if_available RPC always inserts as status='reserved'. All fixture
-  bookings are seeded as 'confirmed'. AB specs that need a reserved booking
-  must create one per-run via the RPC — no fixture booking will have
-  status='reserved' in a clean fixture state.
-- The RFB modal step flow for 0 sessions attended:
-    Step 1  → select 0 (default) → click Next
-    Step 1b → click "No — not paid" → click Next (button disabled until paid option selected)
-    Step 2  → review screen shows "No refund needed" → click Confirm Removal
-    Step 3  → success message → click Done (not Close — step 3 footer has "Done")
-  The "Done" button calls closeRfbModal(). The step-3 close label is Done,
-  not Close — confusing these is a quick failure mode.
-- window.confirm dialogs (deleteCustomer, deleteBlock, markCancellationRefunded)
-  must be handled with page.once('dialog', d => d.accept()) registered
-  BEFORE the triggering button click. page.once is correct (not page.on) —
-  it auto-removes the handler after first use, preventing leakage to later tests.
-- Direct parq INSERT via admin-db getPool() is the correct setup pattern
-  for any AB spec that needs to assert parq deletion. The anon client has
-  INSERT-only on parq (no SELECT), and the app's rfbConfirm deletes parq
-  via parq.booking_id FK — so the inserted row must use a real booking_id.
-- deleteCustomerCascade is safe to call in afterEach even when the in-app
-  flow already deleted the booking and customer — it deletes 0 rows from
-  bookings then 0 rows from customers without error.
-
-SESSION 29 LEARNINGS — AB SUITE COMPLETE, ACCORDION DOUBLE-CLICK BUG
---------------------------------------------------------------------
-- AB-10 failed on first run due to a double-click collapse bug: the spec
-  clicked the "first group" header generically, then clicked the Monday
-  group header — but Monday IS the first group, so the second click
-  immediately collapsed it again. Fix: always click the target group
-  directly once, never combine a generic "expand first" click with a
-  named-group click. If a spec needs to verify a specific group, find
-  and click that group only.
-- The RFB "sessions > 0" path skips Step 1b entirely (rfbGoNext goes
-  directly to step 2 when sessionsAttended > 0). Specs for sessions > 0
-  must not wait for the "Has this client paid?" screen — it never appears.
-- The missing PAR-Q banner (AB-19/hidden state) is sensitive to stray
-  `new`-type customers without parq rows from interrupted test runs.
-  If AB-19 fails unexpectedly, run `npm run seed` to clear stale state.
-  This is a known limitation of the hidden-state assertion pattern.
-- AB-16 CSV export: Playwright's page.waitForEvent('download') must be
-  set up in a Promise.all with the triggering click — registering it before
-  the click and awaiting separately races the event. Canonical pattern:
-  const [download] = await Promise.all([page.waitForEvent('download'), btn.click()]).
-- AB suite is now complete: 21 of 21 genuine scenarios automated across
-  13 spec files (AB-01 red-filled as duplicate of SEC-06.1).
-
-SESSION 30 LEARNINGS — AC SUITE, DATE TIMEZONE BUG, ACCORDION MECHANICS
-------------------------------------------------------------------------
-- Nav button for the public schedule is #nb-schedule, NOT #nb-home. Using
-  #nb-home causes an immediate 30s timeout — the element doesn't exist.
-- Classes and blocks inserted via direct pg before page.goto ARE loaded into
-  the app's in-memory arrays on page init. Insert before goto; do not insert
-  after. If a class is inserted after goto, the app won't know about it and
-  validateAbDate() will silently fail to find the class for day-of-week check.
-- toISOString() on a local midnight Date converts to UTC, shifting the date
-  one day back in BST (UTC+1). For any date string passed into a browser date
-  input where the app checks the day of week, always use toLocalISO():
-    function toLocalISO(d) {
-      return d.getFullYear() + '-'
-        + String(d.getMonth() + 1).padStart(2, '0') + '-'
-        + String(d.getDate()).padStart(2, '0');
-    }
-  This affects any test that calls validateAbDate() via the browser — i.e.
-  any spec that fills #ab-start and triggers day validation. Direct pg inserts
-  are unaffected (the DB doesn't validate day of week).
-- toggleClassGroup() uses style.display directly ('block'/'none'), NOT a CSS
-  class toggle. The .on class is defined in CSS but never added by the JS.
-  Assert toBeVisible() (computed display) not toHaveClass(/on/).
-- To expand a class group accordion reliably, target it by its onclick
-  attribute: page.locator(`[onclick="toggleClassGroup('cg-${classId}')"]`).
-  Filtering .class-group-header by hasText is unreliable — the click may
-  land on a child element and fail to fire the handler.
-- After saveNewBlock() fires renderDashboard(), the By Class accordion is
-  rebuilt from scratch with all groups closed. Switching tabs (bookings →
-  classes) re-renders the accordion but the in-memory blocks array state
-  is not always reliable immediately post-save. Safest pattern for asserting
-  By Class accordion contents after a UI block save: reload the full page
-  so the app re-fetches from DB, then re-login, then expand the group.
-
-SESSION 31 LEARNINGS — AC SUITE COMPLETE, PARQ COLUMN NAMES
-------------------------------------------------------------
-- parq table column names do NOT match the front-end question labels. The
-  actual columns are: q1_heart, q2_circulatory, q3_blood_pressure,
-  q4_chest_pain, q5_joint, q6_dizziness, q7_pregnant, q8_doctor_advised,
-  q9_spinal, q10_medication, q11_asthma, q12_other_reasons. When writing
-  any spec that inserts a parq row via direct pg, always verify column
-  names against the DB schema first — do not guess from form labels.
-- The yellow advisory banner (classes with 1 visible block) is used by
-  AC-12/13/14/15 specs. Wednesday is the reliable fixture target (class_id=2,
-  always has exactly 1 visible block in the clean fixture).
-- Edit Block reuses the same Add Block modal (#add-block-overlay, #ab-start,
-  #ab-err, #ab-btn). openEditBlockModal() sets ab-btn.onclick to saveEditBlock
-  and ab-btn.textContent to "Save Block". Assertions on modal state after
-  Edit Block opens work identically to after Add Block opens.
-
 SESSION 33 LEARNINGS — EMAIL NOTIFICATIONS SESSION 1, SUPABASE CLI, RESEND
 --------------------------------------------------------------------------
 - Resend does not offer a dedicated test API key type. All keys are live and
   deliver real emails. The test/prod distinction is handled by passing
   `isTest: true` in the Edge Function payload — the function redirects all
-  recipients to `delivered@resend.dev` (Resend's silent sink). This is
-  visible in the Resend dashboard logs but nothing lands in a real inbox.
-- Supabase CLI requires Docker Desktop to bundle Edge Functions. Both must
-  be installed and Docker must be running before `supabase functions deploy`.
+  recipients to `delivered@resend.dev` (Resend's silent sink).
+- Supabase CLI requires Docker Desktop to bundle Edge Functions.
 - `supabase login` may fail silently if macOS Keychain blocks the token.
-  Workaround: create a personal access token at
-  https://supabase.com/dashboard/account/tokens and set it via:
-    export SUPABASE_ACCESS_TOKEN=your_token_here
-  This env var is session-scoped — must be re-set in each new terminal.
-- `supabase link --project-ref <id>` only needs to be run once per project
-  per machine. After that, `supabase functions deploy <name> --project-ref <id>`
-  is the deploy command. The `--project-ref` flag must be supplied explicitly
-  to target a specific project (prod vs test).
-- Edge Function lives at `supabase/functions/send-email/index.ts`. This path
-  is the Supabase CLI convention — do not move it.
+  Workaround: export SUPABASE_ACCESS_TOKEN=your_token_here (session-scoped).
+- Edge Function lives at `supabase/functions/send-email/index.ts`.
 - The `send-email` Edge Function payload: `{ to, subject, html, isTest }`.
-  `isTest` must be explicitly passed from index.html — the function has no
-  way to detect the environment itself.
-- .insert().select() pitfall on settings table: existing pattern uses
-  .upsert() with ON CONFLICT (key) DO UPDATE — this is correct. Never add
-  a trailing .select() to anon writes on tables where anon lacks SELECT.
 
 SESSION 34 LEARNINGS — EMAIL TRIGGER 1, NOEMAIL FLAG, TEST NOISE
 ----------------------------------------------------------------
-- Every spec that completes a booking via the UI (CB-01, CB-03, CB-13 etc.)
-  now triggers the email call in confirmBooking(). Without a suppression
-  mechanism, every CI and local test run generates Resend log entries for
-  delivered@resend.dev — noisy and undesirable once the system is live.
-  Fixed via IS_NO_EMAIL flag: app-url.js APP_PATH includes ?noemail=1
-  automatically; sendBookingEmail() returns early if IS_NO_EMAIL is true.
-- SE-12 uses APP_PATH_EMAIL (no noemail flag) so page.route() can intercept
-  the fetch and assert the payload. The intercept prevents any real network
-  call reaching Resend even on APP_PATH_EMAIL.
-- buildReservedEmailHtml() uses table-based HTML (not CSS flexbox/grid) for
-  maximum email client compatibility. Outlook compatibility caveat: monospace
-  font on bank details and border-left on the alert banner may render slightly
-  differently, but the email is clean and readable in all major clients.
-- The booking flow step structure for new clients:
-    Step 1 → goStep2() button (no id — use button[onclick="goStep2()"])
-    Step 2a (PAR-Q) → requires age, print name, AND #b-declaration checked
-                   → goStep2b() button (button[onclick="goStep2b()"])
-    Step 2b (emergency) → goStep3() button (button[onclick="goStep3()"])
-    Step 3 (payment) → #tcs-agree + #reserve-btn
-  Missing #b-declaration check caused SE-12 to fail on first two attempts.
+- IS_NO_EMAIL flag: app-url.js APP_PATH includes ?noemail=1 automatically;
+  sendBookingEmail() returns early if IS_NO_EMAIL is true.
+- SE-12 uses APP_PATH_EMAIL (no noemail flag) so page.route() can intercept.
+- buildReservedEmailHtml() uses table-based HTML for email client compatibility.
 
 SESSION 35 LEARNINGS — EMAIL TRIGGER 2, EMAILPROMISE PATTERN
 -------------------------------------------------------------
 - confirmBookingAdmin() fires a "Confirming..." toast immediately (synchronous),
-  then the async function updates the DB and calls sendBookingEmail(). A spec
-  that waits for `#toastEl.on` will resolve on the FIRST toast before the email
-  call has run, leaving capturedPayload null. Fix: use a Promise that resolves
-  inside the page.route() callback (emailPromise pattern). The test awaits
-  emailPromise, which only resolves when the intercept fires — guaranteeing
-  the payload is captured before assertions run.
-- The emailPromise pattern is now the canonical approach for any spec that
-  needs to assert an email call triggered by an async admin action. SE-13
-  is the reference implementation.
-- Transient CI seed failures (exit code 1 during npm run seed on GitHub
-  Actions) can occur without any code change — a momentary connection
-  hiccup between GitHub's servers and Supabase. Re-running the job resolves
-  it. Not worth investigating unless it recurs consistently.
+  then calls sendBookingEmail() async. Use emailPromise pattern — a Promise
+  that resolves inside the page.route() callback — rather than waiting for
+  the toast. SE-13 is the reference implementation.
 
-SESSION 36 LEARNINGS — EMAIL TRIGGER 5, ARRAY INTERCEPT PATTERN, DYNAMIC DASHBOARD URL
----------------------------------------------------------------------------------------
-- When multiple Edge Function calls fire in the same booking flow (client email + admin
-  alert), a single `capturedPayload` variable in page.route() will be overwritten by the
-  last call. Always collect into an array when more than one call is expected:
-    `const capturedPayloads = []; ... capturedPayloads.push(body);`
-  Assert by index: index 0 = first call (client), index 1 = second call (admin).
-  SE-12 was broken by the addition of trigger #5 and fixed with this pattern.
-- Dashboard URL in admin alert emails is built dynamically:
-    `window.location.origin + window.location.pathname + '#dashboard'`
-  This works correctly on GitHub Pages, Netlify (`book.lg-pilates.co.uk`), or any
-  other host — no hardcoded domain needed.
-- The admin alert `if(appSettings.adminEmail)` guard means no send attempt if Louise's
-  email isn't configured in the settings table. Safe default.
-- For SE-14 test 2 (returning client), using the fixture customer `returning-one@test.example`
-  means `lookup_customer` finds them and skips PAR-Q. Cleanup must use
-  `deleteBookingsForCustomerOnBlock` (not `deleteCustomerCascade`) to preserve the fixture
-  customer row. Track the block ID via `getBlockByRole('fri-upcoming')` in the cleanup.
-- GitHub Actions Node.js 20 deprecation warning: `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
-  must be set as a top-level `env:` in the workflow file, not inside a step's env block,
-  for it to apply to the action runners themselves. Fixed in `.github/workflows/playwright.yml`.
+SESSION 36 LEARNINGS — EMAIL TRIGGER 5, ARRAY INTERCEPT PATTERN
+----------------------------------------------------------------
+- When multiple Edge Function calls fire in the same booking flow, use
+  `const capturedPayloads = []; ... capturedPayloads.push(body);` array
+  pattern. Single variable is overwritten by last call.
+- Dashboard URL in admin alert emails built dynamically from window.location.
 
 SESSION 37 LEARNINGS — EMAIL TRIGGER 3, EMAIL WORDING REVIEW, BLW-09
 ---------------------------------------------------------------------
-- Client cancellation email removed — client only gets an email when Louise clicks Mark
-  Refunded (or immediately via auto-send if refund = £0). Louise admin cancel/refund alerts
-  also removed — Louise uses the dashboard cancellations tab instead.
-- Zero-refund auto-send: `if(refund===0&&cancelOpts.email)` in `rfbConfirm()` fires
-  `buildRefundClientEmailHtml` immediately — same template as the Mark Refunded email but
-  with no green refund box (since `refundAmount = 0`).
-- `buildRefundClientEmailHtml` now serves dual purpose: RFB zero-refund auto-send (red
-  banner only) and Mark Refunded trigger (red banner + green refund box). The `hasRefund`
-  flag (`opts.refundAmount > 0`) controls whether the green box renders.
-- Session date pills in emails: built inline inside the email builder using a `today` date
-  comparison. Past dates render grey (`#f0f0f0`/`#aaaaaa`), upcoming dates render teal
-  (`#eef5f5`/`#2a6b6b`). No external CSS — all inline styles for email client compatibility.
-- `renderBlockWarnings()` is now async — it fires a Supabase anon SELECT on `cancellations`
-  to count rows where `refunded = false AND refund_amount > 0`, then builds and injects the
-  HTML. The existing hidden/expiring checks remain synchronous (from in-memory `classes` and
-  `blocks`). The `el.style.display` and `el.innerHTML` assignments moved inside the async IIFE.
-- BLW-09 count assertion is robust to stray cancellation rows: rather than asserting exact
-  count, test 1 asserts the text "awaiting a refund decision" is present. Test 2 reads the
-  count before, marks one refunded, and asserts count is `before - 1` (or banner gone if it
-  was the only one).
-- `page.unroute()` is the correct pattern to swap out a `page.route()` intercept mid-test.
-  Register the new handler after calling `unroute()` — the new handler captures only calls
-  made after registration.
-- GitHub Actions CI `paths` filter narrowed from `tests-playwright/**` to specific
-  subdirectories (`tests/**`, `scripts/**`, `migrations/**`, `package*.json`,
-  `playwright.config.js`) so doc-only pushes (TEST-PLAN.md, context.txt, etc.) no longer
-  trigger a test run. The `paths-ignore` approach doesn't work alongside `paths` in GitHub
-  Actions — specific subpath listing is the correct solution.
-- The Node.js 20 deprecation warning from `actions/cache@v4` and `actions/upload-artifact@v4`
-  is a GitHub-side issue (those actions internally use Node 20). Cannot be fixed from our
-  workflow — not worth investigating further.
+- Client cancellation email removed — client only gets email when Louise
+  clicks Mark Refunded (or auto-send if refund = £0).
+- Zero-refund auto-send: `if(refund===0&&cancelOpts.email)` in rfbConfirm().
+- buildRefundClientEmailHtml serves dual purpose: zero-refund (red banner
+  only) and Mark Refunded (red banner + green refund box).
+- renderBlockWarnings() is now async — fires Supabase SELECT on cancellations
+  to count pending refunds.
+- GitHub Actions CI paths filter narrowed to specific subdirectories so
+  doc-only pushes don't trigger a test run.
+
+SESSION 38 LEARNINGS — CARD REDESIGN, PLAYWRIGHT SELECTOR HOOKS
+----------------------------------------------------------------
+- A major card visual redesign changed the HTML structure. 56 tests failed
+  on first run because selectors were renamed or removed. Root causes:
+  (1) .card-when-day contained c.name instead of c.day
+  (2) .card-loc was hidden (display:none) — SD tests need it visible or readable
+  (3) .cap-txt was removed — EC/CB tests assert on its text content
+  (4) .badge.b-full was hidden — EC-01 asserts toBeVisible()
+  (5) Book button labels changed to "Book Now" — booking-flow.js clicks by exact text
+  (6) .priority-info class missing from locked/priority window divs — PB-01/02
+- Rule: when redesigning card HTML, ALWAYS check the six selector hooks listed
+  in CARD REDESIGN SELECTOR DISCIPLINE above before running tests.
+- Cosmetic-only changes (colours, fonts, spacing, new elements) don't need
+  new Playwright tests. Structural changes that rename or remove elements do.
 
 ============================================================
