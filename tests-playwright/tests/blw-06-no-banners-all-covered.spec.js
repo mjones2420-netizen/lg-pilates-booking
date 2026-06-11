@@ -66,9 +66,21 @@ test.describe('BLW-06 — No banners when all classes are covered', () => {
   test.skip(!ADMIN_PASSWORD, 'TEST_ADMIN_PASSWORD not set — admin specs require admin credentials.');
 
   let insertedStartDates = [];
+  let suppressedRefundIds = [];
 
   test.beforeEach(async ({ page }) => {
     insertedStartDates = [];
+    suppressedRefundIds = [];
+
+    // Temporarily mark all pending-refund cancellations as refunded so the
+    // orange warning banner doesn't keep #block-warnings visible during this test.
+    const pending = await getPool().query(
+      `UPDATE cancellations SET refunded = true, refunded_at = NOW()
+       WHERE refunded = false AND refund_amount > 0
+       RETURNING id`
+    );
+    suppressedRefundIds = pending.rows.map(r => r.id);
+
     await page.goto(APP_PATH);
     await expect(
       page.locator('#test-mode-banner.on'),
@@ -83,6 +95,15 @@ test.describe('BLW-06 — No banners when all classes are covered', () => {
         `DELETE FROM blocks WHERE class_id = $1 AND start_date = $2`,
         [classId, startDate]
       );
+    }
+    // Restore any cancellations we temporarily marked as refunded.
+    if (suppressedRefundIds.length > 0) {
+      await getPool().query(
+        `UPDATE cancellations SET refunded = false, refunded_at = NULL
+         WHERE id = ANY($1::bigint[])`,
+        [suppressedRefundIds]
+      );
+      suppressedRefundIds = [];
     }
   });
 
