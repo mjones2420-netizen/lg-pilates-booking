@@ -10,9 +10,9 @@ const {
 } = require('./helpers/admin-db');
 
 // ─── SE-16 — Refund confirmation emails ─────────────────────────────────────
-// When Louise marks a cancellation as refunded in the Cancellations tab, both
-// the client and Louise receive an email.
-// Client (index 0): green "Your refund has been processed" email with breakdown.
+// When Louise marks a cancellation as refunded in the Cancellations tab, two
+// Edge Function calls fire:
+// Client (index 0): red banner (cancellation notice) + green refund box.
 // Louise (index 1): slate "Refund processed" alert with client details.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -20,10 +20,9 @@ const TEST_EMAIL  = 'se16-refund@test.example';
 const TEST_FIRST  = 'SE16';
 const TEST_LAST   = 'RefundTest';
 
-
 test.describe('SE-16 — Refund confirmation emails', () => {
   let createdCustomerId = null;
-  let adminEmail = null;
+  let adminEmail        = null;
 
   test.beforeEach(async () => {
     createdCustomerId = null;
@@ -50,7 +49,6 @@ test.describe('SE-16 — Refund confirmation emails', () => {
 
     await setBookingStatus(bookingId, 'confirmed');
 
-    // Read admin_email from settings so assertion matches actual DB value
     const { data: settingsData } = await sb.from('settings').select('value').eq('key', 'admin_email').single();
     adminEmail = settingsData?.value || null;
   });
@@ -62,8 +60,7 @@ test.describe('SE-16 — Refund confirmation emails', () => {
   });
 
   test('both refund emails fire when Louise marks a cancellation as refunded', async ({ page }) => {
-    // ── Register intercept before navigation so RFB calls are also captured ─
-    // We reset and re-register after the RFB flow to isolate the refund calls.
+    // Register initial intercept — will capture RFB cancellation call too
     let capturedPayloads = [];
     page.route('**/functions/v1/send-email', async route => {
       const body = route.request().postDataJSON();
@@ -84,31 +81,27 @@ test.describe('SE-16 — Refund confirmation emails', () => {
     await customerRow.locator('button', { hasText: 'Remove' }).click();
     await expect(page.locator('#rfb-overlay')).toBeVisible();
 
-    // Step 1 — select 2 sessions attended
     await page.locator('#rfb-overlay').locator('button', { hasText: '2' }).click();
     await page.locator('button[onclick="rfbGoNext()"]').click();
 
-    // Step 2 — confirm removal (sessions > 0 skips step 1b)
     await expect(page.locator('button[onclick="rfbConfirm()"]')).toBeVisible();
     await page.locator('button[onclick="rfbConfirm()"]').click();
 
-    // Step 3 — wait for success, close modal
     await expect(page.locator('#rfb-overlay')).toContainText('removed from the block', { timeout: 10000 });
     await page.locator('#rfb-overlay').locator('button', { hasText: 'Done' }).click();
     await expect(page.locator('#rfb-overlay')).toBeHidden();
 
-    // ── Reset intercept to capture only the refund-confirmation calls ──────
-    // The RFB flow above fired 2 calls (client cancel + admin cancel).
-    // Unroute and re-register a fresh handler + Promise.
-    await page.unroute('**/functions/v1/send-email');
+    // ── Reset intercept — RFB fired 1 call (admin cancel alert).
+    // Re-register so only the 2 refund-confirmation calls are captured. ─────
     capturedPayloads = [];
-    const refundCallsPromise = new Promise(resolve => {
-      page.route('**/functions/v1/send-email', async route => {
-        const body = route.request().postDataJSON();
-        capturedPayloads.push(body);
-        if (capturedPayloads.length >= 2) resolve();
-        await route.fulfill({ status: 200, body: JSON.stringify({ ok: true }) });
-      });
+    let refundCallsResolveFn;
+    const refundCallsPromise = new Promise(resolve => { refundCallsResolveFn = resolve; });
+    await page.unroute('**/functions/v1/send-email');
+    await page.route('**/functions/v1/send-email', async route => {
+      const body = route.request().postDataJSON();
+      capturedPayloads.push(body);
+      if (capturedPayloads.length >= 2) refundCallsResolveFn();
+      await route.fulfill({ status: 200, body: JSON.stringify({ ok: true }) });
     });
 
     // ── Go to Cancellations tab and click Mark Refunded ────────────────────
@@ -116,30 +109,30 @@ test.describe('SE-16 — Refund confirmation emails', () => {
     await expect(page.locator('#tab-cancellations')).toHaveClass(/on/);
 
     const cancTbody = page.locator('#cancellations-tbody');
-    const cancRow = cancTbody.locator('tr', { hasText: TEST_EMAIL }).filter({ has: page.locator('button', { hasText: 'Mark Refunded' }) });
+    const cancRow = cancTbody.locator('tr', { hasText: TEST_EMAIL })
+      .filter({ has: page.locator('button', { hasText: 'Mark Refunded' }) });
     await expect(cancRow).toBeVisible({ timeout: 10000 });
 
     page.once('dialog', d => d.accept());
     await cancRow.locator('button', { hasText: 'Mark Refunded' }).click();
 
-    // Wait for both refund email payloads to be captured
     await refundCallsPromise;
 
-    // Toast confirms DB update succeeded
     await expect(page.locator('#toastEl')).toContainText('refunded', { timeout: 5000 });
 
     // ── Payload assertions ─────────────────────────────────────────────────
     expect(capturedPayloads).toHaveLength(2);
 
-    // Client email (index 0)
+    // Client email (index 0) — red banner + green refund box
     const clientPayload = capturedPayloads[0];
     expect(clientPayload.to).toBe(TEST_EMAIL);
     expect(clientPayload.subject).toMatch(/refund.*processed/i);
     expect(clientPayload.isTest).toBe(true);
     expect(clientPayload.html).toBeTruthy();
-    expect(clientPayload.html).toContain(TEST_FIRST);
-    expect(clientPayload.html).toContain('Refund paid');
-    expect(clientPayload.html).toContain('Sessions attended');
+    expect(clientPayload.html).toContain("you've been removed from this block");
+    expect(clientPayload.html).toContain('has been processed');
+    expect(clientPayload.html).toContain('3');
+    expect(clientPayload.html).toContain('working days');
 
     // Admin email (index 1)
     const adminPayload = capturedPayloads[1];

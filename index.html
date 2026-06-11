@@ -1536,7 +1536,7 @@ function buildReservedEmailHtml(opts){
 
     // What to bring
     +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">What to bring</div>'
-    +'<p style="font-size:13px;color:#4a6060;line-height:1.7;margin:0 0 20px;">Please wear comfortable, stretchy clothing suitable for movement. Bring a yoga mat if you have one &mdash; mats are also available to borrow at the studio. Grip socks are recommended but not essential. Please arrive no more than 10 minutes before the session starts.</p>'
+    +'<p style="font-size:13px;color:#4a6060;line-height:1.7;margin:0 0 20px;">Please wear comfortable clothing suitable for movement. Bring a mat if you have one &mdash; mats are also available to borrow. Please arrive no more than 10 minutes before the session starts.</p>'
 
     +'</td></tr>'
 
@@ -1589,7 +1589,7 @@ function buildConfirmedEmailHtml(opts){
 
     // What to bring
     +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">What to bring</div>'
-    +'<p style="font-size:13px;color:#4a6060;line-height:1.7;margin:0 0 20px;">Please wear comfortable, fitted clothing and bring a water bottle. Please arrive no more than 10 minutes before the session starts.</p>'
+    +'<p style="font-size:13px;color:#4a6060;line-height:1.7;margin:0 0 20px;">Please wear comfortable clothing and bring a water bottle. Please arrive no more than 10 minutes before the session starts.</p>'
 
     +'</td></tr>'
 
@@ -1624,7 +1624,7 @@ function buildAdminAlertEmailHtml(opts){
     // New booking banner
     +'<tr><td style="background:#e8f0fb;border-left:4px solid #3a6abf;padding:18px 32px;">'
     +'<div style="font-size:15px;font-weight:600;color:#1a3a7a;margin-bottom:6px;">New booking</div>'
-    +'<div style="font-size:13px;color:#2a4a8a;line-height:1.6;">A new booking has been made.</div>'
+    +'<div style="font-size:13px;color:#2a4a8a;line-height:1.6;">'+opts.firstName+' '+opts.lastName+' ('+( isNew ? 'New client' : 'Returning client' )+') has made a new booking.</div>'
     +'</td></tr>'
 
     // Body
@@ -1638,8 +1638,7 @@ function buildAdminAlertEmailHtml(opts){
     +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.venue+', '+opts.loc+'</td></tr>'
     +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.day+', '+opts.time+' &ndash; '+opts.endTime+'</td></tr>'
     +(blockRange?'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Block dates</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+blockRange+'</td></tr>':'')
-    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Client type</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+(isNew?'New client':'Returning client')+'</td></tr>'
-    +'<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Amount due</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;'+opts.amountDue+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Amount due</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;'+opts.amountDue+'</td></tr>'
     +'</table>'
 
     // PAR-Q flag (new clients only)
@@ -1655,70 +1654,6 @@ function buildAdminAlertEmailHtml(opts){
     // Footer
     +'<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">'
     +'<div style="font-size:11px;color:#8aabab;line-height:1.6;">LG Pilates &middot; Baildon &amp; Guiseley</div>'
-    +'</td></tr>'
-
-    +'</table>'
-    +'</td></tr></table>'
-    +'</body></html>';
-}
-
-function buildCancelledClientEmailHtml(opts){
-  // opts: { firstName, className, venue, loc, day, time, endTime, blockDates,
-  //         sessionsAttended, totalSessions, pricePerSession, refundAmount }
-  var blockRange=opts.blockDates&&opts.blockDates.length>0
-    ? opts.blockDates[0]+' \u2013 '+opts.blockDates[opts.blockDates.length-1]
-    : '';
-  var hasRefund=opts.refundAmount>0;
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
-    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
-    +'<tr><td align="center">'
-    +'<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">'
-
-    // Header
-    +'<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">'
-    +'<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>'
-    +'<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>'
-    +'</td></tr>'
-
-    // Cancelled banner — title only, no body text
-    +'<tr><td style="background:#fef2f2;border-left:4px solid #c04040;padding:18px 32px;">'
-    +'<div style="font-size:15px;font-weight:600;color:#8a1010;">Your booking has been cancelled</div>'
-    +'</td></tr>'
-
-    // Body
-    +'<tr><td style="padding:24px 32px;">'
-
-    // Greeting
-    +'<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi '+opts.firstName+',</p>'
-
-    // Booking details
-    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Booking details</div>'
-    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">'
-    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.className+'</td></tr>'
-    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.venue+', '+opts.loc+'</td></tr>'
-    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.day+', '+opts.time+' &ndash; '+opts.endTime+'</td></tr>'
-    +(blockRange?'<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Block dates</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+blockRange+'</td></tr>':'')
-    +'</table>'
-
-    // Refund section
-    +(hasRefund
-      ? '<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Refund details</div>'
-        +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#fff8e8;border-left:4px solid #e07b4a;border-radius:0 6px 6px 0;padding:14px 18px;margin-bottom:20px;">'
-        +'<tr><td style="padding:4px 0;font-size:13px;color:#7a4420;">Sessions attended</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.sessionsAttended+' of '+opts.totalSessions+'</td></tr>'
-        +'<tr><td style="padding:4px 0;font-size:13px;color:#7a4420;">Sessions remaining</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+(opts.totalSessions-opts.sessionsAttended)+'</td></tr>'
-        +'<tr><td style="padding:4px 0;font-size:13px;color:#7a4420;">Price per session</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;'+parseFloat(opts.pricePerSession).toFixed(2)+'</td></tr>'
-        +'<tr><td style="padding:6px 0 4px;border-top:1px solid #f0c8aa;font-size:13px;font-weight:600;color:#5a3010;">Refund due</td><td style="padding:6px 0 4px;border-top:1px solid #f0c8aa;font-size:15px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;'+parseFloat(opts.refundAmount).toFixed(2)+'</td></tr>'
-        +'</table>'
-      : '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fbfb;border:1px solid #cde0e0;border-radius:6px;padding:14px 18px;margin-bottom:20px;">'
-        +'<tr><td style="font-size:13px;color:#4a6060;line-height:1.6;">No refund is required as payment had not yet been received for this block.</td></tr>'
-        +'</table>'
-    )
-
-    +'</td></tr>'
-
-    // Footer
-    +'<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">'
-    +'<div style="font-size:11px;color:#8aabab;line-height:1.6;">If you have any questions, please reply to this email or contact Louise at <a href="mailto:bookings@lg-pilates.co.uk" style="color:#3a8a8a;text-decoration:none;">bookings@lg-pilates.co.uk</a><br>LG Pilates &middot; Baildon &amp; Guiseley</div>'
     +'</td></tr>'
 
     +'</table>'
@@ -1782,11 +1717,11 @@ function buildCancelledAdminEmailHtml(opts){
 }
 
 function buildRefundClientEmailHtml(opts){
-  // opts: { firstName, className, venue, loc, day, time, endTime, blockDates,
-  //         sessionsAttended, totalSessions, pricePerSession, refundAmount }
+  // opts: { firstName, className, venue, loc, day, time, endTime, blockDates, refundAmount }
   var blockRange=opts.blockDates&&opts.blockDates.length>0
     ? opts.blockDates[0]+' \u2013 '+opts.blockDates[opts.blockDates.length-1]
     : '';
+  var hasRefund=opts.refundAmount>0;
   return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
     +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
     +'<tr><td align="center">'
@@ -1798,10 +1733,9 @@ function buildRefundClientEmailHtml(opts){
     +'<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>'
     +'</td></tr>'
 
-    // Green banner — positive action
-    +'<tr><td style="background:#f0faf4;border-left:4px solid #3a8a6a;padding:18px 32px;">'
-    +'<div style="font-size:15px;font-weight:600;color:#1a5c3a;margin-bottom:4px;">Your refund has been processed</div>'
-    +'<div style="font-size:13px;color:#2a6a48;line-height:1.6;">We\'ve sent your refund \u2014 details are below.</div>'
+    // Red banner — cancellation notice
+    +'<tr><td style="background:#fef2f2;border-left:4px solid #c04040;padding:18px 32px;">'
+    +'<div style="font-size:15px;font-weight:600;color:#8a1010;">Your booking has been cancelled and you\'ve been removed from this block.</div>'
     +'</td></tr>'
 
     // Body
@@ -1819,14 +1753,13 @@ function buildRefundClientEmailHtml(opts){
     +(blockRange?'<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Block dates</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+blockRange+'</td></tr>':'')
     +'</table>'
 
-    // Refund details
-    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Refund details</div>'
-    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0faf4;border-left:4px solid #3a8a6a;border-radius:0 6px 6px 0;padding:14px 18px;margin-bottom:20px;">'
-    +'<tr><td style="padding:4px 0;font-size:13px;color:#2a6a48;">Sessions attended</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.sessionsAttended+' of '+opts.totalSessions+'</td></tr>'
-    +'<tr><td style="padding:4px 0;font-size:13px;color:#2a6a48;">Sessions remaining</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+(opts.totalSessions-opts.sessionsAttended)+'</td></tr>'
-    +'<tr><td style="padding:4px 0;font-size:13px;color:#2a6a48;">Price per session</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;'+parseFloat(opts.pricePerSession).toFixed(2)+'</td></tr>'
-    +'<tr><td style="padding:6px 0 4px;border-top:1px solid #9ed4b8;font-size:13px;font-weight:600;color:#1a5c3a;">Refund paid</td><td style="padding:6px 0 4px;border-top:1px solid #9ed4b8;font-size:15px;font-weight:600;color:#1a5c3a;text-align:right;">&pound;'+parseFloat(opts.refundAmount).toFixed(2)+'</td></tr>'
-    +'</table>'
+    // Refund box — only shown if refund > 0
+    +(hasRefund
+      ? '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0faf4;border-left:4px solid #3a8a6a;border-radius:0 6px 6px 0;padding:16px 20px;margin-bottom:20px;">'
+        +'<tr><td style="padding:0 0 6px;font-size:14px;font-weight:600;color:#1a5c3a;">Refund of &pound;'+parseFloat(opts.refundAmount).toFixed(2)+' has been processed</td></tr>'
+        +'<tr><td style="font-size:13px;color:#2a6a48;line-height:1.6;">Please allow 3\u20135 working days for the refund to appear in your account.</td></tr>'
+        +'</table>'
+      : '')
 
     +'</td></tr>'
 
@@ -3022,10 +2955,6 @@ function rfbConfirm(){
         pricePerSession:s.pricePerSession,
         refundAmount:refund
       };
-      if(cancelOpts.email){
-        var clientCancelHtml=buildCancelledClientEmailHtml(cancelOpts);
-        await sendBookingEmail(cancelOpts.email,"Your booking has been cancelled \u2014 "+cancelOpts.day+", "+cancelOpts.time+", "+cancelOpts.venue,clientCancelHtml);
-      }
       if(appSettings.adminEmail){
         var adminCancelHtml=buildCancelledAdminEmailHtml(Object.assign({},cancelOpts,{
           dashboardUrl:window.location.origin+window.location.pathname+"#dashboard"
