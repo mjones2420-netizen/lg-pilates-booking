@@ -9,18 +9,18 @@ const {
   setBookingStatus
 } = require('./helpers/admin-db');
 
-// ─── SE-15 — Cancellation email to Louise on Remove From Block ───────────────
-// When Louise removes a client via the RFB modal, one Edge Function call fires:
-// a Louise admin alert only. No client email is sent on cancellation.
+// ─── SE-15 — No email fires on Remove From Block (refund > 0) ────────────────
+// When Louise removes a client via the RFB modal with sessions attended > 0,
+// no Edge Function calls fire. The client email fires later when Louise clicks
+// Mark Refunded. Louise no longer receives an admin alert on cancellation.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TEST_EMAIL = 'se15-cancel@test.example';
 const TEST_FIRST = 'SE15';
 const TEST_LAST  = 'CancelTest';
 
-test.describe('SE-15 — Cancellation email to Louise on Remove From Block', () => {
+test.describe('SE-15 — No email fires on Remove From Block (refund > 0)', () => {
   let createdCustomerId = null;
-  let adminEmail        = null;
 
   test.beforeEach(async () => {
     createdCustomerId = null;
@@ -46,10 +46,6 @@ test.describe('SE-15 — Cancellation email to Louise on Remove From Block', () 
     expect(bookErr).toBeNull();
 
     await setBookingStatus(bookingId, 'confirmed');
-
-    // Read admin_email from settings
-    const { data: settingsData } = await sb.from('settings').select('value').eq('key', 'admin_email').single();
-    adminEmail = settingsData?.value || null;
   });
 
   test.afterEach(async () => {
@@ -58,15 +54,11 @@ test.describe('SE-15 — Cancellation email to Louise on Remove From Block', () 
     }
   });
 
-  test('Louise receives admin alert email when a client is removed via RFB modal', async ({ page }) => {
+  test('no email fires when a client is removed via RFB modal with sessions attended', async ({ page }) => {
     let capturedPayloads = [];
-    let adminCallResolve;
-    const adminCallPromise = new Promise(resolve => { adminCallResolve = resolve; });
-
     page.route('**/functions/v1/send-email', async route => {
       const body = route.request().postDataJSON();
       capturedPayloads.push(body);
-      adminCallResolve();
       await route.fulfill({ status: 200, body: JSON.stringify({ ok: true }) });
     });
 
@@ -93,27 +85,9 @@ test.describe('SE-15 — Cancellation email to Louise on Remove From Block', () 
     // Step 3 — success
     await expect(page.locator('#rfb-overlay')).toContainText('removed from the block', { timeout: 10000 });
 
-    // Wait for admin email call
-    await adminCallPromise;
-
-    // Only one email should fire — no client email
-    expect(capturedPayloads).toHaveLength(1);
-
-    // Admin email
-    const adminPayload = capturedPayloads[0];
-    expect(adminEmail).toBeTruthy();
-    expect(adminPayload.to).toBe(adminEmail);
-    expect(adminPayload.subject).toMatch(/booking cancelled/i);
-    expect(adminPayload.subject).toContain(TEST_FIRST);
-    expect(adminPayload.subject).toContain(TEST_LAST);
-    expect(adminPayload.isTest).toBe(true);
-    expect(adminPayload.html).toBeTruthy();
-    expect(adminPayload.html).toContain('Booking cancelled');
-    expect(adminPayload.html).toContain(TEST_FIRST);
-    expect(adminPayload.html).toContain(TEST_LAST);
-    expect(adminPayload.html).toContain(TEST_EMAIL);
-    expect(adminPayload.html).toContain('#dashboard');
-    expect(adminPayload.html).toContain('Refund amount');
+    // Wait a moment to confirm no email fired
+    await page.waitForTimeout(1500);
+    expect(capturedPayloads).toHaveLength(0);
 
     await page.locator('#rfb-overlay').locator('button', { hasText: 'Done' }).click();
     await expect(page.locator('#rfb-overlay')).toBeHidden();

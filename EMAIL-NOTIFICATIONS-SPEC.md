@@ -1,5 +1,5 @@
 # LG Pilates — Email Notifications Spec
-**Status:** Session 6 complete — ready for Session 7 (final review)  
+**Status:** Session 7 (final review) pending — all 5 triggers built and tested  
 **Last updated:** 11 Jun 2026
 
 ---
@@ -198,48 +198,66 @@ Steps:
 - `secondCallPromise` pattern used — resolves inside page.route() callback when capturedPayloads.length >= 2
 - The no-refund path (£0) is template-only branching — covered by the mock review, not by a separate sub-test
 - Verified in production: to be done at next session start
+- **Revised in Session 7 wording review:** Client cancellation email removed entirely — client email now only fires when Louise clicks Mark Refunded (or auto-sends if refund = £0). Louise admin cancel alert also removed — Louise uses the dashboard cancellations tab instead. `buildCancelledClientEmailHtml` removed from codebase as redundant.
 
-**Sign-off:** ✅ Complete — Session 6 next.
+**Sign-off:** ✅ Complete — revised in Session 7.
 
 ---
 
-### Session 6 — Refund confirmation emails (trigger #4)
+### Session 6 — Refund confirmation emails (trigger #4) ✅ COMPLETE
 
-**Goal:** Both the client and Louise receive an email when a refund is marked as paid.
+**Goal:** The client receives an email when a refund is marked as paid. Louise no longer receives an admin alert (uses dashboard instead).
 
 Steps:
-1. Identify the "Mark as Refunded" action in the Cancellations tab
-2. Build the client refund confirmation email template
-3. Build the Louise refund alert template
-4. Wire both Edge Function calls into the refund action
-5. Test end-to-end
+1. ✅ Located `markCancellationRefunded()` — fetches full cancellation row, updates DB, then fires emails
+2. ✅ `buildRefundClientEmailHtml()` helper built — red banner ("Your booking has been cancelled and you've been removed from this block"), booking summary table, optional green refund box ("Refund of £X has been processed — please allow 3–5 working days"). Green box only shown when refund > £0.
+3. ✅ `buildRefundAdminEmailHtml()` built then **removed** in wording review — Louise uses dashboard instead
+4. ✅ Client email wired into `markCancellationRefunded()` — non-fatal, guarded by `if(r.email)`
+5. ✅ Auto-send client email on RFB completion when refund = £0 — fires immediately from `rfbConfirm()` so client always gets notified (no "Mark Refunded" button appears for zero-refund rows)
+6. ✅ SE-16 spec — drives RFB flow, resets `page.unroute()` intercept, clicks Mark Refunded, asserts 1 payload (client only)
 
-**Session 6 complete (11 Jun 2026):**
-- `buildRefundClientEmailHtml()` helper — green banner ("Your refund has been processed"), booking summary table, refund breakdown (sessions attended/remaining, price per session, refund paid in green)
-- `buildRefundAdminEmailHtml()` helper — slate banner ("Refund processed"), full details table (client name, email, class, venue, day/time, block dates, sessions attended, price per session, refund amount in orange), dashboard link
-- Both wired into `markCancellationRefunded()` after successful DB update — non-fatal, guarded by `if(r.email)` and `if(appSettings.adminEmail)`
-- Function now fetches the full cancellation row first (`.single()`), then updates; class details (day, time, loc) looked up from in-memory `classes` array via `class_id`
-- Subject lines: client "Your refund has been processed — [ClassName], [Venue]"; Louise "Refund processed — [First] [Last], [ClassName]"
-- SE-16 spec (1 test): drives full RFB flow to create the cancellation row, then resets `page.route()` intercept via `page.unroute()` before clicking Mark Refunded. Admin recipient asserted against live `settings` table value. 167 tests total.
+**Notes:**
+- Subject: client "Your refund has been processed — [ClassName], [Venue]"
+- Zero-refund case: client email fires from `rfbConfirm()` with subject "Your booking has been cancelled — [Day], [Time], [Venue]"
+- `buildRefundAdminEmailHtml` and `buildCancelledAdminEmailHtml` remain in codebase (unused) — can be removed at tidy-up
 
 **Sign-off:** ✅ Complete — Session 7 (final review) next.
 
 ---
 
-### Final review session
+### Email wording review (Session 7, 11 Jun 2026)
 
-- End-to-end test of all 5 triggers in test mode
-- End-to-end test of all 5 triggers in production mode (to a safe test address)
+All 6 email templates reviewed and wording agreed with Louise:
+
+1. **Reserved (client):** "What to bring" — comfortable clothing, bring a mat, arrive ≤10 min before
+2. **Confirmed (client):** "What to bring" — comfortable clothing, water bottle, arrive ≤10 min before
+3. **New booking alert (Louise):** Client name + type moved into banner; "Client type" row removed from table; session date pills replace block dates row
+4. **Cancelled (Louise only):** Client cancellation email removed — Louise uses dashboard. Admin cancel alert kept.
+5. **Refund processed (client):** Red removal banner + optional green refund box. No breakdown table.
+6. **Refund processed (Louise):** Admin refund alert removed — Louise uses dashboard.
+
+Additional changes in this session:
+- Session date pills added to reserved and admin alert emails (past dates grey, upcoming teal) — block dates row removed from both
+- Zero-refund RFB cancellations auto-send client email immediately
+- Admin cancel and refund alerts both removed
+- Pending refund warning added to block warnings banner (BLW-09)
+
+---
+
+### Final review session (Session 7 — pending)
+
+- End-to-end test of all triggers in production mode (to a safe test address)
 - Check all emails render correctly on mobile and desktop
-- Check forwarding works (Louise receives admin alerts in her inbox)
+- Verify forwarding: Louise receives new booking alerts in her inbox
+- Confirm zero-refund auto-send fires correctly in production
 - Sign off and go live
 
 ---
 
 ## Open decisions (to resolve before or during build)
 
-- [x] "What to bring" section included — wording agreed Session 2 (arrive no more than 10 minutes before the session starts)
-- [ ] Exact wording for remaining email templates (triggers #2–#5) — to be agreed with Louise before each session
+- [x] "What to bring" section included — wording agreed Session 7
+- [x] Exact wording for all email templates — agreed and applied Session 7
 - [ ] When to switch forwarding from Mark's inbox to Louise's personal email
 
 ---

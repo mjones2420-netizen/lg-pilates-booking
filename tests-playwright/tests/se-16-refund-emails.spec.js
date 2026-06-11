@@ -22,7 +22,6 @@ const TEST_LAST   = 'RefundTest';
 
 test.describe('SE-16 — Refund confirmation emails', () => {
   let createdCustomerId = null;
-  let adminEmail        = null;
 
   test.beforeEach(async () => {
     createdCustomerId = null;
@@ -49,8 +48,6 @@ test.describe('SE-16 — Refund confirmation emails', () => {
 
     await setBookingStatus(bookingId, 'confirmed');
 
-    const { data: settingsData } = await sb.from('settings').select('value').eq('key', 'admin_email').single();
-    adminEmail = settingsData?.value || null;
   });
 
   test.afterEach(async () => {
@@ -100,7 +97,7 @@ test.describe('SE-16 — Refund confirmation emails', () => {
     await page.route('**/functions/v1/send-email', async route => {
       const body = route.request().postDataJSON();
       capturedPayloads.push(body);
-      if (capturedPayloads.length >= 2) refundCallsResolveFn();
+      if (capturedPayloads.length >= 1) refundCallsResolveFn();
       await route.fulfill({ status: 200, body: JSON.stringify({ ok: true }) });
     });
 
@@ -121,9 +118,9 @@ test.describe('SE-16 — Refund confirmation emails', () => {
     await expect(page.locator('#toastEl')).toContainText('refunded', { timeout: 5000 });
 
     // ── Payload assertions ─────────────────────────────────────────────────
-    expect(capturedPayloads).toHaveLength(2);
+    expect(capturedPayloads).toHaveLength(1);
 
-    // Client email (index 0) — red banner + green refund box
+    // Client email only — no admin alert
     const clientPayload = capturedPayloads[0];
     expect(clientPayload.to).toBe(TEST_EMAIL);
     expect(clientPayload.subject).toMatch(/refund.*processed/i);
@@ -133,21 +130,5 @@ test.describe('SE-16 — Refund confirmation emails', () => {
     expect(clientPayload.html).toContain('has been processed');
     expect(clientPayload.html).toContain('3');
     expect(clientPayload.html).toContain('working days');
-
-    // Admin email (index 1)
-    const adminPayload = capturedPayloads[1];
-    expect(adminEmail).toBeTruthy();
-    expect(adminPayload.to).toBe(adminEmail);
-    expect(adminPayload.subject).toMatch(/refund processed/i);
-    expect(adminPayload.subject).toContain(TEST_FIRST);
-    expect(adminPayload.subject).toContain(TEST_LAST);
-    expect(adminPayload.isTest).toBe(true);
-    expect(adminPayload.html).toBeTruthy();
-    expect(adminPayload.html).toContain('Refund processed');
-    expect(adminPayload.html).toContain(TEST_FIRST);
-    expect(adminPayload.html).toContain(TEST_LAST);
-    expect(adminPayload.html).toContain(TEST_EMAIL);
-    expect(adminPayload.html).toContain('#dashboard');
-    expect(adminPayload.html).toContain('Refund amount');
   });
 });

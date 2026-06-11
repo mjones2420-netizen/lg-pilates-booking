@@ -2021,51 +2021,70 @@ function renderBlockWarnings(){
     return relevant.length===1;
   });
 
-  if(hidden.length===0 && expiring.length===0){ el.style.display="none"; el.innerHTML=""; return; }
+  // ADVISORY: cancellations with refund_amount > 0 not yet marked as refunded
+  (async function(){
+    var pendingRefundCount=0;
+    try{
+      var {data:pending}=await sb.from("cancellations").select("id",{count:"exact"}).eq("refunded",false).gt("refund_amount",0);
+      pendingRefundCount=pending?pending.length:0;
+    }catch(e){ pendingRefundCount=0; }
 
-  var html="";
+    if(hidden.length===0 && expiring.length===0 && pendingRefundCount===0){ el.style.display="none"; el.innerHTML=""; return; }
 
-  if(hidden.length>0){
-    html+='<div class="block-warning" style="margin-bottom:'+(expiring.length>0?'12px':'28px')+'">';
-    html+='<div class="block-warning-title">&#128683; '+hidden.length+' class'+(hidden.length>1?"es are":" is")+' not visible on the booking page &mdash; no active or upcoming block</div>';
-    hidden.forEach(function(c){
-      html+='<div class="block-warning-row">';
-      html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
-      html+='<div class="block-warning-meta">'+sanitise(c.venue)+', '+sanitise(c.loc)+'</div></div>';
-      html+='<button class="act act-confirm" onclick="openAddBlockModal('+c.id+')" style="white-space:nowrap">+ Add Block</button>';
-      html+='</div>';
-    });
-    html+='</div>';
-  }
+    var html="";
 
-  if(expiring.length>0){
-    html+='<div class="block-warning" style="background:#fffbf0;border-color:#e8d080;margin-bottom:28px">';
-    html+='<div class="block-warning-title" style="color:#a07020">&#9888; '+expiring.length+' class'+(expiring.length>1?"es have":" has")+' an active block but no next block &mdash; '+(expiring.length>1?"they will disappear":"it will disappear")+' from the booking page when the current block ends</div>';
-    expiring.forEach(function(c){
-      var relevant=blocks.filter(function(b){
-        return b.class_id===c.id && b.visible!==false && new Date(b.end_date+"T00:00:00")>=today;
+    if(hidden.length>0){
+      html+='<div class="block-warning" style="margin-bottom:'+(expiring.length>0||pendingRefundCount>0?'12px':'28px')+'">';
+      html+='<div class="block-warning-title">&#128683; '+hidden.length+' class'+(hidden.length>1?"es are":" is")+' not visible on the booking page &mdash; no active or upcoming block</div>';
+      hidden.forEach(function(c){
+        html+='<div class="block-warning-row">';
+        html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
+        html+='<div class="block-warning-meta">'+sanitise(c.venue)+', '+sanitise(c.loc)+'</div></div>';
+        html+='<button class="act act-confirm" onclick="openAddBlockModal('+c.id+')" style="white-space:nowrap">+ Add Block</button>';
+        html+='</div>';
       });
-      relevant.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
-      var currentBlk=relevant[0];
-      var endsStr=currentBlk?new Date(currentBlk.end_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
-      var nextStartDate=(function(){
-        var d=new Date(currentBlk.end_date+"T00:00:00");
-        d.setDate(d.getDate()+7);
-        var mm=String(d.getMonth()+1).padStart(2,"0");
-        var dd=String(d.getDate()).padStart(2,"0");
-        return d.getFullYear()+"-"+mm+"-"+dd;
-      })();
-      html+='<div class="block-warning-row">';
-      html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
-      html+='<div class="block-warning-meta">'+sanitise(c.venue)+', '+sanitise(c.loc)+(endsStr?' &mdash; current block ends '+sanitise(endsStr):'')+'</div></div>';
-      html+='<button class="act act-confirm" onclick="openAddBlockModal('+c.id+',\''+nextStartDate+'\')" style="white-space:nowrap">+ Add Block</button>';
       html+='</div>';
-    });
-    html+='</div>';
-  }
+    }
 
-  el.innerHTML=html;
-  el.style.display="block";
+    if(expiring.length>0){
+      html+='<div class="block-warning" style="background:#fffbf0;border-color:#e8d080;margin-bottom:'+(pendingRefundCount>0?'12px':'28px')+'">';
+      html+='<div class="block-warning-title" style="color:#a07020">&#9888; '+expiring.length+' class'+(expiring.length>1?"es have":" has")+' an active block but no next block &mdash; '+(expiring.length>1?"they will disappear":"it will disappear")+' from the booking page when the current block ends</div>';
+      expiring.forEach(function(c){
+        var relevant=blocks.filter(function(b){
+          return b.class_id===c.id && b.visible!==false && new Date(b.end_date+"T00:00:00")>=today;
+        });
+        relevant.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
+        var currentBlk=relevant[0];
+        var endsStr=currentBlk?new Date(currentBlk.end_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
+        var nextStartDate=(function(){
+          var d=new Date(currentBlk.end_date+"T00:00:00");
+          d.setDate(d.getDate()+7);
+          var mm=String(d.getMonth()+1).padStart(2,"0");
+          var dd=String(d.getDate()).padStart(2,"0");
+          return d.getFullYear()+"-"+mm+"-"+dd;
+        })();
+        html+='<div class="block-warning-row">';
+        html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
+        html+='<div class="block-warning-meta">'+sanitise(c.venue)+', '+sanitise(c.loc)+(endsStr?' &mdash; current block ends '+sanitise(endsStr):'')+'</div></div>';
+        html+='<button class="act act-confirm" onclick="openAddBlockModal('+c.id+',\''+nextStartDate+'\')" style="white-space:nowrap">+ Add Block</button>';
+        html+='</div>';
+      });
+      html+='</div>';
+    }
+
+    if(pendingRefundCount>0){
+      html+='<div class="block-warning" style="background:#fff8f0;border-color:#e8c080;margin-bottom:28px">';
+      html+='<div class="block-warning-title" style="color:#8a5010">&#9888; '+pendingRefundCount+' cancellation'+(pendingRefundCount>1?"s are":" is")+' awaiting a refund decision</div>';
+      html+='<div class="block-warning-row">';
+      html+='<div class="block-warning-meta">Mark as refunded or no refund required in the Cancellations tab.</div>';
+      html+='<button class="act act-confirm" onclick="switchTab(\'cancellations\')" style="white-space:nowrap">View Cancellations</button>';
+      html+='</div>';
+      html+='</div>';
+    }
+
+    el.innerHTML=html;
+    el.style.display="block";
+  })();
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
@@ -2969,12 +2988,6 @@ function rfbConfirm(){
         pricePerSession:s.pricePerSession,
         refundAmount:refund
       };
-      if(appSettings.adminEmail){
-        var adminCancelHtml=buildCancelledAdminEmailHtml(Object.assign({},cancelOpts,{
-          dashboardUrl:window.location.origin+window.location.pathname+"#dashboard"
-        }));
-        await sendBookingEmail(appSettings.adminEmail,"Booking cancelled \u2014 "+cancelOpts.firstName+" "+cancelOpts.lastName+", "+cancelOpts.day+" "+cancelOpts.time+", "+cancelOpts.venue,adminCancelHtml);
-      }
       // Auto-send client email immediately if no refund due — otherwise
       // client email fires later when Louise clicks Mark Refunded
       if(refund===0&&cancelOpts.email){
@@ -3084,12 +3097,6 @@ function markCancellationRefunded(id){
         var clientSubject="Your refund has been processed \u2014 "+refundOpts.className+(refundOpts.venue?", "+refundOpts.venue:"");
         var clientHtml=buildRefundClientEmailHtml(refundOpts);
         sendBookingEmail(r.email, clientSubject, clientHtml);
-      }
-      // Send admin alert
-      if(appSettings.adminEmail){
-        var adminSubject="Refund processed \u2014 "+r.first_name+" "+r.last_name+(refundOpts.className?", "+refundOpts.className:"");
-        var adminHtml=buildRefundAdminEmailHtml(refundOpts);
-        sendBookingEmail(appSettings.adminEmail, adminSubject, adminHtml);
       }
     }catch(err){ console.error(err); showToast("Error updating. See console."); }
   })();

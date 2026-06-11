@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 8 Jun 2026
+Last updated: 11 Jun 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -398,11 +398,11 @@ tests-playwright/
     ├── sec-*.spec.js            # 3 SEC spec files covering 3 of 3 genuine scenarios
     ├── ec-*.spec.js             # 13 EC spec files covering 13 of 13 genuine scenarios
     ├── blw-*.spec.js            # 8 BLW spec files covering 8 of 8 genuine scenarios
-    ├── se-*.spec.js             # 16 SE spec files covering 16 scenarios
+    ├── se-*.spec.js             # 17 SE spec files covering 17 scenarios
     ├── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
     └── ac-*.spec.js             # 24 AC spec files covering 24 of 24 scenarios
 
-CURRENT TEST COUNT: 166 tests (all passing — Session 37, Batch 25 complete — SE-15 cancellation emails)
+CURRENT TEST COUNT: 169 tests (all passing — Session 37, Batch 27 complete — BLW-09 pending refund warning)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    33 tests covering 33 of 33 CB scenarios (CB suite complete)
   PB:    16 tests — 9 individual Excel-scenario specs + 7 gap-analysis tests
@@ -416,8 +416,8 @@ CURRENT TEST COUNT: 166 tests (all passing — Session 37, Batch 25 complete —
           SEC-01/03/04/05 are red-filled in Excel as duplicates of other specs.)
   EC:    15 tests in 13 spec files covering 13 of 13 genuine EC scenarios
          (EC-14 has 3 sub-tests. EC-02 red-filled as duplicate of CB-31.)
-  BLW:   8 tests covering 8 of 8 BLW scenarios (BLW suite complete)
-  SE:    16 tests covering 16 SE scenarios
+  BLW:   10 tests covering 9 of 9 BLW scenarios (BLW suite complete)
+  SE:    17 tests covering 17 SE scenarios
   AB:    21 tests in 13 spec files covering 21 of 21 genuine AB scenarios
          (AB-01 red-filled as duplicate of SEC-06.1.)
   AC:    26 tests in 24 spec files covering 24 of 24 AC scenarios (AC suite complete)
@@ -869,12 +869,25 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - SE-14 spec (2 tests): new-client reserve asserts PAR-Q flag present; returning-client reserve asserts PAR-Q flag absent. Uses array intercept pattern. Fixture returning client (`returning-one@test.example`) used for test 2; cleanup via `deleteBookingsForCustomerOnBlock` only.
    - Verified in production: real admin alert delivered to mjones970@live.co.uk. 165 tests total.
    **Session 5 complete (8 Jun 2026):**
-   - `buildCancelledClientEmailHtml()` helper — red banner ("Your booking has been cancelled"), booking summary table, refund breakdown (sessions attended/remaining, price per session, refund due) if refund > £0, or "no refund" notice if £0. Footer includes "If you have any questions, please reply to this email."
-   - `buildCancelledAdminEmailHtml()` helper — slate banner ("Booking cancelled"), full details table (client name, email, class, venue, day/time, block dates, sessions attended, price per session, refund amount), dashboard link
-   - Both wired into `rfbConfirm()` after successful DB operations — non-fatal, guarded by `if(cancelOpts.email)` and `if(appSettings.adminEmail)`
-   - Subject lines: client "Your booking has been cancelled — [Day], [Time], [Venue]"; Louise "Booking cancelled — [First] [Last], [Day] [Time], [Venue]"
-   - SE-15 spec (1 test): per-run customer + confirmed booking on mon-current; drives RFB flow with 2 sessions attended; asserts both payloads via array intercept pattern. 166 tests total.
-   **Session 6 next:** Refund confirmation emails (trigger #4) — client and Louise both receive email when refund is marked as paid in the Cancellations tab.
+   - `buildCancelledClientEmailHtml()` built then **removed** in Session 7 wording review
+   - `buildCancelledAdminEmailHtml()` helper — slate banner, full details table, dashboard link
+   - Admin-only alert wired into `rfbConfirm()` — non-fatal, guarded by `if(appSettings.adminEmail)`
+   - SE-15 spec (1 test): asserts only admin alert fires on RFB (no client email). 167 tests total.
+   **Session 6 complete (11 Jun 2026):**
+   - `buildRefundClientEmailHtml()` helper — red banner ("Your booking has been cancelled and you've been removed from this block"), booking summary, optional green refund box with "Refund of £X has been processed — please allow 3–5 working days" (shown when refund > £0 only)
+   - Client email wired into `markCancellationRefunded()` after successful DB update — non-fatal
+   - Zero-refund auto-send: if `refund === 0`, client email fires immediately from `rfbConfirm()` so client always gets notified
+   - Admin cancel and refund alert emails removed — Louise uses dashboard cancellations tab instead
+   - `buildRefundAdminEmailHtml` and `buildCancelledAdminEmailHtml` remain in code (unused) — remove at tidy-up
+   - SE-16 spec (1 test): drives RFB flow, resets intercept via `page.unroute()`, clicks Mark Refunded, asserts 1 payload (client only). 168 tests total.
+   **Session 7 (11 Jun 2026) — email wording review + additional features:**
+   - All 6 email templates reviewed and wording agreed
+   - Session date pills replace block dates row in reserved and admin alert emails (past=grey, upcoming=teal)
+   - Pending refund warning added to block warnings banner — orange advisory showing count + "View Cancellations" button
+   - BLW-09 spec (2 tests): asserts banner appears with count, View Cancellations navigates to tab, count decreases after marking refunded. 169 tests total.
+   - GitHub Actions CI paths filter narrowed — doc-only pushes no longer trigger test run
+   **Session 8 next (final review):** End-to-end production verification, mobile/desktop render check, forwarding to Louise's inbox.
+   Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md for full session breakdown.
    Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md for full session breakdown.
    Test mode: `isTest: true` in payload redirects all recipients to delivered@resend.dev (no separate Resend test key — both projects use live keys).
    Resend API keys stored as RESEND_API_KEY secret on both Supabase projects (different keys per project).
@@ -1642,24 +1655,38 @@ SESSION 36 LEARNINGS — EMAIL TRIGGER 5, ARRAY INTERCEPT PATTERN, DYNAMIC DASHB
   must be set as a top-level `env:` in the workflow file, not inside a step's env block,
   for it to apply to the action runners themselves. Fixed in `.github/workflows/playwright.yml`.
 
-SESSION 37 LEARNINGS — EMAIL TRIGGER 3, RFB EMAIL WIRING
----------------------------------------------------------
-- Cancellation email wiring in `rfbConfirm()` builds a shared `cancelOpts` object from
-  `rfbState` and the resolved `cls`/`blkObj` — same pattern as the existing cancellations
-  insert already used. Both email calls fire after the `throw` guard, so a DB failure
-  still shows the error toast without triggering emails.
-- `hasRefund = opts.refundAmount > 0` is the branching condition for the client email
-  template. Strictly greater than zero — a £0 refund shows the "no refund required" notice.
-- The client email subject includes the venue from `cls.venue` (not `cls.loc`). The booking
-  object on `rfbState.b` does NOT carry separate venue/loc/time/endTime fields — these must
-  be looked up from the `classes` array, which `rfbConfirm` already does for the cancellations
-  insert (`var cls = classes.find(...)`).
-- SE-15 uses a per-run customer with a `confirmed` booking on `mon-current` (status set via
-  direct pg after RPC insert). The RFB modal sessions buttons render dynamically; the spec
-  targets `button { hasText: '2' }` inside `#rfb-overlay`. Sessions > 0 skips Step 1b
-  entirely — no "Has this client paid?" screen appears on this path.
-- `secondCallPromise` pattern: a Promise that resolves inside the `page.route()` callback
-  when `capturedPayloads.length >= 2`. The test awaits this before asserting, guaranteeing
-  both payloads are captured. Same principle as the `emailPromise` in SE-13 but for two calls.
+SESSION 37 LEARNINGS — EMAIL TRIGGER 3, EMAIL WORDING REVIEW, BLW-09
+---------------------------------------------------------------------
+- Client cancellation email removed — client only gets an email when Louise clicks Mark
+  Refunded (or immediately via auto-send if refund = £0). Louise admin cancel/refund alerts
+  also removed — Louise uses the dashboard cancellations tab instead.
+- Zero-refund auto-send: `if(refund===0&&cancelOpts.email)` in `rfbConfirm()` fires
+  `buildRefundClientEmailHtml` immediately — same template as the Mark Refunded email but
+  with no green refund box (since `refundAmount = 0`).
+- `buildRefundClientEmailHtml` now serves dual purpose: RFB zero-refund auto-send (red
+  banner only) and Mark Refunded trigger (red banner + green refund box). The `hasRefund`
+  flag (`opts.refundAmount > 0`) controls whether the green box renders.
+- Session date pills in emails: built inline inside the email builder using a `today` date
+  comparison. Past dates render grey (`#f0f0f0`/`#aaaaaa`), upcoming dates render teal
+  (`#eef5f5`/`#2a6b6b`). No external CSS — all inline styles for email client compatibility.
+- `renderBlockWarnings()` is now async — it fires a Supabase anon SELECT on `cancellations`
+  to count rows where `refunded = false AND refund_amount > 0`, then builds and injects the
+  HTML. The existing hidden/expiring checks remain synchronous (from in-memory `classes` and
+  `blocks`). The `el.style.display` and `el.innerHTML` assignments moved inside the async IIFE.
+- BLW-09 count assertion is robust to stray cancellation rows: rather than asserting exact
+  count, test 1 asserts the text "awaiting a refund decision" is present. Test 2 reads the
+  count before, marks one refunded, and asserts count is `before - 1` (or banner gone if it
+  was the only one).
+- `page.unroute()` is the correct pattern to swap out a `page.route()` intercept mid-test.
+  Register the new handler after calling `unroute()` — the new handler captures only calls
+  made after registration.
+- GitHub Actions CI `paths` filter narrowed from `tests-playwright/**` to specific
+  subdirectories (`tests/**`, `scripts/**`, `migrations/**`, `package*.json`,
+  `playwright.config.js`) so doc-only pushes (TEST-PLAN.md, context.txt, etc.) no longer
+  trigger a test run. The `paths-ignore` approach doesn't work alongside `paths` in GitHub
+  Actions — specific subpath listing is the correct solution.
+- The Node.js 20 deprecation warning from `actions/cache@v4` and `actions/upload-artifact@v4`
+  is a GitHub-side issue (those actions internally use Node 20). Cannot be fixed from our
+  workflow — not worth investigating further.
 
 ============================================================

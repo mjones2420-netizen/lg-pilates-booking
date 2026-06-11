@@ -1,6 +1,6 @@
 # LG Pilates Booking System — Feature & Task Backlog
 
-Last updated: 7 Jun 2026
+Last updated: 11 Jun 2026
 
 This document is the single source of truth for outstanding work on the LG Pilates booking system.
 It is organised by priority tier. Items should be marked ✅ when complete and updated in `context.txt` at the same time.
@@ -69,9 +69,14 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 - New booking notification → Louise (client name, class, block, amount due).
 - Consider a PAR-Q reminder email if the PAR-Q has not been completed 24 hours before the first session.
 - User guide (T3-02) should be updated once email is live.
-- **Session 1 complete (7 Jun 2026):** `admin_email` in settings table, Notification Email field in Settings tab, `send-email` Edge Function deployed to both Supabase projects. Supabase CLI + Docker Desktop installed. See `EMAIL-NOTIFICATIONS-SPEC.md` for full session breakdown.
-- **Session 2 complete (7 Jun 2026):** Booking reserved email (trigger #1) built and live. `buildReservedEmailHtml()` template, `sendBookingEmail()` helper, `appSettings` global, `IS_NO_EMAIL`/`?noemail=1` flag to suppress test-run noise in Resend. SE-12 spec added. Verified in production — real email delivered.
-- **Session 3 next:** Booking confirmed email (trigger #2) — client email when Louise confirms in the dashboard.
+- **Session 1 complete (7 Jun 2026):** `admin_email` in settings table, Notification Email field in Settings tab, `send-email` Edge Function deployed to both Supabase projects. Supabase CLI + Docker Desktop installed.
+- **Session 2 complete (7 Jun 2026):** Booking reserved email (trigger #1) — `buildReservedEmailHtml()`, `sendBookingEmail()`, `IS_NO_EMAIL` flag, SE-12 spec. Verified in production.
+- **Session 3 complete (8 Jun 2026):** Booking confirmed email (trigger #2) — `buildConfirmedEmailHtml()`, wired into `confirmBookingAdmin()`, SE-13 spec.
+- **Session 4 complete (8 Jun 2026):** New booking admin alert (trigger #5) — `buildAdminAlertEmailHtml()`, SE-14 spec. SE-12 fixed with array intercept pattern.
+- **Session 5 complete (8 Jun 2026):** Cancellation emails (trigger #3) — admin-only alert on RFB; client email deferred to Mark Refunded trigger. SE-15 spec.
+- **Session 6 complete (11 Jun 2026):** Refund confirmation email (trigger #4) — `buildRefundClientEmailHtml()`, client email only (no admin alert). Zero-refund auto-send. SE-16 spec.
+- **Session 7 complete (11 Jun 2026):** Full email wording review; session date pills in reserved and admin alert emails; pending refund warning in block warnings banner (BLW-09); admin cancel/refund alerts removed; CI paths filter narrowed.
+- **Session 8 next (final review):** End-to-end production verification, mobile/desktop render check, forwarding to Louise's inbox. See `EMAIL-NOTIFICATIONS-SPEC.md`.
 
 ---
 
@@ -204,6 +209,11 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 | GitHub Actions CI | Auto-run on push | Session 32 |
 | Email notifications — Session 1 | Settings email field + send-email Edge Function deployed to prod and test | Session 33 |
 | Email notifications — Session 2 | Booking reserved email (trigger #1) — template, wiring, noemail flag, SE-12 spec | Session 34 |
+| Email notifications — Session 3 | Booking confirmed email (trigger #2) — SE-13 spec | Session 35 |
+| Email notifications — Session 4 | New booking admin alert (trigger #5) — SE-14 spec | Session 36 |
+| Email notifications — Session 5 | Cancellation admin alert (trigger #3) — SE-15 spec | Session 37 |
+| Email notifications — Session 6 | Refund confirmation email (trigger #4) — SE-16 spec | Session 37 |
+| Email notifications — Session 7 | Full wording review, session pills, pending refund banner, CI paths fix — BLW-09 | Session 37 |
 | Per-class priority | Replaced global `customers.priority` with `customer_class_priority` | Earlier |
 | Pro-rata pricing | Sessions-remaining calculation on active blocks | Earlier |
 | 4-step booking flow | New client flow extended from 3 to 4 steps | Earlier |
