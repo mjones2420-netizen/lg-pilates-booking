@@ -1,6 +1,6 @@
 # LG Pilates — Email Notifications Spec
-**Status:** Session 5 complete — ready for Session 6  
-**Last updated:** 8 Jun 2026
+**Status:** Session 6 complete — ready for Session 7 (final review)  
+**Last updated:** 11 Jun 2026
 
 ---
 
@@ -214,7 +214,15 @@ Steps:
 4. Wire both Edge Function calls into the refund action
 5. Test end-to-end
 
-**Sign-off required before final review.**
+**Session 6 complete (11 Jun 2026):**
+- `buildRefundClientEmailHtml()` helper — green banner ("Your refund has been processed"), booking summary table, refund breakdown (sessions attended/remaining, price per session, refund paid in green)
+- `buildRefundAdminEmailHtml()` helper — slate banner ("Refund processed"), full details table (client name, email, class, venue, day/time, block dates, sessions attended, price per session, refund amount in orange), dashboard link
+- Both wired into `markCancellationRefunded()` after successful DB update — non-fatal, guarded by `if(r.email)` and `if(appSettings.adminEmail)`
+- Function now fetches the full cancellation row first (`.single()`), then updates; class details (day, time, loc) looked up from in-memory `classes` array via `class_id`
+- Subject lines: client "Your refund has been processed — [ClassName], [Venue]"; Louise "Refund processed — [First] [Last], [ClassName]"
+- SE-16 spec (1 test): drives full RFB flow to create the cancellation row, then resets `page.route()` intercept via `page.unroute()` before clicking Mark Refunded. Admin recipient asserted against live `settings` table value. 167 tests total.
+
+**Sign-off:** ✅ Complete — Session 7 (final review) next.
 
 ---
 

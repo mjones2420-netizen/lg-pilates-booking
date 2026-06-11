@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 8 Jun 2026
-**Total tests:** 166
+**Last updated:** 11 Jun 2026
+**Total tests:** 167
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -15,11 +15,11 @@
 | Admin Classes (AC) | 24 | 26 |
 | Admin Clients (ACL) | 2 | 2 |
 | Schedule Display (SD) | 6 | 6 |
-| Settings & Export (SE) | 16 | 16 |
+| Settings & Export (SE) | 17 | 17 |
 | Edge Cases (EC) | 13 | 15 |
 | Block Warnings (BLW) | 8 | 8 |
 | Security (SEC) | 3 | 6 |
-| **Total** | **132** | **166** |
+| **Total** | **133** | **167** |
 
 > Tests exceed spec files where one file covers multiple scenarios (e.g. cb-01 has 7 sub-tests, ac-24 has 3, ec-14 has 3, sec-06 has 3). Tests exceed Excel scenarios because smoke tests and PB-X gap-analysis tests are not in the Excel sheet, and some Excel scenarios share a spec file (e.g. CB-12 covered by cb-01, PB-03 covered by pb-10).
 
@@ -132,7 +132,7 @@
 - `sd-05-reset-all-classes.spec.js` — 1 test
 - `sd-06-class-without-blocks-hidden.spec.js` — 1 test
 
-**Settings & Export (16 files, 16 tests)**
+**Settings & Export (17 files, 17 tests)**
 - `se-01-save-bank-details.spec.js` — 1 test
 - `se-02-bank-details-payment-screen.spec.js` — 1 test
 - `se-03-bank-details-success-screen.spec.js` — 1 test
@@ -148,6 +148,7 @@
 - `se-13-booking-confirmed-email.spec.js` — 1 test
 - `se-14-admin-alert-email.spec.js` — 2 tests
 - `se-15-cancellation-emails.spec.js` — 1 test
+- `se-16-refund-emails.spec.js` — 1 test
 
 **Edge Cases (13 files, 15 tests)**
 - `ec-01-full-class-booking-prevented.spec.js` — 1 test
@@ -424,7 +425,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Settings & Export (SE) — 16 spec files, 16 tests ✅</strong></summary>
+<summary><strong>Settings & Export (SE) — 17 spec files, 17 tests ✅</strong></summary>
 
 ### Settings & Export (SE) — Complete ✅
 
@@ -445,6 +446,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SE-13 | Booking confirmed email — Edge Function called on admin confirm | ✅ se-13-booking-confirmed-email.spec.js | Batch 23 |
 | SE-14 | New booking admin alert to Louise — Edge Function called on reserve, with PAR-Q flag for new clients | ✅ se-14-admin-alert-email.spec.js | Batch 24 |
 | SE-15 | Cancellation emails — client and Louise both receive emails on Remove From Block | ✅ se-15-cancellation-emails.spec.js | Batch 25 |
+| SE-16 | Refund confirmation emails — client and Louise both receive emails when refund is marked as paid | ✅ se-16-refund-emails.spec.js | Batch 26 |
 
 
 </details>
@@ -542,6 +544,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 23 ✅ | Email notifications (trigger 2) | 1 | SE-13 booking confirmed email — verifies the send-email Edge Function is called with correct recipient, subject, isTest flag, and HTML content when Louise clicks Confirm on a reserved booking in the admin dashboard. Uses page.route() to intercept the fetch. |
 | Batch 24 ✅ | Email notifications (trigger 5) | 2 | SE-14 new booking admin alert — verifies the send-email Edge Function is called a second time on reserve with Louise's admin email as recipient, correct subject containing client name, isTest: true, "New booking" in HTML. Two sub-tests: new client (asserts PAR-Q flag present) and returning client (asserts PAR-Q flag absent). |
 | Batch 25 ✅ | Email notifications (trigger 3) | 1 | SE-15 cancellation emails — verifies both the client cancellation email and Louise admin alert fire when Louise removes a client via the RFB modal. Uses array intercept pattern (index 0 = client, index 1 = Louise). Drives RFB flow with 2 sessions attended so refund breakdown is present. Asserts recipient, subject, isTest, and HTML content for both payloads. |
+| Batch 26 ✅ | Email notifications (trigger 4) | 1 | SE-16 refund confirmation emails — verifies both the client refund confirmation email and Louise admin alert fire when Louise marks a cancellation as refunded in the Cancellations tab. Drives full RFB flow first to create the cancellation row, then resets the page.route() intercept via page.unroute() before clicking Mark Refunded so only the refund-specific payloads are captured. Admin email recipient asserted against the live settings table value rather than a hardcoded constant. |
 
 ---
 
@@ -3246,7 +3249,7 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 ## Settings & Export specs
 
 <details>
-<summary><strong>Settings & Export specs — 16 tests (Batches 14, 21, 22, 23, 24, 25)</strong></summary>
+<summary><strong>Settings & Export specs — 17 tests (Batches 14, 21, 22, 23, 24, 25, 26)</strong></summary>
 
 ### SE-01 — Save bank details
 
@@ -3497,6 +3500,39 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 **Cleanup:** `afterEach` calls `deleteBookingsForCustomerOnBlock` on the fixture customer's booking — the fixture customer row itself is preserved.
 
 **What a fail would mean:** The admin alert wiring in the reserve handler is broken — Louise won't receive notifications of new bookings, or the PAR-Q flag logic is incorrect.
+
+---
+
+### SE-16 — Refund confirmation emails — both fire when Louise marks a cancellation as refunded
+
+**File:** `tests/se-16-refund-emails.spec.js`
+**Scenario:** When Louise clicks "Mark Refunded" in the Cancellations tab, two Edge Function calls fire: a client refund confirmation email (index 0) and a Louise admin alert (index 1). The spec drives the full RFB flow first to create a cancellation row, then resets the intercept and clicks Mark Refunded to isolate the refund-specific payloads.
+
+**What this proves:** The refund email wiring in `markCancellationRefunded()` fires for both recipients after a successful DB update. The client email contains "Refund paid" and "Sessions attended". The admin email contains the client's name, email, "#dashboard", and "Refund amount". Both have `isTest: true` in test mode.
+
+**Preconditions:** Per-run customer + `confirmed` booking on `mon-current` created in `beforeEach` via RPC + `setBookingStatus`. `page.route()` registered before navigation. `admin_email` read from settings table in `beforeEach` so the assertion matches the actual DB value rather than a hardcoded constant. Uses `APP_PATH_EMAIL` so calls are not suppressed.
+
+**Steps the test performs:**
+1. Creates per-run customer + reserved booking on `mon-current` via RPC; sets status to `confirmed` via `setBookingStatus`
+2. Reads `admin_email` from `settings` table via anon client
+3. Registers initial `page.route()` intercept before navigation
+4. Navigates to app in test mode (`APP_PATH_EMAIL`), verifies TEST MODE banner
+5. Logs in as admin; finds per-run customer row in `#btbody` by name
+6. Clicks Remove to open RFB modal
+7. Step 1: clicks button with text "2" (sessions attended), clicks Next
+8. Step 2: asserts "Confirm Removal" visible, clicks Confirm Removal
+9. Step 3: asserts "removed from the block" text, clicks Done
+10. Calls `page.unroute()` to discard the RFB intercept, resets `capturedPayloads`, registers a fresh route + `refundCallsPromise`
+11. Opens Cancellations tab; finds row with "Mark Refunded" button (filtered by email + button presence to handle stray rows)
+12. Accepts `window.confirm` dialog, clicks Mark Refunded
+13. Awaits `refundCallsPromise` (resolves when 2 payloads captured)
+14. Asserts toast contains "refunded"
+15. Client payload (index 0): `to` = test email, subject matches `/refund.*processed/i`, `isTest: true`, HTML contains first name, "Refund paid", "Sessions attended"
+16. Admin payload (index 1): `to` = `adminEmail` (from DB), subject matches `/refund processed/i` + contains first + last name, `isTest: true`, HTML contains "Refund processed", both names, client email, "#dashboard", "Refund amount"
+
+**Cleanup:** `afterEach` calls `deleteCustomerCascade(createdCustomerId)` — safe even if the RFB flow already removed the booking.
+
+**What a fail would mean:** The refund confirmation email wiring is broken — clients won't receive confirmation their refund has been sent, or Louise won't receive the admin alert.
 
 ---
 
