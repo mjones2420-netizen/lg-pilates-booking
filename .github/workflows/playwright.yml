@@ -5,13 +5,21 @@ on:
     branches: [main]
     paths:
       - 'index.html'
-      - 'tests-playwright/**'
+      - 'tests-playwright/tests/**'
+      - 'tests-playwright/package*.json'
+      - 'tests-playwright/playwright.config.js'
+      - 'tests-playwright/scripts/**'
+      - 'tests-playwright/migrations/**'
       - '.github/workflows/**'
   pull_request:
     branches: [main]
     paths:
       - 'index.html'
-      - 'tests-playwright/**'
+      - 'tests-playwright/tests/**'
+      - 'tests-playwright/package*.json'
+      - 'tests-playwright/playwright.config.js'
+      - 'tests-playwright/scripts/**'
+      - 'tests-playwright/migrations/**'
       - '.github/workflows/**'
 
 env:
