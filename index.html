@@ -1781,6 +1781,119 @@ function buildCancelledAdminEmailHtml(opts){
     +'</body></html>';
 }
 
+function buildRefundClientEmailHtml(opts){
+  // opts: { firstName, className, venue, loc, day, time, endTime, blockDates,
+  //         sessionsAttended, totalSessions, pricePerSession, refundAmount }
+  var blockRange=opts.blockDates&&opts.blockDates.length>0
+    ? opts.blockDates[0]+' \u2013 '+opts.blockDates[opts.blockDates.length-1]
+    : '';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
+    +'<tr><td align="center">'
+    +'<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">'
+
+    // Header
+    +'<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">'
+    +'<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>'
+    +'<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>'
+    +'</td></tr>'
+
+    // Green banner — positive action
+    +'<tr><td style="background:#f0faf4;border-left:4px solid #3a8a6a;padding:18px 32px;">'
+    +'<div style="font-size:15px;font-weight:600;color:#1a5c3a;margin-bottom:4px;">Your refund has been processed</div>'
+    +'<div style="font-size:13px;color:#2a6a48;line-height:1.6;">We\'ve sent your refund \u2014 details are below.</div>'
+    +'</td></tr>'
+
+    // Body
+    +'<tr><td style="padding:24px 32px;">'
+
+    // Greeting
+    +'<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi '+opts.firstName+',</p>'
+
+    // Booking details
+    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Booking details</div>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.className+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.venue+', '+opts.loc+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.day+', '+opts.time+' &ndash; '+opts.endTime+'</td></tr>'
+    +(blockRange?'<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Block dates</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+blockRange+'</td></tr>':'')
+    +'</table>'
+
+    // Refund details
+    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Refund details</div>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0faf4;border-left:4px solid #3a8a6a;border-radius:0 6px 6px 0;padding:14px 18px;margin-bottom:20px;">'
+    +'<tr><td style="padding:4px 0;font-size:13px;color:#2a6a48;">Sessions attended</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.sessionsAttended+' of '+opts.totalSessions+'</td></tr>'
+    +'<tr><td style="padding:4px 0;font-size:13px;color:#2a6a48;">Sessions remaining</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+(opts.totalSessions-opts.sessionsAttended)+'</td></tr>'
+    +'<tr><td style="padding:4px 0;font-size:13px;color:#2a6a48;">Price per session</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;'+parseFloat(opts.pricePerSession).toFixed(2)+'</td></tr>'
+    +'<tr><td style="padding:6px 0 4px;border-top:1px solid #9ed4b8;font-size:13px;font-weight:600;color:#1a5c3a;">Refund paid</td><td style="padding:6px 0 4px;border-top:1px solid #9ed4b8;font-size:15px;font-weight:600;color:#1a5c3a;text-align:right;">&pound;'+parseFloat(opts.refundAmount).toFixed(2)+'</td></tr>'
+    +'</table>'
+
+    +'</td></tr>'
+
+    // Footer
+    +'<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">'
+    +'<div style="font-size:11px;color:#8aabab;line-height:1.6;">If you have any questions, please reply to this email or contact Louise at <a href="mailto:bookings@lg-pilates.co.uk" style="color:#3a8a8a;text-decoration:none;">bookings@lg-pilates.co.uk</a><br>LG Pilates &middot; Baildon &amp; Guiseley</div>'
+    +'</td></tr>'
+
+    +'</table>'
+    +'</td></tr></table>'
+    +'</body></html>';
+}
+
+function buildRefundAdminEmailHtml(opts){
+  // opts: { firstName, lastName, email, className, venue, loc, day, time, endTime,
+  //         blockDates, sessionsAttended, totalSessions, pricePerSession,
+  //         refundAmount, dashboardUrl }
+  var blockRange=opts.blockDates&&opts.blockDates.length>0
+    ? opts.blockDates[0]+' \u2013 '+opts.blockDates[opts.blockDates.length-1]
+    : '';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
+    +'<tr><td align="center">'
+    +'<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">'
+
+    // Header
+    +'<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">'
+    +'<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>'
+    +'<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>'
+    +'</td></tr>'
+
+    // Slate banner — matches cancelled admin email tone
+    +'<tr><td style="background:#f0f4f8;border-left:4px solid #4a6080;padding:18px 32px;">'
+    +'<div style="font-size:15px;font-weight:600;color:#2a3a50;margin-bottom:6px;">Refund processed</div>'
+    +'<div style="font-size:13px;color:#3a4a60;line-height:1.6;">A refund has been marked as paid in the dashboard.</div>'
+    +'</td></tr>'
+
+    // Body
+    +'<tr><td style="padding:24px 32px;">'
+
+    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Refund details</div>'
+    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Client</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.firstName+' '+opts.lastName+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Email</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:12px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.email+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.className+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.venue+', '+opts.loc+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.day+', '+opts.time+' &ndash; '+opts.endTime+'</td></tr>'
+    +(blockRange?'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Block dates</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+blockRange+'</td></tr>':'')
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Sessions attended</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.sessionsAttended+' of '+opts.totalSessions+'</td></tr>'
+    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Price per session</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;'+parseFloat(opts.pricePerSession).toFixed(2)+'</td></tr>'
+    +'<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Refund amount</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#b35c2a;text-align:right;">&pound;'+parseFloat(opts.refundAmount).toFixed(2)+'</td></tr>'
+    +'</table>'
+
+    +'<p style="font-size:13px;color:#4a6060;margin:0 0 8px;"><a href="'+opts.dashboardUrl+'" style="color:#3a8a8a;font-weight:600;text-decoration:none;">View cancellations in the dashboard &rarr;</a></p>'
+
+    +'</td></tr>'
+
+    // Footer
+    +'<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">'
+    +'<div style="font-size:11px;color:#8aabab;line-height:1.6;">LG Pilates &middot; Baildon &amp; Guiseley</div>'
+    +'</td></tr>'
+
+    +'</table>'
+    +'</td></tr></table>'
+    +'</body></html>';
+}
+
 async function sendBookingEmail(to, subject, html){
   if(IS_NO_EMAIL) return;
   try{
@@ -2982,10 +3095,52 @@ function markCancellationRefunded(id){
   showToast("Updating...");
   (async function(){
     try{
-      var {error}=await sb.from("cancellations").update({refunded:true,refunded_at:new Date().toISOString()}).eq("id",id).select();
+      var {data:rows,error:fetchErr}=await sb.from("cancellations").select("*").eq("id",id).single();
+      if(fetchErr) throw fetchErr;
+      var {error}=await sb.from("cancellations").update({refunded:true,refunded_at:new Date().toISOString()}).eq("id",id);
       if(error) throw error;
       showToast("Marked as refunded.");
       renderCancellationsTab();
+      // Build shared opts from denormalised cancellation row
+      var r=rows;
+      var blockDatesArr=[];
+      if(r.block_start_date&&r.block_end_date){
+        blockDatesArr=[
+          new Date(r.block_start_date).toLocaleDateString("en-GB",{day:"numeric",month:"short"}),
+          new Date(r.block_end_date).toLocaleDateString("en-GB",{day:"numeric",month:"short"})
+        ];
+      }
+      var totalSessions=(r.sessions_attended||0)+(r.sessions_remaining||0);
+      var cls=classes.find(function(c){ return c.id===r.class_id; })||{};
+      var refundOpts={
+        firstName:  r.first_name,
+        lastName:   r.last_name,
+        email:      r.email,
+        className:  r.class_name||"",
+        venue:      r.venue||cls.venue||"",
+        loc:        cls.loc||"",
+        day:        cls.day||"",
+        time:       cls.time||"",
+        endTime:    cls.end_time||"",
+        blockDates: blockDatesArr,
+        sessionsAttended: r.sessions_attended||0,
+        totalSessions:    totalSessions,
+        pricePerSession:  r.price_per_session||0,
+        refundAmount:     r.refund_amount||0,
+        dashboardUrl:     window.location.origin+window.location.pathname+"#dashboard"
+      };
+      // Send client refund confirmation
+      if(r.email){
+        var clientSubject="Your refund has been processed \u2014 "+refundOpts.className+(refundOpts.venue?", "+refundOpts.venue:"");
+        var clientHtml=buildRefundClientEmailHtml(refundOpts);
+        sendBookingEmail(r.email, clientSubject, clientHtml);
+      }
+      // Send admin alert
+      if(appSettings.adminEmail){
+        var adminSubject="Refund processed \u2014 "+r.first_name+" "+r.last_name+(refundOpts.className?", "+refundOpts.className:"");
+        var adminHtml=buildRefundAdminEmailHtml(refundOpts);
+        sendBookingEmail(appSettings.adminEmail, adminSubject, adminHtml);
+      }
     }catch(err){ console.error(err); showToast("Error updating. See console."); }
   })();
 }
