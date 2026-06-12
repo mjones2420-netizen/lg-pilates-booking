@@ -24,9 +24,9 @@ test.describe('AB-10 — By Class tab', () => {
     await expect(page.locator('#test-mode-banner.on')).toBeVisible({ timeout: 5000 });
     await loginAsAdmin(page);
 
-    // Switch to By Class tab
-    await page.locator('#tab-classes').click();
-    await expect(page.locator('#tab-classes.on')).toBeVisible();
+    // Switch to By Class page via sidebar
+    await page.locator('#dbnav-byclass').click();
+    await expect(page.locator('#dbnav-byclass.on')).toBeVisible();
 
     const accordion = page.locator('#classes-accordion');
     await expect(accordion).toBeVisible();

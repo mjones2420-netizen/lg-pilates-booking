@@ -93,8 +93,8 @@ test.describe('AC-18 — Edit block overlap validation also applies', () => {
     await loginAsAdmin(page);
 
     // Switch to By Class tab and expand the AC18 class group
-    await page.locator('#tab-classes').click();
-    await expect(page.locator('#tab-classes.on')).toBeVisible();
+    await page.locator('#dbnav-byclass').click();
+    await expect(page.locator('#dbnav-byclass.on')).toBeVisible();
 
     const groupHeader = page.locator(`[onclick="toggleClassGroup('cg-${createdClassId}')"]`);
     await expect(groupHeader).toBeVisible();

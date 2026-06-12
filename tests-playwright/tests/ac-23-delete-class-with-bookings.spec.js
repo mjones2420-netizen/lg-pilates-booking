@@ -90,6 +90,10 @@ test.describe('AC-23 — Delete class with bookings + PAR-Qs completes cleanly',
 
     await loginAsAdmin(page);
 
+    // Navigate to Classes page
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+
     // Find the class row in #ctbody and click Delete
     const ctbody = page.locator('#ctbody');
     await expect(ctbody).toBeVisible();

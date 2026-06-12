@@ -81,14 +81,14 @@ test.describe('AB-16 — Cancellations CSV export', () => {
     await expect(page.locator('#rfb-overlay')).not.toBeVisible({ timeout: 3000 });
 
     // Switch to Cancellations tab
-    await page.locator('#tab-cancellations').click();
-    await expect(page.locator('#tab-cancellations.on')).toBeVisible();
+    await page.locator('#dbnav-cancellations').click();
+    await expect(page.locator('#dbnav-cancellations.on')).toBeVisible();
     await expect(page.locator('#cancellations-tbody tr', { hasText: 'Ab16 Csvexport' }).first()).toBeVisible({ timeout: 8000 });
 
     // Trigger download and capture
     const [download] = await Promise.all([
       page.waitForEvent('download'),
-      page.locator('button', { hasText: /Export CSV/i }).click()
+      page.locator('button[onclick="exportCancellations()"]').click()
     ]);
 
     // Filename: lgpilates-cancellations-YYYY-MM-DD.csv

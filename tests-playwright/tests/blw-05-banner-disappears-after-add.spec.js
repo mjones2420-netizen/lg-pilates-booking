@@ -100,7 +100,7 @@ test.describe('BLW-05 — Banner disappears after block is added', () => {
     await loginAsAdmin(page);
 
     // Wait for dashboard and banner.
-    await expect(page.locator('#ctbody tr').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#block-warnings')).toBeVisible();
     await expect(page.locator('#block-warnings')).toContainText(/active block but no next block/i);
 
@@ -128,7 +128,7 @@ test.describe('BLW-05 — Banner disappears after block is added', () => {
     await expect(page.locator('#toastEl')).toContainText(/Block added/i);
 
     // Wait for the dashboard to re-render.
-    await expect(page.locator('#ctbody tr').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
 
     // The Thursday warning row should no longer be present.
     // Either the entire banner is hidden or the Thursday row is gone.

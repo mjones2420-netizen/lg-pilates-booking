@@ -70,7 +70,7 @@ test.describe('BLW-02 — Yellow advisory: active block but no next block', () =
     await loginAsAdmin(page);
 
     // Wait for renderDashboard to complete.
-    await expect(page.locator('#ctbody tr').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
 
     // The #block-warnings container should be visible.
     await expect(page.locator('#block-warnings')).toBeVisible();

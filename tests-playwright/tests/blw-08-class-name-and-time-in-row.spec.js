@@ -57,7 +57,7 @@ test.describe('BLW-08 — Class name and time both shown in warning banner row',
     await loginAsAdmin(page);
 
     // Wait for dashboard and banner.
-    await expect(page.locator('#ctbody tr').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#block-warnings')).toBeVisible();
 
     // The Wednesday row should be present.

@@ -102,8 +102,8 @@ test.describe('SE-16 — Refund confirmation emails', () => {
     });
 
     // ── Go to Cancellations tab and click Mark Refunded ────────────────────
-    await page.locator('#tab-cancellations').click();
-    await expect(page.locator('#tab-cancellations')).toHaveClass(/on/);
+    await page.locator('#dbnav-cancellations').click();
+    await expect(page.locator('#dbnav-cancellations')).toHaveClass(/on/);
 
     const cancTbody = page.locator('#cancellations-tbody');
     const cancRow = cancTbody.locator('tr', { hasText: TEST_EMAIL })

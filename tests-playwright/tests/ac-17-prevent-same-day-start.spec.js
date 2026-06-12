@@ -32,6 +32,10 @@ test.describe('AC-17 — Prevent new block starting on same day existing block e
 
     await loginAsAdmin(page);
 
+    // Navigate to Classes page
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+
     // Open Add Block for the Monday class via ctbody
     const ctbody = page.locator('#ctbody');
     await expect(ctbody).toBeVisible();

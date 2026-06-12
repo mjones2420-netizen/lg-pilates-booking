@@ -42,6 +42,8 @@ test('SE-10 — notification email field is populated on dashboard load', async 
 
   await loginAsAdmin(page);
 
-  await page.locator('#setting-admin-email').scrollIntoViewIfNeeded();
+  // Navigate to Settings page
+  await page.locator('#dbnav-settings').click();
+  await expect(page.locator('#dbnav-settings.on')).toBeVisible();
   await expect(page.locator('#setting-admin-email')).toHaveValue(ORIG_EMAIL);
 });

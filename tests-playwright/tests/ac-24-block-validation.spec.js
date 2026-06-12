@@ -40,6 +40,10 @@ test.describe('AC-24 — Block validation rejects negative/zero price, cap, week
     expect(await page.locator('#test-mode-banner.on').isVisible()).toBe(true);
     await loginAsAdmin(page);
 
+    // Navigate to Classes page
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+
     // Open Add Block for Monday class via ctbody
     const ctbody = page.locator('#ctbody');
     await expect(ctbody).toBeVisible();

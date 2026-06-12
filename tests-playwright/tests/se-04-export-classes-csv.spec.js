@@ -15,8 +15,9 @@ test('SE-04 — Export Classes button downloads a classes CSV', async ({ page })
 
   await loginAsAdmin(page);
 
-  // Scroll export buttons into view
-  await page.locator('button[onclick="exportTable(\'classes\')"]').scrollIntoViewIfNeeded();
+  // Navigate to Backup & Export page
+  await page.locator('#dbnav-backup').click();
+  await expect(page.locator('#dbnav-backup.on')).toBeVisible();
 
   // Intercept download
   const [download] = await Promise.all([

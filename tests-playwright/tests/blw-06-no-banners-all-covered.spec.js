@@ -131,7 +131,7 @@ test.describe('BLW-06 — No banners when all classes are covered', () => {
     await loginAsAdmin(page);
 
     // Wait for the dashboard to finish rendering.
-    await expect(page.locator('#ctbody tr').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
 
     // #block-warnings must be hidden — display:none means no warnings exist.
     await expect(page.locator('#block-warnings')).not.toBeVisible();

@@ -83,7 +83,7 @@ test.describe('BLW-07 — Yellow advisory: Add Block prefills suggested start da
     await loginAsAdmin(page);
 
     // Wait for banner.
-    await expect(page.locator('#ctbody tr').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#block-warnings')).toBeVisible();
     await expect(page.locator('#block-warnings')).toContainText(/active block but no next block/i);
 

@@ -20,6 +20,10 @@ test.describe('AC-19 to AC-22 — Auto am/pm time formatting', () => {
     expect(await page.locator('#test-mode-banner.on').isVisible()).toBe(true);
     await loginAsAdmin(page);
 
+    // Navigate to Classes page
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+
     // Open the Add New Class modal
     await page.locator('button', { hasText: '+ Add New Class' }).click();
     await expect(page.locator('#add-class-overlay')).toBeVisible();

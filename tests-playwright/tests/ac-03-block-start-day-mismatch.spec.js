@@ -42,6 +42,10 @@ test.describe('AC-03 — Block start date must match class day', () => {
   test('wrong-day start date shows red error and block is not saved', async ({ page }) => {
     const wrongDate = futureWednesday();
 
+    // Navigate to Classes page
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+
     const ctRow = page.locator('#ctbody tr').filter({ hasText: 'Mixed Ability' }).filter({ hasText: 'Monday' }).first();
     await expect(ctRow).toBeVisible({ timeout: 5000 });
     await ctRow.getByRole('button', { name: '+ Block' }).click();

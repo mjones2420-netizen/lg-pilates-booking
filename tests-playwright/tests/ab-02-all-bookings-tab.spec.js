@@ -27,7 +27,7 @@ test.describe('AB-02 — All Bookings tab loads correctly', () => {
     await loginAsAdmin(page);
 
     // All Bookings tab is active by default after login
-    await expect(page.locator('#tab-bookings.on')).toBeVisible();
+    await expect(page.locator('#dbnav-bookings.on')).toBeVisible();
 
     // Verify 7 column headers in the correct order.
     // Scope via #btbody's parent table — the dashboard has multiple tables,

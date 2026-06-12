@@ -78,8 +78,8 @@ test.describe('ACL-02 — Priority badges display correctly', () => {
 
     // --- Log in and open the Clients tab ---
     await loginAsAdmin(page);
-    await page.locator('#tab-customers').click();
-    await expect(page.locator('#tab-customers')).toHaveClass(/on/);
+    await page.locator('#dbnav-clients').click();
+    await expect(page.locator('#dbnav-clients')).toHaveClass(/on/);
 
     const tbody = page.locator('#customers-tbody');
     // Wait for the per-run customer's row to appear — confirms render is done

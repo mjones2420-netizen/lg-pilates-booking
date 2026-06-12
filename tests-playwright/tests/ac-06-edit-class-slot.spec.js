@@ -64,6 +64,10 @@ test.describe('AC-06 — Edit a class slot', () => {
   });
 
   test('updated venue and time shown on public booking page after save', async ({ page }) => {
+    // Navigate to Classes page
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+
     // Find the class row in #ctbody and click Edit
     const ctRow = page.locator('#ctbody tr').filter({ hasText: className });
     await expect(ctRow).toBeVisible({ timeout: 5000 });

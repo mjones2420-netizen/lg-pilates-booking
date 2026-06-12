@@ -39,6 +39,10 @@ test.describe('AC-16 — Prevent overlapping block dates', () => {
 
     await loginAsAdmin(page);
 
+    // Navigate to Classes page
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+
     // Find the Monday class row in #ctbody and click "+ Block"
     // Monday class is class_id=1; the row contains "Mixed Ability" and "Monday"
     const ctbody = page.locator('#ctbody');

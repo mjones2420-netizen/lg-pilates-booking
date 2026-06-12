@@ -205,31 +205,109 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .srow:last-child { border-bottom:none; }
 .srow span:first-child { color:var(--mid); }
 .srow span:last-child { font-weight:500; }
-.db-tabs { display:flex; gap:0; margin-bottom:24px; border-bottom:2px solid var(--border); }
-.db-tab { background:none; border:none; padding:12px 24px; font-family:'Open Sans',sans-serif; font-size:14px; color:var(--mid); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.2s; letter-spacing:0.04em; }
-.db-tab:hover { color:var(--charcoal); }
-.db-tab.on { color:var(--sage-dk); border-bottom-color:var(--sage-dk); font-weight:600; }
-.class-group { margin-bottom:24px; border:1px solid var(--border); border-radius:4px; overflow:hidden; }
-.class-group-header { background:var(--sage-dk); color:white; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
-.class-group-title { font-family:'Raleway',sans-serif; font-size:18px; font-weight:400; }
-.class-group-meta { font-size:12px; opacity:0.85; }
-.class-group-badge { background:rgba(255,255,255,0.2); padding:3px 10px; border-radius:100px; font-size:12px; }
-.class-group-body { display:none; }
-.class-group-body.on { display:block; }
-.class-group-empty { padding:20px; text-align:center; color:var(--light); font-size:13px; }
-.ph { margin-bottom:40px; }
-.ph h2 { font-family:'Raleway',sans-serif; font-size:44px; font-weight:300; }
-.ph p { font-size:13px; color:var(--mid); margin-top:6px; }
-.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:40px; }
-.stat { background:var(--cream); border:1px solid var(--border); border-radius:4px; padding:22px; }
-.slbl { font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); margin-bottom:6px; }
-.sval { font-family:'Raleway',sans-serif; font-size:38px; font-weight:400; line-height:1; }
-.ssub2 { font-size:12px; color:var(--sage-dk); margin-top:5px; }
-.sec-title { font-family:'Raleway',sans-serif; font-size:26px; font-weight:400; margin-bottom:16px; }
+/* ── Sidebar dashboard layout ───────────────────────────────────────────── */
+.db-layout { display:flex; height:calc(100vh - 61px); overflow:hidden; }
+.db-sidebar { width:210px; min-width:210px; background:var(--charcoal); display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; min-height:0; }
+.db-sidebar-brand { padding:20px 18px 16px; border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0; }
+.db-sidebar-brand-title { font-family:'Raleway',sans-serif; color:#eef5f5; font-size:15px; font-weight:500; margin:0; }
+.db-sidebar-brand-sub { color:var(--light); font-size:11px; margin:3px 0 0; }
+.db-sidebar-nav { flex:1; padding:10px 0; overflow-y:auto; min-height:0; display:block; }
+.db-nav-section { font-size:10px; color:var(--mid); text-transform:uppercase; letter-spacing:0.08em; padding:10px 18px 4px; display:block; }
+.db-nav-item { display:flex; align-items:center; gap:10px; padding:9px 18px; font-size:13px; color:var(--light); cursor:pointer; border-left:3px solid transparent; transition:background 0.15s; }
+.db-nav-item:hover { background:rgba(255,255,255,0.05); color:#eef5f5; }
+.db-nav-item.on { background:rgba(58,138,138,0.2); color:#eef5f5; border-left-color:var(--sage); }
+.db-nav-item i { font-size:16px; flex-shrink:0; }
+.db-sidebar-signout { padding:14px 18px; border-top:1px solid rgba(255,255,255,0.08); flex-shrink:0; }
+.db-signout-btn { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--mid); cursor:pointer; background:none; border:none; font-family:'Open Sans',sans-serif; padding:0; }
+.db-signout-btn:hover { color:var(--light); }
+.db-main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+.db-topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; border-bottom:1px solid var(--border); background:#e8f0f0; flex-shrink:0; }
+.db-topbar-title { font-family:'Raleway',sans-serif; font-size:22px; font-weight:400; color:var(--charcoal); margin:0; }
+.db-topbar-action { padding:7px 16px; background:none; border:1px solid var(--border); border-radius:3px; font-family:'Open Sans',sans-serif; font-size:12px; color:var(--mid); cursor:pointer; transition:all 0.2s; }
+.db-topbar-action:hover { border-color:var(--sage-dk); color:var(--sage-dk); }
+.db-topbar-action.green { border-color:var(--green); color:var(--green); }
+.db-topbar-action.green:hover { background:var(--green); color:white; }
+.db-warnings { flex-shrink:0; }
+.db-content { flex:1; overflow-y:auto; padding:24px; background:#d4dede; }
+.db-page { display:none; }
+.db-page.on { display:block; }
+/* search bar */
+.db-search-wrap { position:relative; margin-bottom:16px; }
+.db-search-wrap i { position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--light); pointer-events:none; }
+.db-search-input { width:100%; padding:9px 12px 9px 36px; font-size:13px; border:1px solid var(--border); border-radius:3px; font-family:'Open Sans',sans-serif; background:white; color:var(--charcoal); outline:none; }
+.db-search-input:focus { border-color:var(--sage); }
+.db-result-count { font-size:12px; color:var(--mid); margin-bottom:10px; }
+/* reports stats */
+.db-stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.db-stat-card { background:white; border:1px solid var(--border); border-radius:4px; padding:16px 18px; }
+.db-stat-lbl { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--light); margin:0 0 6px; }
+.db-stat-val { font-family:'Raleway',sans-serif; font-size:32px; font-weight:400; color:var(--charcoal); margin:0 0 3px; line-height:1; }
+.db-stat-sub { font-size:12px; color:var(--mid); margin:0; }
+.db-stat-sub-warn { font-size:12px; color:var(--clay); margin:0; }
+/* reports section cards */
+.db-section-card { background:white; border:1px solid var(--border); border-radius:4px; padding:18px 20px; margin-bottom:16px; }
+.db-section-card-title { font-family:'Raleway',sans-serif; font-size:16px; font-weight:400; color:var(--charcoal); margin:0 0 14px; }
+.db-cap-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.db-cap-row:last-child { margin-bottom:0; }
+.db-cap-name { width:150px; min-width:150px; }
+.db-cap-lbl { font-size:13px; color:var(--charcoal); }
+.db-cap-day { font-size:11px; color:var(--mid); }
+.db-cap-bar-wrap { flex:1; background:var(--cream); border-radius:100px; height:8px; overflow:hidden; }
+.db-cap-bar { height:100%; border-radius:100px; background:var(--sage); }
+.db-cap-bar.warn { background:var(--clay); }
+.db-cap-bar.full { background:var(--green); }
+.db-cap-count { font-size:12px; color:var(--mid); min-width:44px; text-align:right; }
+.db-client-split { display:flex; align-items:center; gap:16px; margin-bottom:14px; }
+.db-split-legend { display:flex; flex-direction:column; gap:7px; }
+.db-split-item { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--charcoal); }
+.db-split-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.db-client-stats { border-top:1px solid var(--border); padding-top:12px; display:flex; flex-direction:column; gap:6px; }
+.db-client-stat-row { display:flex; justify-content:space-between; font-size:13px; }
+.db-client-stat-row span:first-child { color:var(--mid); }
+.db-client-stat-row span:last-child { font-weight:500; }
+/* settings cards */
+.db-settings-card { background:white; border:1px solid var(--border); border-radius:4px; padding:20px 24px; max-width:500px; margin-bottom:16px; }
+.db-settings-card-title { font-family:'Raleway',sans-serif; font-size:18px; font-weight:400; color:var(--charcoal); margin:0 0 4px; }
+.db-settings-card-desc { font-size:13px; color:var(--mid); margin:0 0 18px; line-height:1.6; }
+/* export rows */
+.db-export-row { display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border); }
+.db-export-row:last-of-type { border-bottom:none; }
+.db-export-lbl { font-size:13px; color:var(--charcoal); font-weight:500; }
+.db-export-sub { font-size:12px; color:var(--mid); margin-top:2px; }
+.db-export-btn { display:flex; align-items:center; gap:6px; padding:7px 14px; background:none; border:1px solid var(--border); border-radius:3px; font-family:'Open Sans',sans-serif; font-size:12px; color:var(--mid); cursor:pointer; white-space:nowrap; transition:all 0.2s; }
+.db-export-btn:hover { border-color:var(--sage-dk); color:var(--sage-dk); }
+.db-export-btn.primary { border-color:var(--sage-dk); color:var(--sage-dk); background:var(--cream); }
+/* class-group accordion (by class page) */
+.class-group { margin-bottom:12px; border:1px solid var(--border); border-radius:4px; overflow:hidden; }
+.class-group-header { background:white; color:var(--charcoal); padding:14px 18px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; border-bottom:1px solid var(--border); }
+.class-group-header:hover { background:var(--cream); }
+.class-group-title { font-size:14px; font-weight:600; color:var(--charcoal); }
+.class-group-meta { font-size:12px; color:var(--mid); margin-top:2px; }
+.class-group-badge { background:var(--cream); border:1px solid var(--border); padding:3px 10px; border-radius:100px; font-size:12px; color:var(--mid); }
+.class-group-body { display:none; background:var(--warm); }
+.class-group-body.on { display:block; padding:12px 16px 16px; }
+.class-group-loc-header { background:var(--charcoal); color:#eef5f5; padding:10px 18px; display:flex; justify-content:space-between; align-items:center; margin-bottom:0; }
+.class-group-loc-title { font-size:13px; font-weight:500; display:flex; align-items:center; gap:7px; }
+.class-group-loc-count { font-size:11px; color:var(--light); }
+/* block status badges */
+.blk-badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:100px; }
+.blk-badge-active { background:#e8f0e7; color:var(--green); }
+.blk-badge-upcoming { background:#fef3e8; color:var(--clay); }
+/* mobile bottom nav */
+.db-bottom-nav { display:none !important; background:var(--charcoal); padding:6px 0 2px; flex-shrink:0; }
+@media(max-width:700px){ .db-bottom-nav { display:flex !important; } }
+.db-bn-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 0; }
+.db-bn-item i { font-size:20px; color:var(--mid); }
+.db-bn-item span { font-size:10px; color:var(--mid); }
+.db-bn-item.on i, .db-bn-item.on span { color:var(--sage); }
+.db-bn-more i, .db-bn-more span { color:var(--light); }
 table { width:100%; border-collapse:collapse; margin-bottom:40px; }
 th { text-align:left; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); padding:0 14px 10px; border-bottom:1px solid var(--border); font-weight:500; }
 td { padding:14px; font-size:13px; border-bottom:1px solid var(--border); vertical-align:middle; }
 tr:hover td { background:var(--cream); }
+.db-content table { background:white; border:1px solid var(--border); border-radius:4px; margin-bottom:0; }
+.db-content thead th { padding:10px 14px; background:#f7fafa; }
+.db-content tr:last-child td { border-bottom:none; }
 .pill { display:inline-block; padding:3px 9px; border-radius:100px; font-size:11px; }
 .p-confirmed { background:#e8f0e7; color:var(--green); }
 .p-waitlist { background:#f5ede3; color:var(--clay); }
@@ -312,8 +390,13 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
   .hero { padding:40px 18px 28px; }
   .filters { padding:0 18px 28px; } .filter-prompt { padding:14px 18px; font-size:14px; } .filter-loc-row { gap:8px; } .fb-all, .loc-pill { padding:12px 20px; font-size:15px; } .fb { padding:10px 16px; font-size:14px; }
   .grid { padding:0 18px 40px; grid-template-columns:1fr; }
-  .db-wrap, .acc-wrap { padding:36px 18px; }
-  .stats { grid-template-columns:1fr 1fr; }
+  .acc-wrap { padding:36px 18px; }
+  .db-sidebar { display:none; }
+  .db-bottom-nav { display:flex; }
+  .db-layout { height:calc(100vh - 55px); }
+  .db-stat-grid { grid-template-columns:1fr 1fr; }
+  .db-topbar { padding:12px 16px; }
+  .db-content { padding:16px; }
   .hero h1 { font-size:38px; }
   .overlay { padding:10px; }
 }
@@ -353,102 +436,231 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 </div>
 
 <div class="page" id="pg-dashboard">
-  <div class="db-wrap">
-    <div class="ph">
-      <h2>Admin Dashboard</h2>
-      <p>Manage bookings and track studio performance.</p>
-    </div>
-    <div id="block-warnings" style="display:none"></div>
-    <div class="stats">
-      <div class="stat"><div class="slbl">This Week</div><div class="sval">0</div><div class="ssub2">&nbsp;</div></div>
-      <div class="stat"><div class="slbl">Revenue MTD</div><div class="sval">£0</div><div class="ssub2">&nbsp;</div></div>
-      <div class="stat"><div class="slbl">Waitlisted</div><div class="sval">0</div><div class="ssub2">&nbsp;</div></div>
-      <div class="stat"><div class="slbl">Fill Rate</div><div class="sval">0%</div><div class="ssub2">&nbsp;</div></div>
-    </div>
-    <div class="db-tabs">
-      <button class="db-tab on" id="tab-bookings" onclick="switchTab('bookings')">All Bookings</button>
-      <button class="db-tab" id="tab-classes" onclick="switchTab('classes')">By Class</button>
-      <button class="db-tab" id="tab-customers" onclick="switchTab('customers')">Clients</button>
-      <button class="db-tab" id="tab-cancellations" onclick="switchTab('cancellations')">Cancellations</button>
+  <div class="db-layout">
+
+    <!-- ── Sidebar ── -->
+    <div class="db-sidebar">
+      <div class="db-sidebar-brand">
+        <p class="db-sidebar-brand-title">LG Pilates</p>
+        <p class="db-sidebar-brand-sub">Admin dashboard</p>
+      </div>
+      <div class="db-sidebar-nav">
+        <div class="db-nav-section">Bookings</div>
+        <div class="db-nav-item on" id="dbnav-bookings" onclick="switchDashPage('bookings')"><i class="ti ti-list" aria-hidden="true"></i> All bookings</div>
+        <div class="db-nav-item" id="dbnav-byclass" onclick="switchDashPage('byclass')"><i class="ti ti-layout-list" aria-hidden="true"></i> By class</div>
+        <div class="db-nav-item" id="dbnav-clients" onclick="switchDashPage('clients')"><i class="ti ti-users" aria-hidden="true"></i> Clients</div>
+        <div class="db-nav-item" id="dbnav-cancellations" onclick="switchDashPage('cancellations')"><i class="ti ti-circle-x" aria-hidden="true"></i> Cancellations</div>
+        <div class="db-nav-section" style="margin-top:6px">Studio</div>
+        <div class="db-nav-item" id="dbnav-classes" onclick="switchDashPage('classes')"><i class="ti ti-calendar" aria-hidden="true"></i> Classes</div>
+        <div class="db-nav-item" id="dbnav-reports" onclick="switchDashPage('reports')"><i class="ti ti-chart-bar" aria-hidden="true"></i> Reports</div>
+        <div class="db-nav-section" style="margin-top:6px">Account</div>
+        <div class="db-nav-item" id="dbnav-settings" onclick="switchDashPage('settings')"><i class="ti ti-settings" aria-hidden="true"></i> Settings</div>
+        <div class="db-nav-item" id="dbnav-backup" onclick="switchDashPage('backup')"><i class="ti ti-download" aria-hidden="true"></i> Backup &amp; export</div>
+      </div>
+      <div class="db-sidebar-signout">
+        <button class="db-signout-btn" onclick="signOut()"><i class="ti ti-logout" style="font-size:14px" aria-hidden="true"></i> Sign out</button>
+      </div>
     </div>
 
-    <!-- All Bookings Tab -->
-    <div id="tab-panel-bookings">
-      <div id="parq-warn" class="parq-warn" onclick="scrollToFirstMissingParq()" style="display:none">
-        <div class="parq-warn-icon">!</div>
-        <div class="parq-warn-text">
-          <strong id="parq-warn-count">1 booking is missing a health form</strong>
-          <small>New clients must complete a PAR-Q. Click to view affected bookings.</small>
+    <!-- ── Main area ── -->
+    <div class="db-main">
+
+      <!-- Warnings area — shared across all pages -->
+      <div class="db-warnings">
+        <div id="block-warnings" style="display:none;padding:16px 24px 0;background:white;border-bottom:1px solid var(--border);"></div>
+      </div>
+
+      <!-- ── All Bookings ── -->
+      <div id="dbpage-bookings" class="db-page on">
+        <div class="db-topbar">
+          <p class="db-topbar-title">All bookings</p>
         </div>
-        <div class="parq-warn-chev">&rsaquo;</div>
+        <div class="db-content">
+          <div id="parq-warn" class="parq-warn" onclick="scrollToFirstMissingParq()" style="display:none">
+            <div class="parq-warn-icon">!</div>
+            <div class="parq-warn-text">
+              <strong id="parq-warn-count">1 booking is missing a health form</strong>
+              <small>New clients must complete a PAR-Q. Click to view affected bookings.</small>
+            </div>
+            <div class="parq-warn-chev">&rsaquo;</div>
+          </div>
+          <div class="db-search-wrap">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input class="db-search-input" id="bookings-search" type="text" placeholder="Search by client name or class…" autocomplete="off" oninput="filterBookingsTable()">
+          </div>
+          <div class="db-result-count" id="bookings-result-count"></div>
+          <table><thead><tr><th>Client</th><th>Class</th><th>When</th><th>Block</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead><tbody id="btbody"></tbody></table>
+        </div>
       </div>
-      <table><thead><tr><th>Client</th><th>Class</th><th>When</th><th>Block</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead><tbody id="btbody"></tbody></table>
-    </div>
 
-    <!-- By Class Tab -->
-    <div id="tab-panel-classes" style="display:none">
-      <div id="classes-accordion"></div>
-    </div>
+      <!-- ── By Class ── -->
+      <div id="dbpage-byclass" class="db-page">
+        <div class="db-topbar">
+          <p class="db-topbar-title">By class</p>
+        </div>
+        <div class="db-content">
+          <div id="classes-accordion"></div>
+        </div>
+      </div>
 
-    <!-- Clients Tab -->
-    <div id="tab-panel-customers" style="display:none">
-      <div style="margin-bottom:16px;font-size:13px;color:var(--mid);line-height:1.7;background:var(--cream);padding:14px 18px;border-radius:4px;border-left:3px solid var(--sage-dk)">
-        Priority clients can book the next block 2 weeks early. <strong>Auto priority</strong> is earned per class by having a confirmed booking on the current block. <strong>Manual priority</strong> is granted by you per class using the Per-class detail button below.
+      <!-- ── Clients ── -->
+      <div id="dbpage-clients" class="db-page">
+        <div class="db-topbar">
+          <p class="db-topbar-title">Clients</p>
+        </div>
+        <div class="db-content">
+          <div style="margin-bottom:14px;font-size:13px;color:var(--mid);line-height:1.7;background:var(--cream);padding:14px 18px;border-radius:4px;border-left:3px solid var(--sage-dk)">
+            Priority clients can book the next block 2 weeks early. <strong>Auto priority</strong> is earned per class by having a confirmed booking on the current block. <strong>Manual priority</strong> is granted by you per class using the Per-class detail button below.
+          </div>
+          <div class="db-search-wrap">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input class="db-search-input" id="clients-search" type="text" placeholder="Search by name, email or phone…" autocomplete="off" oninput="filterClientsTable()">
+          </div>
+          <div class="db-result-count" id="clients-result-count"></div>
+          <table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Type</th><th>Priority</th><th>Actions</th></tr></thead><tbody id="customers-tbody"></tbody></table>
+        </div>
       </div>
-      <table><thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Type</th><th>Priority</th><th>Actions</th></tr></thead><tbody id="customers-tbody"></tbody></table>
-    </div>
 
-    <!-- Cancellations Tab -->
-    <div id="tab-panel-cancellations" style="display:none">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
-        <button class="step-btn" onclick="exportCancellations()" style="padding:9px 20px;font-size:12px;background:var(--sage-dk)">&#8659; Export CSV</button>
+      <!-- ── Cancellations ── -->
+      <div id="dbpage-cancellations" class="db-page">
+        <div class="db-topbar">
+          <p class="db-topbar-title" id="cancellations-topbar-title">Cancellations</p>
+          <button class="db-topbar-action" onclick="exportCancellations()">&#8659; Export CSV</button>
+        </div>
+        <div class="db-content">
+          <div class="db-search-wrap">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input class="db-search-input" id="cancellations-search" type="text" placeholder="Search by name or class…" autocomplete="off" oninput="filterCancellationsTable()">
+          </div>
+          <div class="db-result-count" id="cancellations-result-count"></div>
+          <table><thead><tr><th>Client</th><th>Class &amp; Venue</th><th>Block Dates</th><th>Sessions Attended</th><th>Refund</th><th>Removed On</th><th>Actions</th></tr></thead><tbody id="cancellations-tbody"><tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr></tbody></table>
+        </div>
       </div>
-      <table><thead><tr><th>Client</th><th>Class &amp; Venue</th><th>Block Dates</th><th>Sessions Attended</th><th>Refund</th><th>Removed On</th><th>Actions</th></tr></thead><tbody id="cancellations-tbody"><tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr></tbody></table>
-    </div>
 
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:40px; margin-bottom:12px;">
-      <div class="sec-title" style="margin-top:0">Upcoming Classes</div>
-      <button class="step-btn" onclick="openAddClassModal()" style="padding:8px 18px; font-size:12px;">+ Add New Class</button>
-    </div>
-    <table><thead><tr><th>Class</th><th>Location</th><th>Day and Time</th><th>Active Block</th><th>Upcoming Block</th><th>Actions</th></tr></thead><tbody id="ctbody"></tbody></table>
+      <!-- ── Classes ── -->
+      <div id="dbpage-classes" class="db-page">
+        <div class="db-topbar">
+          <p class="db-topbar-title">Classes</p>
+          <button class="db-topbar-action green" onclick="openAddClassModal()">+ Add new class</button>
+        </div>
+        <div class="db-content">
+          <table><thead><tr><th>Class</th><th>Location</th><th>Day and Time</th><th>Active Block</th><th>Upcoming Block</th><th>Actions</th></tr></thead><tbody id="ctbody"></tbody></table>
+        </div>
+      </div>
 
-    <div class="sec-title" style="margin-top:40px">Settings</div>
-    <div style="background:white; border:1px solid var(--border); border-radius:4px; padding:24px; max-width:480px;">
-      <div style="font-size:13px; color:var(--mid); margin-bottom:18px;">Bank details shown to customers on the payment and confirmation screens.</div>
-      <div style="margin-bottom:14px;">
-        <label class="flbl">Account Name</label>
-        <input type="text" class="finp" id="setting-bank-name" maxlength="100" style="margin-bottom:0">
+      <!-- ── Reports ── -->
+      <div id="dbpage-reports" class="db-page">
+        <div class="db-topbar">
+          <p class="db-topbar-title">Reports</p>
+        </div>
+        <div class="db-content">
+          <div class="db-stat-grid">
+            <div class="db-stat-card"><p class="db-stat-lbl">Active bookings</p><p class="db-stat-val" id="rpt-active-bookings">0</p><p class="db-stat-sub">across all classes</p></div>
+            <div class="db-stat-card"><p class="db-stat-lbl">Revenue MTD</p><p class="db-stat-val" id="rpt-revenue-mtd">£0</p><p class="db-stat-sub" id="rpt-revenue-month"></p></div>
+            <div class="db-stat-card"><p class="db-stat-lbl">Fill rate</p><p class="db-stat-val" id="rpt-fill-rate">0%</p><p class="db-stat-sub">confirmed bookings</p></div>
+            <div class="db-stat-card"><p class="db-stat-lbl">Pending refunds</p><p class="db-stat-val" id="rpt-pending-refunds">0</p><p class="db-stat-sub-warn" id="rpt-refund-sub">&nbsp;</p></div>
+          </div>
+          <div class="db-section-card">
+            <p class="db-section-card-title">Class capacity — current blocks</p>
+            <div id="rpt-capacity-rows"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="db-section-card" style="margin-bottom:0">
+              <p class="db-section-card-title">Client breakdown</p>
+              <div class="db-client-split" id="rpt-client-split">
+                <svg id="rpt-donut" viewBox="0 0 80 80" width="80" height="80">
+                  <circle cx="40" cy="40" r="28" fill="none" stroke="var(--cream)" stroke-width="12"/>
+                  <circle id="rpt-donut-returning" cx="40" cy="40" r="28" fill="none" stroke="var(--sage)" stroke-width="12" stroke-dasharray="0 176" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+                  <circle id="rpt-donut-new" cx="40" cy="40" r="28" fill="none" stroke="var(--sage-lt)" stroke-width="12" stroke-dasharray="0 176" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+                </svg>
+                <div class="db-split-legend">
+                  <div class="db-split-item"><div class="db-split-dot" style="background:var(--sage)"></div><span id="rpt-returning-lbl">Returning — 0</span></div>
+                  <div class="db-split-item"><div class="db-split-dot" style="background:var(--sage-lt)"></div><span id="rpt-new-lbl">New — 0</span></div>
+                </div>
+              </div>
+              <div class="db-client-stats">
+                <div class="db-client-stat-row"><span>Total clients</span><span id="rpt-total-clients">0</span></div>
+                <div class="db-client-stat-row"><span>Active last block</span><span id="rpt-active-last-block">0</span></div>
+                <div class="db-client-stat-row"><span>With PAR-Q on file</span><span id="rpt-parq-count">0</span></div>
+              </div>
+            </div>
+            <div class="db-section-card" style="margin-bottom:0">
+              <p class="db-section-card-title">Booking totals by class</p>
+              <div id="rpt-class-totals"></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div style="margin-bottom:14px;">
-        <label class="flbl">Sort Code</label>
-        <input type="text" class="finp" id="setting-bank-sort" placeholder="00-00-00" maxlength="10" style="margin-bottom:0">
-      </div>
-      <div style="margin-bottom:20px;">
-        <label class="flbl">Account Number</label>
-        <input type="text" class="finp" id="setting-bank-acc" placeholder="00000000" maxlength="15" style="margin-bottom:0">
-      </div>
-      <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
-      <div style="font-size:13px; color:var(--mid); margin-bottom:14px;">Notification emails (new bookings, cancellations, refunds) are sent to this address.</div>
-      <div style="margin-bottom:20px;">
-        <label class="flbl">Notification Email</label>
-        <input type="email" class="finp" id="setting-admin-email" maxlength="200" style="margin-bottom:0">
-      </div>
-      <button class="step-btn" onclick="saveSettings()" style="width:auto;padding:10px 24px;">Save Settings</button>
-    </div>
 
-    <div class="sec-title" style="margin-top:40px">Backup &amp; Export</div>
-    <div style="background:white; border:1px solid var(--border); border-radius:4px; padding:24px; max-width:480px;">
-      <div style="font-size:13px; color:var(--mid); margin-bottom:20px; line-height:1.7;">Download a snapshot of your entire database as a CSV file. Do this before making any significant changes so you can reconstruct your data if needed.</div>
-      <div style="display:flex; flex-direction:column; gap:10px;">
-        <button class="step-btn" onclick="exportTable('classes')" style="width:auto;padding:10px 24px;background:var(--sage-dk)">&#8659; Export Classes</button>
-        <button class="step-btn" onclick="exportTable('blocks')" style="width:auto;padding:10px 24px;background:var(--sage-dk)">&#8659; Export Blocks</button>
-        <button class="step-btn" onclick="exportTable('customers')" style="width:auto;padding:10px 24px;background:var(--sage-dk)">&#8659; Export Customers</button>
-        <button class="step-btn" onclick="exportTable('bookings')" style="width:auto;padding:10px 24px;background:var(--sage-dk)">&#8659; Export Bookings</button>
-        <button class="step-btn" onclick="exportAll()" style="width:auto;padding:10px 24px;">&#8659; Export Everything (single file)</button>
+      <!-- ── Settings ── -->
+      <div id="dbpage-settings" class="db-page">
+        <div class="db-topbar">
+          <p class="db-topbar-title">Settings</p>
+        </div>
+        <div class="db-content">
+          <div class="db-settings-card">
+            <p class="db-settings-card-title">Bank details</p>
+            <p class="db-settings-card-desc">Shown to clients on the payment and confirmation screens when they make a booking.</p>
+            <div style="margin-bottom:14px;">
+              <label class="flbl">Account Name</label>
+              <input type="text" class="finp" id="setting-bank-name" maxlength="100" style="margin-bottom:0">
+            </div>
+            <div style="margin-bottom:14px;">
+              <label class="flbl">Sort Code</label>
+              <input type="text" class="finp" id="setting-bank-sort" placeholder="00-00-00" maxlength="10" style="margin-bottom:0">
+            </div>
+            <div style="margin-bottom:20px;">
+              <label class="flbl">Account Number</label>
+              <input type="text" class="finp" id="setting-bank-acc" placeholder="00000000" maxlength="15" style="margin-bottom:0">
+            </div>
+            <button class="step-btn" onclick="saveSettings()" style="width:auto;padding:10px 24px;">Save Settings</button>
+          </div>
+          <div class="db-settings-card">
+            <p class="db-settings-card-title">Notification email</p>
+            <p class="db-settings-card-desc">New booking alerts, cancellation notices and refund confirmations are sent to this address.</p>
+            <div style="margin-bottom:20px;">
+              <label class="flbl">Email Address</label>
+              <input type="email" class="finp" id="setting-admin-email" maxlength="200" style="margin-bottom:0">
+            </div>
+            <button class="step-btn" onclick="saveSettings()" style="width:auto;padding:10px 24px;">Save Settings</button>
+          </div>
+        </div>
       </div>
-      <div id="export-status" style="font-size:13px;color:var(--sage-dk);margin-top:14px;display:none;"></div>
-    </div>
-  </div>
+
+      <!-- ── Backup & Export ── -->
+      <div id="dbpage-backup" class="db-page">
+        <div class="db-topbar">
+          <p class="db-topbar-title">Backup &amp; export</p>
+        </div>
+        <div class="db-content">
+          <div class="db-settings-card">
+            <p class="db-settings-card-title">Export individual tables</p>
+            <p class="db-settings-card-desc">Download any table as a CSV file. Do this before making significant changes so you can reconstruct your data if needed.</p>
+            <div class="db-export-row"><div><p class="db-export-lbl">Classes</p><p class="db-export-sub">All class definitions and venues</p></div><button class="db-export-btn" onclick="exportTable('classes')"><i class="ti ti-download" style="font-size:14px" aria-hidden="true"></i> Export CSV</button></div>
+            <div class="db-export-row"><div><p class="db-export-lbl">Blocks</p><p class="db-export-sub">All blocks, dates, capacity and pricing</p></div><button class="db-export-btn" onclick="exportTable('blocks')"><i class="ti ti-download" style="font-size:14px" aria-hidden="true"></i> Export CSV</button></div>
+            <div class="db-export-row"><div><p class="db-export-lbl">Clients</p><p class="db-export-sub">All client records and contact details</p></div><button class="db-export-btn" onclick="exportTable('customers')"><i class="ti ti-download" style="font-size:14px" aria-hidden="true"></i> Export CSV</button></div>
+            <div class="db-export-row"><div><p class="db-export-lbl">Bookings</p><p class="db-export-sub">All bookings and payment statuses</p></div><button class="db-export-btn" onclick="exportTable('bookings')"><i class="ti ti-download" style="font-size:14px" aria-hidden="true"></i> Export CSV</button></div>
+          </div>
+          <div class="db-settings-card">
+            <p class="db-settings-card-title">Full backup</p>
+            <p class="db-settings-card-desc">Downloads all tables in a single CSV file. Recommended before any major changes or at the end of each block cycle.</p>
+            <button class="db-export-btn primary" onclick="exportAll()" style="margin-top:4px"><i class="ti ti-download" style="font-size:14px" aria-hidden="true"></i> Export everything (single file)</button>
+            <div id="export-status" style="font-size:13px;color:var(--sage-dk);margin-top:14px;display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Mobile bottom nav ── -->
+      <div class="db-bottom-nav">
+        <div class="db-bn-item on" id="dbbn-bookings" onclick="switchDashPage('bookings')"><i class="ti ti-list"></i><span>Bookings</span></div>
+        <div class="db-bn-item" id="dbbn-clients" onclick="switchDashPage('clients')"><i class="ti ti-users"></i><span>Clients</span></div>
+        <div class="db-bn-item" id="dbbn-classes" onclick="switchDashPage('classes')"><i class="ti ti-calendar"></i><span>Classes</span></div>
+        <div class="db-bn-item" id="dbbn-reports" onclick="switchDashPage('reports')"><i class="ti ti-chart-bar"></i><span>Reports</span></div>
+        <div class="db-bn-item db-bn-more" onclick="switchDashPage('settings')"><i class="ti ti-dots"></i><span>More</span></div>
+      </div>
+
+    </div><!-- /db-main -->
+  </div><!-- /db-layout -->
 </div>
 
 <div class="overlay" id="overlay">
@@ -2099,7 +2311,7 @@ function renderBlockWarnings(){
       html+='<div class="block-warning-title" style="color:#8a5010">&#9888; '+pendingRefundCount+' cancellation'+(pendingRefundCount>1?"s are":" is")+' awaiting a refund decision</div>';
       html+='<div class="block-warning-row">';
       html+='<div class="block-warning-meta">Mark as refunded or no refund required in the Cancellations tab.</div>';
-      html+='<button class="act act-confirm" onclick="switchTab(\'cancellations\')" style="white-space:nowrap">View Cancellations</button>';
+      html+='<button class="act act-confirm" onclick="switchDashPage(\'cancellations\')" style="white-space:nowrap">View Cancellations</button>';
       html+='</div>';
       html+='</div>';
     }
@@ -2193,6 +2405,8 @@ function renderDashboard(){
           var b=bookings[i];
           var blockCell=b.blockDates?sanitise(b.blockDates):'<span style="color:var(--light)">—</span>';
           var rowAttrs=b.parqMissing?' data-parq-missing="true"':'';
+          var searchVal=(b.client+' '+b.cls+' '+(b.email||'')).toLowerCase();
+          rowAttrs+=' data-search="'+searchVal.replace(/"/g,'&quot;')+'"';
           bhtml+="<tr"+rowAttrs+"><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.cls)+"</td><td style=\"font-size:12px\">"+sanitise(b.when)+"</td><td style=\"font-size:12px\">"+blockCell+"</td><td>&pound;"+sanitise(String(b.paid))+"</td>";
           bhtml+="<td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
           var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+i+")\">Confirm</button>":"";
@@ -2200,17 +2414,6 @@ function renderDashboard(){
         }
       }
       document.getElementById("btbody").innerHTML=bhtml;
-
-      // Stats
-      var totalB=bookings.length;
-      var totalRev=bookings.reduce(function(s,b){ return s+(b.status!=="cancelled"?Number(b.paid):0); },0);
-      var confirmed=bookings.filter(function(b){ return b.status==="confirmed"; }).length;
-      var fillRate=totalB>0?Math.round(confirmed/totalB*100):0;
-      var statsEls=document.querySelectorAll(".stat .sval");
-      if(statsEls[0]) statsEls[0].textContent=totalB;
-      if(statsEls[1]) statsEls[1].textContent="\u00a3"+totalRev;
-      if(statsEls[2]) statsEls[2].textContent=bookings.filter(function(b){ return b.status==="waitlist"; }).length;
-      if(statsEls[3]) statsEls[3].textContent=fillRate+"%";
 
       // Reload blocks fully from DB — ensures deleted/added blocks are reflected
       var{data:freshBlocks}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
@@ -2222,12 +2425,12 @@ function renderDashboard(){
         var c=classes[i];
         var activeBlk=getActiveBlock(c.id);
         var nextBlk=activeBlk?getNextBlock(c.id,activeBlk.id):null;
-        var activeCell=activeBlk?(activeBlk.dates[0]+" &ndash; "+activeBlk.dates[activeBlk.dates.length-1]+" ("+activeBlk.booked+"/"+activeBlk.cap+")"):'<span style="color:var(--light)">None</span>';
-        var nextCell=nextBlk?(nextBlk.dates[0]+" &ndash; "+nextBlk.dates[nextBlk.dates.length-1]):'<span style="color:var(--light)">None</span>';
+        var activeCell=activeBlk?('<span class="blk-badge blk-badge-active">Active</span><br><span style="font-size:12px">'+sanitise(activeBlk.dates[0])+" &ndash; "+sanitise(activeBlk.dates[activeBlk.dates.length-1])+" ("+activeBlk.booked+"/"+activeBlk.cap+")</span>"):'<span style="color:var(--light)">None</span>';
+        var nextCell=nextBlk?('<span class="blk-badge blk-badge-upcoming">Upcoming</span><br><span style="font-size:12px">'+sanitise(nextBlk.dates[0])+" &ndash; "+sanitise(nextBlk.dates[nextBlk.dates.length-1])+"</span>"):'<span style="color:var(--light)">None</span>';
         chtml+="<tr>";
         chtml+="<td><strong>"+sanitise(c.name)+"</strong></td><td>"+sanitise(c.loc)+"</td><td>"+sanitise(c.day)+" "+sanitise(c.time)+"</td>";
-        chtml+="<td style=\"font-size:12px\">"+activeCell+"</td>";
-        chtml+="<td style=\"font-size:12px\">"+nextCell+"</td>";
+        chtml+="<td>"+activeCell+"</td>";
+        chtml+="<td>"+nextCell+"</td>";
         chtml+="<td><button class='act' onclick='openEditClassModal("+c.id+")'>Edit</button><button class='act act-confirm' onclick='openAddBlockModal("+c.id+")'>+ Block</button><button class='act act-delete' onclick='deleteClass("+c.id+")'>Delete</button></td></tr>";
       }
       document.getElementById("ctbody").innerHTML=chtml;
@@ -2246,8 +2449,8 @@ function renderDashboard(){
 }
 
 function scrollToFirstMissingParq(){
-  // Ensure the All Bookings tab is showing (in case Louise clicks while on a different tab)
-  switchTab("bookings");
+  // Ensure the All Bookings page is showing
+  switchDashPage("bookings");
   // Remove any previous highlight
   document.querySelectorAll(".parq-missing-highlight").forEach(function(r){ r.classList.remove("parq-missing-highlight"); });
   // Highlight all missing rows
@@ -2259,12 +2462,165 @@ function scrollToFirstMissingParq(){
 }
 
 function switchTab(tab){
-  ["bookings","classes","customers","cancellations"].forEach(function(t){
-    document.getElementById("tab-"+t).className="db-tab"+(t===tab?" on":"");
-    document.getElementById("tab-panel-"+t).style.display=t===tab?"block":"none";
+  // Legacy shim — maps old tab names to new page names
+  var map={bookings:"bookings",classes:"byclass",customers:"clients",cancellations:"cancellations"};
+  switchDashPage(map[tab]||tab);
+}
+
+function switchDashPage(page){
+  var pages=["bookings","byclass","clients","cancellations","classes","reports","settings","backup"];
+  pages.forEach(function(p){
+    var el=document.getElementById("dbpage-"+p);
+    if(el) el.classList.toggle("on",p===page);
+    var nav=document.getElementById("dbnav-"+p);
+    if(nav) nav.classList.toggle("on",p===page);
   });
-  if(tab==="customers") renderCustomersTab();
-  if(tab==="cancellations") renderCancellationsTab();
+  // Mobile bottom nav
+  var mobileMap={bookings:"bookings",byclass:"bookings",cancellations:"bookings",clients:"clients",classes:"classes",reports:"reports"};
+  var mobileActive=mobileMap[page]||null;
+  ["bookings","clients","classes","reports"].forEach(function(k){
+    var bn=document.getElementById("dbbn-"+k);
+    if(bn) bn.classList.toggle("on",k===mobileActive);
+  });
+  if(page==="clients") renderCustomersTab();
+  if(page==="cancellations") renderCancellationsTab();
+  if(page==="reports") renderReportsPage();
+}
+
+// ─── Search / filter helpers ──────────────────────────────────────────────────
+
+function filterBookingsTable(){
+  var q=document.getElementById("bookings-search").value.toLowerCase().trim();
+  var rows=document.querySelectorAll("#btbody tr[data-search]");
+  var visible=0;
+  rows.forEach(function(row){
+    var match=!q||row.getAttribute("data-search").toLowerCase().indexOf(q)>-1;
+    row.style.display=match?"":"none";
+    if(match) visible++;
+  });
+  var count=document.getElementById("bookings-result-count");
+  if(count) count.textContent=q?(visible+" booking"+(visible===1?"":"s")+" matched"):"";
+}
+
+function filterClientsTable(){
+  var q=document.getElementById("clients-search").value.toLowerCase().trim();
+  var rows=document.querySelectorAll("#customers-tbody tr[data-search]");
+  var visible=0;
+  rows.forEach(function(row){
+    var match=!q||row.getAttribute("data-search").toLowerCase().indexOf(q)>-1;
+    row.style.display=match?"":"none";
+    if(match) visible++;
+    // Collapse per-class panel if row hidden
+    if(!match){
+      var custId=row.getAttribute("data-cust-id");
+      if(custId){
+        var panel=document.getElementById("cust-panel-"+custId);
+        if(panel) panel.style.display="none";
+      }
+    }
+  });
+  var count=document.getElementById("clients-result-count");
+  if(count) count.textContent=q?(visible+" client"+(visible===1?"":"s")+" matched"):"";
+}
+
+function filterCancellationsTable(){
+  var q=document.getElementById("cancellations-search").value.toLowerCase().trim();
+  var rows=document.querySelectorAll("#cancellations-tbody tr[data-search]");
+  var visible=0;
+  rows.forEach(function(row){
+    var match=!q||row.getAttribute("data-search").toLowerCase().indexOf(q)>-1;
+    row.style.display=match?"":"none";
+    if(match) visible++;
+  });
+  var count=document.getElementById("cancellations-result-count");
+  if(count) count.textContent=q?(visible+" cancellation"+(visible===1?"":"s")+" matched"):"";
+}
+
+// ─── Reports page ────────────────────────────────────────────────────────────
+
+function renderReportsPage(){
+  (async function(){
+    try{
+      // Active (non-cancelled) bookings
+      var activeBks=bookings.filter(function(b){ return b.status!=="cancelled"; });
+      document.getElementById("rpt-active-bookings").textContent=activeBks.length;
+
+      // Revenue MTD
+      var now=new Date();
+      var monthNames=["January","February","March","April","May","June","July","August","September","October","November","December"];
+      document.getElementById("rpt-revenue-month").textContent=monthNames[now.getMonth()]+" "+now.getFullYear();
+      var mtd=activeBks.filter(function(b){
+        var d=new Date(b.created_at||b.createdAt||"");
+        return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
+      }).reduce(function(s,b){ return s+Number(b.paid||0); },0);
+      document.getElementById("rpt-revenue-mtd").textContent="£"+mtd.toFixed(0);
+
+      // Fill rate
+      var confirmed=activeBks.filter(function(b){ return b.status==="confirmed"; }).length;
+      var fillRate=activeBks.length>0?Math.round(confirmed/activeBks.length*100):0;
+      document.getElementById("rpt-fill-rate").textContent=fillRate+"%";
+
+      // Pending refunds
+      var{data:pending}=await sb.from("cancellations").select("id",{count:"exact"}).eq("refunded",false).gt("refund_amount",0);
+      var pendingCount=pending?pending.length:0;
+      document.getElementById("rpt-pending-refunds").textContent=pendingCount;
+      var refundSub=document.getElementById("rpt-refund-sub");
+      if(refundSub) refundSub.textContent=pendingCount>0?"action required":"all clear";
+
+      // Class capacity bars
+      var capHtml="";
+      var today=new Date(); today.setHours(0,0,0,0);
+      classes.forEach(function(c){
+        var activeBlk=blocks.filter(function(b){ return b.class_id===c.id&&b.status==="active"; }).sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); })[0];
+        if(!activeBlk) return;
+        var pct=activeBlk.cap>0?Math.round(activeBlk.booked/activeBlk.cap*100):0;
+        var barClass=pct>=100?"full":pct>=80?"warn":"";
+        capHtml+='<div class="db-cap-row">';
+        capHtml+='<div class="db-cap-name"><div class="db-cap-lbl">'+sanitise(c.name)+'</div><div class="db-cap-day">'+sanitise(c.day)+' '+sanitise(c.time)+'</div></div>';
+        capHtml+='<div class="db-cap-bar-wrap"><div class="db-cap-bar '+barClass+'" style="width:'+pct+'%"></div></div>';
+        capHtml+='<span class="db-cap-count">'+activeBlk.booked+'/'+activeBlk.cap+'</span>';
+        capHtml+='</div>';
+      });
+      document.getElementById("rpt-capacity-rows").innerHTML=capHtml||'<div style="font-size:13px;color:var(--light)">No active blocks.</div>';
+
+      // Client breakdown
+      var{data:custs}=await sb.from("customers").select("id,customer_type");
+      var total=custs?custs.length:0;
+      var returning=(custs||[]).filter(function(c){ return c.customer_type==="returning"||c.customer_type==="vip"; }).length;
+      var newClients=total-returning;
+      document.getElementById("rpt-total-clients").textContent=total;
+      var circ=2*Math.PI*28;
+      var retDash=total>0?Math.round(returning/total*circ):0;
+      var newDash=total>0?Math.round(newClients/total*circ):0;
+      var retEl=document.getElementById("rpt-donut-returning");
+      var newEl=document.getElementById("rpt-donut-new");
+      if(retEl){ retEl.setAttribute("stroke-dasharray",retDash+" "+(circ-retDash)); retEl.setAttribute("stroke-dashoffset","0"); }
+      if(newEl){ newEl.setAttribute("stroke-dasharray",newDash+" "+(circ-newDash)); newEl.setAttribute("stroke-dashoffset","-"+retDash); }
+      document.getElementById("rpt-returning-lbl").textContent="Returning — "+returning+(total>0?" ("+Math.round(returning/total*100)+"%)":"");
+      document.getElementById("rpt-new-lbl").textContent="New — "+newClients+(total>0?" ("+Math.round(newClients/total*100)+"%)":"");
+
+      // PAR-Q count
+      var{data:parqs}=await sb.from("parq").select("customer_id");
+      var uniqueParq=new Set((parqs||[]).map(function(p){ return p.customer_id; })).size;
+      document.getElementById("rpt-parq-count").textContent=uniqueParq;
+
+      // Active last block — customers with a confirmed booking in most recent completed block
+      var{data:recentBks}=await sb.from("bookings").select("customer_id").eq("status","confirmed");
+      var activeLastBlock=new Set((recentBks||[]).map(function(b){ return b.customer_id; })).size;
+      document.getElementById("rpt-active-last-block").textContent=activeLastBlock;
+
+      // Class booking totals
+      var totalsHtml="";
+      classes.forEach(function(c){
+        var count=activeBks.filter(function(b){ return b.classId===c.id||b.class_id===c.id; }).length;
+        totalsHtml+='<div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border);">';
+        totalsHtml+='<span style="color:var(--mid)">'+sanitise(c.name)+' — '+sanitise(c.day)+'</span>';
+        totalsHtml+='<span style="font-weight:500">'+count+'</span></div>';
+      });
+      document.getElementById("rpt-class-totals").innerHTML=totalsHtml||'<div style="font-size:13px;color:var(--light)">No data.</div>';
+
+    }catch(err){ console.error("Reports error:",err); }
+  })();
 }
 
 // ─── Clients tab ──────────────────────────────────────────────────────────────
@@ -2306,7 +2662,8 @@ function renderCustomersTab(){
         var relevantClasses=classes.filter(function(cl){
           return clientClassIds.indexOf(cl.id)>=0 || manualMap[cu.id+"_"+cl.id];
         });
-        html+='<tr id="cust-row-'+cu.id+'">';
+        var searchStr=(cu.first_name+' '+cu.last_name+' '+cu.email+' '+(cu.phone||'')).toLowerCase();
+        html+='<tr id="cust-row-'+cu.id+'" data-search="'+searchStr.replace(/"/g,'&quot;')+'" data-cust-id="'+cu.id+'">';
         html+='<td><strong>'+sanitise(cu.first_name)+' '+sanitise(cu.last_name)+'</strong></td>';
         html+='<td>'+sanitise(cu.email)+'</td>';
         html+='<td>'+sanitise(cu.phone||'—')+'</td>';
@@ -2436,48 +2793,72 @@ function denyPriorityAccess(blockId, msgEl, btn){
 
 function renderClassesView(){
   var html="";
-  for(var i=0;i<classes.length;i++){
-    var c=classes[i];
-    var classBlocks=blocks.filter(function(b){ return b.class_id===c.id; });
-    classBlocks.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
-    var groupId="cg-"+c.id;
-    html+="<div class=\"class-group\">";
-    html+="<div class=\"class-group-header\" onclick=\"toggleClassGroup('"+groupId+"')\">";
-    html+="<div><div class=\"class-group-title\">"+sanitise(c.name)+" \u2014 "+sanitise(c.day)+" "+sanitise(c.time)+"</div>";
-    html+="<div class=\"class-group-meta\">"+sanitise(c.venue)+", "+sanitise(c.loc)+"</div></div>";
-    html+="<div style=\"display:flex;align-items:center;gap:10px\"><span class=\"class-group-badge\">"+classBlocks.length+" block(s)</span><span style=\"font-size:18px\">&#8964;</span></div></div>";
-    html+="<div class=\"class-group-body\" id=\""+groupId+"\">";
-    if(classBlocks.length===0){
-      html+="<div class=\"class-group-empty\">No blocks yet. <button class='act act-confirm' onclick='openAddBlockModal("+c.id+")' style='margin-left:8px'>+ Add Block</button></div>";
-    } else {
-      classBlocks.forEach(function(blk){
-        var today=new Date(); today.setHours(0,0,0,0);
-        var s=new Date(blk.start_date+"T00:00:00"), e=new Date(blk.end_date+"T00:00:00");
-        var blkStatus=e<today?"archived":(s<=today&&e>=today?"active":"upcoming");
-        var statusColour=blkStatus==="active"?"var(--green)":blkStatus==="upcoming"?"var(--clay)":"var(--light)";
-        var blkBookings=bookings.filter(function(b){ return b.blockId===blk.id; });
-        html+="<div style=\"padding:12px 16px;border-bottom:1px solid var(--border);\">";
-        html+="<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:8px\">";
-        html+="<div style=\"font-size:13px;font-weight:600\">"+sanitise((blk.dates||[])[0]||blk.start_date)+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||blk.end_date)+" <span style=\"font-size:11px;color:"+statusColour+";font-weight:normal\">("+blkStatus+")</span></div>";
-        html+="<div style=\"font-size:12px;color:var(--mid)\">"+blk.booked+"/"+blk.cap+" booked &bull; &pound;"+blk.price+"/session &bull; "+blk.weeks+" weeks</div></div>";
-        if(blkBookings.length>0){
-          html+="<table style=\"margin-bottom:0\"><thead><tr><th>Client</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
-          blkBookings.forEach(function(b){
-            var idx=bookings.indexOf(b);
-            var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+idx+")\">Confirm</button>":"";
-            html+="<tr><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.email)+"</td><td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
-            html+="<td><button class=\"act\" onclick=\"viewBooking("+idx+")\">View</button>"+confirmBtn+"<button class=\"act act-delete\" onclick=\"openRfbModal("+idx+")\">Remove from Block</button></td></tr>";
-          });
-          html+="</tbody></table>";
-        } else {
-          html+="<div style=\"font-size:12px;color:var(--light)\">No bookings for this block yet.</div>";
-        }
-        html+="<div style='margin-top:8px'><button class='act' onclick='openEditBlockModal("+blk.id+")'>Edit Block</button><button class='act act-delete' onclick='deleteBlock("+blk.id+")'>Delete Block</button></div>";
-        html+="</div>";
-      });
-    }
-    html+="</div></div>";
-  }
+  // Group classes by location (c.loc)
+  var locs=[];
+  var locMap={};
+  classes.forEach(function(c){
+    var loc=c.loc||"Other";
+    if(!locMap[loc]){ locMap[loc]=[]; locs.push(loc); }
+    locMap[loc].push(c);
+  });
+  locs.forEach(function(loc){
+    var locClasses=locMap[loc];
+    html+="<div style=\"margin-bottom:16px;border:1px solid var(--border);border-radius:4px;overflow:hidden;\">";
+    html+="<div class=\"class-group-loc-header\">";
+    html+="<div class=\"class-group-loc-title\"><i class=\"ti ti-map-pin\" style=\"font-size:14px\"></i>"+sanitise(loc)+"</div>";
+    html+="<span class=\"class-group-loc-count\">"+locClasses.length+" class"+(locClasses.length===1?"":"es")+"</span>";
+    html+="</div>";
+    locClasses.forEach(function(c){
+      var classBlocks=blocks.filter(function(b){ return b.class_id===c.id; });
+      classBlocks.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
+      var groupId="cg-"+c.id;
+      html+="<div class=\"class-group\" style=\"margin-bottom:0;border:none;border-top:1px solid var(--border);border-radius:0;\">";
+      html+="<div class=\"class-group-header\" onclick=\"toggleClassGroup('"+groupId+"')\" style=\"background:white;color:var(--charcoal);padding-left:22px;\">";
+      html+="<div><div class=\"class-group-title\" style=\"font-size:14px;font-weight:600;color:var(--charcoal);\">" +sanitise(c.name)+" \u2014 "+sanitise(c.day)+" "+sanitise(c.time)+"</div>";
+      html+="<div class=\"class-group-meta\" style=\"color:var(--mid);\">"+sanitise(c.venue)+"</div></div>";
+      html+="<div style=\"display:flex;align-items:center;gap:10px\"><span class=\"class-group-badge\">"+classBlocks.length+" block(s)</span><span style=\"font-size:16px\">&#8964;</span></div></div>";
+      html+="<div class=\"class-group-body\" id=\""+groupId+"\">";
+      if(classBlocks.length===0){
+        html+="<div class=\"class-group-empty\">No blocks yet. <button class='act act-confirm' onclick='openAddBlockModal("+c.id+")' style='margin-left:8px'>+ Add Block</button></div>";
+      } else {
+        classBlocks.forEach(function(blk){
+          var today=new Date(); today.setHours(0,0,0,0);
+          var s=new Date(blk.start_date+"T00:00:00"), e=new Date(blk.end_date+"T00:00:00");
+          var blkStatus=e<today?"archived":(s<=today&&e>=today?"active":"upcoming");
+          var statusColour=blkStatus==="active"?"var(--green)":blkStatus==="upcoming"?"var(--clay)":"var(--light)";
+          var blkBg=blkStatus==="active"?"#f0f9f5":blkStatus==="upcoming"?"#fff9f0":"#f7f7f7";
+          var blkBorder=blkStatus==="active"?"#b8d8c8":blkStatus==="upcoming"?"#f0d8a8":"var(--border)";
+          var badgeHtml=blkStatus==="active"
+            ?"<span style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:#e8f5ee;color:var(--green);font-weight:500;margin-left:8px\">Active</span>"
+            :blkStatus==="upcoming"
+            ?"<span style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:#fef3e8;color:var(--clay);font-weight:500;margin-left:8px\">Upcoming</span>"
+            :"<span style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:var(--cream);color:var(--light);margin-left:8px\">Archived</span>";
+          var blkBookings=bookings.filter(function(b){ return b.blockId===blk.id; });
+          html+="<div style=\"margin-bottom:10px;border:1px solid "+blkBorder+";border-radius:4px;background:"+blkBg+";overflow:hidden;\">";
+          html+="<div style=\"display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid "+blkBorder+";\">";
+          html+="<div style=\"font-size:13px;font-weight:600\">"+sanitise((blk.dates||[])[0]||blk.start_date)+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||blk.end_date)+badgeHtml+"</div>";
+          html+="<div style=\"font-size:12px;color:var(--mid)\">"+blk.booked+"/"+blk.cap+" booked &bull; &pound;"+blk.price+"/session &bull; "+blk.weeks+" weeks</div></div>";
+          html+="<div style=\"padding:10px 14px;\">";
+          if(blkBookings.length>0){
+            html+="<table style=\"margin-bottom:0\"><thead><tr><th>Client</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+            blkBookings.forEach(function(b){
+              var idx=bookings.indexOf(b);
+              var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+idx+")\">Confirm</button>":"";
+              html+="<tr><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.email)+"</td><td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
+              html+="<td><button class=\"act\" onclick=\"viewBooking("+idx+")\">View</button>"+confirmBtn+"<button class=\"act act-delete\" onclick=\"openRfbModal("+idx+")\">Remove from Block</button></td></tr>";
+            });
+            html+="</tbody></table>";
+          } else {
+            html+="<div style=\"font-size:12px;color:var(--light)\">No bookings for this block yet.</div>";
+          }
+          html+="<div style='margin-top:8px'><button class='act' onclick='openEditBlockModal("+blk.id+")'>Edit Block</button><button class='act act-delete' onclick='deleteBlock("+blk.id+")'>Delete Block</button></div>";
+          html+="</div></div>";
+        });
+      }
+      html+="</div></div>";
+    });
+    html+="</div>";
+  });
   document.getElementById("classes-accordion").innerHTML=html||"<div style='color:var(--light);padding:20px'>No classes yet.</div>";
 }
 
@@ -3060,7 +3441,8 @@ function renderCancellationsTab(){
         var actionBtn=(r.refund_amount>0&&!r.refunded)
           ?"<button class=\"act act-confirm\" onclick=\"markCancellationRefunded("+r.id+")\">Mark Refunded</button>"
           :"";
-        html+="<tr>"
+        var cancelSearch=(r.first_name+' '+r.last_name+' '+(r.email||'')+' '+(r.class_name||'')+' '+(r.venue||'')).toLowerCase();
+        html+="<tr data-search=\""+cancelSearch.replace(/"/g,'&quot;')+"\">"
           +"<td><strong>"+sanitise(r.first_name+" "+r.last_name)+"</strong><br><span style=\"font-size:11px;color:var(--light)\">"+sanitise(r.email)+"</span></td>"
           +"<td>"+sanitise(r.class_name||"—")+"<br><span style=\"font-size:11px;color:var(--light)\">"+sanitise(r.venue||"")+"</span></td>"
           +"<td style=\"font-size:12px\">"+sanitise(blockDates)+"</td>"

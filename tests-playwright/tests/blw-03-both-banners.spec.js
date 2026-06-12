@@ -79,7 +79,7 @@ test.describe('BLW-03 — Both red and yellow banners render simultaneously', ()
     await loginAsAdmin(page);
 
     // Wait for dashboard render.
-    await expect(page.locator('#ctbody tr').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
 
     // The warnings container must be visible.
     await expect(page.locator('#block-warnings')).toBeVisible();

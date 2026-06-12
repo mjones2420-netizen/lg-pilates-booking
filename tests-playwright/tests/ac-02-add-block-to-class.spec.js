@@ -68,6 +68,10 @@ test.describe('AC-02 — Add a block to a class', () => {
   test('block appears in By Class tab and class becomes visible on schedule', async ({ page }) => {
     const startDate = futureSaturday();
 
+    // Navigate to Classes page
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+
     const ctRow = page.locator('#ctbody tr').filter({ hasText: className });
     await expect(ctRow).toBeVisible({ timeout: 5000 });
     await ctRow.getByRole('button', { name: '+ Block' }).click();
@@ -101,8 +105,8 @@ test.describe('AC-02 — Add a block to a class', () => {
     await page.goto(APP_PATH);
     await expect(page.locator('#test-mode-banner.on')).toBeVisible();
     await loginAsAdmin(page);
-    await page.locator('#tab-classes').click();
-    await expect(page.locator('#tab-classes.on')).toBeVisible();
+    await page.locator('#dbnav-byclass').click();
+    await expect(page.locator('#dbnav-byclass.on')).toBeVisible();
 
     await page.locator(`[onclick="toggleClassGroup('cg-${createdClassId}')"]`).click();
     const groupBody = page.locator(`#cg-${createdClassId}`);

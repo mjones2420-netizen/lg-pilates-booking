@@ -56,7 +56,7 @@ test.describe('SEC-06 — Admin sign-in unlocks full dashboard', () => {
   test('SEC-06 — admin can sign in and reach the dashboard', async ({ page }) => {
     await loginAsAdmin(page);
 
-    // loginAsAdmin already asserts #pg-dashboard.on and #tab-bookings.on.
+    // loginAsAdmin already asserts #pg-dashboard.on and #dbnav-bookings.on.
     // Sign-out button should also be visible to confirm authenticated state.
     await expect(page.locator('#nb-signout')).toBeVisible();
 
@@ -66,27 +66,27 @@ test.describe('SEC-06 — Admin sign-in unlocks full dashboard', () => {
   test('SEC-06 — all 4 dashboard tabs render their panels', async ({ page }) => {
     await loginAsAdmin(page);
 
-    // All Bookings — the default tab. Already verified by loginAsAdmin
-    // (asserts #tab-bookings.on). Confirm the panel itself is visible.
-    await expect(page.locator('#tab-panel-bookings')).toBeVisible();
+    // All Bookings — the default page. Already verified by loginAsAdmin
+    // (asserts #dbnav-bookings.on). Confirm the page content is visible.
+    await expect(page.locator('#dbpage-bookings.on')).toBeVisible();
 
     // By Class
-    await page.locator('#tab-classes').click();
-    await expect(page.locator('#tab-classes.on')).toBeVisible();
-    await expect(page.locator('#tab-panel-classes')).toBeVisible();
+    await page.locator('#dbnav-byclass').click();
+    await expect(page.locator('#dbnav-byclass.on')).toBeVisible();
+    await expect(page.locator('#dbpage-byclass.on')).toBeVisible();
     await expect(page.locator('#classes-accordion')).toBeAttached();
 
     // Clients — renderCustomersTab() runs async; wait for at least one row to render.
-    await page.locator('#tab-customers').click();
-    await expect(page.locator('#tab-customers.on')).toBeVisible();
-    await expect(page.locator('#tab-panel-customers')).toBeVisible();
+    await page.locator('#dbnav-clients').click();
+    await expect(page.locator('#dbnav-clients.on')).toBeVisible();
+    await expect(page.locator('#dbpage-clients.on')).toBeVisible();
     await expect(page.locator('tr[id^="cust-row-"]').first()).toBeVisible({ timeout: 10000 });
 
     // Cancellations — renderCancellationsTab() runs async; wait for the
     // loading row to be replaced with either content or "No cancellations yet."
-    await page.locator('#tab-cancellations').click();
-    await expect(page.locator('#tab-cancellations.on')).toBeVisible();
-    await expect(page.locator('#tab-panel-cancellations')).toBeVisible();
+    await page.locator('#dbnav-cancellations').click();
+    await expect(page.locator('#dbnav-cancellations.on')).toBeVisible();
+    await expect(page.locator('#dbpage-cancellations.on')).toBeVisible();
     await expect(page.locator('#cancellations-tbody')).not.toContainText(/Loading\.\.\./, { timeout: 10000 });
 
     await signOutAdmin(page);
@@ -95,21 +95,24 @@ test.describe('SEC-06 — Admin sign-in unlocks full dashboard', () => {
   test('SEC-06 — below-tab sections (Upcoming Classes, Settings, Backup & Export) render', async ({ page }) => {
     await loginAsAdmin(page);
 
-    // Upcoming Classes section — heading + table tbody
-    await expect(page.getByText(/Upcoming Classes/i).first()).toBeVisible();
+    // Classes page — navigate via sidebar, check table and Add New Class button
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
     await expect(page.getByRole('button', { name: /\+ Add New Class/i })).toBeVisible();
     await expect(page.locator('#ctbody')).toBeAttached();
 
-    // Settings section — heading + the three bank detail inputs + Save button
-    await expect(page.getByText(/^Settings$/).first()).toBeVisible();
+    // Settings page — navigate via sidebar, check inputs and Save button
+    await page.locator('#dbnav-settings').click();
+    await expect(page.locator('#dbnav-settings.on')).toBeVisible();
     await expect(page.locator('#setting-bank-name')).toBeVisible();
     await expect(page.locator('#setting-bank-sort')).toBeVisible();
     await expect(page.locator('#setting-bank-acc')).toBeVisible();
-    await expect(page.getByRole('button', { name: /Save Settings/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Save Settings/i }).first()).toBeVisible();
 
-    // Backup & Export section — heading + at least one export button
-    await expect(page.getByText(/Backup & Export/i).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Export Classes/i })).toBeVisible();
+    // Backup & Export page — navigate via sidebar, check export button
+    await page.locator('#dbnav-backup').click();
+    await expect(page.locator('#dbnav-backup.on')).toBeVisible();
+    await expect(page.locator('button[onclick="exportTable(\'classes\')"]')).toBeVisible();
 
     await signOutAdmin(page);
   });

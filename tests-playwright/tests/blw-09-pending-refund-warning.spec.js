@@ -103,7 +103,7 @@ test.describe('BLW-09 — Pending refund warning banner', () => {
 
     // Clicking View Cancellations switches to the Cancellations tab
     await viewBtn.click();
-    await expect(page.locator('#tab-cancellations')).toHaveClass(/on/);
+    await expect(page.locator('#dbnav-cancellations')).toHaveClass(/on/);
   });
 
   test('orange warning disappears after cancellation is marked as refunded', async ({ page }) => {

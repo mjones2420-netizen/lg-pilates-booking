@@ -57,7 +57,7 @@ test.describe('BLW-04 — "+ Add Block" in warning banner opens correct modal', 
     await loginAsAdmin(page);
 
     // Wait for banner to render.
-    await expect(page.locator('#ctbody tr').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#block-warnings')).toBeVisible();
 
     // Find the Wednesday warning row and click its "+ Add Block" button.

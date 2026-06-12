@@ -43,10 +43,12 @@ test('SE-11 — admin saves notification email and value persists to DB', async 
 
   await loginAsAdmin(page);
 
-  await page.locator('#setting-admin-email').scrollIntoViewIfNeeded();
+  // Navigate to Settings page
+  await page.locator('#dbnav-settings').click();
+  await expect(page.locator('#dbnav-settings.on')).toBeVisible();
   await page.locator('#setting-admin-email').fill(NEW_EMAIL);
 
-  await page.locator('button[onclick="saveSettings()"]').click();
+  await page.locator('button[onclick="saveSettings()"]').nth(1).click();
   await expect(page.locator('#toastEl')).toContainText('Settings saved!');
 
   // Confirm value persisted in DB

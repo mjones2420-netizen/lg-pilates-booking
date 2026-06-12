@@ -39,6 +39,10 @@ test.describe('AC-01 — Add a new class', () => {
   });
 
   test('new class appears in Upcoming Classes table after creation', async ({ page }) => {
+    // Navigate to Classes page first
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+
     // Click + Add New Class button
     await page.getByRole('button', { name: '+ Add New Class' }).click();
     await expect(page.locator('#add-class-overlay.on')).toBeVisible();

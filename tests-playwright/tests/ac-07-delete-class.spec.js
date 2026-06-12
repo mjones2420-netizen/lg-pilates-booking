@@ -73,6 +73,10 @@ test.describe('AC-07 — Delete a class', () => {
   });
 
   test('class deleted — toast shown, row gone, class absent from schedule', async ({ page }) => {
+    // Navigate to Classes page
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+
     // Find the class row in #ctbody and click Delete
     const ctRow = page.locator('#ctbody tr').filter({ hasText: className });
     await expect(ctRow).toBeVisible({ timeout: 5000 });

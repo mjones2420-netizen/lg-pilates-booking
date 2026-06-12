@@ -64,7 +64,7 @@ test.describe('BLW-01 — Red alert: class with no active or upcoming block', ()
     await loginAsAdmin(page);
 
     // Wait for renderDashboard to complete — ctbody must be populated.
-    await expect(page.locator('#ctbody tr').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
 
     // The #block-warnings container should now be visible.
     await expect(page.locator('#block-warnings')).toBeVisible();

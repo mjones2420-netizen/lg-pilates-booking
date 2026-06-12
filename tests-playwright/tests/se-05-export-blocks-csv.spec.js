@@ -15,9 +15,11 @@ test('SE-05 — Export Blocks button downloads a blocks CSV', async ({ page }) =
 
   await loginAsAdmin(page);
 
-  await page.locator('button[onclick="exportTable(\'blocks\')"]').scrollIntoViewIfNeeded();
+  // Navigate to Backup & Export page
+  await page.locator('#dbnav-backup').click();
+  await expect(page.locator('#dbnav-backup.on')).toBeVisible();
 
-  const [download] = await Promise.all([
+    const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.locator('button[onclick="exportTable(\'blocks\')"]').click(),
   ]);

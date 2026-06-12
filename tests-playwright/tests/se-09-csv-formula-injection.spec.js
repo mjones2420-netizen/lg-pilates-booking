@@ -51,9 +51,11 @@ test('SE-09 — formula injection character is escaped with apostrophe in export
 
   await loginAsAdmin(page);
 
-  await page.locator('button[onclick="exportTable(\'customers\')"]').scrollIntoViewIfNeeded();
+  // Navigate to Backup & Export page
+  await page.locator('#dbnav-backup').click();
+  await expect(page.locator('#dbnav-backup.on')).toBeVisible();
 
-  const [download] = await Promise.all([
+    const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.locator('button[onclick="exportTable(\'customers\')"]').click(),
   ]);

@@ -48,8 +48,9 @@ test('SE-01 — admin saves bank details and sees confirmation toast', async ({ 
 
   await loginAsAdmin(page);
 
-  // Scroll to Settings section
-  await page.locator('#setting-bank-name').scrollIntoViewIfNeeded();
+  // Navigate to Settings page
+  await page.locator('#dbnav-settings').click();
+  await expect(page.locator('#dbnav-settings.on')).toBeVisible();
 
   // Clear and enter new values
   await page.locator('#setting-bank-name').fill(NEW.name);
@@ -57,7 +58,7 @@ test('SE-01 — admin saves bank details and sees confirmation toast', async ({ 
   await page.locator('#setting-bank-acc').fill(NEW.acc);
 
   // Click Save Settings
-  await page.locator('button[onclick="saveSettings()"]').click();
+  await page.locator('button[onclick="saveSettings()"]').first().click();
 
   // Toast confirms save
   await expect(page.locator('#toastEl')).toContainText('Settings saved!');

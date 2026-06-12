@@ -79,7 +79,7 @@ test.describe('SE-13 — Booking confirmed email fires on admin confirm', () => 
 
     // Log in as admin
     await loginAsAdmin(page);
-    await expect(page.locator('#tab-bookings')).toHaveClass(/on/);
+    await expect(page.locator('#dbnav-bookings')).toHaveClass(/on/);
 
     // Find the Confirm button for our test booking and click it
     const row = page.locator('#btbody tr', { hasText: TEST_FIRST + ' ' + TEST_LAST });

@@ -1,6 +1,6 @@
 # LG Pilates Booking System — Feature & Task Backlog
 
-Last updated: 11 Jun 2026
+Last updated: 12 Jun 2026
 
 This document is the single source of truth for outstanding work on the LG Pilates booking system.
 It is organised by priority tier. Items should be marked ✅ when complete and updated in `context.txt` at the same time.
@@ -22,10 +22,11 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 | 9 | T2-02 | [Waitlist](#t2-02--waitlist-feature) | Let clients join a waitlist when a block is full; notify on vacancy | 🟡 Tier 2 |
 | 10 | T2-03 | [Honeypot anti-bot](#t2-03--honeypot-anti-bot-protection) | Hidden form field to block automated spam bookings | 🟡 Tier 2 |
 | 11 | T2-04 | [Mobile Safari test coverage](#t2-04--mobile-safari-playwright-coverage) | Add real mobile browser to Playwright suite (currently desktop viewport only) | 🟡 Tier 2 |
-| 12 | T3-01 | [Demo file updates](#t3-01--demo-file-updates) | 11 demo files are outdated — rebuild after Netlify + email are stable | 🟢 Tier 3 |
-| 13 | T3-02 | [User guide PDF update](#t3-02--user-guide-pdf-update) | Update Louise's user guide once email and Netlify are live | 🟢 Tier 3 |
-| 14 | T3-05 | [Swap Supabase anon key](#t3-05--swap-supabase-anon-key-to-newer-publishable-key-format) | Migrate to newer publishable key format — do alongside Netlify migration | 🟢 Tier 3 |
-| 15 | T3-03 | [File split](#t3-03--file-split) | Split `index.html` into separate CSS/JS/HTML files at a future milestone | 🟢 Tier 3 |
+| 12 | T2-05 | [Reports — monthly trend chart](#t2-05--reports-page-monthly-trend-chart) | Add bookings/revenue chart to Reports page — requires new Supabase query | 🟡 Tier 2 |
+| 13 | T3-01 | [Demo file updates](#t3-01--demo-file-updates) | 11 demo files are outdated — rebuild after Netlify + email are stable | 🟢 Tier 3 |
+| 14 | T3-02 | [User guide PDF update](#t3-02--user-guide-pdf-update) | Update Louise's user guide once email and Netlify are live | 🟢 Tier 3 |
+| 15 | T3-05 | [Swap Supabase anon key](#t3-05--swap-supabase-anon-key-to-newer-publishable-key-format) | Migrate to newer publishable key format — do alongside Netlify migration | 🟢 Tier 3 |
+| 16 | T3-03 | [File split](#t3-03--file-split) | Split `index.html` into separate CSS/JS/HTML files at a future milestone | 🟢 Tier 3 |
 
 *T3-04 and T3-06 are listed as Tier 3 IDs but are urgent enough to act on before the system goes live with real clients.
 
@@ -145,6 +146,15 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 
 ---
 
+### T2-05 · Reports page — monthly trend chart
+**What:** Add a bookings/revenue bar chart to the Reports page showing the last 6 months of activity. The static stats (active bookings, revenue MTD, fill rate, pending refunds, class capacity bars, client breakdown) are already live — the chart is the one remaining piece.
+**Why it matters:** Gives Louise a quick visual on seasonal patterns — useful for planning when to add blocks and when to expect quieter periods.
+**Effort:** Small-medium. Requires a new Supabase query grouping confirmed bookings and revenue by month, and a simple SVG/canvas bar chart rendered in the Reports page.
+**Dependencies:** Admin dashboard redesign (complete). No schema changes needed.
+**Notes:** This is Session C of the dashboard redesign plan (Sessions A and B complete). The chart query will read from the `bookings` table, grouping by `DATE_TRUNC('month', created_at)`.
+
+---
+
 ## Tier 3 — Nice to have / housekeeping / milestone-gated
 
 ### T3-01 · Demo file updates
@@ -205,7 +215,9 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 
 | Item | Description | Completed |
 |---|---|---|
-| Playwright test suite | All 133 genuine Excel scenarios automated (159 tests) | Session 31 |
+| Admin dashboard redesign — Session A | Full sidebar layout replacing tabs: 8 pages, search filters, location grouping, block card styling, Reports static stats | Session 39 |
+| Admin dashboard redesign — Session B | Playwright spec fixes for sidebar navigation (76 → 0 failures across admin suites) | Session 39 |
+| Playwright test suite | All 133 genuine Excel scenarios automated (169 tests) | Session 39 |
 | GitHub Actions CI | Auto-run on push | Session 32 |
 | Email notifications — Session 1 | Settings email field + send-email Edge Function deployed to prod and test | Session 33 |
 | Email notifications — Session 2 | Booking reserved email (trigger #1) — template, wiring, noemail flag, SE-12 spec | Session 34 |

@@ -109,8 +109,8 @@ test.describe('AB-13/AB-14/AB-15 — Cancellations tab', () => {
     await runRfbFlow(page, 'Ab13 Cancelled', { paid: false, sessions: 0 });
 
     // Switch to Cancellations tab
-    await page.locator('#tab-cancellations').click();
-    await expect(page.locator('#tab-cancellations.on')).toBeVisible();
+    await page.locator('#dbnav-cancellations').click();
+    await expect(page.locator('#dbnav-cancellations.on')).toBeVisible();
 
     const ctbody = page.locator('#cancellations-tbody');
     // Wait for the table to render (not loading state)
@@ -157,8 +157,8 @@ test.describe('AB-13/AB-14/AB-15 — Cancellations tab', () => {
     // Run RFB: 0 sessions, paid → £60 refund
     await runRfbFlow(page, 'Ab14 Refundable', { paid: true, sessions: 0 });
 
-    await page.locator('#tab-cancellations').click();
-    await expect(page.locator('#tab-cancellations.on')).toBeVisible();
+    await page.locator('#dbnav-cancellations').click();
+    await expect(page.locator('#dbnav-cancellations.on')).toBeVisible();
 
     const ctbody = page.locator('#cancellations-tbody');
     await expect(ctbody.locator('tr', { hasText: 'Ab14 Refundable' }).first()).toBeVisible({ timeout: 8000 });
@@ -201,8 +201,8 @@ test.describe('AB-13/AB-14/AB-15 — Cancellations tab', () => {
     // Run RFB: 0 sessions, paid → £60 refund
     await runRfbFlow(page, 'Ab15 Markrefund', { paid: true, sessions: 0 });
 
-    await page.locator('#tab-cancellations').click();
-    await expect(page.locator('#tab-cancellations.on')).toBeVisible();
+    await page.locator('#dbnav-cancellations').click();
+    await expect(page.locator('#dbnav-cancellations.on')).toBeVisible();
 
     const ctbody = page.locator('#cancellations-tbody');
     await expect(ctbody.locator('tr', { hasText: 'Ab15 Markrefund' }).first()).toBeVisible({ timeout: 8000 });

@@ -53,8 +53,8 @@ test.describe('ACL-01 — Clients tab lists all customers', () => {
     await loginAsAdmin(page);
 
     // Switch to the Clients tab
-    await page.locator('#tab-customers').click();
-    await expect(page.locator('#tab-customers')).toHaveClass(/on/);
+    await page.locator('#dbnav-clients').click();
+    await expect(page.locator('#dbnav-clients')).toHaveClass(/on/);
 
     // Wait for the tbody to populate — initial "Loading..." placeholder
     // is a single tr with colspan=6; once renderCustomersTab() finishes

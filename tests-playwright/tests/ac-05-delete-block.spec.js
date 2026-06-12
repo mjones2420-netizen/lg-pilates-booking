@@ -70,8 +70,8 @@ test.describe('AC-05 — Delete a block', () => {
 
   test('block removed from accordion and class hidden on schedule after deletion', async ({ page }) => {
     // Navigate to By Class tab
-    await page.locator('#tab-classes').click();
-    await expect(page.locator('#tab-classes.on')).toBeVisible();
+    await page.locator('#dbnav-byclass').click();
+    await expect(page.locator('#dbnav-byclass.on')).toBeVisible();
 
     // Expand the class group
     const header = page.locator('.class-group-header').filter({ hasText: className });

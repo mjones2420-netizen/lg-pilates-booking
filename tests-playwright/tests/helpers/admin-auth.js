@@ -67,7 +67,7 @@ async function loginAsAdmin(page) {
 
   // Wait for the dashboard to render.
   await expect(page.locator('#pg-dashboard.on')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('#tab-bookings.on')).toBeVisible();
+  await expect(page.locator('#dbnav-bookings.on')).toBeVisible();
 }
 
 /**
@@ -78,8 +78,8 @@ async function loginAsAdmin(page) {
  */
 async function openClientsTab(page) {
   await expect(page.locator('#pg-dashboard.on')).toBeVisible();
-  await page.locator('#tab-customers').click();
-  await expect(page.locator('#tab-customers.on')).toBeVisible();
+  await page.locator('#dbnav-clients').click();
+  await expect(page.locator('#dbnav-clients.on')).toBeVisible();
   // Wait for at least one customer row to render — renderCustomersTab fills
   // tbody asynchronously after several DB reads.
   await expect(page.locator('tr[id^="cust-row-"]').first()).toBeVisible({ timeout: 10000 });
