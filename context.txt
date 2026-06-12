@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 12 Jun 2026
+Last updated: 12 Jun 2026 (Session 40)
 ============================================================
 
 ABOUT THIS FILE
@@ -89,7 +89,9 @@ TABLES
 ------
 classes                  — permanent class slots (id, name, level, day, time, end_time, venue, loc)
 blocks                   — each 6-week block run (id, class_id, start_date, end_date, weeks, dates[], price, cap, booked, visible, status)
-bookings                 — client bookings (id, class_id, block_id, customer_id, status, amount_due, refund_amount, created_at)
+bookings                 — client bookings (id, class_id, block_id, customer_id, status, amount_due, refund_amount, created_at,
+                           stripe_payment_intent_id [nullable], stripe_checkout_session_id [nullable])
+                           NOTE: Stripe columns added in migration 12 (PM-3 session). NULL in bank transfer mode.
 customers                — client records (id, first_name, last_name, email, phone, customer_type, priority, created_at)
                            NOTE: customers.priority column is retained in DB but no longer used by the app.
                            Per-class manual priority is now managed via customer_class_priority table.
@@ -97,7 +99,11 @@ parq                     — health forms (id, booking_id, customer_id, age, eme
                            NOTE: sign_date is DATE type. Front-end stores ISO (YYYY-MM-DD) in a data-iso
                            attribute on the display element and sends that direct to the DB.
                            Admin PAR-Q view uses formatDateDisplay() to render "18 Apr 2026".
-settings                 — key/value store for bank details and admin email (bank_name, bank_sort_code, bank_account_no, admin_email)
+settings                 — key/value store for bank details, admin email, and payment config
+                           Keys: bank_name, bank_sort_code, bank_account_no, admin_email,
+                           payment_mode ('bank_transfer' | 'stripe'), stripe_publishable_key
+                           NOTE: Stripe secret key and webhook secret are NEVER stored here —
+                           they live in Supabase Edge Function environment variables only.
 waitlist                 — placeholder for future waitlist feature (id, class_id, customer_id, created_at)
                            RLS enabled. Empty — not yet connected to booking flow.
 cancellations            — audit trail of all client removals from blocks
@@ -897,19 +903,40 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    check, forwarding to Louise's inbox.
    Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md.
 
-4. REPORTS PAGE — monthly trend chart (Session C)
+4. PAYMENT MODE FEATURE FLAG + STRIPE INTEGRATION — Session PM-1 next
+   Fully scoped. Spec file: PAYMENT-MODE-SPEC.md (repo root).
+   Allows Louise to switch between bank transfer and Stripe Checkout from
+   the admin Settings page. Bank transfer is the default at launch.
+   Build plan: 6 sessions (PM-1 to PM-6). See PAYMENT-MODE-SPEC.md.
+
+   SESSION PM-1 START CHECKLIST:
+   - Explain the session aim and objectives in plain English before starting
+   - Check BACKLOG.md and add the payment mode feature as a Tier 1 item
+   - Add PAYMENT-MODE-SPEC.md to the repo (already produced — needs committing)
+   - No Stripe account needed for PM-1 or PM-2
+   - Work through each step one at a time, waiting for sign-off at each step
+
+   PAYMENT MODE COMMUNICATION RULES (apply to ALL PM sessions):
+   - Before each session: explain the aim and objectives in plain English
+   - Keep technical jargon to a minimum throughout
+   - One step at a time — never move to the next step without explicit confirmation
+   - Always explain what something does in plain English alongside any technical detail
+   - If a concept needs explaining (e.g. "what is a webhook"), explain it briefly
+     before using it, without being asked
+
+5. REPORTS PAGE — monthly trend chart (Session C)
    Reports page static stats are complete. Next: add monthly bookings/revenue
    chart requiring a new Supabase query grouping bookings by month.
 
-5. CLASS REGISTER FEATURE
-6. DEMO FILE UPDATES (multiple outdated since per-class priority + pro-rata + 4-step flow)
-7. HONEYPOT anti-bot protection
-8. BANK DETAILS — replace placeholder with Louise's real details
-9. HOSTING MIGRATION & CUSTOM DOMAIN (GitHub Pages → Netlify, book.lg-pilates.co.uk)
-10. USER GUIDE — update PDF at post-email milestone
-11. WAITLIST FEATURE — table exists, not yet connected
-12. FILE SPLIT — consider at next major milestone
-13. AUDIT ITEMS:
+6. CLASS REGISTER FEATURE
+7. DEMO FILE UPDATES (multiple outdated since per-class priority + pro-rata + 4-step flow)
+8. HONEYPOT anti-bot protection
+9. BANK DETAILS — replace placeholder with Louise's real details
+10. HOSTING MIGRATION & CUSTOM DOMAIN (GitHub Pages → Netlify, book.lg-pilates.co.uk)
+11. USER GUIDE — update PDF at post-email milestone
+12. WAITLIST FEATURE — table exists, not yet connected
+13. FILE SPLIT — consider at next major milestone
+14. AUDIT ITEMS:
     - Swap Supabase anon key to newer publishable key format (at Netlify migration)
     - Enable leaked password protection in Supabase Auth dashboard (manual toggle)
 
@@ -1244,5 +1271,30 @@ SESSION 39 LEARNINGS — ADMIN DASHBOARD REDESIGN
   used as a sidebar. Always use `<div>` for sidebar navigation containers.
 - The dashboard redesign was tagged in git as `v-pre-dashboard-redesign`
   before work began, providing a clean rollback point.
+
+SESSION 40 — PAYMENT MODE FEATURE SCOPED
+-----------------------------------------
+- Payment mode feature flag fully scoped. Spec saved as PAYMENT-MODE-SPEC.md
+  at repo root. 6 sessions planned (PM-1 to PM-6).
+- Stripe Checkout chosen over Stripe Elements: Stripe hosts the payment page,
+  handles card / Apple Pay / Google Pay, and takes on PCI compliance.
+  Much simpler to build and test than embedded Elements.
+- Feature flag approach: single `payment_mode` setting in the settings table
+  (`bank_transfer` or `stripe`). No parallel codebases. Louise toggles from
+  the admin Settings page.
+- Stripe secret key and webhook secret must NEVER go in the settings table or
+  index.html — Edge Function environment variables only.
+- Publishable key (safe, public) stored in settings table under `stripe_publishable_key`.
+- Webhook is the authoritative payment confirmation signal — the success
+  redirect URL alone must never be the sole trigger for confirming a booking.
+- All existing bank transfer email triggers (1–6) remain intact in bank
+  transfer mode. Stripe mode suppresses triggers 1 and 5, moves trigger 2
+  to the webhook handler, and adds new trigger 5S (Louise payment alert).
+- PM-1 and PM-2 require no Stripe account. PM-3 onwards requires Stripe
+  test keys — Mark to create Stripe account before that session.
+- BACKLOG.md needs updating at the start of PM-1 to add this as a Tier 1 item.
+- Mark's preference for PM sessions: explain aim and objectives in plain
+  English at the start of every session; keep jargon low; one step at a
+  time with sign-off at each step.
 
 ============================================================
