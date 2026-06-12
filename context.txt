@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 11 Jun 2026
+Last updated: 12 Jun 2026
 ============================================================
 
 ABOUT THIS FILE
@@ -44,7 +44,7 @@ PRODUCTION
 ----------
 URL:        https://mrlooyixnlxzcfmvnqme.supabase.co
 Project ID: mrlooyixnlxzcfmvnqme
-Anon Key:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ybG9veWl4bmx4emNmbXZucW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM2MDAsImV4cCI6MjA4ODQ4OTYwMH0.k1LbLenXS29NosaayGnQn3SR2G1xXVDBICeH7w7bD_c
+Anon Key:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ybG9veWl4bmx4emNmbXZucW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM2MDAsImV4cCI6MjA4ODQ4OTYwMH0.k1LbLenXS29NosaayGnQh3SR2G1xXVDBICeH7w7bD_c
 
 TEST
 ----
@@ -344,16 +344,75 @@ Client-facing:
 - Priority booking system — priority 8-14 days before block start, standard 0-7 days
 
 Admin dashboard (password protected via Supabase Auth):
-- All Bookings tab with Missing PAR-Q banner
-- By Class tab — accordion
-- Clients tab with per-class priority management
-- Cancellations tab with audit trail and CSV export
-- Upcoming Classes section — add/edit classes and blocks
-- Settings — bank details
-- Backup & Export — CSV with formula-injection protection
-- Block warnings banner — red/yellow advisories + orange pending refund warning
-- Block overlap prevention
+- Full sidebar redesign (Session 39): dark charcoal sidebar, 8-page layout
+  replacing old horizontal tab + below-tab sections structure
+- All Bookings page — with search filter (client name / class)
+- By Class page — accordion grouped by LOCATION (Baildon/Guiseley), then class
+  Block rows styled as distinct cards with green/amber colour coding by status
+- Clients page — with search filter (name / email / phone)
+- Cancellations page — with search filter, Export CSV in topbar
+- Classes page — table with active/upcoming block badges, warning banners below topbar
+- Reports page — 4 summary stat cards, class capacity bars, client breakdown donut
+- Settings page — two separate cards (bank details / notification email)
+- Backup & Export page — per-table export rows + full backup card
+- Block warnings banner renders below topbar on every page when warnings exist
 - Test-mode env switch (URL query param ?env=test)
+
+ADMIN DASHBOARD — SIDEBAR NAVIGATION
+--------------------------------------
+The admin dashboard now uses a sidebar layout (not tabs). Key selectors:
+
+  Sidebar nav items (click to switch page):
+    #dbnav-bookings, #dbnav-byclass, #dbnav-clients, #dbnav-cancellations
+    #dbnav-classes, #dbnav-reports, #dbnav-settings, #dbnav-backup
+
+  Active nav item has class .on:  #dbnav-bookings.on
+
+  Page panels (shown/hidden):
+    #dbpage-bookings, #dbpage-byclass, #dbpage-clients, #dbpage-cancellations
+    #dbpage-classes, #dbpage-reports, #dbpage-settings, #dbpage-backup
+
+  Active page panel has class .on: #dbpage-bookings.on
+
+  Navigation function: switchDashPage(page)
+    e.g. switchDashPage('classes') — switches sidebar item and page panel
+    switchTab(tab) is retained as a shim mapping old tab names to new page names.
+
+  Mobile: sidebar hidden, bottom nav bar shown (.db-bottom-nav)
+    Bottom nav pins: bookings, clients, classes, reports, more (→ settings etc.)
+
+  Tables inside dashboard pages:
+    #btbody (All Bookings), #customers-tbody (Clients),
+    #cancellations-tbody (Cancellations), #ctbody (Classes),
+    #classes-accordion (By Class)
+
+IMPORTANT PLAYWRIGHT NOTE — ADMIN DASHBOARD NAVIGATION:
+  All admin specs must navigate to the correct page before asserting on
+  page-specific elements. loginAsAdmin() lands on All Bookings (#dbnav-bookings.on).
+  Specs that need Classes page must call:
+    await page.locator('#dbnav-classes').click();
+    await expect(page.locator('#dbnav-classes.on')).toBeVisible();
+  before accessing #ctbody or the + Add New Class button.
+  Similarly for Settings (#dbnav-settings), Backup (#dbnav-backup),
+  Clients (#dbnav-clients), Cancellations (#dbnav-cancellations).
+
+  #ctbody rows are hidden when the page is not on Classes — toBeVisible() fails.
+  The saveSettings() button appears TWICE (bank details + email cards) — use
+  .first() for bank details, .nth(1) for notification email.
+  Export CSV appears on multiple pages — use onclick selector to disambiguate:
+    exportCancellations() / exportTable('classes') / exportTable('bookings') etc.
+
+ADMIN DASHBOARD — CSS CLASSES
+-------------------------------
+Layout:   .db-layout, .db-sidebar, .db-main, .db-topbar, .db-warnings, .db-content
+Nav:      .db-nav-item (.on = active), .db-nav-section
+Pages:    .db-page (.on = visible)
+Stats:    .db-stat-grid, .db-stat-card, .db-stat-lbl, .db-stat-val
+Cards:    .db-section-card, .db-settings-card, .db-export-row
+By Class: .class-group-loc-header (location header), .class-group (class accordion)
+          .blk-badge-active (green), .blk-badge-upcoming (amber)
+Warnings: .db-warnings (wrapper below topbar), #block-warnings (inner div, display:none when empty)
+Mobile:   .db-bottom-nav, .db-bn-item (.on = active)
 
 CLASSES (PRODUCTION — IDs 28–32)
 ---------------------------------
@@ -412,16 +471,15 @@ tests-playwright/
     │   ├── app-url.js           # APP_PATH helper
     │   ├── booking-flow.js      # CB test helpers (incl. agreeAndReserve)
     │   ├── fixture-lookup.js    # role-based block lookup (getBlockByRole)
-    │   ├── admin-auth.js        # admin login + per-class panel UI helpers (Session 17)
-    │   └── admin-db.js          # direct pg helper for admin-only tables (Session 17)
+    │   ├── admin-auth.js        # admin login + per-class panel UI helpers
+    │   └── admin-db.js          # direct pg helper for admin-only tables
     │                            # Exports: grantManualPriority, removeManualPriority,
-    │                            #          hasManualPriority, setBookingStatus (S18),
-    │                            #          resyncBlockBookedCount (S18),
-    │                            #          setBlockBookedCount (S24),
-    │                            #          deleteBookingsForCustomerOnBlock (S18),
-    │                            #          deleteCustomerCascade (S18),
-    │                            #          getParqByCustomerId (S19, used by CB-33
-    │                            #          after Session 20 .select() fix)
+    │                            #          hasManualPriority, setBookingStatus,
+    │                            #          resyncBlockBookedCount,
+    │                            #          setBlockBookedCount,
+    │                            #          deleteBookingsForCustomerOnBlock,
+    │                            #          deleteCustomerCascade,
+    │                            #          getParqByCustomerId
     ├── smoke-01-anon-reads.spec.js
     ├── smoke-02-anon-rpcs.spec.js
     ├── smoke-03-rls-enforcement.spec.js
@@ -438,7 +496,7 @@ tests-playwright/
     ├── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
     └── ac-*.spec.js             # 24 AC spec files covering 24 of 24 scenarios
 
-CURRENT TEST COUNT: 169 tests (all passing — Session 38 complete)
+CURRENT TEST COUNT: 169 tests (all passing — Session 39 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    33 tests covering 33 of 33 CB scenarios (CB suite complete)
   PB:    16 tests — 9 individual Excel-scenario specs + 7 gap-analysis tests
@@ -657,16 +715,13 @@ Run ALL THREE of these EVERY session, regardless of whether the session
 looks test-related:
 
 A. Confirm index.html is present
-   - Check line count (~3,430 lines post-Session 38)
+   - Check line count (~3,815 lines post-Session 39)
    - Copy to /home/claude/index.html as the working file
 
 B. Check test DB fixture TIME drift
    - Run this query against project ID ngzfhamjuviwfwuncrjo. It returns
      one row per active/upcoming block with a `drift_warning` flag for
-     blocks sitting on the exact boundary of their expected window. The
-     coarse bucket-count check used pre-Session-19 was too lenient — it
-     passed when blocks were ONE DAY away from slipping out of their
-     expected window, which broke a Session 19 Batch 6 test run.
+     blocks sitting on the exact boundary of their expected window.
 
        SELECT
          id, class_id, status, start_date,
@@ -682,15 +737,9 @@ B. Check test DB fixture TIME drift
        WHERE status IN ('active','upcoming')
        ORDER BY class_id, start_date;
 
-   - Healthy fixture: every row has drift_warning = NULL. Any non-null
-     drift_warning means a block is one day from changing window, so
-     reseed before any Playwright work this session.
+   - Healthy fixture: every row has drift_warning = NULL.
 
 C. Check test DB fixture STATE drift
-   - Detects accumulated junk from previous Playwright runs (stray
-     test customers, mon-current creeping toward capacity). Catches
-     the failure mode that hit Session 18 (CLASS_FULL on mon-current
-     after 13 stray bookings accumulated over multiple test runs).
    - Run this query against project ID ngzfhamjuviwfwuncrjo:
 
        SELECT
@@ -702,31 +751,16 @@ C. Check test DB fixture STATE drift
             AND booked >= cap AND cap > 2)                      AS unexpectedly_full_blocks;
 
    - Healthy: stray_test_customers low single digits, unexpectedly_full_blocks = 0
-   - Note: the seeded mon-full block is intentionally cap=2/booked=2 — the
-     `cap > 2` filter excludes it.
 
    Report combined result for B + C as a single line near the top of the
-   opening response:
-     ✅ "Test DB fixture looks healthy — all booking windows covered, no state drift."
-     ⚠️ "Test DB fixture has drifted — [details]. Run `npm run seed`
-          from ~/dev/lg-pilates-booking/tests-playwright before any
-          Playwright work this session."
-
-   Don't block the session over either drift check — flag clearly and move on.
+   opening response.
 
 DURING SESSION
 --------------
 - Make all changes to /home/claude/index.html
 - Copy final output to /mnt/user-data/outputs/index.html for Mark to download
 - If any Playwright test is added or substantially modified, TEST-PLAN.md
-  MUST be updated in the same session. Non-negotiable. This means ALL of:
-  (1) suite table spec file count and test count
-  (2) per-suite collapsible summary header ("X spec files, Y tests ✅")
-  (3) scenario table row(s) with spec filename and batch
-  (4) spec file list entry (e.g. "- `se-10-...spec.js` — 1 test")
-  (5) full spec detail entry with What this proves / Steps / What a fail means
-  (6) batch log entry
-  (7) overall total count in header and totals row
+  MUST be updated in the same session. Non-negotiable.
 - When updating TEST-PLAN.md after adding tests, keep the header suite table
   in sync: update the spec file count and test count for the affected suite,
   update the per-tab <summary> header to "X spec files, Y tests ✅", and add
@@ -839,7 +873,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - ✅ Admin Classes (AC)      — 26 tests, 24 scenarios (Batches 18-20)
    - ✅ Admin Clients (ACL)     — 2 tests, 2 genuine scenarios
    - ✅ Schedule Display (SD)   — 6 tests, 6 scenarios
-   - ✅ Settings & Export (SE)  — 16 tests, 16 scenarios (Batches 14, 21, 22, 23, 24, 25)
+   - ✅ Settings & Export (SE)  — 16 tests, 16 scenarios
    - ✅ Edge Cases (EC)         — 15 tests, 13 genuine scenarios
    - ✅ Block Warnings (BLW)    — 8 tests, 8 scenarios
    - ✅ Security (SEC)          — 6 tests, 3 genuine scenarios
@@ -863,15 +897,19 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    check, forwarding to Louise's inbox.
    Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md.
 
-4. CLASS REGISTER FEATURE
-5. DEMO FILE UPDATES (multiple outdated since per-class priority + pro-rata + 4-step flow)
-6. HONEYPOT anti-bot protection
-7. BANK DETAILS — replace placeholder with Louise's real details
-8. HOSTING MIGRATION & CUSTOM DOMAIN (GitHub Pages → Netlify, book.lg-pilates.co.uk)
-9. USER GUIDE — update PDF at post-email milestone
-10. WAITLIST FEATURE — table exists, not yet connected
-11. FILE SPLIT — consider at next major milestone
-12. AUDIT ITEMS:
+4. REPORTS PAGE — monthly trend chart (Session C)
+   Reports page static stats are complete. Next: add monthly bookings/revenue
+   chart requiring a new Supabase query grouping bookings by month.
+
+5. CLASS REGISTER FEATURE
+6. DEMO FILE UPDATES (multiple outdated since per-class priority + pro-rata + 4-step flow)
+7. HONEYPOT anti-bot protection
+8. BANK DETAILS — replace placeholder with Louise's real details
+9. HOSTING MIGRATION & CUSTOM DOMAIN (GitHub Pages → Netlify, book.lg-pilates.co.uk)
+10. USER GUIDE — update PDF at post-email milestone
+11. WAITLIST FEATURE — table exists, not yet connected
+12. FILE SPLIT — consider at next major milestone
+13. AUDIT ITEMS:
     - Swap Supabase anon key to newer publishable key format (at Netlify migration)
     - Enable leaked password protection in Supabase Auth dashboard (manual toggle)
 
@@ -987,11 +1025,13 @@ PLAYWRIGHT / TEST INFRA
   NO grants on customer_class_priority, bookings, customers, cancellations,
   or waitlist. Calls against those tables return null/empty silently rather
   than erroring (RLS behaviour). For fixture writes/reads on admin-only
-  tables, use tests/helpers/admin-db.js (Session 17) which opens a direct
-  Postgres connection via TEST_SUPABASE_DB_URL and bypasses RLS.
-- Admin login helper: tests/helpers/admin-auth.js (Session 17) drives the
-  dashboard login UI via #dash-email / #dash-password. Requires
-  TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD in .env.test.
+  tables, use tests/helpers/admin-db.js which opens a direct Postgres
+  connection via TEST_SUPABASE_DB_URL and bypasses RLS.
+- Admin login helper: tests/helpers/admin-auth.js drives the dashboard login
+  UI via #dash-email / #dash-password. Requires TEST_ADMIN_EMAIL and
+  TEST_ADMIN_PASSWORD in .env.test.
+  loginAsAdmin() asserts #dbnav-bookings.on after login (NOT #tab-bookings.on).
+  openClientsTab() clicks #dbnav-clients (NOT #tab-customers).
 - Per-class panel button selectors use the onclick attribute pattern:
   `button[onclick="toggleClassPriority(custId,classId,true|false)"]`.
   Third arg is true=Remove (currently granted), false=Grant (not granted).
@@ -1006,10 +1046,10 @@ PLAYWRIGHT / TEST INFRA
 - fixture-lookup.js SELECT returns: id, class_id, status, start_date,
   end_date, cap, booked, dates. Any future spec needing other block columns
   (price, weeks, visible) should extend the SELECT.
-- The admin dashboard has 4 tabs + 3 below-tab sections, NOT 6 tabs:
-    Tabs:     #tab-bookings, #tab-classes, #tab-customers, #tab-cancellations
-    Sections: Upcoming Classes (#ctbody), Settings (#setting-bank-*),
-              Backup & Export (Export buttons)
+- The admin dashboard has a SIDEBAR with 8 pages (not 4 tabs + below-tab
+  sections). Page selectors: #dbpage-bookings, #dbpage-byclass,
+  #dbpage-clients, #dbpage-cancellations, #dbpage-classes, #dbpage-reports,
+  #dbpage-settings, #dbpage-backup. Navigation: switchDashPage(name).
 - trg_sync_block_booked_count fires AFTER any INSERT or DELETE on the
   bookings table and recalculates blocks.booked. Any direct UPDATE to
   blocks.booked gets OVERWRITTEN the moment a real booking row is inserted.
@@ -1063,6 +1103,19 @@ PLAYWRIGHT / TEST INFRA
   CSS class toggle. Assert toBeVisible() not toHaveClass(/on/).
 - parq table column names do NOT match the front-end question labels. Always
   verify column names against the DB schema first.
+- The By Class page now groups classes by LOCATION (Baildon/Guiseley) before
+  listing individual class accordions. The location header uses
+  .class-group-loc-header. Each class within a location is a .class-group
+  accordion. Block rows inside a class are styled as distinct cards
+  (green background = active, amber = upcoming).
+- The saveSettings() button appears TWICE on the Settings page (one per card).
+  Use .first() for bank details, .nth(1) for notification email.
+- Export CSV buttons are not unique — multiple buttons say "Export CSV".
+  Always use onclick selectors: exportCancellations(), exportTable('classes'),
+  exportTable('blocks'), exportTable('customers'), exportTable('bookings'),
+  exportAll().
+- BLW specs use #btbody tr (bookings table) as a readiness check after login,
+  NOT #ctbody tr (classes table). #ctbody is only visible on the Classes page.
 
 CARD REDESIGN SELECTOR DISCIPLINE (Session 38)
 ----------------------------------------------
@@ -1172,5 +1225,24 @@ SESSION 38 LEARNINGS — CARD REDESIGN, PLAYWRIGHT SELECTOR HOOKS
   in CARD REDESIGN SELECTOR DISCIPLINE above before running tests.
 - Cosmetic-only changes (colours, fonts, spacing, new elements) don't need
   new Playwright tests. Structural changes that rename or remove elements do.
+
+SESSION 39 LEARNINGS — ADMIN DASHBOARD REDESIGN
+------------------------------------------------
+- The admin dashboard was completely restructured from a tab + below-tab
+  layout to a sidebar with 8 distinct pages. The old #tab-bookings,
+  #tab-classes, #tab-customers, #tab-cancellations elements no longer exist.
+- 76 Playwright tests failed on first run due to stale selectors. All were
+  fixed by updating admin-auth.js (loginAsAdmin, openClientsTab) and 40+
+  spec files to use the new #dbnav-* and #dbpage-* selectors.
+- Key lesson: when the dashboard navigation structure changes, admin-auth.js
+  is the single highest-leverage fix — loginAsAdmin() is called by every
+  admin spec. Fixing it unblocks the majority of failures immediately.
+- #ctbody (classes table) is only visible when the Classes page is active.
+  BLW specs that previously used `#ctbody tr` as a dashboard readiness check
+  were updated to use `#btbody tr` (bookings table, always visible after login).
+- The global CSS `nav { display:flex }` rule conflicts with any `<nav>` element
+  used as a sidebar. Always use `<div>` for sidebar navigation containers.
+- The dashboard redesign was tagged in git as `v-pre-dashboard-redesign`
+  before work began, providing a clean rollback point.
 
 ============================================================
