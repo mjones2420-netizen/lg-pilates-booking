@@ -914,7 +914,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
       </div>
       <div class="mfoot" id="mfoot-confirm" style="display:none">
         <button class="confirm-btn" id="reserve-btn" onclick="confirmBooking()" disabled style="opacity:0.5;cursor:not-allowed;">Reserve My Spot &mdash; <span id="m-btnprice">£60</span> due</button>
-        <button class="confirm-btn" id="stripe-pay-btn" onclick="initiateStripeCheckout()" disabled style="display:none;opacity:0.5;cursor:not-allowed;background:var(--charcoal);">Proceed to Payment &mdash; <span id="m-stripe-btnprice">£60</span></button>
+        <button class="confirm-btn" id="stripe-pay-btn" onclick="confirmBooking()" disabled style="display:none;opacity:0.5;cursor:not-allowed;background:var(--charcoal);">Proceed to Payment &mdash; <span id="m-stripe-btnprice">£60</span></button>
         <div id="tcs-hint" style="text-align:center;font-size:12px;color:var(--light);margin-top:8px;">Please agree to the Terms &amp; Conditions above to continue</div>
       </div>
     </div>
@@ -1738,8 +1738,7 @@ function onTcsChange(){
 }
 
 function initiateStripeCheckout(){
-  // Placeholder — wired up in PM-3
-  console.log("[PM-2] initiateStripeCheckout called — not yet implemented");
+  // No longer called directly — Stripe checkout is initiated inside confirmBooking()
 }
 
 function hasAnyYes(){
@@ -2186,7 +2185,47 @@ function confirmBooking(){
       if(upsertRes.error) throw new Error("Customer upsert failed: "+upsertRes.error.message);
       var customerId=upsertRes.data;
 
-      // Step 2: Atomic capacity check + booking insert via book_if_available RPC
+      // Step 2 (Stripe mode): Save to pending_bookings and redirect to Stripe — no real booking yet
+      if(PAYMENT_MODE==="stripe"){
+        var pendingParq=null;
+        if(isNew&&parqData){
+          var qKeys2=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
+          var parqAnswers={};
+          for(var qi2=0;qi2<parqData.questions.length;qi2++){ parqAnswers[qKeys2[qi2]]=parqData.questions[qi2].a; }
+          pendingParq={
+            age:parqData.age, emergency_name:parqData.emergencyName,
+            emergency_relationship:parqData.emergencyRelationship, emergency_phone:parqData.emergencyPhone,
+            yes_details:parqData.details, additional_notes:parqData.other,
+            print_name:parqData.printName, sign_date:parqData.signDate,
+            answers:parqAnswers
+          };
+        }
+        var pendingFetch=await fetch(SUPABASE_URL+"/functions/v1/stripe-checkout",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPABASE_KEY},
+          body:JSON.stringify({
+            class_id:c.id, block_id:blk.id,
+            first_name:fn, last_name:ln, email:em, phone:ph,
+            customer_type:customerType,
+            amount_pence:Math.round(calcProrata(blk).totalPrice*100),
+            class_name:c.name,
+            parq_data:pendingParq,
+            success_url:window.location.origin+window.location.pathname+"?payment=success",
+            cancel_url:window.location.origin+window.location.pathname+"?payment=cancelled",
+            is_test:IS_TEST_ENV
+          })
+        });
+        var pendingData=await pendingFetch.json();
+        if(pendingData.url){
+          window.location.href=pendingData.url;
+        } else {
+          showToast("Payment could not be started. Please try again.");
+          if(confirmBtn){ confirmBtn.disabled=false; confirmBtn.textContent="Proceed to Payment"; }
+        }
+        return;
+      }
+
+      // Step 2 (bank transfer mode): Atomic capacity check + booking insert
       var bookRes=await sb.rpc("book_if_available", {
         p_block_id: blk.id,
         p_class_id: c.id,
@@ -2233,37 +2272,39 @@ function confirmBooking(){
         }catch(parqErr){ console.error("PAR-Q save error (booking still saved):",parqErr); }
       }
 
-      // Step 4: Send booking reserved email (non-fatal — booking already saved)
-      try{
-        var emailHtml=buildReservedEmailHtml({
-          firstName:fn, lastName:ln,
-          className:c.name, venue:c.venue, loc:c.loc,
-          day:c.day, time:c.time, endTime:c.end_time,
-          blockDates:blk.dates||[],
-          amountDue:String(calcProrata(blk).totalPrice),
-          bankName:appSettings.bankName||"",
-          bankSortCode:appSettings.bankSortCode||"",
-          bankAccountNo:appSettings.bankAccountNo||""
-        });
-        await sendBookingEmail(em,"Your LG Pilates booking is reserved — "+c.name,emailHtml);
-
-        // Send new booking alert to Louise (trigger #5) — non-fatal
-        if(appSettings.adminEmail){
-          var dashUrl=window.location.origin+window.location.pathname+'#dashboard';
-          var adminHtml=buildAdminAlertEmailHtml({
+      // Step 4: Send booking reserved email (bank transfer only)
+      if(PAYMENT_MODE==="bank_transfer"){
+        try{
+          var emailHtml=buildReservedEmailHtml({
             firstName:fn, lastName:ln,
             className:c.name, venue:c.venue, loc:c.loc,
             day:c.day, time:c.time, endTime:c.end_time,
             blockDates:blk.dates||[],
             amountDue:String(calcProrata(blk).totalPrice),
-            customerType:customerType,
-            dashboardUrl:dashUrl
+            bankName:appSettings.bankName||"",
+            bankSortCode:appSettings.bankSortCode||"",
+            bankAccountNo:appSettings.bankAccountNo||""
           });
-          await sendBookingEmail(appSettings.adminEmail,"New booking — "+fn+" "+ln+", "+c.day+" "+c.time+", "+c.venue,adminHtml);
-        }
-      }catch(emailErr){ console.warn("Email step error (non-fatal):",emailErr); }
+          await sendBookingEmail(em,"Your LG Pilates booking is reserved — "+c.name,emailHtml);
 
-      // Step 5: Show success screen
+          // Send new booking alert to Louise (trigger #5) — non-fatal
+          if(appSettings.adminEmail){
+            var dashUrl=window.location.origin+window.location.pathname+'#dashboard';
+            var adminHtml=buildAdminAlertEmailHtml({
+              firstName:fn, lastName:ln,
+              className:c.name, venue:c.venue, loc:c.loc,
+              day:c.day, time:c.time, endTime:c.end_time,
+              blockDates:blk.dates||[],
+              amountDue:String(calcProrata(blk).totalPrice),
+              customerType:customerType,
+              dashboardUrl:dashUrl
+            });
+            await sendBookingEmail(appSettings.adminEmail,"New booking — "+fn+" "+ln+", "+c.day+" "+c.time+", "+c.venue,adminHtml);
+          }
+        }catch(emailErr){ console.warn("Email step error (non-fatal):",emailErr); }
+      }
+
+      // Step 5: Show success screen (bank transfer only — Stripe success handled via redirect)
       var html="";
       html+="<div class=\"srow\"><span>Name</span><span>"+sanitise(fn)+" "+sanitise(ln)+"</span></div>";
       html+="<div class=\"srow\"><span>Class</span><span>"+sanitise(c.name)+"</span></div>";
@@ -3907,9 +3948,51 @@ function onTimeBlur(fieldId){
 
   buildFilters();
   renderGrid();
+
+  // Handle Stripe redirect back to app after payment
+  (function handleStripeRedirect(){
+    var params=new URLSearchParams(window.location.search);
+    var payment=params.get("payment");
+    if(!payment) return;
+    // Clean the URL so a refresh doesn't re-trigger
+    var cleanUrl=window.location.pathname+(IS_TEST_ENV?"?env=test":"");
+    window.history.replaceState({},"",cleanUrl);
+    if(payment==="success"){
+      var overlay=document.getElementById("stripe-success-overlay");
+      var detailEl=document.getElementById("stripe-success-detail");
+      overlay.style.display="flex";
+      detailEl.innerHTML=
+        '<div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);font-size:13px;">'+
+          '<span style="color:var(--mid);">Status</span>'+
+          '<span style="font-weight:500;color:#3a8a6a;">&#10003; Confirmed</span>'+
+        '</div>'+
+        '<div style="display:flex;justify-content:space-between;padding:10px 14px;font-size:13px;">'+
+          '<span style="color:var(--mid);">Next step</span>'+
+          '<span style="font-weight:500;">Check your email for details</span>'+
+        '</div>';
+    } else if(payment==="cancelled"){
+      showToast("Payment was not completed — you can try again.");
+    }
+  })();
 })();
 
 </script>
+
+<!-- Stripe Payment Success Screen -->
+<div class="overlay" id="stripe-success-overlay" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal" style="max-width:480px;overflow:hidden;border-radius:12px;padding:0;">
+    <div style="background:var(--sage);padding:28px 28px 24px;text-align:center;">
+      <div style="font-size:48px;color:#fff;margin-bottom:12px;">&#10003;</div>
+      <div style="font-size:22px;font-weight:500;color:#fff;font-family:'Raleway',sans-serif;margin-bottom:6px;">Payment confirmed</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.85);font-family:'Open Sans',sans-serif;">Your booking is now secured</div>
+    </div>
+    <div style="padding:24px 28px;">
+      <p style="font-size:14px;color:var(--mid);margin:0 0 20px;line-height:1.6;font-family:'Open Sans',sans-serif;">Thank you — your payment has been received and your place is confirmed. A confirmation email is on its way to you.</p>
+      <div id="stripe-success-detail" style="background:var(--cream);border-radius:4px;overflow:hidden;margin-bottom:24px;"></div>
+      <button class="confirm-btn" onclick="document.getElementById('stripe-success-overlay').style.display='none';">Back to Schedule</button>
+    </div>
+  </div>
+</div>
 
 <!-- Remove from Block Modal -->
 <div class="overlay" id="rfb-overlay" style="display:none" onclick="if(event.target===this)closeRfbModal()">

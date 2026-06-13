@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 13 Jun 2026 (Session 41)
+Last updated: 13 Jun 2026 (Session 42)
 ============================================================
 
 ABOUT THIS FILE
@@ -55,6 +55,8 @@ Anon Key:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
 Schema is a byte-for-byte mirror of production. Verify with:
     npm run schema-check
 Both should return fingerprint dad311c8a152bc0dbec1cb3fa0c584d5, 248 objects.
+NOTE: Session 42 added pending_bookings table to both DBs — schema fingerprint
+will have changed. Run npm run schema-check to get the new value and update here.
 
 Test admin user:
   Email:    admin@lg-pilates-test.local
@@ -106,6 +108,15 @@ settings                 — key/value store for bank details, admin email, and 
                            they live in Supabase Edge Function environment variables only.
 waitlist                 — placeholder for future waitlist feature (id, class_id, customer_id, created_at)
                            RLS enabled. Empty — not yet connected to booking flow.
+pending_bookings         — temporary holding table for Stripe bookings in progress
+                           Columns: id (UUID PK), class_id, block_id, first_name, last_name,
+                           email, phone, customer_type, amount_pence, parq_data (JSONB),
+                           created_at, expires_at (2 hours after creation)
+                           RLS: anon INSERT allowed; authenticated SELECT/DELETE only.
+                           Rows are inserted by the stripe-checkout Edge Function (service role)
+                           and deleted by the stripe-webhook Edge Function after booking confirmed.
+                           Abandoned rows expire after 2 hours (manual cleanup needed until a
+                           scheduled function is added).
 cancellations            — audit trail of all client removals from blocks
                            Columns: id, customer_id, class_id, block_id, first_name, last_name, email,
                            class_name, venue, block_start_date, block_end_date, sessions_attended,
@@ -906,7 +917,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    check, forwarding to Louise's inbox.
    Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md.
 
-4. PAYMENT MODE FEATURE FLAG + STRIPE INTEGRATION — Session PM-3 next
+4. PAYMENT MODE FEATURE FLAG + STRIPE INTEGRATION — Session PM-4 next
    Fully scoped. Spec file: PAYMENT-MODE-SPEC.md (repo root).
    Allows Louise to switch between bank transfer and Stripe Checkout from
    the admin Settings page. Bank transfer is the default at launch.
@@ -914,8 +925,13 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    PM-1 complete: feature flag foundation (settings UI, PAYMENT_MODE constant, Stripe badge).
    PM-2 complete: booking modal Step 4 branches on payment mode — bank transfer
    path unchanged; Stripe path shows new explainer and Proceed to Payment button.
-   PM-3 next: Stripe Checkout integration (Edge Function, redirect, session ID storage).
-   Requires Mark to create a Stripe account and obtain test keys before PM-3.
+   PM-3 complete: Stripe Checkout integration. stripe-checkout Edge Function deployed (v2).
+   pending_bookings table created on both DBs. Booking flow redirects to Stripe without
+   saving a real booking. Payment success shows a full confirmation screen (not a toast).
+   Stripe account: Mark's account, GBP, test keys in use.
+   PM-4 next: stripe-webhook Edge Function — creates real booking after payment confirmed,
+   saves PAR-Q if new client, sends confirmation emails (triggers 2 and 5S).
+   Playwright specs for PM-3/PM-4 deferred to next batch session after PM-4 is complete.
 
    PAYMENT MODE COMMUNICATION RULES (apply to ALL PM sessions):
    - Before each session: explain the aim and objectives in plain English
@@ -1318,5 +1334,33 @@ SESSION 41 LEARNINGS — PM-2 BOOKING MODAL BRANCH, ST-07/ST-08
 - ST specs that set payment_mode to stripe must always restore bank_transfer
   in afterEach, even if the test fails mid-way, to prevent mode bleed into
   other specs in the suite.
+
+SESSION 42 LEARNINGS — PM-3 STRIPE CHECKOUT, PENDING BOOKINGS
+--------------------------------------------------------------
+- Stripe account: Mark's account, GBP, test mode. Secret key stored as
+  SUPABASE_SECRET_KEY Edge Function secret on both prod and test projects.
+  Publishable key stored in settings table under stripe_publishable_key.
+- stripe-checkout Edge Function (v2, deployed via MCP): inserts a
+  pending_bookings row using service role, creates Stripe Checkout Session
+  with pending_booking_id as metadata, returns the Stripe URL.
+  CLI deployment failed silently on first attempt — use MCP deploy_edge_function
+  as the reliable fallback when CLI deploys don't take.
+- Do NOT save a real booking before Stripe redirects — create a pending_bookings
+  row instead. The webhook (PM-4) creates the real booking after payment confirmed.
+- The "Proceed to Payment" button (id="stripe-pay-btn") calls confirmBooking()
+  (same as reserve-btn), NOT initiateStripeCheckout() directly. confirmBooking()
+  branches on PAYMENT_MODE — bank transfer path unchanged, Stripe path writes
+  to pending_bookings via Edge Function and redirects.
+- Payment success screen: full overlay (#stripe-success-overlay) shown on
+  ?payment=success redirect — not a toast. Dismissed via "Back to Schedule" button.
+  Currently shows generic "Confirmed / Check your email" rows. PM-4 webhook will
+  populate real booking details once confirmed.
+- Stripe takes ~1.5% + 20p per transaction. Louise receives the net amount.
+- anon role cannot SELECT from pending_bookings — service role (Edge Function)
+  handles all reads and deletes on that table.
+- pending_bookings rows expire_at = NOW() + 2 hours. No automated cleanup yet —
+  add a scheduled function post-launch or clean manually via SQL editor.
+- Running index.html as file:// (not via http server) silently breaks all
+  cross-origin Edge Function calls. Always use python3 -m http.server 8000.
 
 ============================================================
