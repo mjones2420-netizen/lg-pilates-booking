@@ -27,6 +27,7 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 | 14 | T3-02 | [User guide PDF update](#t3-02--user-guide-pdf-update) | Update Louise's user guide once email and Netlify are live | 🟢 Tier 3 |
 | 15 | T3-05 | [Swap Supabase anon key](#t3-05--swap-supabase-anon-key-to-newer-publishable-key-format) | Migrate to newer publishable key format — do alongside Netlify migration | 🟢 Tier 3 |
 | 16 | T3-03 | [File split](#t3-03--file-split) | Split `index.html` into separate CSS/JS/HTML files at a future milestone | 🟢 Tier 3 |
+| 17 | T3-07 | [Pending bookings cleanup](#t3-07--scheduled-cleanup-of-expired-pending_bookings-rows) | Nightly scheduled function to delete expired pending_bookings rows from abandoned Stripe payments | 🟢 Tier 3 |
 
 *T3-04 and T3-06 are listed as Tier 3 IDs but are urgent enough to act on before the system goes live with real clients.
 
@@ -208,6 +209,13 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 **Effort:** Zero code — a single manual toggle in the Supabase dashboard.
 **Dependencies:** None.
 **Action:** Louise (or Mark) enables this in the Supabase dashboard under Authentication → Settings. No code change needed.
+
+### T3-07 · Scheduled cleanup of expired pending_bookings rows
+**What:** The `pending_bookings` table holds temporary records created when a client starts a Stripe payment. Rows expire after 2 hours but Postgres does not auto-delete them — stale rows accumulate from abandoned payments.
+**Why it matters:** Harmless in small volumes, but will grow indefinitely without cleanup. A nightly sweep keeps the table tidy.
+**Effort:** Small — a Supabase scheduled Edge Function that runs nightly and deletes rows where `expires_at < NOW()`.
+**Dependencies:** T1-04 (Netlify migration) — stable hosting is a natural prerequisite before adding scheduled functions. Stripe integration (PM-4+) must be live first.
+**Action:** Create a `cleanup-pending-bookings` Edge Function and schedule it via Supabase's cron scheduler (available on Pro plan) or a Netlify scheduled function.
 
 ---
 

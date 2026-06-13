@@ -8,10 +8,11 @@
 //   After the Item-20 grant tightening, the anon role should have only the
 //   following table privileges (per context.txt ANON ROLE GRANTS):
 //
-//     blocks   → SELECT
-//     classes  → SELECT
-//     parq     → INSERT
-//     settings → SELECT
+//     blocks           → SELECT
+//     classes          → SELECT
+//     parq             → INSERT
+//     pending_bookings → INSERT
+//     settings         → SELECT
 //
 //   All other tables (bookings, customers, cancellations, waitlist,
 //   customer_class_priority) should have NO anon grants. Public reads of
@@ -44,10 +45,11 @@ const APP_URL = process.env.TEST_APP_URL;
 // Expected anon grants per context.txt ANON ROLE GRANTS section.
 // Map of table_name → array of privileges (sorted).
 const EXPECTED_ANON_GRANTS = {
-  blocks:   ['SELECT'],
-  classes:  ['SELECT'],
-  parq:     ['INSERT'],
-  settings: ['SELECT'],
+  blocks:            ['SELECT'],
+  classes:           ['SELECT'],
+  parq:              ['INSERT'],
+  pending_bookings:  ['INSERT'],
+  settings:          ['SELECT'],
 };
 
 // Tables that MUST NOT have any anon grants.
