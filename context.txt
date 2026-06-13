@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 12 Jun 2026 (Session 40)
+Last updated: 13 Jun 2026 (Session 41)
 ============================================================
 
 ABOUT THIS FILE
@@ -498,12 +498,12 @@ tests-playwright/
     ├── sec-*.spec.js            # 3 SEC spec files covering 3 of 3 genuine scenarios
     ├── ec-*.spec.js             # 13 EC spec files covering 13 of 13 genuine scenarios
     ├── blw-*.spec.js            # 8 BLW spec files covering 8 of 8 genuine scenarios
-    ├── se-*.spec.js             # 20 SE spec files covering 20 scenarios
+    ├── se-*.spec.js             # 17 SE spec files covering 17 scenarios
+    ├── st-*.spec.js             # 9 ST spec files covering ST-01 to ST-08 (PM-1 + PM-2)
     ├── ab-*.spec.js             # 13 AB spec files covering 21 of 21 genuine scenarios
-    ├── ac-*.spec.js             # 24 AC spec files covering 24 of 24 scenarios
-    └── st-*.spec.js             # 7 ST spec files covering ST-01–06 + ST-16 (PM-1)
+    └── ac-*.spec.js             # 24 AC spec files covering 24 of 24 scenarios
 
-CURRENT TEST COUNT: 179 tests (all passing — Session 41 / PM-1 complete)
+CURRENT TEST COUNT: 171 tests (all passing — Session 41 complete)
   Smoke: 14 tests (anon reads, RPCs, RLS enforcement, UI loads)
   CB:    33 tests covering 33 of 33 CB scenarios (CB suite complete)
   PB:    16 tests — 9 individual Excel-scenario specs + 7 gap-analysis tests
@@ -515,10 +515,10 @@ CURRENT TEST COUNT: 179 tests (all passing — Session 41 / PM-1 complete)
   SEC:   6 tests in 3 spec files covering 3 of 3 genuine SEC scenarios
   EC:    15 tests in 13 spec files covering 13 of 13 genuine EC scenarios
   BLW:   10 tests covering 9 of 9 BLW scenarios (BLW suite complete)
-  SE:    20 tests covering 20 SE scenarios (SE-18/19/20 added PM-1)
+  SE:    17 tests covering 17 SE scenarios
+  ST:    9 tests in 9 spec files covering ST-01 to ST-08 (PM-1 + PM-2 complete)
   AB:    21 tests in 13 spec files covering 21 of 21 genuine AB scenarios
   AC:    26 tests in 24 spec files covering 24 of 24 AC scenarios (AC suite complete)
-  ST:    7 tests covering ST-01/02/03/04/05/06/16 (PM-1 scenarios)
 
 CB-12 is covered by CB-01 (the new-client happy path includes T&Cs agreement).
 The Coverage Tracker shows it as ✅ for that reason — no separate spec file exists.
@@ -723,7 +723,7 @@ Run ALL THREE of these EVERY session, regardless of whether the session
 looks test-related:
 
 A. Confirm index.html is present
-   - Check line count (~3,815 lines post-Session 39)
+   - Check line count (~3,933 lines post-Session 41)
    - Copy to /home/claude/index.html as the working file
 
 B. Check test DB fixture TIME drift
@@ -881,12 +881,12 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    - ✅ Admin Classes (AC)      — 26 tests, 24 scenarios (Batches 18-20)
    - ✅ Admin Clients (ACL)     — 2 tests, 2 genuine scenarios
    - ✅ Schedule Display (SD)   — 6 tests, 6 scenarios
-   - ✅ Settings & Export (SE)  — 20 tests, 20 scenarios
+   - ✅ Settings & Export (SE)  — 16 tests, 16 scenarios
+   - ✅ Stripe (ST)             — 9 tests, ST-01 to ST-08 (PM-1 + PM-2)
    - ✅ Edge Cases (EC)         — 15 tests, 13 genuine scenarios
    - ✅ Block Warnings (BLW)    — 8 tests, 8 scenarios
    - ✅ Security (SEC)          — 6 tests, 3 genuine scenarios
    - ✅ Smoke                   — 14 tests
-   - 🔄 Stripe (ST)            — 7 tests (PM-1); ST-07/08 next (PM-2)
 
    INFRASTRUCTURE BACKLOG:
    - ✅ GitHub Actions CI for auto-run on push (Session 32)
@@ -906,18 +906,16 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    check, forwarding to Louise's inbox.
    Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md.
 
-4. PAYMENT MODE FEATURE FLAG + STRIPE INTEGRATION — Session PM-2 next
+4. PAYMENT MODE FEATURE FLAG + STRIPE INTEGRATION — Session PM-3 next
    Fully scoped. Spec file: PAYMENT-MODE-SPEC.md (repo root).
-   PM-1 complete: payment_mode setting, admin Settings Payment Method card,
-   PAYMENT_MODE constant, STRIPE MODE topbar badge, 10 new Playwright specs.
+   Allows Louise to switch between bank transfer and Stripe Checkout from
+   the admin Settings page. Bank transfer is the default at launch.
    Build plan: 6 sessions (PM-1 to PM-6). See PAYMENT-MODE-SPEC.md.
-
-   SESSION PM-2 SCOPE:
-   - Step 4 branch: bank transfer view vs Stripe "Proceed to Payment" button
-   - Bank transfer path: zero changes to existing behaviour
-   - Stripe path: button present, calls placeholder function (no Stripe yet)
-   - ST-07 and ST-08 specs
-   - No Stripe account needed yet
+   PM-1 complete: feature flag foundation (settings UI, PAYMENT_MODE constant, Stripe badge).
+   PM-2 complete: booking modal Step 4 branches on payment mode — bank transfer
+   path unchanged; Stripe path shows new explainer and Proceed to Payment button.
+   PM-3 next: Stripe Checkout integration (Edge Function, redirect, session ID storage).
+   Requires Mark to create a Stripe account and obtain test keys before PM-3.
 
    PAYMENT MODE COMMUNICATION RULES (apply to ALL PM sessions):
    - Before each session: explain the aim and objectives in plain English
@@ -1275,22 +1273,7 @@ SESSION 39 LEARNINGS — ADMIN DASHBOARD REDESIGN
 - The dashboard redesign was tagged in git as `v-pre-dashboard-redesign`
   before work began, providing a clean rollback point.
 
-SESSION 41 LEARNINGS — PM-1 PAYMENT MODE FOUNDATION
-----------------------------------------------------
-- `payment_mode` and `stripe_publishable_key` rows added to settings table seed.
-- `PAYMENT_MODE` var declared at top of script, loaded from settings on page init.
-- New Payment Method card on Settings page: radio group (bank transfer / Stripe),
-  masked publishable key field with show/hide toggle, separate `savePaymentSettings()`
-  function with `pk_` prefix validation.
-- STRIPE MODE amber badge in Settings page topbar (#stripe-mode-badge), controlled
-  by `updateStripeBadge()`.
-- `.db-page.on` changed from `display:block` to `display:flex; flex-direction:column;
-  flex:1; min-height:0; overflow:hidden` — fixes content area scroll on all dashboard
-  pages (the previous value prevented the third settings card from being reachable).
-- ST spec `beforeEach` DB resets must use `admin-db.js` direct pg — the anon `sb`
-  client has SELECT-only on the settings table; upserts silently no-op.
-- `resetPaymentMode()` helper added to `admin-db.js` for use by ST specs that need
-  a guaranteed bank_transfer baseline before each test.
+SESSION 40 — PAYMENT MODE FEATURE SCOPED
 -----------------------------------------
 - Payment mode feature flag fully scoped. Spec saved as PAYMENT-MODE-SPEC.md
   at repo root. 6 sessions planned (PM-1 to PM-6).
@@ -1314,5 +1297,26 @@ SESSION 41 LEARNINGS — PM-1 PAYMENT MODE FOUNDATION
 - Mark's preference for PM sessions: explain aim and objectives in plain
   English at the start of every session; keep jargon low; one step at a
   time with sign-off at each step.
+
+SESSION 41 LEARNINGS — PM-2 BOOKING MODAL BRANCH, ST-07/ST-08
+--------------------------------------------------------------
+- PM-2 branches Step 4 of the booking modal on PAYMENT_MODE. HTML elements:
+  #step4-bank-section (visible in bank_transfer), #step4-stripe-section
+  (visible in stripe), #reserve-btn (bank transfer footer), #stripe-pay-btn
+  (Stripe footer, background var(--charcoal)). goStep3() and onTcsChange()
+  both branch on PAYMENT_MODE. initiateStripeCheckout() is a console-only
+  placeholder until PM-3.
+- The anon sb client CANNOT update the settings table — RLS allows INSERT
+  for anon but UPDATE is auth-only. Specs that need to write payment_mode
+  must use direct pg (Pool from TEST_SUPABASE_DB_URL), same pattern as
+  admin-db.js. Silently failing upserts are the failure mode — no error
+  thrown, the DB value simply doesn't change.
+- returning-one already has a confirmed booking on mon-current, so using
+  that card in the booking modal triggers the duplicate-detection path
+  (showAlreadyBookedView) instead of advancing to Step 4. Use fri-upcoming
+  for returning-client Step 4 specs — returning-one has no booking there.
+- ST specs that set payment_mode to stripe must always restore bank_transfer
+  in afterEach, even if the test fails mid-way, to prevent mode bleed into
+  other specs in the suite.
 
 ============================================================

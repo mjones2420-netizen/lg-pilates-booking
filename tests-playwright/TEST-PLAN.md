@@ -19,7 +19,7 @@
 | Edge Cases (EC) | 13 | 15 |
 | Block Warnings (BLW) | 9 | 10 |
 | Security (SEC) | 3 | 6 |
-| Stripe (ST) | 7 | 7 |
+| Stripe (ST) | 9 | 9 |
 | **Total** | **145** | **179** |
 
 > Tests exceed spec files where one file covers multiple scenarios (e.g. cb-01 has 7 sub-tests, ac-24 has 3, ec-14 has 3, sec-06 has 3). Tests exceed Excel scenarios because smoke tests and PB-X gap-analysis tests are not in the Excel sheet, and some Excel scenarios share a spec file (e.g. CB-12 covered by cb-01, PB-03 covered by pb-10).
@@ -153,8 +153,10 @@
 - `se-18-payment-mode-card-visible.spec.js` — 1 test
 - `se-19-payment-mode-toggle-persists.spec.js` — 1 test
 - `se-20-stripe-pk-saves-reloads.spec.js` — 1 test
+- `st-07-step4-bank-transfer-mode.spec.js` — 1 test
+- `st-08-step4-stripe-mode.spec.js` — 1 test
 
-**Stripe (7 files, 7 tests)**
+**Stripe (9 files, 9 tests)**
 - `st-01-stripe-toggle-visible.spec.js` — 1 test
 - `st-02-save-bank-transfer.spec.js` — 1 test
 - `st-03-save-stripe-mode.spec.js` — 1 test
@@ -533,9 +535,9 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Stripe (ST) — 7 spec files, 7 tests ✅</strong></summary>
+<summary><strong>Stripe (ST) — 9 spec files, 9 tests ✅</strong></summary>
 
-### Stripe (ST) — PM-1 Complete ✅
+### Stripe (ST) — PM-1 + PM-2 Complete ✅
 
 | ID | Scenario | Status | Batch |
 |---|---|---|---|
@@ -545,8 +547,8 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | ST-04 | Stripe publishable key field hidden in bank transfer mode | ✅ st-04-pk-field-hidden-bank-transfer.spec.js | PM-1 |
 | ST-05 | Stripe publishable key field shown in Stripe mode | ✅ st-05-pk-field-shown-stripe.spec.js | PM-1 |
 | ST-06 | Invalid publishable key rejected (doesn't start with pk_) | ✅ st-06-invalid-pk-rejected.spec.js | PM-1 |
-| ST-07 | Booking modal Step 4 shows bank details in bank transfer mode | ⬜ | PM-2 |
-| ST-08 | Booking modal Step 4 shows "Proceed to Payment" in Stripe mode | ⬜ | PM-2 |
+| ST-07 | Booking modal Step 4 shows bank details in bank transfer mode | ✅ st-07-step4-bank-transfer-mode.spec.js | PM-2 |
+| ST-08 | Booking modal Step 4 shows "Proceed to Payment" in Stripe mode | ✅ st-08-step4-stripe-mode.spec.js | PM-2 |
 | ST-09 | Stripe Checkout redirect fires on Step 4 button click | ⬜ | PM-3 |
 | ST-10 | Success redirect sets booking to confirmed | ⬜ | PM-3 |
 | ST-11 | Cancel redirect shows toast and deletes reserved booking | ⬜ | PM-3 |
@@ -592,6 +594,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 25 ✅ | Email notifications (trigger 3) | 1 | SE-15 — admin alert only on cancellation (no client email at RFB time). |
 | Batch 26 ✅ | Email notifications (trigger 4) + email wording review | 1 | SE-16 refund confirmation emails — client email only (no admin alert). All 6 email templates reviewed and wording updated; session pills replace block dates row; zero-refund cancellations auto-send client email immediately; admin cancel/refund alerts removed. |
 | Batch 27 ✅ | Block Warnings (pending refunds) | 2 | BLW-09 — orange advisory banner shows count of cancellations awaiting refund decision. Two sub-tests: banner appears with count + View Cancellations button; count decreases after marking refunded. Uses direct-pg cancellation insert for setup. Robust to stray cancellation rows from previous test runs. |
+| Batch 28 ✅ | Stripe — PM-2 booking modal Step 4 branch | 2 | ST-07 and ST-08 — verify that Step 4 of the booking modal branches correctly on payment mode. ST-07 confirms bank transfer section and Reserve button visible in bank_transfer mode. ST-08 confirms Stripe explainer and Proceed to Payment button visible in stripe mode, with bank transfer section hidden. payment_mode set directly in DB before each test; restored to bank_transfer in afterEach. |
 
 ---
 
@@ -4105,6 +4108,51 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 ---
 
 </details>
+
+### ST-07 — Booking modal Step 4: bank transfer mode
+
+**File:** `st-07-step4-bank-transfer-mode.spec.js`
+**Suite:** Stripe (ST) | **Batch:** 28 (PM-2)
+
+**Scenario:** When `payment_mode` is `bank_transfer`, Step 4 of the booking modal shows the bank transfer section and Reserve My Spot button, and hides the Stripe section and Proceed to Payment button.
+
+**Preconditions:** `payment_mode` set to `bank_transfer` in DB before page load. `returning-one@test.example` exists as a fixture customer with a booking on `mon-current`, so the returning-client path is taken (auto-advances to Step 4 without PAR-Q or emergency steps).
+
+**Steps:**
+1. Upsert `payment_mode = bank_transfer` in settings table
+2. Navigate to app in test mode, verify TEST MODE banner
+3. Open Monday current block modal, fill Step 1 with returning-one email
+4. Click Continue — returning client path auto-advances to Step 4
+5. Assert `#step4-bank-section` visible
+6. Assert `#step4-stripe-section` hidden
+7. Assert `#reserve-btn` visible, `#stripe-pay-btn` hidden
+
+**Cleanup:** afterEach restores `payment_mode = bank_transfer` in DB.
+
+---
+
+### ST-08 — Booking modal Step 4: Stripe mode
+
+**File:** `st-08-step4-stripe-mode.spec.js`
+**Suite:** Stripe (ST) | **Batch:** 28 (PM-2)
+
+**Scenario:** When `payment_mode` is `stripe`, Step 4 of the booking modal shows the Stripe explainer and Proceed to Payment button, and hides the bank transfer section and Reserve button.
+
+**Preconditions:** `payment_mode` set to `stripe` in DB before page load so `PAYMENT_MODE` is initialised correctly on app init. `returning-one@test.example` used for returning-client path to Step 4.
+
+**Steps:**
+1. Upsert `payment_mode = stripe` in settings table
+2. Navigate to app in test mode, verify TEST MODE banner
+3. Open Monday current block modal, fill Step 1 with returning-one email
+4. Click Continue — returning client path auto-advances to Step 4
+5. Assert `#step4-stripe-section` visible
+6. Assert `#step4-bank-section` hidden
+7. Assert `#stripe-pay-btn` visible and contains text "Proceed to Payment"
+8. Assert `#reserve-btn` hidden
+
+**Cleanup:** afterEach restores `payment_mode = bank_transfer` in DB.
+
+---
 
 ## Glossary
 

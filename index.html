@@ -846,17 +846,25 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 
           <div id="prorata-note" style="display:none;font-size:13px;color:var(--mid);background:#fff8ec;border:1px solid #f0e0a0;border-radius:3px;padding:10px 12px;margin-bottom:14px;line-height:1.6;"></div>
 
-          <div style="background:var(--cream); border-left:4px solid var(--clay); border-radius:3px; padding:16px 18px; margin-bottom:22px;">
-            <div style="font-family:'Raleway',sans-serif; font-size:20px; font-weight:500; color:var(--charcoal); margin-bottom:6px;">Reserve your space</div>
-            <div style="font-size:14px; color:var(--mid); line-height:1.7;">You are reserving a spot on this block. <strong>Your place is not confirmed until payment is received.</strong> Once Louise has received your payment she will confirm your booking by email.</div>
+          <div id="step4-bank-section">
+            <div style="background:var(--cream); border-left:4px solid var(--clay); border-radius:3px; padding:16px 18px; margin-bottom:22px;">
+              <div style="font-family:'Raleway',sans-serif; font-size:20px; font-weight:500; color:var(--charcoal); margin-bottom:6px;">Reserve your space</div>
+              <div style="font-size:14px; color:var(--mid); line-height:1.7;">You are reserving a spot on this block. <strong>Your place is not confirmed until payment is received.</strong> Once Louise has received your payment she will confirm your booking by email.</div>
+            </div>
+            <div class="pay-lbl" style="margin-bottom:10px;">Pay by Bank Transfer within 48 hours</div>
+            <div class="bank-details">
+              <div class="bank-row"><span class="bank-lbl">Name</span><span class="bank-val" id="bank-name-1"></span></div>
+              <div class="bank-row"><span class="bank-lbl">Sort Code</span><span class="bank-val" id="bank-sort-1"></span></div>
+              <div class="bank-row"><span class="bank-lbl">Account No.</span><span class="bank-val" id="bank-acc-1"></span></div>
+              <div class="bank-row"><span class="bank-lbl">Reference</span><span class="bank-val" id="m-reference">Your name + class day</span></div>
+            </div>
           </div>
 
-          <div class="pay-lbl" style="margin-bottom:10px;">Pay by Bank Transfer within 48 hours</div>
-          <div class="bank-details">
-            <div class="bank-row"><span class="bank-lbl">Name</span><span class="bank-val" id="bank-name-1"></span></div>
-            <div class="bank-row"><span class="bank-lbl">Sort Code</span><span class="bank-val" id="bank-sort-1"></span></div>
-            <div class="bank-row"><span class="bank-lbl">Account No.</span><span class="bank-val" id="bank-acc-1"></span></div>
-            <div class="bank-row"><span class="bank-lbl">Reference</span><span class="bank-val" id="m-reference">Your name + class day</span></div>
+          <div id="step4-stripe-section" style="display:none;">
+            <div style="background:var(--cream); border-left:4px solid var(--sage); border-radius:3px; padding:16px 18px; margin-bottom:22px;">
+              <div style="font-family:'Raleway',sans-serif; font-size:20px; font-weight:500; color:var(--charcoal); margin-bottom:6px;">Complete your booking</div>
+              <div style="font-size:14px; color:var(--mid); line-height:1.7;">You'll be taken to our secure payment page to pay <strong id="step4-stripe-price"></strong> now. Once payment is confirmed your booking will be secured and Louise will be notified.</div>
+            </div>
           </div>
 
           <div style="border:1px solid var(--border);border-radius:4px;margin-top:20px;overflow:hidden;">
@@ -906,6 +914,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
       </div>
       <div class="mfoot" id="mfoot-confirm" style="display:none">
         <button class="confirm-btn" id="reserve-btn" onclick="confirmBooking()" disabled style="opacity:0.5;cursor:not-allowed;">Reserve My Spot &mdash; <span id="m-btnprice">£60</span> due</button>
+        <button class="confirm-btn" id="stripe-pay-btn" onclick="initiateStripeCheckout()" disabled style="display:none;opacity:0.5;cursor:not-allowed;background:var(--charcoal);">Proceed to Payment &mdash; <span id="m-stripe-btnprice">£60</span></button>
         <div id="tcs-hint" style="text-align:center;font-size:12px;color:var(--light);margin-top:8px;">Please agree to the Terms &amp; Conditions above to continue</div>
       </div>
     </div>
@@ -1695,6 +1704,14 @@ function goStep3(){
     } else { prorataNote.style.display="none"; }
   }
   document.getElementById("m-btnprice").textContent="\u00a3"+totalPrice;
+  document.getElementById("m-stripe-btnprice").textContent="\u00a3"+totalPrice;
+  var stripePrice=document.getElementById("step4-stripe-price");
+  if(stripePrice) stripePrice.textContent="\u00a3"+totalPrice;
+  var isStripe=PAYMENT_MODE==="stripe";
+  document.getElementById("step4-bank-section").style.display=isStripe?"none":"block";
+  document.getElementById("step4-stripe-section").style.display=isStripe?"block":"none";
+  document.getElementById("reserve-btn").style.display=isStripe?"none":"block";
+  document.getElementById("stripe-pay-btn").style.display=isStripe?"block":"none";
   updateStepIndicator(isRet?2:4, isRet);
   scrollModalTop();
 }
@@ -1711,12 +1728,18 @@ function goStepBack3(){
 
 function onTcsChange(){
   var checked=document.getElementById("tcs-agree").checked;
-  var btn=document.getElementById("reserve-btn");
   var hint=document.getElementById("tcs-hint");
+  var isStripe=PAYMENT_MODE==="stripe";
+  var btn=document.getElementById(isStripe?"stripe-pay-btn":"reserve-btn");
   btn.disabled=!checked;
   btn.style.opacity=checked?"1":"0.5";
   btn.style.cursor=checked?"pointer":"not-allowed";
   hint.style.display=checked?"none":"block";
+}
+
+function initiateStripeCheckout(){
+  // Placeholder — wired up in PM-3
+  console.log("[PM-2] initiateStripeCheckout called — not yet implemented");
 }
 
 function hasAnyYes(){
