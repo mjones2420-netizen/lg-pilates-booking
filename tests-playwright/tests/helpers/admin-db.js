@@ -230,6 +230,22 @@ async function getParqByCustomerId(customerId) {
   return rows[0] || null;
 }
 
+/**
+ * Resets payment_mode to 'bank_transfer' and clears stripe_publishable_key.
+ * Used by ST specs that need a known clean payment mode state before each test.
+ * Anon has no UPDATE on settings, so direct pg is required.
+ */
+async function resetPaymentMode() {
+  await getPool().query(
+    `UPDATE settings SET value = CASE key
+       WHEN 'payment_mode' THEN 'bank_transfer'
+       WHEN 'stripe_publishable_key' THEN ''
+       ELSE value
+     END
+     WHERE key IN ('payment_mode', 'stripe_publishable_key')`
+  );
+}
+
 module.exports = {
   getPool,
   closePool,
@@ -241,5 +257,6 @@ module.exports = {
   setBlockBookedCount,
   deleteBookingsForCustomerOnBlock,
   deleteCustomerCascade,
-  getParqByCustomerId
+  getParqByCustomerId,
+  resetPaymentMode
 };

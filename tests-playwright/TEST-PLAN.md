@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 11 Jun 2026
-**Total tests:** 169
+**Last updated:** 13 Jun 2026
+**Total tests:** 179
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -15,11 +15,12 @@
 | Admin Classes (AC) | 24 | 26 |
 | Admin Clients (ACL) | 2 | 2 |
 | Schedule Display (SD) | 6 | 6 |
-| Settings & Export (SE) | 17 | 17 |
+| Settings & Export (SE) | 20 | 20 |
 | Edge Cases (EC) | 13 | 15 |
 | Block Warnings (BLW) | 9 | 10 |
 | Security (SEC) | 3 | 6 |
-| **Total** | **134** | **169** |
+| Stripe (ST) | 7 | 7 |
+| **Total** | **145** | **179** |
 
 > Tests exceed spec files where one file covers multiple scenarios (e.g. cb-01 has 7 sub-tests, ac-24 has 3, ec-14 has 3, sec-06 has 3). Tests exceed Excel scenarios because smoke tests and PB-X gap-analysis tests are not in the Excel sheet, and some Excel scenarios share a spec file (e.g. CB-12 covered by cb-01, PB-03 covered by pb-10).
 
@@ -132,7 +133,7 @@
 - `sd-05-reset-all-classes.spec.js` — 1 test
 - `sd-06-class-without-blocks-hidden.spec.js` — 1 test
 
-**Settings & Export (17 files, 17 tests)**
+**Settings & Export (20 files, 20 tests)**
 - `se-01-save-bank-details.spec.js` — 1 test
 - `se-02-bank-details-payment-screen.spec.js` — 1 test
 - `se-03-bank-details-success-screen.spec.js` — 1 test
@@ -149,7 +150,18 @@
 - `se-14-admin-alert-email.spec.js` — 2 tests
 - `se-15-cancellation-emails.spec.js` — 1 test
 - `se-16-refund-emails.spec.js` — 1 test
-- `se-15-cancellation-emails.spec.js` — 1 test
+- `se-18-payment-mode-card-visible.spec.js` — 1 test
+- `se-19-payment-mode-toggle-persists.spec.js` — 1 test
+- `se-20-stripe-pk-saves-reloads.spec.js` — 1 test
+
+**Stripe (7 files, 7 tests)**
+- `st-01-stripe-toggle-visible.spec.js` — 1 test
+- `st-02-save-bank-transfer.spec.js` — 1 test
+- `st-03-save-stripe-mode.spec.js` — 1 test
+- `st-04-pk-field-hidden-bank-transfer.spec.js` — 1 test
+- `st-05-pk-field-shown-stripe.spec.js` — 1 test
+- `st-06-invalid-pk-rejected.spec.js` — 1 test
+- `st-16-stripe-badge-topbar.spec.js` — 1 test
 
 **Edge Cases (13 files, 15 tests)**
 - `ec-01-full-class-booking-prevented.spec.js` — 1 test
@@ -427,7 +439,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Settings & Export (SE) — 17 spec files, 17 tests ✅</strong></summary>
+<summary><strong>Settings & Export (SE) — 20 spec files, 20 tests ✅</strong></summary>
 
 ### Settings & Export (SE) — Complete ✅
 
@@ -449,7 +461,9 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SE-14 | New booking admin alert to Louise — Edge Function called on reserve, with PAR-Q flag for new clients | ✅ se-14-admin-alert-email.spec.js | Batch 24 |
 | SE-15 | No email fires on Remove From Block when refund > 0 — client email deferred to Mark Refunded | ✅ se-15-cancellation-emails.spec.js | Batch 25 |
 | SE-16 | Refund confirmation email to client when Louise marks cancellation as refunded — no admin alert | ✅ se-16-refund-emails.spec.js | Batch 26 |
-| SE-15 | Cancellation emails — client and Louise both receive emails on Remove From Block | ✅ se-15-cancellation-emails.spec.js | Batch 25 |
+| SE-18 | Payment mode card visible on Settings page | ✅ se-18-payment-mode-card-visible.spec.js | PM-1 |
+| SE-19 | Toggle between bank transfer and Stripe persists correctly | ✅ se-19-payment-mode-toggle-persists.spec.js | PM-1 |
+| SE-20 | Stripe publishable key saves and reloads correctly | ✅ se-20-stripe-pk-saves-reloads.spec.js | PM-1 |
 
 
 </details>
@@ -515,6 +529,34 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SEC-05 | Anon cannot directly read bookings | 🔁 Duplicate of smoke-03.1 | — |
 | SEC-06 | Admin sign-in promotes session → full dashboard access | ✅ sec-06.spec.js | Batch 10 |
 | SEC-07 | Grant matrix matches context.txt spec (one-off verification) | ✅ sec-07.spec.js | Batch 10 |
+
+</details>
+
+<details>
+<summary><strong>Stripe (ST) — 7 spec files, 7 tests ✅</strong></summary>
+
+### Stripe (ST) — PM-1 Complete ✅
+
+| ID | Scenario | Status | Batch |
+|---|---|---|---|
+| ST-01 | Payment mode toggle visible in admin Settings | ✅ st-01-stripe-toggle-visible.spec.js | PM-1 |
+| ST-02 | Save payment mode — bank transfer persists | ✅ st-02-save-bank-transfer.spec.js | PM-1 |
+| ST-03 | Save payment mode — Stripe with publishable key persists | ✅ st-03-save-stripe-mode.spec.js | PM-1 |
+| ST-04 | Stripe publishable key field hidden in bank transfer mode | ✅ st-04-pk-field-hidden-bank-transfer.spec.js | PM-1 |
+| ST-05 | Stripe publishable key field shown in Stripe mode | ✅ st-05-pk-field-shown-stripe.spec.js | PM-1 |
+| ST-06 | Invalid publishable key rejected (doesn't start with pk_) | ✅ st-06-invalid-pk-rejected.spec.js | PM-1 |
+| ST-07 | Booking modal Step 4 shows bank details in bank transfer mode | ⬜ | PM-2 |
+| ST-08 | Booking modal Step 4 shows "Proceed to Payment" in Stripe mode | ⬜ | PM-2 |
+| ST-09 | Stripe Checkout redirect fires on Step 4 button click | ⬜ | PM-3 |
+| ST-10 | Success redirect sets booking to confirmed | ⬜ | PM-3 |
+| ST-11 | Cancel redirect shows toast and deletes reserved booking | ⬜ | PM-3 |
+| ST-12 | Reserved email suppressed in Stripe mode | ⬜ | PM-5 |
+| ST-13 | Confirmed email fires on Stripe payment (webhook) | ⬜ | PM-5 |
+| ST-14 | Louise alert fires on Stripe payment (webhook) | ⬜ | PM-5 |
+| ST-15 | Bank transfer mode: all existing email triggers unaffected | ⬜ | PM-5 |
+| ST-16 | STRIPE MODE badge visible in admin topbar when Stripe active | ✅ st-16-stripe-badge-topbar.spec.js | PM-1 |
+| ST-17 | stripe_checkout_session_id stored on booking after redirect | ⬜ | PM-3 |
+| ST-18 | Stripe mode: PAR-Q flag still included in Louise's alert email | ⬜ | PM-5 |
 
 </details>
 

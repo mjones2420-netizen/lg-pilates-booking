@@ -37,6 +37,6 @@ test.describe('Smoke 01 — anon reads', () => {
 
     expect(error).toBeNull();
     const keys = data.map(s => s.key).sort();
-    expect(keys).toEqual(['admin_email', 'bank_account_no', 'bank_name', 'bank_sort_code']);
+    expect(keys).toEqual(['admin_email', 'bank_account_no', 'bank_name', 'bank_sort_code', 'payment_mode', 'stripe_publishable_key']);
   });
 });

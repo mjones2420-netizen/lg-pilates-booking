@@ -230,7 +230,7 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .db-warnings { flex-shrink:0; }
 .db-content { flex:1; overflow-y:auto; padding:24px; background:#d4dede; }
 .db-page { display:none; }
-.db-page.on { display:block; }
+.db-page.on { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
 /* search bar */
 .db-search-wrap { position:relative; margin-bottom:16px; }
 .db-search-wrap i { position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--light); pointer-events:none; }
@@ -596,6 +596,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
       <div id="dbpage-settings" class="db-page">
         <div class="db-topbar">
           <p class="db-topbar-title">Settings</p>
+          <span id="stripe-mode-badge" style="display:none;align-items:center;gap:5px;background:#fef3e8;color:#854f0b;border:1px solid #f0d0a0;border-radius:100px;font-size:11px;padding:3px 10px;font-weight:600;letter-spacing:0.05em;"><i class="ti ti-credit-card" style="font-size:12px" aria-hidden="true"></i> Stripe mode</span>
         </div>
         <div class="db-content">
           <div class="db-settings-card">
@@ -623,6 +624,34 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
               <input type="email" class="finp" id="setting-admin-email" maxlength="200" style="margin-bottom:0">
             </div>
             <button class="step-btn" onclick="saveSettings()" style="width:auto;padding:10px 24px;">Save Settings</button>
+          </div>
+          <div class="db-settings-card">
+            <p class="db-settings-card-title">Payment method</p>
+            <p class="db-settings-card-desc">Choose how clients pay for their bookings. This takes effect on the next booking attempt.</p>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
+              <label id="pmode-opt-bt" style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1.5px solid var(--sage);border-radius:4px;cursor:pointer;background:#f0f8f8;">
+                <input type="radio" name="payment-mode" id="pmode-bt" value="bank_transfer" checked style="margin-top:2px;accent-color:var(--sage);cursor:pointer;">
+                <div>
+                  <span style="font-size:14px;font-weight:500;color:var(--charcoal);display:block;margin-bottom:2px;">Bank transfer</span>
+                  <span style="font-size:12px;color:var(--mid);">Clients are shown your bank details and pay manually. You confirm receipt in the dashboard.</span>
+                </div>
+              </label>
+              <label id="pmode-opt-stripe" style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
+                <input type="radio" name="payment-mode" id="pmode-stripe" value="stripe" style="margin-top:2px;accent-color:var(--sage);cursor:pointer;">
+                <div>
+                  <span style="font-size:14px;font-weight:500;color:var(--charcoal);display:block;margin-bottom:2px;">Card payments (Stripe)</span>
+                  <span style="font-size:12px;color:var(--mid);">Clients pay by card, Apple Pay, or Google Pay on a Stripe-hosted page. Payment is confirmed automatically.</span>
+                </div>
+              </label>
+            </div>
+            <div id="stripe-pk-field" style="display:none;margin-bottom:18px;">
+              <label class="flbl">Stripe publishable key</label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="password" class="finp" id="setting-stripe-pk" placeholder="pk_live_..." maxlength="200" style="margin-bottom:0;font-family:monospace;font-size:13px;flex:1;">
+                <button type="button" id="stripe-pk-toggle" onclick="toggleStripePkVisibility()" style="background:none;border:1px solid var(--border);border-radius:4px;padding:8px 12px;cursor:pointer;color:var(--mid);font-size:13px;flex-shrink:0;"><i class="ti ti-eye" aria-hidden="true"></i></button>
+              </div>
+            </div>
+            <button class="step-btn" onclick="savePaymentSettings()" style="width:auto;padding:10px 24px;">Save Settings</button>
           </div>
         </div>
       </div>
@@ -1021,6 +1050,7 @@ var classes = [];   // permanent class slots
 var blocks  = [];   // all blocks loaded from DB
 var bookings = [];
 var appSettings = {};      // bank details + admin email, loaded at startup
+var PAYMENT_MODE = "bank_transfer"; // "bank_transfer" | "stripe" — loaded from settings on init
 var selected = null;       // selected class
 var selectedBlock = null;  // selected block for booking
 var activeFilter = "all";
@@ -3630,6 +3660,64 @@ function saveSettings(){
   })();
 }
 
+function savePaymentSettings(){
+  var mode=document.querySelector('input[name="payment-mode"]:checked');
+  if(!mode){ showToast("Please select a payment method."); return; }
+  var modeVal=mode.value;
+  var pk=document.getElementById("setting-stripe-pk").value.trim();
+  if(modeVal==="stripe" && !pk){ showToast("Please enter your Stripe publishable key."); return; }
+  if(modeVal==="stripe" && !pk.startsWith("pk_")){ showToast("Stripe publishable key must start with pk_"); return; }
+  showToast("Saving...");
+  (async function(){
+    try{
+      var rows=[{key:"payment_mode",value:modeVal}];
+      if(pk) rows.push({key:"stripe_publishable_key",value:pk});
+      await sb.from("settings").upsert(rows);
+      PAYMENT_MODE=modeVal;
+      updateStripeBadge();
+      showToast("Settings saved!");
+    }catch(err){ console.error(err); showToast("Error saving settings."); }
+  })();
+}
+
+function toggleStripePkVisibility(){
+  var inp=document.getElementById("setting-stripe-pk");
+  var btn=document.getElementById("stripe-pk-toggle");
+  if(!inp||!btn) return;
+  if(inp.type==="password"){
+    inp.type="text";
+    btn.innerHTML='<i class="ti ti-eye-off" aria-hidden="true"></i>';
+  } else {
+    inp.type="password";
+    btn.innerHTML='<i class="ti ti-eye" aria-hidden="true"></i>';
+  }
+}
+
+function updateStripeBadge(){
+  var badge=document.getElementById("stripe-mode-badge");
+  if(!badge) return;
+  badge.style.display=PAYMENT_MODE==="stripe"?"inline-flex":"none";
+}
+
+(function(){
+  var btRadio=document.getElementById("pmode-bt");
+  var stripeRadio=document.getElementById("pmode-stripe");
+  var btOpt=document.getElementById("pmode-opt-bt");
+  var stripeOpt=document.getElementById("pmode-opt-stripe");
+  var pkField=document.getElementById("stripe-pk-field");
+  if(!btRadio||!stripeRadio) return;
+  function applySelection(){
+    var isStripe=stripeRadio.checked;
+    btOpt.style.border=isStripe?"1px solid var(--border)":"1.5px solid var(--sage)";
+    btOpt.style.background=isStripe?"":"#f0f8f8";
+    stripeOpt.style.border=isStripe?"1.5px solid var(--sage)":"1px solid var(--border)";
+    stripeOpt.style.background=isStripe?"#f0f8f8":"";
+    pkField.style.display=isStripe?"block":"none";
+  }
+  btRadio.addEventListener("change",applySelection);
+  stripeRadio.addEventListener("change",applySelection);
+})();
+
 // ─── Export / Backup ──────────────────────────────────────────────────────────
 function rowsToCsv(rows){
   if(!rows||rows.length===0) return "";
@@ -3763,7 +3851,9 @@ function onTimeBlur(fieldId){
     if(settingsRows){
       var s={}; settingsRows.forEach(function(r){ s[r.key]=r.value; });
       var bn=s.bank_name||"", bs=s.bank_sort_code||"", ba=s.bank_account_no||"", ae=s.admin_email||"";
+      var pm=s.payment_mode||"bank_transfer", spk=s.stripe_publishable_key||"";
       appSettings={bankName:bn,bankSortCode:bs,bankAccountNo:ba,adminEmail:ae};
+      PAYMENT_MODE=pm;
       ["bank-name-1","bank-name-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bn; });
       ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
       ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
@@ -3772,6 +3862,11 @@ function onTimeBlur(fieldId){
       e=document.getElementById("setting-bank-sort"); if(e) e.value=bs;
       e=document.getElementById("setting-bank-acc"); if(e) e.value=ba;
       e=document.getElementById("setting-admin-email"); if(e) e.value=ae;
+      e=document.getElementById("setting-stripe-pk"); if(e) e.value=spk;
+      if(pm==="stripe"){
+        var sr=document.getElementById("pmode-stripe"); if(sr){ sr.checked=true; sr.dispatchEvent(new Event("change")); }
+      }
+      updateStripeBadge();
     }
   }catch(err){ console.error("Settings error:",err); }
 
