@@ -34,6 +34,7 @@ const PRODUCTION_PROJECT_ID = 'mrlooyixnlxzcfmvnqme';
 const MIGRATION_FILES = [
   path.join(__dirname, '..', 'migrations', '09_reseed_with_dynamic_dates.sql'),
   path.join(__dirname, '..', 'migrations', '11_add_locked_window_class.sql'),
+  path.join(__dirname, '..', 'migrations', '12_reseed_resets_payment_mode.sql'),
 ];
 
 // Expected fixture shape after a successful reseed.

@@ -1845,9 +1845,16 @@ function buildReservedEmailHtml(opts){
 
 function buildConfirmedEmailHtml(opts){
   // opts: { firstName, className, venue, loc, day, time, endTime, blockDates }
-  var blockRange=opts.blockDates&&opts.blockDates.length>0
-    ? opts.blockDates[0]+' \u2013 '+opts.blockDates[opts.blockDates.length-1]
-    : '';
+  var today=new Date(); today.setHours(0,0,0,0);
+  var pillsHtml=opts.blockDates&&opts.blockDates.length>0?opts.blockDates.map(function(d){
+    var parts=d.split(' ');
+    var months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+    var dt=new Date(new Date().getFullYear(),months[parts[1]]||0,parseInt(parts[0])||1);
+    var past=dt<today;
+    return past
+      ? '<span style="display:inline-block;padding:3px 8px;border-radius:100px;font-size:11px;font-weight:500;margin:2px 3px 2px 0;background:#f0f0f0;color:#aaaaaa;border:1px solid #dddddd;">'+d+'</span>'
+      : '<span style="display:inline-block;padding:3px 8px;border-radius:100px;font-size:11px;font-weight:500;margin:2px 3px 2px 0;background:#eef5f5;color:#2a6b6b;border:1px solid #cde0e0;">'+d+'</span>';
+  }).join(''):'';
   return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
     +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
     +'<tr><td align="center">'
@@ -1877,7 +1884,7 @@ function buildConfirmedEmailHtml(opts){
     +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.className+'</td></tr>'
     +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.venue+', '+opts.loc+'</td></tr>'
     +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.day+', '+opts.time+' &ndash; '+opts.endTime+'</td></tr>'
-    +(blockRange?'<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Block dates</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+blockRange+'</td></tr>':'')
+    +(pillsHtml?'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;vertical-align:top;padding-top:8px;">Sessions</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;text-align:right;">'+pillsHtml+'</td></tr>':'')
     +'</table>'
 
     // What to bring
