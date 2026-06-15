@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 13 Jun 2026
-**Total tests:** 179
+**Last updated:** 15 Jun 2026
+**Total tests:** 195
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -15,12 +15,12 @@
 | Admin Classes (AC) | 24 | 26 |
 | Admin Clients (ACL) | 2 | 2 |
 | Schedule Display (SD) | 6 | 6 |
-| Settings & Export (SE) | 20 | 20 |
+| Settings & Export (SE) | 19 | 20 |
 | Edge Cases (EC) | 13 | 15 |
 | Block Warnings (BLW) | 9 | 10 |
 | Security (SEC) | 3 | 6 |
-| Stripe (ST) | 9 | 9 |
-| **Total** | **145** | **179** |
+| Stripe (ST) | 19 | 23 |
+| **Total** | **156** | **195** |
 
 > Tests exceed spec files where one file covers multiple scenarios (e.g. cb-01 has 7 sub-tests, ac-24 has 3, ec-14 has 3, sec-06 has 3). Tests exceed Excel scenarios because smoke tests and PB-X gap-analysis tests are not in the Excel sheet, and some Excel scenarios share a spec file (e.g. CB-12 covered by cb-01, PB-03 covered by pb-10).
 
@@ -133,7 +133,7 @@
 - `sd-05-reset-all-classes.spec.js` — 1 test
 - `sd-06-class-without-blocks-hidden.spec.js` — 1 test
 
-**Settings & Export (20 files, 20 tests)**
+**Settings & Export (19 files, 20 tests)**
 - `se-01-save-bank-details.spec.js` — 1 test
 - `se-02-bank-details-payment-screen.spec.js` — 1 test
 - `se-03-bank-details-success-screen.spec.js` — 1 test
@@ -153,17 +153,27 @@
 - `se-18-payment-mode-card-visible.spec.js` — 1 test
 - `se-19-payment-mode-toggle-persists.spec.js` — 1 test
 - `se-20-stripe-pk-saves-reloads.spec.js` — 1 test
-- `st-07-step4-bank-transfer-mode.spec.js` — 1 test
-- `st-08-step4-stripe-mode.spec.js` — 1 test
 
-**Stripe (9 files, 9 tests)**
+**Stripe (19 files, 23 tests)**
 - `st-01-stripe-toggle-visible.spec.js` — 1 test
 - `st-02-save-bank-transfer.spec.js` — 1 test
 - `st-03-save-stripe-mode.spec.js` — 1 test
 - `st-04-pk-field-hidden-bank-transfer.spec.js` — 1 test
 - `st-05-pk-field-shown-stripe.spec.js` — 1 test
 - `st-06-invalid-pk-rejected.spec.js` — 1 test
+- `st-07-step4-bank-transfer-mode.spec.js` — 1 test
+- `st-08-step4-stripe-mode.spec.js` — 1 test
 - `st-16-stripe-badge-topbar.spec.js` — 1 test
+- `st-17-stripe-checkout-creates-pending-row.spec.js` — 1 test
+- `st-18-stripe-cancel-redirect-preserves-pending.spec.js` — 1 test
+- `st-19-webhook-success-confirms-booking.spec.js` — 1 test
+- `st-20-webhook-success-saves-parq.spec.js` — 1 test
+- `st-21-client-confirmation-email-template.spec.js` — 1 test
+- `st-22-admin-alert-email-template.spec.js` — 4 tests
+- `st-23-webhook-class-full-retains-pending.spec.js` — 1 test
+- `st-24-webhook-already-booked-retains-pending.spec.js` — 1 test
+- `st-25-webhook-invalid-signature-rejected.spec.js` — 2 tests
+- `st-26-webhook-duplicate-delivery.spec.js` — 1 test
 
 **Edge Cases (13 files, 15 tests)**
 - `ec-01-full-class-booking-prevented.spec.js` — 1 test
@@ -535,9 +545,9 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 </details>
 
 <details>
-<summary><strong>Stripe (ST) — 9 spec files, 9 tests ✅</strong></summary>
+<summary><strong>Stripe (ST) — 19 spec files, 23 tests ✅</strong></summary>
 
-### Stripe (ST) — PM-1 + PM-2 Complete ✅
+### Stripe (ST) — PM-1 + PM-2 Complete ✅, PM-6 Complete ✅
 
 | ID | Scenario | Status | Batch |
 |---|---|---|---|
@@ -557,8 +567,16 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | ST-14 | Louise alert fires on Stripe payment (webhook) | ⬜ | PM-5 |
 | ST-15 | Bank transfer mode: all existing email triggers unaffected | ⬜ | PM-5 |
 | ST-16 | STRIPE MODE badge visible in admin topbar when Stripe active | ✅ st-16-stripe-badge-topbar.spec.js | PM-1 |
-| ST-17 | stripe_checkout_session_id stored on booking after redirect | ⬜ | PM-3 |
-| ST-18 | Stripe mode: PAR-Q flag still included in Louise's alert email | ⬜ | PM-5 |
+| ST-17 | Stripe checkout creates a pending_bookings row, no real booking, redirects to Stripe | ✅ st-17-stripe-checkout-creates-pending-row.spec.js | PM-6 |
+| ST-18 | Cancel redirect shows toast, pending_bookings row left untouched | ✅ st-18-stripe-cancel-redirect-preserves-pending.spec.js | PM-6 |
+| ST-19 | Webhook success: booking confirmed with stripe_payment_intent_id + stripe_checkout_session_id | ✅ st-19-webhook-success-confirms-booking.spec.js | PM-6 |
+| ST-20 | Webhook success: PAR-Q saved for new client, all 12 questions mapped | ✅ st-20-webhook-success-saves-parq.spec.js | PM-6 |
+| ST-21 | Client confirmation email template — Sessions date pills (template check) | ✅ st-21-client-confirmation-email-template.spec.js | PM-6 |
+| ST-22 | Admin alert email — subject, amount paid, PAR-Q warning box (template check) | ✅ st-22-admin-alert-email-template.spec.js | PM-6 |
+| ST-23 | Webhook failure (CLASS_FULL): pending row retained, no booking created | ✅ st-23-webhook-class-full-retains-pending.spec.js | PM-6 |
+| ST-24 | Webhook failure (ALREADY_BOOKED): pending row retained, existing booking untouched | ✅ st-24-webhook-already-booked-retains-pending.spec.js | PM-6 |
+| ST-25 | Invalid/missing webhook signature rejected with 400, no side effects | ✅ st-25-webhook-invalid-signature-rejected.spec.js | PM-6 |
+| ST-26 | Duplicate webhook delivery handled gracefully, no duplicate booking | ✅ st-26-webhook-duplicate-delivery.spec.js | PM-6 |
 
 </details>
 
@@ -4151,6 +4169,207 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 8. Assert `#reserve-btn` hidden
 
 **Cleanup:** afterEach restores `payment_mode = bank_transfer` in DB.
+
+---
+
+### ST-17 — Stripe checkout creates pending_bookings row, no real booking
+
+**File:** `st-17-stripe-checkout-creates-pending-row.spec.js`
+**Suite:** Stripe (ST) | **Batch:** PM-6
+
+**Scenario:** In Stripe payment mode, completing Step 4 of the booking modal calls the live `stripe-checkout` Edge Function, which inserts a `pending_bookings` row with the correct `class_id`/`block_id`/email/`customer_type`/`amount_pence` and redirects the browser to Stripe Checkout. `confirmBooking()` does NOT call `book_if_available` in Stripe mode — no row is added to `bookings`.
+
+**Note:** this is the one PM-6 spec that contacts the real `stripe-checkout` Edge Function (Stripe test mode). It creates one real, incomplete Stripe Checkout Session per run (no payment, no charge) — visible as an abandoned session in the Stripe test dashboard.
+
+**Preconditions:** `payment_mode` set to `stripe` via direct pg before page load. `returning-one@test.example` used on `fri-upcoming` (no existing booking there — see ST-08 notes).
+
+**Steps:**
+1. Set `payment_mode = stripe`
+2. Look up `returning-one`'s customer id; confirm 0 bookings on `fri-upcoming`
+3. Navigate to app, open Friday upcoming block modal, fill Step 1 with returning-one's email
+4. Tick T&Cs, click "Proceed to Payment"
+5. Wait for redirect to `checkout.stripe.com`
+6. Assert `pending_bookings` row exists with correct `class_id`/`block_id`/email/`customer_type`/positive integer `amount_pence`
+7. Assert still 0 bookings rows for (customer, block)
+
+**Cleanup:** afterEach restores `payment_mode = bank_transfer` and deletes the `pending_bookings` row.
+
+---
+
+### ST-18 — Cancel redirect leaves pending_bookings row intact, shows toast
+
+**File:** `st-18-stripe-cancel-redirect-preserves-pending.spec.js`
+**Suite:** Stripe (ST) | **Batch:** PM-6
+
+**Scenario:** When the app loads with `?payment=cancelled` (Stripe's cancel_url redirect), `handleStripeRedirect()` shows the toast "Payment was not completed — you can try again." and does NOT touch `pending_bookings` — the row is left to expire naturally after 2 hours.
+
+**Preconditions:** none — does not require `payment_mode = stripe` (the cancel-redirect handler runs regardless of payment mode).
+
+**Steps:**
+1. Insert a `pending_bookings` row directly via pg (simulating a cancelled checkout)
+2. Navigate to `APP_PATH + '&payment=cancelled'`
+3. Assert `#toastEl` text is "Payment was not completed — you can try again." (checked via `textContent`, not the `.on` class, which the app removes after 3s)
+4. Re-fetch the `pending_bookings` row by id and assert every field (including `expires_at`) is unchanged
+
+**Cleanup:** afterEach deletes the `pending_bookings` row by id.
+
+---
+
+### ST-19 — Webhook success: booking confirmed with Stripe IDs
+
+**File:** `st-19-webhook-success-confirms-booking.spec.js`
+**Suite:** Stripe (ST) | **Batch:** PM-6
+
+**Scenario:** POSTing a signed `checkout.session.completed` event (with `pending_booking_id` metadata) directly to `stripe-webhook` results in: the `pending_bookings` row deleted, a new `bookings` row with `status='confirmed'` and both `stripe_payment_intent_id` and `stripe_checkout_session_id` populated, and a `customers` row upserted for the pending row's email.
+
+**Note:** Stripe is never contacted — the event is hand-built and signed locally with `TEST_STRIPE_WEBHOOK_SECRET` (see `helpers/stripe-webhook.js`). `metadata.is_test='true'` routes the real client confirmation + admin alert emails this fires to `delivered@resend.dev`.
+
+**Preconditions:** `TEST_STRIPE_WEBHOOK_SECRET` set in `.env.test`.
+
+**Steps:**
+1. Insert a `pending_bookings` row (`fri-upcoming`, `customer_type='returning'`, `parq_data=null`)
+2. Build and POST a signed `checkout.session.completed` event referencing it
+3. Assert `200`, `received: true`, `booking_id` present
+4. Assert `pending_bookings` row deleted
+5. Assert `bookings` row: `status='confirmed'`, `stripe_payment_intent_id`/`stripe_checkout_session_id` match the event, correct `block_id`/`class_id`
+6. Assert `lookup_customer` finds a customer matching the new booking's `customer_id`
+
+**Cleanup:** afterEach deletes the created booking + customer via `deleteCustomerCascade` (resyncs `blocks.booked`).
+
+---
+
+### ST-20 — Webhook success: PAR-Q saved for new client
+
+**File:** `st-20-webhook-success-saves-parq.spec.js`
+**Suite:** Stripe (ST) | **Batch:** PM-6
+
+**Scenario:** Same flow as ST-19, but the `pending_bookings` row has `customer_type='new'` and a populated `parq_data` JSONB blob. `stripe-webhook` must insert a `parq` row linked to the new `booking_id`, with `age`, emergency contact details, `print_name`, `sign_date`, `yes_details`, `additional_notes`, and all 12 `qN_*` question answers correctly mapped from `parq_data.answers`.
+
+**Preconditions:** `TEST_STRIPE_WEBHOOK_SECRET` set in `.env.test`.
+
+**Steps:**
+1. Insert a `pending_bookings` row with `customer_type='new'` and full `parq_data` (matching the shape `confirmBooking()` builds — see `index.html`'s `pendingParq`)
+2. Build and POST a signed `checkout.session.completed` event
+3. Assert `200`, `received: true`, booking confirmed
+4. Fetch the `parq` row via `getParqByCustomerId` and assert every field, including all 12 question answers
+5. `sign_date` (a `DATE` column) is read back as a JS `Date` — compared via local `getFullYear`/`getMonth`/`getDate`, not `toISOString()`, to avoid the BST date-shift gotcha
+
+**Cleanup:** afterEach deletes the created booking + customer via `deleteCustomerCascade` — `parq.booking_id` has `ON DELETE CASCADE`, so the `parq` row is removed automatically.
+
+---
+
+### ST-21 — Client confirmation email template: Sessions date pills
+
+**File:** `st-21-client-confirmation-email-template.spec.js`
+**Suite:** Stripe (ST) | **Batch:** PM-6
+
+**Scenario:** The client confirmation email template (`buildConfirmedEmailHtml`) renders a "Sessions" row of date pills — past dates greyed, upcoming dates teal — instead of the old "Block dates" range row, alongside the correct greeting, class, venue, and day/time details.
+
+**Why this is a template check, not an integration test:** `stripe-webhook` calls `send-email` server-to-server on payment success — Playwright's `page.route()` cannot intercept this (no browser involved). ST-19 already proves the webhook completes successfully when this code path runs. This spec instead verifies the template logic in isolation using a copy of the function.
+
+**⚠️ Drift warning:** `tests/helpers/email-templates.js` contains a COPY of `buildConfirmedEmailHtml` and `buildAdminAlertEmailHtml`, taken from the deployed `stripe-webhook` source (there is no local source file for this Edge Function — see Session 43/44 notes). This is now a 4th copy of these functions (alongside `index.html` and the test/prod `stripe-webhook` deployments). **If the email template changes again, this helper file must be updated too**, or ST-21/22 will keep passing against stale logic. Flagged in BACKLOG.md as a candidate for consolidation.
+
+**Steps:**
+1. Build two past dates (today − 20/−10 days) and two upcoming dates (today + 10/+20 days), formatted as "D MMM"
+2. Call `buildConfirmedEmailHtml` with these `blockDates` plus sample client/class details
+3. Assert greeting, class, venue, day/time, "Booking confirmed" banner present
+4. Assert a "Sessions" row is present and "Block dates" is not
+5. Assert past dates render with the grey pill style, upcoming dates with the teal pill style
+
+**Cleanup:** none — pure unit test, no DB/network calls.
+
+---
+
+### ST-22 — Admin alert email: subject and content
+
+**File:** `st-22-admin-alert-email-template.spec.js` (4 tests)
+**Suite:** Stripe (ST) | **Batch:** PM-6
+
+**Scenario:** The admin alert email (trigger 5S, sent to `admin_email` on a successful card payment) has a subject mentioning "card payment", a body showing the client's name and amount paid, and — for new clients only — a PAR-Q warning box prompting Louise to review the health form.
+
+**Same template-check reasoning and drift warning as ST-21** — uses `buildAdminAlertEmailHtml` and `buildAdminAlertSubject` from `helpers/email-templates.js`.
+
+**Tests:**
+1. Subject mentions "card payment" and includes client name, class day/time, and venue
+2. New client: body shows "(New client)", amount paid, and the PAR-Q warning box, plus the dashboard link
+3. Returning client: body shows "(Returning client)" and amount paid, no PAR-Q warning box
+4. No `dashboardUrl` provided: dashboard link omitted
+
+**Cleanup:** none — pure unit tests, no DB/network calls.
+
+---
+
+### ST-23 — Webhook failure (CLASS_FULL) retains pending row
+
+**File:** `st-23-webhook-class-full-retains-pending.spec.js`
+**Suite:** Stripe (ST) | **Batch:** PM-6
+
+**Scenario:** If a block fills (`booked >= cap`) between Stripe taking payment and the webhook arriving, `book_if_available` fails with `CLASS_FULL`. The webhook must NOT delete the `pending_bookings` row (left for manual review) and must NOT create a `bookings` row, returning `{ received: true, warning: "booking_failed_after_payment" }`.
+
+**Note:** the webhook also attempts a payment-failed admin alert email in this path (template reviewed manually in chat — a dedicated template check could be added later). Not asserted here, same server-to-server limitation as ST-21/22.
+
+**Side note (BACKLOG.md):** the client receives NO email in this path, and the front-end success overlay shows "Booking confirmed" immediately on the Stripe redirect — before this webhook runs. Known UX gap, out of scope for this spec.
+
+**Steps:**
+1. Insert a `pending_bookings` row for `fri-upcoming`
+2. Set `blocks.booked = cap` for `fri-upcoming` via direct pg (no real booking rows inserted)
+3. Build and POST a signed `checkout.session.completed` event
+4. Assert `200`, `received: true`, `warning: "booking_failed_after_payment"`, no `booking_id`
+5. Assert `pending_bookings` row still exists, unchanged
+6. Assert 0 `bookings` rows for (customer, block) — `upsert_customer` ran (creating a customer record) but `book_if_available` did not
+
+**Cleanup:** afterEach calls `resyncBlockBookedCount` (restores `fri-upcoming`'s true booked count from real bookings), deletes the pending row, and removes the customer created by `upsert_customer`.
+
+---
+
+### ST-24 — Webhook failure (ALREADY_BOOKED) retains pending row
+
+**File:** `st-24-webhook-already-booked-retains-pending.spec.js`
+**Suite:** Stripe (ST) | **Batch:** PM-6
+
+**Scenario:** If a customer already has a non-cancelled booking on a block (race condition — e.g. booked via bank transfer, then separately paid via Stripe for the same class), `book_if_available` fails with `ALREADY_BOOKED` (the `bookings_unique_active_per_block` partial unique index). Same retention behaviour and response shape as ST-23 — the difference is only in the (unasserted) admin alert email's wording.
+
+**Steps:**
+1. Create a customer with an existing `reserved` booking on `fri-upcoming` (via `upsert_customer` + `book_if_available`)
+2. Insert a `pending_bookings` row for the SAME email/block
+3. Build and POST a signed `checkout.session.completed` event
+4. Assert `200`, `received: true`, `warning: "booking_failed_after_payment"`, no `booking_id`
+5. Assert `pending_bookings` row still exists
+6. Assert exactly 1 booking still exists for (customer, block) and it is unchanged (`status='reserved'`, both Stripe ID columns still null)
+
+**Cleanup:** afterEach deletes the pending row and the customer via `deleteCustomerCascade` (cascades the existing booking, resyncs `blocks.booked`).
+
+---
+
+### ST-25 — Invalid webhook signatures rejected
+
+**File:** `st-25-webhook-invalid-signature-rejected.spec.js` (2 tests)
+**Suite:** Stripe (ST) | **Batch:** PM-6
+
+**Scenario:** `stripe-webhook`'s `verifyStripeSignature()` runs BEFORE any JSON parsing or database access. A request with a missing or incorrect `stripe-signature` header must be rejected with `400`, with no side effects — the `pending_bookings` row referenced in the payload is left completely untouched.
+
+**Tests:**
+1. Missing `stripe-signature` header → `400`, pending row untouched
+2. Syntactically valid but incorrect signature (`v1=` 64 zeroes) → `400`, pending row untouched
+
+**Cleanup:** afterEach deletes the `pending_bookings` row.
+
+---
+
+### ST-26 — Duplicate webhook delivery handled gracefully
+
+**File:** `st-26-webhook-duplicate-delivery.spec.js`
+**Suite:** Stripe (ST) | **Batch:** PM-6
+
+**Scenario:** Stripe may deliver the same webhook event more than once (retries). The first delivery processes normally. The second delivery for the SAME event finds no matching `pending_bookings` row, takes the "already processed" early-return path, and responds `200 { received: true }` with no `booking_id`/`warning` — without erroring or creating a duplicate booking.
+
+**Steps:**
+1. Insert a `pending_bookings` row
+2. Build one `checkout.session.completed` event, POST it (first delivery) — assert `200`, `booking_id` present, pending row deleted
+3. POST the same event again (second delivery) — assert `200`, `received: true`, no `booking_id`, no `warning`
+4. Assert exactly 1 `bookings` row exists for (customer, block) — no duplicate
+
+**Cleanup:** afterEach deletes the created booking + customer via `deleteCustomerCascade`.
 
 ---
 

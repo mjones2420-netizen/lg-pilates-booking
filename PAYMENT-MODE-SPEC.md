@@ -1,7 +1,7 @@
 # LG Pilates — Payment Mode Feature Spec
-**Status:** Draft for review  
-**Date:** 12 Jun 2026  
-**Author:** Mark Jones / Claude  
+**Status:** ✅ Build complete (PM-1 to PM-6) — see Implementation Status below for outstanding items
+**Date:** 12 Jun 2026 (original spec) — updated 15 Jun 2026
+**Author:** Mark Jones / Claude
 
 ---
 
@@ -13,6 +13,26 @@ This document scopes the full design, build, and test plan for adding a **paymen
 - **Stripe Checkout** — a future method. Clients are redirected to a Stripe-hosted payment page after booking. Payment is confirmed automatically. No manual action from Louise.
 
 At launch, the system will run in bank transfer mode. Stripe will be built as a follow-on integration, slotting into a branch point already prepared by this feature.
+
+---
+
+## 1a. Implementation Status (as of Session 45)
+
+**Build complete.** Both payment modes work end-to-end and are covered by 23 automated tests (ST-01 to ST-26, plus SE-18 to SE-20). Louise can switch between them from the admin Settings page. For the normal case — someone pays and everything goes through — both modes are fully working and verified.
+
+**What was actually built, vs this spec's original plan:**
+- The Stripe Checkout Edge Function is named `stripe-checkout` (this spec originally proposed `create-checkout-session`). It writes a `pending_bookings` row (not a real `bookings` row) and redirects to Stripe — the real booking is only created once `stripe-webhook` confirms payment. This `pending_bookings` table/approach wasn't in the original design (added during PM-3).
+- `stripe-webhook` handles `checkout.session.completed` only. The originally-planned `checkout.session.expired` handler (Session PM-4 scope) was not built — abandoned `pending_bookings` rows instead expire via `expires_at` (2 hours), with cleanup currently manual (see Outstanding, T3-07).
+- Section 9.2's original ST-09 to ST-18 scenario list described a design that changed during PM-3 (e.g. ST-11's "deletes reserved booking" assumed a real booking existed before redirect — it doesn't). The actual PM-6 Playwright session built ST-17 to ST-26 against the as-built `pending_bookings`/webhook design. See section 9.2 below for the current mapping.
+- `stripe-webhook` has no local source file — it was deployed directly to Supabase via MCP and exists only on the test/production projects (see AUDIT ITEMS in context.txt).
+
+**Outstanding items** (none are launch-blockers — see full detail in BACKLOG.md and context.txt section 8a):
+1. **Client notification gap (BACKLOG T1-06, new this session)** — if a card payment succeeds but the booking can't be placed (class fills in the gap before the webhook runs), the client gets no email and may have already seen a "Booking confirmed" success screen. Needs design review, not just a quick fix.
+2. Swap Stripe test keys for live keys before go-live (separate checklist, webhook secret also changes).
+3. Switch `bookings@lg-pilates.co.uk` forwarding from Mark's inbox to Louise's.
+4. Decide production `payment_mode` before go-live — currently set to `stripe` (deliberate, set in Session 45 while the system isn't yet public).
+5. Create migration files for `pending_bookings`, the Stripe ID columns on `bookings`, and the `stripe-checkout`/`stripe-webhook` Edge Functions (existing AUDIT ITEM — applied directly via MCP, no file on disk).
+6. Netlify migration (T1-04) is now unblocked.
 
 ---
 
@@ -278,26 +298,33 @@ All 169 existing tests continue to run against bank transfer mode. No changes to
 
 #### ST (Stripe) suite — Stripe-specific scenarios
 
-| ID | Scenario | Notes |
+**As built (23 tests, 19 spec files) — see TEST-PLAN.md Stripe Coverage Tracker for full detail:**
+
+| ID | Scenario | Status |
 |----|----------|-------|
-| ST-01 | Stripe mode toggle visible in admin Settings | UI check |
-| ST-02 | Save payment mode — bank transfer | Settings persistence |
-| ST-03 | Save payment mode — Stripe | Settings persistence + publishable key |
-| ST-04 | Stripe publishable key field hidden in bank transfer mode | Conditional UI |
-| ST-05 | Stripe publishable key field shown in Stripe mode | Conditional UI |
-| ST-06 | Invalid publishable key rejected (doesn't start with pk_) | Validation |
-| ST-07 | Booking modal Step 4 shows bank details in bank transfer mode | No regression |
-| ST-08 | Booking modal Step 4 shows "Proceed to Payment" in Stripe mode | Branch |
-| ST-09 | Stripe Checkout redirect fires on Step 4 button click | Integration |
-| ST-10 | Success redirect sets booking to confirmed | Webhook/redirect |
-| ST-11 | Cancel redirect shows toast and deletes reserved booking | Cancel handling |
-| ST-12 | Reserved email suppressed in Stripe mode | Email suppression |
-| ST-13 | Confirmed email fires on Stripe payment (webhook) | Email trigger |
-| ST-14 | Louise alert fires on Stripe payment (webhook) | Email trigger |
-| ST-15 | Bank transfer mode: all existing email triggers unaffected | Regression |
-| ST-16 | STRIPE MODE badge visible in admin topbar when Stripe active | UI indicator |
-| ST-17 | stripe_checkout_session_id stored on booking after redirect | DB integrity |
-| ST-18 | Stripe mode: PAR-Q flag still included in Louise's alert email | Regression |
+| ST-01 | Stripe mode toggle visible in admin Settings | ✅ PM-1 |
+| ST-02 | Save payment mode — bank transfer | ✅ PM-1 |
+| ST-03 | Save payment mode — Stripe | ✅ PM-1 |
+| ST-04 | Stripe publishable key field hidden in bank transfer mode | ✅ PM-1 |
+| ST-05 | Stripe publishable key field shown in Stripe mode | ✅ PM-1 |
+| ST-06 | Invalid publishable key rejected (doesn't start with pk_) | ✅ PM-1 |
+| ST-07 | Booking modal Step 4 shows bank details in bank transfer mode | ✅ PM-2 |
+| ST-08 | Booking modal Step 4 shows "Proceed to Payment" in Stripe mode | ✅ PM-2 |
+| ST-16 | STRIPE MODE badge visible in admin topbar when Stripe active | ✅ PM-1 |
+| ST-17 | Stripe checkout creates pending_bookings row, no real booking, redirects to Stripe | ✅ PM-6 |
+| ST-18 | Cancel redirect shows toast, pending_bookings row left untouched | ✅ PM-6 |
+| ST-19 | Webhook success: booking confirmed with both Stripe IDs | ✅ PM-6 |
+| ST-20 | Webhook success: PAR-Q saved for new client (all 12 questions) | ✅ PM-6 |
+| ST-21 | Client confirmation email template — Sessions date pills (template check) | ✅ PM-6 |
+| ST-22 | Admin alert email — subject, amount, PAR-Q warning (template check, 4 tests) | ✅ PM-6 |
+| ST-23 | Webhook failure (CLASS_FULL): pending row retained, no booking created | ✅ PM-6 |
+| ST-24 | Webhook failure (ALREADY_BOOKED): pending row retained, existing booking untouched | ✅ PM-6 |
+| ST-25 | Invalid/missing webhook signature rejected (2 tests) | ✅ PM-6 |
+| ST-26 | Duplicate webhook delivery handled gracefully | ✅ PM-6 |
+
+**ST-09 to ST-15 (original plan, not built as such):** these IDs remain as open placeholders in TEST-PLAN.md. ST-10/ST-11 described a "real booking created before redirect" design superseded by the `pending_bookings` approach — effectively covered by ST-17/18/19 instead. ST-12 (reserved-email suppression in Stripe mode), ST-15 (bank-transfer regression check), and ST-09 (front-end redirect-fires assertion) remain genuinely open if wanted in a future session.
+
+**Why ST-13/ST-14 (confirmed/admin emails via webhook) became template checks (ST-21/22) rather than intercepted integration tests:** `stripe-webhook` calls `send-email` server-to-server — Playwright's `page.route()` can only intercept requests from the browser page it controls, so the originally-planned interception approach doesn't work for webhook-triggered emails. ST-19/20 prove the webhook completes successfully (200, correct DB state) when these emails fire; ST-21/22 separately verify the email template/content logic using copies of the builder functions (see `tests/helpers/email-templates.js` — flagged as a drift risk if the templates change again without updating this helper).
 
 #### SE suite additions (Settings & Export)
 
@@ -338,84 +365,35 @@ For webhook tests: Stripe CLI (`stripe listen`) can forward webhook events to a 
 
 ---
 
-## 11. Build Sessions — Proposed Breakdown
+## 11. Build Sessions — Actual Outcomes (✅ all complete)
 
-### Session PM-1: Feature flag foundation
-**Scope:**
-- Add `payment_mode` to settings table seed
-- Add `stripe_publishable_key` to settings table seed
-- Admin Settings page: new Payment Method card with toggle + key field
-- Read `payment_mode` on app init and store in a `PAYMENT_MODE` constant
-- Admin topbar: STRIPE MODE badge when active
-- New SE specs (SE-18, SE-19, SE-20) + ST-01 through ST-06, ST-16
-- TEST-PLAN.md update, context.txt update
-
-**No Stripe account or keys needed yet.**
+### Session PM-1: Feature flag foundation ✅
+**Built as planned.** `payment_mode` and `stripe_publishable_key` added to settings, admin Settings page Payment Method card, `PAYMENT_MODE` constant on app init, STRIPE MODE topbar badge. ST-01 to ST-06, ST-16, SE-18 to SE-20.
 
 ---
 
-### Session PM-2: Booking modal branch
-**Scope:**
-- Step 4 branch: bank transfer view vs Stripe "Proceed to Payment" button
-- Bank transfer path: zero changes to existing behaviour
-- Stripe path: button present, calls placeholder function (no Stripe yet)
-- ST-07 and ST-08 specs
-- TEST-PLAN.md update, context.txt update
-
-**Still no Stripe account needed — Stripe button present but Stripe not wired.**
+### Session PM-2: Booking modal branch ✅
+**Built as planned.** Step 4 branches on `PAYMENT_MODE` — bank transfer path unchanged, Stripe path shows explainer + "Proceed to Payment" button (placeholder `initiateStripeCheckout()` at this stage). ST-07, ST-08.
 
 ---
 
-### Session PM-3: Stripe Checkout integration
-**Pre-requisite:** Mark creates Stripe account, obtains test keys
-
-**Scope:**
-- `create-checkout-session` Edge Function
-- Stripe JS library loaded conditionally (only in Stripe mode)
-- Step 4 button wired to Edge Function → Checkout redirect
-- Success redirect handling (`?payment=success`)
-- Cancel redirect handling (`?payment=cancelled`)
-- `stripe_checkout_session_id` stored on booking
-- Migration 12 applied to both prod and test
-- ST-09, ST-10, ST-11, ST-17 specs
-- TEST-PLAN.md update, context.txt update
+### Session PM-3: Stripe Checkout integration ✅
+**Built with one design change from the original plan:** instead of creating a real `bookings` row before redirecting, `confirmBooking()` writes a `pending_bookings` row (new table, both DBs) and the `stripe-checkout` Edge Function returns the Stripe Checkout URL. The real booking is only created by the webhook (PM-4) once payment is confirmed — avoids ever having an unpaid "reserved" booking sitting in the system. Success redirect shows a full overlay (`#stripe-success-overlay`); cancel redirect (`?payment=cancelled`) shows a toast and leaves the `pending_bookings` row untouched (covered later by ST-18).
 
 ---
 
-### Session PM-4: Stripe webhook
-**Scope:**
-- `stripe-webhook` Edge Function
-- `checkout.session.completed` handler → booking confirmed
-- `checkout.session.expired` handler → booking deleted
-- Webhook signature verification
-- Stripe CLI setup for local webhook testing
-- ST-10 (webhook path), ST-11 (expired path)
-- TEST-PLAN.md update, context.txt update
+### Session PM-4: Stripe webhook ✅
+**Built with one change from the original plan:** `stripe-webhook` handles `checkout.session.completed` only — the planned `checkout.session.expired` handler wasn't built; abandoned `pending_bookings` rows instead rely on `expires_at` (2 hours), cleanup currently manual (BACKLOG T3-07). On success: upserts customer, calls `book_if_available`, sets `status='confirmed'` with both Stripe IDs, saves PAR-Q for new clients, sends trigger 2 (client confirmation) + trigger 5S (admin alert) emails, deletes the `pending_bookings` row. On `CLASS_FULL`/`ALREADY_BOOKED` (payment succeeded but booking couldn't be placed): sends an admin failure alert, leaves the `pending_bookings` row for manual review — see Implementation Status item 1 re: the client-side gap in this path.
 
 ---
 
-### Session PM-5: Email workflow — Stripe mode
-**Scope:**
-- Suppress trigger 1 (reserved email) in Stripe mode
-- Move trigger 2 (confirmed email) to webhook handler
-- Suppress trigger 5 (Louise reservation alert) in Stripe mode
-- New trigger 5S (Louise payment confirmed alert) — new email template
-- ST-12, ST-13, ST-14, ST-15, ST-18 specs
-- EMAIL-NOTIFICATIONS-SPEC.md update
-- TEST-PLAN.md update, context.txt update
+### Session PM-5: Production webhook + email polish ✅
+`stripe-webhook` deployed to production (v3), production Stripe webhook endpoint + secret configured, end-to-end verified (booking 227). Client confirmation email updated to show individual session date pills instead of a date range (applied in `index.html` and both webhook deployments). Fixed a `payment_mode` reseed bug (migration 12).
 
 ---
 
-### Session PM-6: End-to-end review + production prep
-**Scope:**
-- Full end-to-end manual walkthrough of both payment modes
-- Stripe test mode run-through with real dummy card on test environment
-- Switch to Stripe live keys for production
-- Update Stripe redirect URLs to Netlify domain (if migration complete)
-- Schema-check prod vs test
-- Any spec fixes or gaps identified in review
-- BACKLOG.md updated
-- context.txt final update for this feature
+### Session PM-6: Playwright coverage for the Stripe flow ✅
+**Different scope from the original plan** (which envisaged "end-to-end review + production prep" including live key swap and Netlify migration — those are now Outstanding items, see Implementation Status above, not part of PM-6). What was actually built: 10 new spec files (ST-17 to ST-26, 14 tests) covering `pending_bookings` creation, cancel-redirect handling, webhook success (booking confirmation + PAR-Q), webhook failure paths (`CLASS_FULL`/`ALREADY_BOOKED`), email template content checks, signature verification, and duplicate-delivery handling. New test helpers: `stripe-webhook.js` (signs and posts fake Stripe events directly to the webhook — no real Stripe contact for ST-19 to ST-26) and `email-templates.js` (template-fidelity checks for email content). TEST-PLAN.md, context.txt, and BACKLOG.md updated. Also: cleared 4 leftover `pending_bookings` rows from production, identified and logged the client-notification gap (T1-06).
 
 ---
 
@@ -443,14 +421,14 @@ On adoption of this spec, BACKLOG.md should be updated:
 
 ## 14. Open Questions
 
-| # | Question | Decision needed by |
-|---|----------|--------------------|
-| 1 | Will Louise manage Stripe herself or will Mark handle it? | Before PM-3 |
-| 2 | What currency symbol / price format should Stripe Checkout display? | Before PM-3 |
-| 3 | Should refunds eventually be processed via Stripe API, or remain manual? | Post-launch |
-| 4 | Will the Netlify migration complete before or after Stripe goes live? | Affects PM-6 redirect URLs |
-| 5 | Does Louise want email receipts from Stripe in addition to the system emails? | Before PM-5 |
+| # | Question | Status |
+|---|----------|--------|
+| 1 | Will Louise manage Stripe herself or will Mark handle it? | ✅ Resolved — Mark's Stripe account |
+| 2 | What currency symbol / price format should Stripe Checkout display? | ✅ Resolved — GBP, £ |
+| 3 | Should refunds eventually be processed via Stripe API, or remain manual? | Open — post-launch |
+| 4 | Will the Netlify migration complete before or after Stripe goes live? | ✅ Resolved — Stripe (PM-6) complete first; Netlify now unblocked |
+| 5 | Does Louise want email receipts from Stripe in addition to the system emails? | Open — revisit before go-live |
 
 ---
 
-*This spec is a living document. Update it at the end of each PM session to reflect decisions made and any scope changes.*
+*This spec's build phase (PM-1 to PM-6) is complete as of Session 45. Remaining work is tracked in BACKLOG.md (T1-06 client-notification gap, plus pre-launch housekeeping) and context.txt section 8a.*

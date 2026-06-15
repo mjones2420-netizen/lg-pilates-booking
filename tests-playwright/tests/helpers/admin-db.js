@@ -246,6 +246,112 @@ async function resetPaymentMode() {
   );
 }
 
+/**
+ * Sets settings.payment_mode to the given value ('bank_transfer' or 'stripe').
+ * Anon has no UPDATE on settings, so direct pg is required.
+ * Used by ST specs that need PAYMENT_MODE set BEFORE page load (it's read
+ * from settings on app init).
+ */
+async function setPaymentMode(mode) {
+  await getPool().query(
+    `INSERT INTO settings (key, value) VALUES ('payment_mode', $1)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [mode]
+  );
+}
+
+/**
+ * Returns the most recent pending_bookings row for a given email, or null.
+ * anon cannot SELECT pending_bookings (service-role only), so direct pg is
+ * the only way to verify rows written by the stripe-checkout Edge Function.
+ */
+async function getPendingBookingByEmail(email) {
+  const { rows } = await getPool().query(
+    `SELECT * FROM pending_bookings WHERE email = $1 ORDER BY created_at DESC LIMIT 1`,
+    [email]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Deletes all pending_bookings rows for a given email.
+ * Used by ST specs to clean up rows created by a real stripe-checkout call.
+ * Returns the number of rows deleted.
+ */
+async function deletePendingBookingByEmail(email) {
+  const { rowCount } = await getPool().query(
+    `DELETE FROM pending_bookings WHERE email = $1`,
+    [email]
+  );
+  return rowCount;
+}
+
+/**
+ * Returns the number of bookings rows (any status) for a (customer, block)
+ * pair. Used to assert that Stripe-mode confirmBooking() does NOT create a
+ * real booking row (it should only write to pending_bookings).
+ */
+async function countBookingsForCustomerOnBlock(customerId, blockId) {
+  const { rows } = await getPool().query(
+    `SELECT COUNT(*)::int AS count FROM bookings WHERE customer_id = $1 AND block_id = $2`,
+    [customerId, blockId]
+  );
+  return rows[0].count;
+}
+
+/**
+ * Inserts a pending_bookings row directly via pg, simulating a Stripe
+ * checkout session that was started but not completed. anon can INSERT via
+ * RLS but cannot SELECT the row back, so direct pg is used for the whole
+ * lifecycle in specs that need a pre-existing pending row (e.g. ST-18).
+ * Returns the new row's UUID id.
+ */
+async function insertPendingBooking({ classId, blockId, firstName, lastName, email, phone, customerType, amountPence, parqData = null }) {
+  const { rows } = await getPool().query(
+    `INSERT INTO pending_bookings
+       (class_id, block_id, first_name, last_name, email, phone, customer_type, amount_pence, parq_data, created_at, expires_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, NOW(), NOW() + INTERVAL '2 hours')
+     RETURNING id`,
+    [classId, blockId, firstName, lastName, email, phone, customerType, amountPence, parqData]
+  );
+  return rows[0].id;
+}
+
+/**
+ * Returns a pending_bookings row by id, or null.
+ */
+async function getPendingBookingById(id) {
+  const { rows } = await getPool().query(
+    `SELECT * FROM pending_bookings WHERE id = $1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Deletes a pending_bookings row by id. Returns the number of rows deleted.
+ */
+async function deletePendingBookingById(id) {
+  const { rowCount } = await getPool().query(
+    `DELETE FROM pending_bookings WHERE id = $1`,
+    [id]
+  );
+  return rowCount;
+}
+
+/**
+ * Returns a bookings row by id, or null. Used by ST specs that need to
+ * inspect a booking created by the stripe-webhook function (status,
+ * stripe_payment_intent_id, stripe_checkout_session_id, customer_id, etc).
+ */
+async function getBookingById(id) {
+  const { rows } = await getPool().query(
+    `SELECT * FROM bookings WHERE id = $1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   getPool,
   closePool,
@@ -258,5 +364,13 @@ module.exports = {
   deleteBookingsForCustomerOnBlock,
   deleteCustomerCascade,
   getParqByCustomerId,
-  resetPaymentMode
+  resetPaymentMode,
+  setPaymentMode,
+  getPendingBookingByEmail,
+  deletePendingBookingByEmail,
+  countBookingsForCustomerOnBlock,
+  insertPendingBooking,
+  getPendingBookingById,
+  deletePendingBookingById,
+  getBookingById
 };

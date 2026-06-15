@@ -1,6 +1,6 @@
 # LG Pilates Booking System — Feature & Task Backlog
 
-Last updated: 12 Jun 2026
+Last updated: 15 Jun 2026
 
 This document is the single source of truth for outstanding work on the LG Pilates booking system.
 It is organised by priority tier. Items should be marked ✅ when complete and updated in `context.txt` at the same time.
@@ -28,6 +28,7 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 | 15 | T3-05 | [Swap Supabase anon key](#t3-05--swap-supabase-anon-key-to-newer-publishable-key-format) | Migrate to newer publishable key format — do alongside Netlify migration | 🟢 Tier 3 |
 | 16 | T3-03 | [File split](#t3-03--file-split) | Split `index.html` into separate CSS/JS/HTML files at a future milestone | 🟢 Tier 3 |
 | 17 | T3-07 | [Pending bookings cleanup](#t3-07--scheduled-cleanup-of-expired-pending_bookings-rows) | Nightly scheduled function to delete expired pending_bookings rows from abandoned Stripe payments | 🟢 Tier 3 |
+| 18 | T1-06 | [Client notification + success-screen review](#t1-06--client-notification--success-screen-review-for-failed-post-payment-bookings) | Client gets no email and sees a false "confirmed" screen if a Stripe payment succeeds but the booking can't be placed | 🔴 Tier 1 |
 
 *T3-04 and T3-06 are listed as Tier 3 IDs but are urgent enough to act on before the system goes live with real clients.
 
@@ -100,8 +101,24 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 3. Configure the custom subdomain via DNS.
 4. Update `TEST_APP_URL` in `.env.test` if the live URL changes.
 5. Swap the Supabase anon key to the newer publishable key format at the same time (T3-05).
-**Dependencies:** None blocking, but do T3-05 (key swap) in the same session.
+**Dependencies:** Do T3-05 (key swap) in the same session.
 **Notes:** The `?env=test` switch and all existing Playwright tests should continue to work unchanged after migration — the app itself doesn't change, only where it's served from.
+
+---
+
+### T1-06 · Client notification + success-screen review for failed post-payment bookings
+**What:** Two related issues found during PM-6 (Session 45), affecting the rare case where a Stripe payment succeeds but the booking can't be placed (CLASS_FULL or ALREADY_BOOKED — e.g. the class fills in the few seconds between payment and the webhook running):
+1. The client receives NO email at all in this case — only Louise gets the failure alert (`buildPaymentFailedAdminEmailHtml`).
+2. The front-end success overlay (`#stripe-success-overlay`, "Booking confirmed — check your email") shows immediately on the `?payment=success` redirect — **before** the webhook has run, so it can show a false "confirmed" message even when the booking subsequently fails.
+
+**Why it matters:** A client could pay, see "Booking confirmed", never receive a confirmation email, and have no booking — with no indication anything went wrong. They'd have no reason to contact Louise. This is a trust/payment-correctness issue, not just a missing nice-to-have.
+
+**Effort:** Medium. Needs design thought, not just a quick fix — fixing (1) in isolation (just add a client email to the existing failure path) would still leave the client having already seen "confirmed" before the failure email arrives, which is confusing. Likely needs:
+- Reviewing whether the success overlay should show a "processing" state first, only confirming once the webhook has actually succeeded (may need polling or a different redirect flow).
+- A client-facing email/message for the failure case, written sensitively (payment taken, booking issue, "we'll be in touch" / contact details).
+
+**Dependencies:** None blocking — payment system (PM-1–PM-6) is otherwise complete and working for the success path. This is an edge-case correctness issue, not a launch blocker, but should be resolved before real client payments go live.
+**Notes:** The `buildPaymentFailedAdminEmailHtml` template (Louise's alert) already exists and works — covered by ST-23/ST-24. This item is specifically about the client-facing gap.
 
 ---
 
@@ -234,6 +251,7 @@ It is organised by priority tier. Items should be marked ✅ when complete and u
 | Email notifications — Session 5 | Cancellation admin alert (trigger #3) — SE-15 spec | Session 37 |
 | Email notifications — Session 6 | Refund confirmation email (trigger #4) — SE-16 spec | Session 37 |
 | Email notifications — Session 7 | Full wording review, session pills, pending refund banner, CI paths fix — BLW-09 | Session 37 |
+| Payment mode + Stripe integration (PM-1 to PM-6) | Feature flag, Step 4 branching, Stripe Checkout, webhook (test + prod), Playwright coverage ST-01 to ST-26 (23 tests) | Session 45 |
 | Per-class priority | Replaced global `customers.priority` with `customer_class_priority` | Earlier |
 | Pro-rata pricing | Sessions-remaining calculation on active blocks | Earlier |
 | 4-step booking flow | New client flow extended from 3 to 4 steps | Earlier |
