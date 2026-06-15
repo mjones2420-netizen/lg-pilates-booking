@@ -559,13 +559,13 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | ST-06 | Invalid publishable key rejected (doesn't start with pk_) | ✅ st-06-invalid-pk-rejected.spec.js | PM-1 |
 | ST-07 | Booking modal Step 4 shows bank details in bank transfer mode | ✅ st-07-step4-bank-transfer-mode.spec.js | PM-2 |
 | ST-08 | Booking modal Step 4 shows "Proceed to Payment" in Stripe mode | ✅ st-08-step4-stripe-mode.spec.js | PM-2 |
-| ST-09 | Stripe Checkout redirect fires on Step 4 button click | ⬜ | PM-3 |
-| ST-10 | Success redirect sets booking to confirmed | ⬜ | PM-3 |
-| ST-11 | Cancel redirect shows toast and deletes reserved booking | ⬜ | PM-3 |
-| ST-12 | Reserved email suppressed in Stripe mode | ⬜ | PM-5 |
-| ST-13 | Confirmed email fires on Stripe payment (webhook) | ⬜ | PM-5 |
-| ST-14 | Louise alert fires on Stripe payment (webhook) | ⬜ | PM-5 |
-| ST-15 | Bank transfer mode: all existing email triggers unaffected | ⬜ | PM-5 |
+| ST-09 | Stripe Checkout redirect fires on Step 4 button click | ⬜ Deferred | PM-3 |
+| ST-10 | Success redirect sets booking to confirmed | ⬜ Superseded by ST-19 | PM-3 |
+| ST-11 | Cancel redirect shows toast and deletes reserved booking | ⬜ Superseded by ST-18 | PM-3 |
+| ST-12 | Reserved email suppressed in Stripe mode | ⬜ Deferred | PM-5 |
+| ST-13 | Confirmed email fires on Stripe payment (webhook) | ⬜ Superseded by ST-19 | PM-5 |
+| ST-14 | Louise alert fires on Stripe payment (webhook) | ⬜ Superseded by ST-19 | PM-5 |
+| ST-15 | Bank transfer mode: all existing email triggers unaffected | ⬜ Deferred | PM-5 |
 | ST-16 | STRIPE MODE badge visible in admin topbar when Stripe active | ✅ st-16-stripe-badge-topbar.spec.js | PM-1 |
 | ST-17 | Stripe checkout creates a pending_bookings row, no real booking, redirects to Stripe | ✅ st-17-stripe-checkout-creates-pending-row.spec.js | PM-6 |
 | ST-18 | Cancel redirect shows toast, pending_bookings row left untouched | ✅ st-18-stripe-cancel-redirect-preserves-pending.spec.js | PM-6 |
@@ -4127,6 +4127,9 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 
 </details>
 
+<details>
+<summary><strong>Stripe specs — 23 tests (Batches 28, PM-6)</strong></summary>
+
 ### ST-07 — Booking modal Step 4: bank transfer mode
 
 **File:** `st-07-step4-bank-transfer-mode.spec.js`
@@ -4372,6 +4375,8 @@ The Coverage Tracker at the top of this document is the authoritative view of ou
 **Cleanup:** afterEach deletes the created booking + customer via `deleteCustomerCascade`.
 
 ---
+
+</details>
 
 ## Glossary
 
