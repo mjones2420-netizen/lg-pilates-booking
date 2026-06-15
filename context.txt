@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 15 Jun 2026 (Session 43)
+Last updated: 15 Jun 2026 (Session 44)
 ============================================================
 
 ABOUT THIS FILE
@@ -481,6 +481,7 @@ tests-playwright/
 │   ├── 09_reseed_with_dynamic_dates.sql   # live migration — idempotent, dynamic dates
 │   ├── 10_add_schema_fingerprint_function.sql  # applied to BOTH prod and test
 │   ├── 11_add_locked_window_class.sql     # Session 16 — Thu class for PB-01 locked window
+│   ├── 12_reseed_resets_payment_mode.sql  # Session 44 — resets payment_mode on reseed
 │   └── README.md
 ├── scripts/
 │   ├── seed.js                  # npm run seed wrapper (safety checks + verification)
@@ -567,7 +568,7 @@ standard, etc.
 Migration 09 is idempotent and re-runnable. Running it again wipes the
 existing fixture and rebuilds it fresh. Migration 11 (added Session 16)
 adds the Thursday class for PB-01 — also idempotent. `npm run seed` now
-applies BOTH 09 and 11 in sequence inside a single transaction.
+applies 09, 11, and 12 in sequence inside a single transaction.
 
 CURRENT TEST FIXTURE — 11 blocks across 4 classes:
 
@@ -739,7 +740,7 @@ Run ALL THREE of these EVERY session, regardless of whether the session
 looks test-related:
 
 A. Confirm index.html is present
-   - Check line count (~3,933 lines post-Session 41)
+   - Check line count (~4,023 lines post-Session 44)
    - Copy to /home/claude/index.html as the working file
 
 B. Check test DB fixture TIME drift
@@ -922,11 +923,10 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    check, forwarding to Louise's inbox.
    Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md.
 
-4. PAYMENT MODE FEATURE FLAG + STRIPE INTEGRATION — Session PM-5 next
+4. PAYMENT MODE FEATURE FLAG + STRIPE INTEGRATION — Session PM-6 (Playwright) next
    Fully scoped. Spec file: PAYMENT-MODE-SPEC.md (repo root).
    Allows Louise to switch between bank transfer and Stripe Checkout from
    the admin Settings page. Bank transfer is the default at launch.
-   Build plan: 6 sessions (PM-1 to PM-6). See PAYMENT-MODE-SPEC.md.
    PM-1 complete: feature flag foundation (settings UI, PAYMENT_MODE constant, Stripe badge).
    PM-2 complete: booking modal Step 4 branches on payment mode — bank transfer
    path unchanged; Stripe path shows new explainer and Proceed to Payment button.
@@ -934,15 +934,26 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    pending_bookings table created on both DBs. Booking flow redirects to Stripe without
    saving a real booking. Payment success shows a full confirmation screen (not a toast).
    Stripe account: Mark's account, GBP, test keys in use.
-   PM-4 complete (TEST project only): stripe-webhook Edge Function deployed to test.
-   Verified end-to-end with two real Stripe test payments — creates real booking
-   (status=confirmed, stripe_payment_intent_id + stripe_checkout_session_id populated),
-   saves PAR-Q if new client, sends confirmation emails (triggers 2 and 5S), plus a
-   new admin failure-alert email if payment succeeds but booking can't be placed
-   (CLASS_FULL/ALREADY_BOOKED — flags for manual refund).
-   PM-5 next: deploy stripe-webhook to PRODUCTION + set up production Stripe webhook
-   endpoint/secret. Then: Playwright specs for PM-3/PM-4 (deferred). Then reseed test DB
-   (bookings 4579/4580 + Mark Jones test customer need clearing — see SESSION 43 LEARNINGS).
+   PM-4 complete: stripe-webhook Edge Function deployed to test AND production.
+   Verified end-to-end on both — creates real booking (status=confirmed,
+   stripe_payment_intent_id + stripe_checkout_session_id populated), saves PAR-Q
+   if new client, sends confirmation emails (triggers 2 and 5S), plus an admin
+   failure-alert email if payment succeeds but booking can't be placed
+   (CLASS_FULL/ALREADY_BOOKED — flags for manual refund, pending_bookings row
+   retained for manual review in that case).
+   PM-5 complete: stripe-webhook deployed to PRODUCTION (v3). Production Stripe
+   webhook endpoint created (lg-pilates-prod-webhook), listening for
+   checkout.session.completed, STRIPE_WEBHOOK_SECRET set on production Edge
+   Function. End-to-end test successful — booking 227 confirmed with both
+   Stripe IDs populated. Both environments share the same Stripe account
+   (test mode keys) — production webhook is also in Stripe test mode until
+   live keys are swapped in at go-live.
+   Client confirmation email (buildConfirmedEmailHtml) updated to show
+   individual session date pills instead of a date range — applied to
+   index.html AND both stripe-webhook deployments (test + prod, v3).
+
+   PM-6 next (Playwright session) — see "PM-6 PLAYWRIGHT SCOPE" below for the
+   full scenario list and post-test action items.
 
    PAYMENT MODE COMMUNICATION RULES (apply to ALL PM sessions):
    - Before each session: explain the aim and objectives in plain English
@@ -979,7 +990,113 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
       matches DB-state.
 
 ============================================================
-9. KEY DECISIONS & GOTCHAS
+8a. PM-6 PLAYWRIGHT SCOPE (next session)
+============================================================
+
+PURPOSE: cover the Stripe Checkout + webhook flow built in PM-3/PM-4/PM-5,
+which currently has no automated coverage. ST-01 through ST-08 (toggle UI,
+settings persistence, Step 4 branching) are already covered by the existing
+ST suite — this session covers the parts beyond that.
+
+Testing the webhook directly (POSTing a simulated checkout.session.completed
+payload with a valid Stripe signature to the stripe-webhook Edge Function)
+is the practical approach — driving a real Stripe Checkout redirect through
+Playwright is unreliable and not recommended.
+
+PROPOSED NEW SCENARIOS:
+
+ST-09 — Stripe Checkout redirect creates a pending_bookings row, no real booking
+  Client completes Step 4 in Stripe mode. Asserts: a pending_bookings row is
+  created with the correct class_id/block_id/amount_pence/customer details,
+  AND no row is added to bookings. Confirms confirmBooking() takes the
+  "save pending, redirect" path rather than book_if_available in Stripe mode.
+
+ST-10 — Cancel redirect leaves pending_bookings row intact, shows toast
+  Simulates returning from Stripe with ?payment=cancelled. Asserts: toast
+  "Payment was not completed — you can try again" shown, pending_bookings
+  row for that attempt is untouched (no booking created, no cleanup expected
+  — relies on the 2-hour expiry).
+
+ST-11 — Webhook success: booking created as confirmed with Stripe IDs
+  POST a signed checkout.session.completed payload (with pending_booking_id
+  metadata) directly to stripe-webhook. Asserts: pending_bookings row is
+  deleted, a new bookings row exists with status='confirmed',
+  stripe_payment_intent_id and stripe_checkout_session_id populated,
+  customers row upserted correctly.
+
+ST-12 — Webhook success: PAR-Q saved for new client
+  Same as ST-11 but for a new client with parq_data in the pending row.
+  Asserts: a parq row is created linked to the new booking_id, with all
+  12 question answers and emergency contact details correctly mapped.
+
+ST-13 — Webhook success: client confirmation email fires (trigger 2)
+  emailPromise-pattern intercept on send-email. Asserts: email sent to the
+  client's address, subject contains the class name, and HTML body contains
+  the new "Sessions" pill row (today's change) rather than a date range.
+
+ST-14 — Webhook success: admin alert email fires (trigger 5S)
+  Same intercept pattern. Asserts: email sent to admin_email, subject
+  mentions "card payment", body includes client name, amount paid, and
+  (for new clients) the PAR-Q warning box. Covers PM-3's "trigger 5S".
+
+ST-15 — Webhook failure path: CLASS_FULL after payment triggers admin alert
+  Pre-fill the block to capacity via direct pg, then POST a
+  checkout.session.completed for that block. Asserts: book_if_available
+  fails with CLASS_FULL, pending_bookings row is RETAINED (not deleted),
+  a payment-failed admin alert email fires referencing the pending_booking_id,
+  and no booking row is created.
+
+ST-16 — Webhook failure path: ALREADY_BOOKED after payment triggers admin alert
+  Same as ST-15 but the customer already has a non-cancelled booking on that
+  block (race condition scenario). Asserts the ALREADY_BOOKED variant of the
+  failure email and same retention behaviour.
+
+ST-17 — Webhook signature verification rejects invalid signatures
+  POST to stripe-webhook with a missing/incorrect stripe-signature header.
+  Asserts: 400 response, no DB changes, no emails sent. Security-focused
+  regression test for the HMAC verification logic.
+
+ST-18 — Duplicate webhook delivery is handled gracefully
+  POST the same valid checkout.session.completed payload twice (Stripe
+  retries webhooks). Asserts: second delivery finds no pending_bookings row
+  (already processed), returns 200 "received: true" without erroring or
+  creating a duplicate booking.
+
+NOTES ON SCOPE:
+- ST-09/ST-10 can run against the existing test app (?env=test) with
+  payment_mode temporarily set to 'stripe' — must restore bank_transfer in
+  afterEach (see migration 12 / KEY DECISIONS for why this matters).
+- ST-11 through ST-18 call the test project's stripe-webhook Edge Function
+  directly via fetch with a hand-constructed signed payload — no real Stripe
+  account interaction needed. Requires STRIPE_TEST_WEBHOOK_SECRET (test
+  project's signing secret) in .env.test to compute valid signatures.
+- All ST-11+ specs need afterEach cleanup of any bookings/customers/parq/
+  pending_bookings rows they create (see self-cleaning-test-state skill).
+
+WHAT ELSE NEEDS DOING ON THE PAYMENT SYSTEM (beyond these tests):
+
+1. Once ST-09 through ST-18 pass locally, update TEST-PLAN.md (new ST suite
+   entries, summary header, spec file list) in the same session — non-negotiable.
+2. Decide whether to add a content-assertion to ST-13 (or a new SE spec) for
+   the date-pills change made in this session — currently no spec checks the
+   confirmed-email HTML structure in detail.
+3. Clear remaining test artefacts: 4 pending_bookings rows on PRODUCTION
+   (from PM-5 testing) — still need manual review/deletion, separate from
+   the test-project reseed which migration 12 now handles automatically.
+4. Confirm production payment_mode is back to 'bank_transfer' before any
+   further production testing (was switched to 'stripe' for the PM-5
+   end-to-end test; not yet confirmed reset).
+5. Create migration files for: pending_bookings table (Session 42),
+   stripe_payment_intent_id/stripe_checkout_session_id columns (Session 43),
+   and the stripe-checkout/stripe-webhook Edge Functions themselves (ongoing
+   AUDIT ITEM — see TO DO section).
+6. After PM-6: Netlify migration can proceed (was deferred pending email
+   notifications + payment system completion). Then PWA support.
+7. Before go-live: swap Stripe test keys for live keys (separate task,
+   needs its own checklist — webhook secret will also change).
+8. Switch bookings@lg-pilates.co.uk forwarding from Mark's inbox to
+   Louise's (existing TO DO item, unchanged).
+
 ============================================================
 
 These are durable, hard-won lessons. Add new ones sparingly — only if
@@ -1436,5 +1553,48 @@ SESSION 43 LEARNINGS — PM-4 STRIPE WEBHOOK, EDGE FUNCTION PARITY GAP
   stripe_payment_intent_id/stripe_checkout_session_id columns (Session 43),
   or the stripe-checkout/stripe-webhook Edge Functions. ACTION ITEM: create
   migration files for these so file-on-disk matches DB-state (Session 16 rule).
+
+SESSION 44 LEARNINGS — PM-5 PRODUCTION WEBHOOK, EMAIL PILLS, PAYMENT_MODE RESEED BUG
+---------------------------------------------------------------------------------------
+- PM-5 complete: stripe-webhook deployed to production (same code as test v2/v3,
+  no environment-specific values — webhook reads everything from env vars and
+  request metadata). Production webhook endpoint created in Stripe
+  (lg-pilates-prod-webhook), STRIPE_WEBHOOK_SECRET set on production Edge
+  Function secrets. End-to-end test successful: booking 227 confirmed with
+  stripe_payment_intent_id + stripe_checkout_session_id populated.
+- buildConfirmedEmailHtml (client confirmation email, trigger 2) updated to
+  show a "Sessions" row of date pills (past dates greyed, matching the admin
+  alert email's style) instead of a single "Block dates" range row. Applied
+  to index.html AND both stripe-webhook deployments (test + prod, now v3) —
+  this email is built independently in three places and all three needed
+  updating to stay consistent.
+- BUG FOUND AND FIXED: 20 Playwright specs failed with #reserve-btn stuck
+  disabled/hidden after ticking T&Cs at Step 3/4. Root cause: settings.payment_mode
+  on the test DB was left as 'stripe' from earlier PM testing. Migration 09
+  (the reseed) never touches settings, so a reseed does NOT reset payment_mode —
+  it carries over from whatever state the DB was already in. With payment_mode
+  stuck on 'stripe', onTcsChange() enables #stripe-pay-btn (display:none) instead
+  of #reserve-btn, which every bank-transfer-flow spec waits on. The failing run's
+  later ST-suite afterEach reset payment_mode back to bank_transfer, which is why
+  a direct DB query after the run showed the "correct" value — masking the cause
+  until the failure was reproduced via screenshot.
+- FIX: new migration 12 (12_reseed_resets_payment_mode.sql) upserts
+  payment_mode='bank_transfer' on every reseed, leaving stripe_publishable_key
+  untouched (so it doesn't need re-entering via the admin UI). Added to
+  seed.js's MIGRATION_FILES array. Applied directly to test DB this session;
+  re-run of npm test passed 178/178.
+- RULE: any setting that PM-session testing temporarily changes (payment_mode,
+  and potentially others in future) should have its "safe default" enforced by
+  the reseed migration, not just by individual specs' afterEach — afterEach
+  doesn't run on every failure mode (e.g. process crash), and reseed is the
+  one guaranteed reset point.
+- Stripe's "Delete test data" feature (test-mode sandbox) only clears Stripe-side
+  transaction records (PaymentIntents, Checkout Sessions, Charges etc.) — it does
+  NOT affect webhook endpoints/secrets, Edge Functions, or Supabase data
+  (pending_bookings, bookings). Safe to use for Stripe-side housekeeping; Supabase
+  cleanup is separate.
+- Outstanding from this session: 4 pending_bookings rows remain on PRODUCTION
+  (from PM-5 testing) — not yet cleared. Production payment_mode not yet
+  confirmed reset to bank_transfer after the PM-5 end-to-end test.
 
 ============================================================
