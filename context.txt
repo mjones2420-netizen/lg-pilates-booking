@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 15 Jun 2026 (Session 45)
+Last updated: 15 Jun 2026 (Session 46)
 ============================================================
 
 ABOUT THIS FILE
@@ -858,15 +858,19 @@ FILE DRIFT PREVENTION
 BACKLOG
 -------
 BACKLOG.md at the repo root is the single source of truth for all outstanding
-features and tasks. It is organised by priority tier and links to detailed
-descriptions for each item.
+features and tasks. As of Session 46 it's a single flat checklist table (no
+tiers, no priority ordering) — columns: Status (Not started / In progress /
+Completed), ID, Feature, Summary. Mark prioritises directly; Claude does not
+order or rank items.
 
 - At the start of any feature session, consult BACKLOG.md to confirm the
   item being worked on and check for dependencies.
-- If a new feature idea or task comes up during a session that is not being
-  actioned immediately, add it to BACKLOG.md before the session ends.
-- When an item is completed, mark it ✅ in BACKLOG.md and move it to the
-  Completed table. Update context.txt at the same time.
+- NON-NEGOTIABLE: any time a new feature, bug, or task is identified during a
+  session — even in passing, even if not actioned — add it to BACKLOG.md
+  before the session ends. Don't rely on it being remembered from chat.
+- When an item is completed, update its Status to "Completed" in BACKLOG.md
+  and update context.txt at the same time. Completed items are NOT removed
+  from the file or moved to a separate section — just marked Completed.
 - BACKLOG.md should be committed to git whenever it is updated.
 
 COMMUNICATION STYLE — MARK'S PREFERENCES
