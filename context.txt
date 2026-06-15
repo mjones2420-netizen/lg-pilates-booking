@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 13 Jun 2026 (Session 42)
+Last updated: 15 Jun 2026 (Session 43)
 ============================================================
 
 ABOUT THIS FILE
@@ -55,8 +55,10 @@ Anon Key:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
 Schema is a byte-for-byte mirror of production. Verify with:
     npm run schema-check
 Both should return fingerprint dad311c8a152bc0dbec1cb3fa0c584d5, 248 objects.
-NOTE: Session 42 added pending_bookings table to both DBs — schema fingerprint
-will have changed. Run npm run schema-check to get the new value and update here.
+NOTE: Session 42 added pending_bookings table to both DBs, and Session 43 added
+stripe_payment_intent_id + stripe_checkout_session_id columns to bookings on both
+DBs — schema fingerprint will have changed twice since the value above. Run
+npm run schema-check to get the new value and update here.
 
 Test admin user:
   Email:    admin@lg-pilates-test.local
@@ -92,8 +94,11 @@ TABLES
 classes                  — permanent class slots (id, name, level, day, time, end_time, venue, loc)
 blocks                   — each 6-week block run (id, class_id, start_date, end_date, weeks, dates[], price, cap, booked, visible, status)
 bookings                 — client bookings (id, class_id, block_id, customer_id, status, amount_due, refund_amount, created_at,
-                           stripe_payment_intent_id [nullable], stripe_checkout_session_id [nullable])
-                           NOTE: Stripe columns added in migration 12 (PM-3 session). NULL in bank transfer mode.
+                           refund_status, stripe_payment_intent_id [nullable], stripe_checkout_session_id [nullable])
+                           NOTE: stripe_payment_intent_id + stripe_checkout_session_id added Session 43
+                           (ALTER TABLE, both nullable text, no migration file yet — see TO DO).
+                           NULL in bank transfer mode. Populated by stripe-webhook (PM-4) on
+                           checkout.session.completed.
 customers                — client records (id, first_name, last_name, email, phone, customer_type, priority, created_at)
                            NOTE: customers.priority column is retained in DB but no longer used by the app.
                            Per-class manual priority is now managed via customer_class_priority table.
@@ -917,7 +922,7 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    check, forwarding to Louise's inbox.
    Build plan: 6 sessions + final review. See EMAIL-NOTIFICATIONS-SPEC.md.
 
-4. PAYMENT MODE FEATURE FLAG + STRIPE INTEGRATION — Session PM-4 next
+4. PAYMENT MODE FEATURE FLAG + STRIPE INTEGRATION — Session PM-5 next
    Fully scoped. Spec file: PAYMENT-MODE-SPEC.md (repo root).
    Allows Louise to switch between bank transfer and Stripe Checkout from
    the admin Settings page. Bank transfer is the default at launch.
@@ -925,13 +930,19 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
    PM-1 complete: feature flag foundation (settings UI, PAYMENT_MODE constant, Stripe badge).
    PM-2 complete: booking modal Step 4 branches on payment mode — bank transfer
    path unchanged; Stripe path shows new explainer and Proceed to Payment button.
-   PM-3 complete: Stripe Checkout integration. stripe-checkout Edge Function deployed (v2).
+   PM-3 complete: Stripe Checkout integration. stripe-checkout Edge Function deployed.
    pending_bookings table created on both DBs. Booking flow redirects to Stripe without
    saving a real booking. Payment success shows a full confirmation screen (not a toast).
    Stripe account: Mark's account, GBP, test keys in use.
-   PM-4 next: stripe-webhook Edge Function — creates real booking after payment confirmed,
-   saves PAR-Q if new client, sends confirmation emails (triggers 2 and 5S).
-   Playwright specs for PM-3/PM-4 deferred to next batch session after PM-4 is complete.
+   PM-4 complete (TEST project only): stripe-webhook Edge Function deployed to test.
+   Verified end-to-end with two real Stripe test payments — creates real booking
+   (status=confirmed, stripe_payment_intent_id + stripe_checkout_session_id populated),
+   saves PAR-Q if new client, sends confirmation emails (triggers 2 and 5S), plus a
+   new admin failure-alert email if payment succeeds but booking can't be placed
+   (CLASS_FULL/ALREADY_BOOKED — flags for manual refund).
+   PM-5 next: deploy stripe-webhook to PRODUCTION + set up production Stripe webhook
+   endpoint/secret. Then: Playwright specs for PM-3/PM-4 (deferred). Then reseed test DB
+   (bookings 4579/4580 + Mark Jones test customer need clearing — see SESSION 43 LEARNINGS).
 
    PAYMENT MODE COMMUNICATION RULES (apply to ALL PM sessions):
    - Before each session: explain the aim and objectives in plain English
@@ -956,6 +967,16 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
 14. AUDIT ITEMS:
     - Swap Supabase anon key to newer publishable key format (at Netlify migration)
     - Enable leaked password protection in Supabase Auth dashboard (manual toggle)
+    - Edge Function parity check: no automated check compares deployed Edge
+      Function code between prod and test projects (only DB schema is checked
+      via schema-check). Caused stripe-checkout v2 to be deployed to prod only
+      in Session 42, undetected until Session 43. Consider extending
+      schema-check or adding a manual checklist item.
+    - Missing migration files for pending_bookings table (Session 42) and
+      bookings.stripe_payment_intent_id/stripe_checkout_session_id columns
+      (Session 43) — both applied via apply_migration MCP directly, no file
+      saved to tests-playwright/migrations/. Create these so file-on-disk
+      matches DB-state.
 
 ============================================================
 9. KEY DECISIONS & GOTCHAS
@@ -1362,5 +1383,58 @@ SESSION 42 LEARNINGS — PM-3 STRIPE CHECKOUT, PENDING BOOKINGS
   add a scheduled function post-launch or clean manually via SQL editor.
 - Running index.html as file:// (not via http server) silently breaks all
   cross-origin Edge Function calls. Always use python3 -m http.server 8000.
+
+SESSION 43 LEARNINGS — PM-4 STRIPE WEBHOOK, EDGE FUNCTION PARITY GAP
+----------------------------------------------------------------------
+- EDGE FUNCTION PARITY GAP DISCOVERED: stripe-checkout v2 (Session 42) had only
+  been deployed to PRODUCTION, not test — test was still on v1 (old booking_id
+  signature). The session-start drift check covers DB schema/fixture data only,
+  NOT Edge Function code — there's no automated parity check between prod/test
+  function deployments. Redeployed v2 (then v3) to test to match. ACTION ITEM:
+  add an Edge Function parity check to the session-start routine or schema-check
+  tooling (see TO DO / AUDIT ITEMS).
+- stripe-checkout bumped to v3: added app_base_url to the metadata sent to
+  Stripe (front end passes window.location.origin+pathname). stripe-webhook
+  reads this back from session.metadata to build the admin dashboard link,
+  since Edge Functions have no window.location.
+- stripe-webhook (new, Deno-native, no Stripe SDK): verifies Stripe signature
+  via HMAC-SHA256 over "{timestamp}.{rawBody}" using STRIPE_WEBHOOK_SECRET.
+  verify_jwt: false (Stripe can't send a Supabase JWT — the signature check
+  IS the auth gate). Listens for checkout.session.completed only.
+- On success: upsert_customer → book_if_available → bookings.update(status=
+  'confirmed', stripe_payment_intent_id, stripe_checkout_session_id) → PAR-Q
+  insert if new client → send client confirmation (trigger 2) + admin alert
+  (trigger 5S) emails → delete pending_bookings row.
+- SCHEMA GAP FOUND DURING TESTING: bookings table was missing
+  stripe_payment_intent_id/stripe_checkout_session_id entirely on BOTH prod
+  and test (context.txt previously claimed these existed from "migration 12" —
+  this was inaccurate, no such migration was ever applied). First webhook test
+  ran upsert_customer + book_if_available successfully (booking created,
+  pending_bookings row cleaned up, BOTH emails sent correctly) but the final
+  status='confirmed' update failed silently (Supabase JS .update() without
+  .select() swallows errors — known gotcha). Booking was left at status=
+  'reserved'. Fixed via ALTER TABLE adding both columns (nullable text) to
+  bookings on test AND production. Re-tested successfully — booking landed as
+  confirmed with both Stripe IDs populated.
+- NEW: admin failure-alert email added to stripe-webhook for the case where
+  payment succeeds but book_if_available fails (CLASS_FULL or ALREADY_BOOKED —
+  e.g. class fills in the seconds before webhook fires). Sends a red-banner
+  email to admin_email with client contact details, amount paid, and the
+  pending_booking_id as a reference, flagging manual refund needed. The
+  pending_bookings row is deliberately left in place (not deleted) in this
+  case for manual review.
+- Two Stripe test payments completed successfully end-to-end (bookings 4579,
+  4580 on test project — class_id 3 & 4, £60 and £40 pro-rata). Both emails
+  (client confirmation + admin alert) delivered to delivered@resend.dev.
+  These bookings + the "Mark Jones" / mjones970@live.co.uk test customer still
+  need clearing via npm run seed before next Playwright run (reseed was run
+  once mid-session to clear an earlier failed attempt, but NOT after these
+  two successful ones).
+- stripe-webhook deployed to TEST ONLY. Production has no webhook function and
+  no Stripe webhook endpoint configured yet — PM-5 next session.
+- No migration file exists yet for: pending_bookings table (Session 42),
+  stripe_payment_intent_id/stripe_checkout_session_id columns (Session 43),
+  or the stripe-checkout/stripe-webhook Edge Functions. ACTION ITEM: create
+  migration files for these so file-on-disk matches DB-state (Session 16 rule).
 
 ============================================================
