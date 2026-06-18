@@ -8,19 +8,19 @@
 | Suite | Spec files | Tests |
 |---|---:|---:|
 | Smoke | 4 | 14 |
-| Client Booking (CB) | 28 | 34 |
+| Client Booking (CB) | 28 | 35 |
 | Priority Booking (PB) | 14 | 16 |
 | Booking Windows (BW) | 3 | 3 |
-| Admin Bookings (AB) | 13 | 21 |
-| Admin Classes (AC) | 24 | 26 |
+| Admin Bookings (AB) | 14 | 21 |
+| Admin Classes (AC) | 21 | 26 |
 | Admin Clients (ACL) | 2 | 2 |
 | Schedule Display (SD) | 6 | 6 |
-| Settings & Export (SE) | 19 | 20 |
+| Settings & Export (SE) | 20 | 21 |
 | Edge Cases (EC) | 13 | 15 |
 | Block Warnings (BLW) | 9 | 10 |
 | Security (SEC) | 3 | 6 |
 | Stripe (ST) | 19 | 23 |
-| **Total** | **157** | **196** |
+| **Total** | **156** | **198** |
 
 > Tests exceed spec files where one file covers multiple scenarios (e.g. cb-01 has 7 sub-tests, ac-24 has 3, ec-14 has 3, sec-06 has 3). Tests exceed Excel scenarios because smoke tests and PB-X gap-analysis tests are not in the Excel sheet, and some Excel scenarios share a spec file (e.g. CB-12 covered by cb-01, PB-03 covered by pb-10).
 
