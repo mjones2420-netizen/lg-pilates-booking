@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "supabase-test": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--project-ref", "ngzfhamjuviwfwuncrjo"]
+    },
+    "supabase-prod": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--project-ref", "mrlooyixnlxzcfmvnqme"]
+    }
+  }
+}
