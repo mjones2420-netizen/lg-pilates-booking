@@ -1752,7 +1752,7 @@ Modal state persists across open/close cycles. A returning customer's "Payment" 
 4. Inspects the resulting Step 3 (emergency contact) panel
 
 **What the test verifies:**
-- Step label reads "Step 3 of 4 — Emergency Contact"
+- Step label reads "Step 3 of 4 — Enter emergency contact details"
 - Pip 3 is `.active` and labelled "Emergency contact"
 - Pips 1 and 2 show ticks (✓), confirming they're marked done
 - All three emergency contact fields are visible (name, relationship, phone)
