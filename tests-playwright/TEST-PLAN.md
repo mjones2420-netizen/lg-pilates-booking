@@ -5,13 +5,12 @@
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
-This document lists every automated Playwright test, grouped by suite. The only
-number that matters is the actual test count above — it is generated directly
-from the suite, so it never drifts. To regenerate after adding or removing tests:
+This document is generated from the live suite — do not edit by hand. Regenerate
+after adding or removing tests:
 
 ```bash
 cd tests-playwright
-npx playwright test --list
+npm run test-plan
 ```
 
 The full suite reseeds the test database automatically before running:
