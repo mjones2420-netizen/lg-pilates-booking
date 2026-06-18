@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 18 Jun 2026
-**Total tests:** 196
+**Total tests:** 198
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -477,6 +477,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | SE-14 | New booking admin alert to Louise — Edge Function called on reserve, with PAR-Q flag for new clients | ✅ se-14-admin-alert-email.spec.js | Batch 24 |
 | SE-15 | No email fires on Remove From Block when refund > 0 — client email deferred to Mark Refunded | ✅ se-15-cancellation-emails.spec.js | Batch 25 |
 | SE-16 | Refund confirmation email to client when Louise marks cancellation as refunded — no admin alert | ✅ se-16-refund-emails.spec.js | Batch 26 |
+| SE-17 | Group block email — one Edge Function call per client (single recipient = privacy), personalised "Hi [first name]," + admin confirmation copy to Louise | ✅ se-17-block-email.spec.js | Batch 28 |
 | SE-18 | Payment mode card visible on Settings page | ✅ se-18-payment-mode-card-visible.spec.js | PM-1 |
 | SE-19 | Toggle between bank transfer and Stripe persists correctly | ✅ se-19-payment-mode-toggle-persists.spec.js | PM-1 |
 | SE-20 | Stripe publishable key saves and reloads correctly | ✅ se-20-stripe-pk-saves-reloads.spec.js | PM-1 |
@@ -617,6 +618,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 25 ✅ | Email notifications (trigger 3) | 1 | SE-15 — admin alert only on cancellation (no client email at RFB time). |
 | Batch 26 ✅ | Email notifications (trigger 4) + email wording review | 1 | SE-16 refund confirmation emails — client email only (no admin alert). All 6 email templates reviewed and wording updated; session pills replace block dates row; zero-refund cancellations auto-send client email immediately; admin cancel/refund alerts removed. |
 | Batch 27 ✅ | Block Warnings (pending refunds) | 2 | BLW-09 — orange advisory banner shows count of cancellations awaiting refund decision. Two sub-tests: banner appears with count + View Cancellations button; count decreases after marking refunded. Uses direct-pg cancellation insert for setup. Robust to stray cancellation rows from previous test runs. |
+| Batch 28 ✅ | Group block email (T2-07) | 1 | SE-17 — "Email this block" modal on By Class page. Asserts one send-email call per client (single recipient each = privacy, deduped), personalised "Hi [first name]," greeting, Louise's subject/message verbatim, isTest true, plus a "Copy:" confirmation email to Louise's admin address. Auto-accepts the confirm dialog; uses APP_PATH_EMAIL so calls fire. |
 | Batch 28 ✅ | Stripe — PM-2 booking modal Step 4 branch | 2 | ST-07 and ST-08 — verify that Step 4 of the booking modal branches correctly on payment mode. ST-07 confirms bank transfer section and Reserve button visible in bank_transfer mode. ST-08 confirms Stripe explainer and Proceed to Payment button visible in stripe mode, with bank transfer section hidden. payment_mode set directly in DB before each test; restored to bank_transfer in afterEach. |
 
 ---

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup — Email this block</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Raleway:wght@300;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" rel="stylesheet">
+<style>
+  :root{ --cream:#eef5f5; --warm:#f7fafa; --sage:#3a8a8a; --sage-dk:#2a6b6b;
+         --clay:#e07b4a; --charcoal:#1a2e2e; --mid:#4a6060; --light:#8aabab; --border:#cde0e0; --green:#3a8a6a; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ font-family:'Open Sans',sans-serif; background:var(--warm); color:var(--charcoal);
+        min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .overlay{ background:rgba(26,46,46,0.45); width:100%; max-width:640px; border-radius:12px;
+            padding:40px 24px; display:flex; align-items:center; justify-content:center; }
+  .modal{ width:460px; max-width:100%; background:#fff; border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+  .m-head{ padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .m-title{ display:flex; align-items:center; gap:10px; font-family:'Raleway',sans-serif; font-size:18px; font-weight:600; }
+  .m-title i{ font-size:20px; color:var(--sage-dk); }
+  .m-close{ font-size:20px; color:var(--light); cursor:pointer; }
+  .m-body{ padding:20px 22px; }
+  .blk{ background:var(--cream); border-radius:4px; padding:12px 14px; margin-bottom:18px; }
+  .blk-when{ font-size:13px; color:var(--mid); margin-bottom:3px; }
+  .blk-count{ font-size:14px; font-weight:600; }
+  .blk-count i{ font-size:16px; vertical-align:-2px; margin-right:5px; color:var(--sage-dk); }
+  label{ display:block; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--light); margin-bottom:6px; }
+  input, textarea{ width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:4px;
+                   font-size:14px; color:var(--charcoal); font-family:'Open Sans',sans-serif; }
+  input{ margin-bottom:16px; }
+  textarea{ line-height:1.6; resize:vertical; }
+  .note{ display:flex; align-items:flex-start; gap:8px; margin-top:10px; font-size:12px; color:var(--mid); line-height:1.5; }
+  .note i{ font-size:15px; color:var(--sage); margin-top:1px; }
+  .note strong{ font-weight:600; }
+  .m-foot{ padding:16px 22px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; }
+  .btn-cancel{ padding:10px 20px; border:1px solid var(--border); background:#fff; border-radius:4px; font-size:13px; color:var(--mid); cursor:pointer; }
+  .btn-send{ padding:10px 22px; border:none; background:var(--charcoal); color:#fff; border-radius:4px;
+             font-size:12px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; }
+</style>
+</head>
+<body>
+  <div class="overlay">
+    <div class="modal">
+      <div class="m-head">
+        <div class="m-title"><i class="ti ti-mail"></i> Email this block</div>
+        <i class="ti ti-x m-close"></i>
+      </div>
+      <div class="m-body">
+        <div class="blk">
+          <div class="blk-when">Monday 9:30am — Baildon</div>
+          <div class="blk-count"><i class="ti ti-users"></i> Sending to 12 clients on this block</div>
+        </div>
+        <label>Subject</label>
+        <input type="text" value="Important update about Monday's class" />
+        <label>Message</label>
+        <textarea rows="5">The venue car park will be closed this Saturday for resurfacing. Please use the on-street parking on Hall Cliffe instead. See you in class!</textarea>
+        <div class="note">
+          <i class="ti ti-info-circle"></i>
+          <span>Each client gets their own email starting <strong>"Hi [first name],"</strong>. Recipients can't see each other's addresses. You'll get a confirmation copy.</span>
+        </div>
+      </div>
+      <div class="m-foot">
+        <button class="btn-cancel">Cancel</button>
+        <button class="btn-send">Send to 12 clients</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

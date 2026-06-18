@@ -113,7 +113,7 @@ npm run schema-check       # verify prod/test schema parity
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **197 tests, all passing** (Session 47 / T1-08 + T1-10 fixed).
+Current test count: **198 tests, all passing** (Session 48 / T2-07 group block email built, T1-02 closed).
 
 ---
 
@@ -207,8 +207,8 @@ Navigate with `switchDashPage(name)`.
 
 **Next likely work:**
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain (`book.lg-pilates.co.uk`)
-- [T1-02](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/2): Email notifications — end-to-end production verification
 - [T1-06](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/6): Failed post-payment booking — client notification + correct screen
+- [T2-07](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/25): Group block email built this session — verify in production (real send to a test block)
 
 **Full backlog**: `gh issue list` or https://github.com/mjones2420-netizen/lg-pilates-booking/issues
 
