@@ -3657,6 +3657,11 @@ function viewBooking(idx){
     try{
       var{data:parqData}=await sb.from("parq").select("*").eq("booking_id",b.dbId).limit(1);
       var p=parqData&&parqData.length>0?parqData[0]:null;
+      var parqFromPrevious=false;
+      if(!p&&b.customerId){
+        var{data:fallback}=await sb.from("parq").select("*").eq("customer_id",b.customerId).order("created_at",{ascending:false}).limit(1);
+        if(fallback&&fallback.length>0){p=fallback[0];parqFromPrevious=true;}
+      }
       var html="";
       html+="<div class=\"parq-section-title\">Booking Details</div><div class=\"sdetail\">";
       html+="<div class=\"srow\"><span>Status</span><span><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></span></div>";
@@ -3670,7 +3675,7 @@ function viewBooking(idx){
       if(p){
         var qLabels=["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
         var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
-        html+="<div class=\"parq-section-title\" style=\"margin-top:20px\">Health Form</div><div class=\"sdetail\">";
+        html+="<div class=\"parq-section-title\" style=\"margin-top:20px\">Health Form"+(parqFromPrevious?" <span style=\"font-size:11px;background:#e8f4fd;color:#1a6fb5;padding:2px 8px;border-radius:4px;font-weight:400;vertical-align:middle\">From previous booking</span>":"")+"</div><div class=\"sdetail\">";
         html+="<div class=\"srow\"><span>Age</span><span>"+sanitise(p.age)+"</span></div>";
         html+="<div class=\"srow\"><span>Emergency Contact</span><span>"+sanitise(p.emergency_name||"")+(p.emergency_relationship?" ("+sanitise(p.emergency_relationship)+")":"")+"</span></div>";
         html+="<div class=\"srow\"><span>Emergency Phone</span><span>"+sanitise(p.emergency_phone||"")+"</span></div></div>";

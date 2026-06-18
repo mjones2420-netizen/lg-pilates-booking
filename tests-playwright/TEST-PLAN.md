@@ -98,6 +98,7 @@
 - `ab-17-18-dashboard-buttons.spec.js` — 2 tests
 - `ab-19-20-21-missing-parq-banner.spec.js` — 3 tests
 - `ab-22-parq-date-format.spec.js` — 1 test
+- `ab-23-returning-client-parq-view.spec.js` — 1 test
 
 **Admin Classes (24 files, 26 tests)**
 - `ac-01-add-new-class.spec.js` — 1 test
@@ -379,6 +380,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | AB-20 | Missing PAR-Q banner — appears when a PAR-Q is missing | ✅ ab-19-20-21-missing-parq-banner.spec.js | Batch 17 |
 | AB-21 | Missing PAR-Q banner — plural count + click-to-scroll highlight | ✅ ab-19-20-21-missing-parq-banner.spec.js | Batch 17 |
 | AB-22 | Admin PAR-Q view renders friendly date format | ✅ ab-22-parq-date-format.spec.js | Batch 17 |
+| AB-23 | Returning client PAR-Q visible in admin view with "From previous booking" badge | ✅ ab-23-returning-client-parq-view.spec.js | Batch 18 |
 
 
 </details>
@@ -603,7 +605,8 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | Batch 14 ✅ | Settings & Export | 9 | Bank details CRUD (SE-01 to SE-03), CSV exports (SE-04 to SE-08), formula injection protection (SE-09). SE-01/03 use direct-pg settings seed/restore in afterEach. SE-03 self-cleans the booking it creates. SE-09 inserts an injection-candidate customer via direct pg and deletes in afterEach. |
 | Batch 15 ✅ | Admin Bookings (part 1) | 6 specs (6 tests) | AB-01 reclassified as duplicate of SEC-06.1 (red-filled). AB-02 bookings table 7-column header + fixture rows. AB-03 View overlay with booking details + "no health form" for returning clients. AB-04 Confirm reserved booking via per-run RPC booking. AB-05/AB-06 combined — RFB flow (0 sessions, not paid) deletes booking + parq, customer survives. AB-07 Del Customer flow with window.confirm dialog accept. |
 | Batch 16 ✅ | Admin Bookings (part 2) | 8 specs (8 tests) | RFB flows: AB-08/09 zero-sessions (not paid / paid), AB-10 By Class tab accordion, AB-11/12 sessions-attended refund + override, AB-13/14/15 cancellations tab + Mark Refunded button + DB update. AB-10 required a fix on first run — double-click collapse bug when Monday was also the first group. |
-| Batch 17 ✅ | Admin Bookings (part 3) | 7 specs (7 tests) | AB-16 CSV export download + filename regex, AB-17/18 button layout regression + sign-in reset, AB-19/20/21 missing-PAR-Q banner (hidden / singular / plural + highlight), AB-22 sign_date friendly date format in View modal. AB suite complete. |
+| Batch 17 ✅ | Admin Bookings (part 3) | 7 specs (7 tests) | AB-16 CSV export download + filename regex, AB-17/18 button layout regression + sign-in reset, AB-19/20/21 missing-PAR-Q banner (hidden / singular / plural + highlight), AB-22 sign_date friendly date format in View modal. |
+| Batch 18 ✅ | Admin Bookings (part 4) | 1 spec (1 test) | AB-23 returning client PAR-Q fallback — admin View modal falls back to customer's most recent parq when no row linked to current booking_id, shows "From previous booking" badge. AB suite complete. |
 | Batch 18 ✅ | Admin Classes (part 1) | 8 specs (8 tests) | AC-01 add class + ctbody row. AC-02 add block + By Class accordion + schedule visible. AC-03 wrong-day date rejected with red error. AC-04 edit block price/cap. AC-05 delete block + class hidden. AC-06 edit class slot + schedule updated. AC-07 delete class. AC-08 class hidden when no blocks remain. All use per-run class/block setup via direct pg. |
 | Batch 19 | Admin Classes (part 2) | 8 | Auth gates + overlap validation. |
 | Batch 20 | Admin Classes (part 3) | 8 | Time formatting + delete-cascade tests. |
