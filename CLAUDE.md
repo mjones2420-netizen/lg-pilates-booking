@@ -88,7 +88,7 @@ If drift detected, remind Mark to run: `cd tests-playwright && npm run seed`
 3. **No git push until `npm test` is green** — including any new specs.
 4. **New/changed functionality gets new Playwright specs in the same session.**
 5. **TEST-PLAN.md updated in the same session as any test change.**
-6. **BACKLOG.md** is the single source of truth. Consult at session start. Add any newly identified item before session ends.
+6. **GitHub Issues** is the single source of truth for the backlog. Consult open issues at session start (`gh issue list`). Create new issues for any newly identified item before session ends. Close issues when done. BACKLOG.md is kept for historical reference only — do not update it.
 7. **SQL: confirm and explain before running anything against Supabase.**
 8. **Never update documentation until tests are green** (hard rule).
 9. **Plain English summary alongside any technical detail.**
@@ -203,12 +203,12 @@ Navigate with `switchDashPage(name)`.
 - 196 Playwright tests passing
 - Production `payment_mode` currently `'stripe'` (system not yet live — confirm before go-live)
 
-**Next likely work (from BACKLOG.md):**
-- T1-08: Returning client PAR-Q forms not viewable in admin view
-- T1-10: Emergency contact section unclear in booking flow
-- Netlify migration + custom domain (`book.lg-pilates.co.uk`)
+**Next likely work:**
+- [T1-08](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/7): Returning client PAR-Q not viewable in admin
+- [T1-10](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/9): Emergency contact section unclear in booking flow
+- [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain (`book.lg-pilates.co.uk`)
 
-**Full backlog**: see `BACKLOG.md`
+**Full backlog**: `gh issue list` or https://github.com/mjones2420-netizen/lg-pilates-booking/issues
 
 ---
 
