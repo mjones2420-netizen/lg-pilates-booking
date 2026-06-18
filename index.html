@@ -815,13 +815,16 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 
         <!-- STEP 2b: Emergency Contact (new clients only) -->
         <div id="step-2b" style="display:none">
-          <div class="step-label">Step 3 of 4 &mdash; Emergency Contact</div>
-          <div style="font-size:13px;color:var(--mid);margin-bottom:16px;line-height:1.6">Please provide an emergency contact who can be reached if needed during class.</div>
+          <div class="step-label">Step 3 of 4 &mdash; Enter emergency contact details</div>
+          <div style="background:#e8f4fd;border-radius:6px;padding:10px 12px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a6fb5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span style="font-size:13px;color:#1a6fb5;line-height:1.5">This is not your own contact details &mdash; please give someone we can reach in an emergency, such as a partner, family member, or friend.</span>
+          </div>
           <div class="frow" style="margin-bottom:10px">
-            <div><label class="flbl">Contact Name <span class="req">*</span></label><input type="text" class="finp" id="b-emergency-name" placeholder="Full name" maxlength="100" style="margin-bottom:0"></div>
+            <div><label class="flbl">Their name <span class="req">*</span></label><input type="text" class="finp" id="b-emergency-name" placeholder="Full name" maxlength="100" style="margin-bottom:0"></div>
             <div><label class="flbl">Relationship <span class="req">*</span></label><input type="text" class="finp" id="b-emergency-relationship" placeholder="e.g. Husband" maxlength="50" style="margin-bottom:0"></div>
           </div>
-          <label class="flbl">Emergency Contact Phone <span class="req">*</span></label>
+          <label class="flbl">Their phone number <span class="req">*</span></label>
           <input type="text" class="finp" id="b-emergency-phone" placeholder="07700 000000" maxlength="20">
           <div class="field-err" id="err-emergency">Please fill in all emergency contact details.</div>
 

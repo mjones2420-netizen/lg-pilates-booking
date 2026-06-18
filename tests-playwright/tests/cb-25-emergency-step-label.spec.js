@@ -5,7 +5,7 @@
 // Excel scenario CB-25: "Emergency contact step — shows as Step 3 of 4"
 //   Given: New client has progressed through Steps 1 and 2
 //   When:  They complete the medical form and click Continue
-//   Then:  Step 3 panel becomes visible with label "Step 3 of 4 — Emergency Contact",
+//   Then:  Step 3 panel becomes visible with label "Step 3 of 4 — Enter emergency contact details",
 //          pip 3 active, and only 3 fields visible (no medical questions).
 //
 // Fixture role: mon-current
@@ -49,7 +49,7 @@ test.describe('CB-25 — Emergency contact step shows as Step 3 of 4', () => {
     // Step 2b should now be visible — verify label, pip state and fields.
     await expect(page.locator('#step-2b')).toBeVisible();
     await expect(page.locator('#step-2b .step-label')).toContainText(/Step 3 of 4/);
-    await expect(page.locator('#step-2b .step-label')).toContainText(/Emergency Contact/);
+    await expect(page.locator('#step-2b .step-label')).toContainText(/Enter emergency contact details/i);
 
     await expect(page.locator('#pip-3')).toHaveClass(/active/);
     await expect(page.locator('#pip-lbl-3')).toHaveText('Emergency contact');
