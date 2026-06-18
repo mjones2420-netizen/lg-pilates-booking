@@ -113,7 +113,7 @@ npm run schema-check       # verify prod/test schema parity
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **195 tests, all passing** (Session 45 / PM-6 complete).
+Current test count: **196 tests, all passing** (Session 46 / T1-07 fixed).
 
 ---
 
@@ -200,14 +200,13 @@ Navigate with `switchDashPage(name)`.
 
 **Payment system (PM-1 to PM-6): COMPLETE**
 - Stripe Checkout + webhook fully built and tested
-- 195 Playwright tests passing
+- 196 Playwright tests passing
 - Production `payment_mode` currently `'stripe'` (system not yet live — confirm before go-live)
 
 **Next likely work (from BACKLOG.md):**
-- T1-07: "Book Now" button stops working after a booking until page refresh
 - T1-08: Returning client PAR-Q forms not viewable in admin view
+- T1-10: Emergency contact section unclear in booking flow
 - Netlify migration + custom domain (`book.lg-pilates.co.uk`)
-- Cosmetic fix: index.html line ~476 reads "Step 1 of 3" — should be "Step 1 of 4"
 
 **Full backlog**: see `BACKLOG.md`
 

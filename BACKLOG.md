@@ -12,7 +12,7 @@ Single source of truth for outstanding work. This is a flat checklist — no tie
 | Not started | T1-04 | Netlify migration + custom domain | Move to Netlify, private repo, `book.lg-pilates.co.uk` |
 | Not started | T1-05 | Fix class time input | Switch Add/Edit Class time fields to `<input type="time">` |
 | Not started | T1-06 | Failed post-payment booking — client notification + success screen | Client gets no email and sees false "confirmed" screen if Stripe payment succeeds but booking can't be placed (CLASS_FULL/ALREADY_BOOKED) |
-| Not started | T1-07 | Refresh required after booking to book again | After a booking completes and user returns to schedule, "Book Now" no longer works until page is refreshed |
+| Done | T1-07 | Refresh required after booking to book again | Fixed session 46 — confirmBooking() was destroying price span via textContent=, crashing openModal() silently on next call |
 | Not started | T1-08 | Returning client PAR-Q not viewable in admin | Admin "View" for a returning client's booking shows no PAR-Q, even where one should exist |
 | Not started | T1-09 | Stripe cancellation/refund sync | Investigate how Stripe handles cancellations and refunds, and how this should sync back to the booking system (bookings/cancellations tables, refund status) |
 | Not started | T1-10 | Emergency contact section unclear in booking flow | Test users have updated their own details instead of an emergency contact — section needs clearer labelling/design so it's obvious it's for someone else |
