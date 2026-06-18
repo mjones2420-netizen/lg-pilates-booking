@@ -113,7 +113,7 @@ npm run schema-check       # verify prod/test schema parity
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **196 tests, all passing** (Session 46 / T1-07 fixed).
+Current test count: **197 tests, all passing** (Session 47 / T1-08 + T1-10 fixed).
 
 ---
 
@@ -123,7 +123,7 @@ Current test count: **196 tests, all passing** (Session 46 / T1-07 fixed).
 |---|---|
 | `index.html` | Single-file front end — all UI and client JS |
 | `context.txt` | Full project context — read this for deep detail |
-| `BACKLOG.md` | All outstanding features and tasks |
+| `BACKLOG.md` | Historical reference only — backlog now managed in GitHub Issues |
 | `TEST-PLAN.md` | Playwright coverage tracker — update with every test change |
 | `PAYMENT-MODE-SPEC.md` | Stripe integration spec |
 | `EMAIL-NOTIFICATIONS-SPEC.md` | Email spec |
@@ -200,13 +200,15 @@ Navigate with `switchDashPage(name)`.
 
 **Payment system (PM-1 to PM-6): COMPLETE**
 - Stripe Checkout + webhook fully built and tested
-- 196 Playwright tests passing
+- 197 Playwright tests passing
 - Production `payment_mode` currently `'stripe'` (system not yet live — confirm before go-live)
 
+**Backlog now managed via GitHub Issues** — use `gh issue list` at session start.
+
 **Next likely work:**
-- [T1-08](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/7): Returning client PAR-Q not viewable in admin
-- [T1-10](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/9): Emergency contact section unclear in booking flow
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain (`book.lg-pilates.co.uk`)
+- [T1-02](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/2): Email notifications — end-to-end production verification
+- [T1-06](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/6): Failed post-payment booking — client notification + correct screen
 
 **Full backlog**: `gh issue list` or https://github.com/mjones2420-netizen/lg-pilates-booking/issues
 
