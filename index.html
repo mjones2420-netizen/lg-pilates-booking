@@ -1377,8 +1377,13 @@ function openModal(classId, blockId) {
   document.getElementById("m-sdetail").textContent=c.day+" "+c.time+" \u2013 "+c.end_time+" \u2022 "+c.loc;
   var pr=calcProrata(blk);
   var totalPrice=pr.totalPrice;
+  // Recreate button inner HTML so the price spans always exist \u2014 a prior confirmBooking()
+  // call using textContent= would have stripped them, crashing the next openModal() call.
+  var _rb=document.getElementById("reserve-btn");
+  if(_rb) _rb.innerHTML='Reserve My Spot \u2014 <span id="m-btnprice">\u00a3'+totalPrice+'</span> due';
+  var _spb=document.getElementById("stripe-pay-btn");
+  if(_spb) _spb.innerHTML='Proceed to Payment \u2014 <span id="m-stripe-btnprice">\u00a3'+totalPrice+'</span>';
   document.getElementById("m-price").textContent="\u00a3"+totalPrice;
-  document.getElementById("m-btnprice").textContent="\u00a3"+totalPrice;
   document.getElementById("msummary-bar").style.display="flex";
   document.getElementById("form-view").style.display="block";
   document.getElementById("success-view").className="success";
@@ -1421,6 +1426,8 @@ function openModal(classId, blockId) {
   if(tcsHint) tcsHint.style.display="block";
   var reserveBtn=document.getElementById("reserve-btn");
   if(reserveBtn){ reserveBtn.disabled=true; reserveBtn.style.opacity="0.5"; reserveBtn.style.cursor="not-allowed"; }
+  var stripePayBtn=document.getElementById("stripe-pay-btn");
+  if(stripePayBtn){ stripePayBtn.disabled=true; stripePayBtn.style.opacity="0.5"; stripePayBtn.style.cursor="not-allowed"; }
   // Reset customer check message
   var ccMsg=document.getElementById("customer-check-msg");
   if(ccMsg){ ccMsg.style.display="none"; ccMsg.textContent=""; }
@@ -2175,9 +2182,12 @@ function confirmBooking(){
     }
   }
 
-  // Disable confirm button to prevent double-submission
-  var confirmBtn=document.querySelector(".confirm-btn");
-  if(confirmBtn){ confirmBtn.disabled=true; confirmBtn.textContent="Reserving..."; }
+  // Disable the active confirm button to prevent double-submission.
+  // Use targeted IDs rather than querySelector to avoid selecting the wrong button,
+  // and avoid textContent= which would strip the price <span> inside the button.
+  var isStripeMode=PAYMENT_MODE==="stripe";
+  var confirmBtn=document.getElementById(isStripeMode?"stripe-pay-btn":"reserve-btn");
+  if(confirmBtn){ confirmBtn.disabled=true; confirmBtn.style.opacity="0.5"; confirmBtn.style.cursor="not-allowed"; }
 
   (async function(){
     try{
@@ -2227,7 +2237,7 @@ function confirmBooking(){
           window.location.href=pendingData.url;
         } else {
           showToast("Payment could not be started. Please try again.");
-          if(confirmBtn){ confirmBtn.disabled=false; confirmBtn.textContent="Proceed to Payment"; }
+          if(confirmBtn){ confirmBtn.disabled=false; confirmBtn.style.opacity="1"; confirmBtn.style.cursor="pointer"; }
         }
         return;
       }
@@ -2327,7 +2337,7 @@ function confirmBooking(){
     }catch(err){
       console.error("Booking error:",err);
       showToast("Something went wrong. Please try again.");
-      if(confirmBtn){ confirmBtn.disabled=false; confirmBtn.textContent="Reserve My Spot \u2014 \u00a3"+sanitise(String(calcProrata(blk).totalPrice))+" due"; }
+      if(confirmBtn){ confirmBtn.disabled=false; confirmBtn.style.opacity="1"; confirmBtn.style.cursor="pointer"; }
     }
   })();
 }

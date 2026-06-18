@@ -6,18 +6,19 @@
 //   Given: User is on Step 3 (Payment) of the booking modal
 //   When:  User ticks T&Cs and clicks "Reserve My Spot"
 //   Then:  - Button immediately disables (cannot be clicked again)
-//          - Button text changes to "Reserving..."
+//          - Button text is UNCHANGED (still shows the price)
 //          - Prevents double-submission
 //
-// Mechanism (front-end, index.html lines 1502-1503):
-//   var confirmBtn = document.querySelector(".confirm-btn");
-//   if(confirmBtn){
-//     confirmBtn.disabled = true;
-//     confirmBtn.textContent = "Reserving...";
-//   }
+// Note: the button no longer changes text to "Reserving..." — that
+// behaviour was removed in session 46 (T1-07 fix) because using
+// textContent= destroyed the price <span> inside the button, causing
+// openModal() to crash on the next booking attempt.
+//
+// Mechanism (front-end, confirmBooking()):
+//   var confirmBtn = document.getElementById("reserve-btn");
+//   if(confirmBtn){ confirmBtn.disabled = true; ... }
 //   This runs SYNCHRONOUSLY at the top of confirmBooking() before any
-//   async RPC call, so the disable + text swap is visible before the
-//   booking completes.
+//   async RPC call, so the disable is visible before the booking completes.
 //
 // Test approach:
 //   The challenge is asserting the transient "Reserving..." state before
@@ -71,7 +72,7 @@ test.describe('EC-09 — Reserve button disabled during submission', () => {
     }
   });
 
-  test('Reserve button disables and shows "Reserving..." after click', async ({ page }) => {
+  test('Reserve button disables (text unchanged) after click', async ({ page }) => {
     const friUpcoming = await getBlockByRole('fri-upcoming');
     expect(friUpcoming).toBeTruthy();
 
@@ -102,23 +103,23 @@ test.describe('EC-09 — Reserve button disabled during submission', () => {
     // to assert on the transient state as fast as possible.
     await page.locator('#reserve-btn').click();
 
-    // Assert: button becomes disabled AND text changes to "Reserving...".
-    // expect.poll runs immediately and re-evaluates until both conditions
-    // hold, with a short timeout. We snapshot both in one evaluate() call
-    // so they reflect the SAME moment.
+    // Assert: button becomes disabled. Text must NOT change (the fix for T1-07
+    // removed the textContent= call that used to say "Reserving..." because it
+    // destroyed the price <span> inside the button, crashing subsequent openModal() calls).
     await expect.poll(
       async () => {
-        return await page.locator('#reserve-btn').evaluate(btn => ({
-          disabled: btn.disabled,
-          text:     (btn.textContent || '').trim()
-        }));
+        return await page.locator('#reserve-btn').evaluate(btn => btn.disabled);
       },
       {
-        message: 'Reserve button should disable and show "Reserving..." after click',
+        message: 'Reserve button should be disabled immediately after click',
         timeout: 4000,
         intervals: [50, 100, 200]
       }
-    ).toEqual({ disabled: true, text: 'Reserving...' });
+    ).toBe(true);
+
+    // Text must still contain "Reserve My Spot" — it is not replaced with "Reserving...".
+    const postText = await page.locator('#reserve-btn').textContent();
+    expect(postText).toMatch(/Reserve My Spot/i);
 
     // Let the booking complete so afterEach can clean up.
     await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 10000 });

@@ -1,14 +1,14 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 15 Jun 2026
-**Total tests:** 195
+**Last updated:** 18 Jun 2026
+**Total tests:** 196
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
 | Suite | Spec files | Tests |
 |---|---:|---:|
 | Smoke | 4 | 14 |
-| Client Booking (CB) | 27 | 33 |
+| Client Booking (CB) | 28 | 34 |
 | Priority Booking (PB) | 14 | 16 |
 | Booking Windows (BW) | 3 | 3 |
 | Admin Bookings (AB) | 13 | 21 |
@@ -20,7 +20,7 @@
 | Block Warnings (BLW) | 9 | 10 |
 | Security (SEC) | 3 | 6 |
 | Stripe (ST) | 19 | 23 |
-| **Total** | **156** | **195** |
+| **Total** | **157** | **196** |
 
 > Tests exceed spec files where one file covers multiple scenarios (e.g. cb-01 has 7 sub-tests, ac-24 has 3, ec-14 has 3, sec-06 has 3). Tests exceed Excel scenarios because smoke tests and PB-X gap-analysis tests are not in the Excel sheet, and some Excel scenarios share a spec file (e.g. CB-12 covered by cb-01, PB-03 covered by pb-10).
 
@@ -33,7 +33,7 @@
 - `smoke-03-rls-enforcement.spec.js` — 4 tests
 - `smoke-04-ui-page-loads.spec.js` — 3 tests
 
-**Client Booking (27 files, 33 tests)**
+**Client Booking (28 files, 34 tests)**
 - `cb-01-new-client-happy-path.spec.js` — 7 tests (CB-01, CB-04, CB-05, CB-07, CB-12, CB-21, CB-28, CB-33)
 - `cb-02-parq-yes-shows-details.spec.js` — 1 test
 - `cb-03-returning-client-skips-parq.spec.js` — 1 test
@@ -61,6 +61,7 @@
 - `cb-30-medical-form-scrollable.spec.js` — 1 test
 - `cb-31-duplicate-booking-already-booked-screen.spec.js` — 1 test
 - `cb-32-returning-client-not-on-block-welcome-back.spec.js` — 1 test
+- `cb-34-rebook-after-success.spec.js` — 1 test
 
 **Priority Booking (14 files, 16 tests)**
 - `pb-01-locked-window-not-open-yet.spec.js` — 1 test
@@ -253,7 +254,7 @@ Each table below lists every scenario in that Excel tab with its current status 
 - ⬜ **Outstanding** — yet to be automated; suggested batch column shows planned grouping
 
 <details>
-<summary><strong>Client Booking (CB) — 27 spec files, 33 tests ✅</strong></summary>
+<summary><strong>Client Booking (CB) — 28 spec files, 34 tests ✅</strong></summary>
 
 ### Client Booking (CB) — Complete ✅
 
@@ -293,6 +294,7 @@ Each table below lists every scenario in that Excel tab with its current status 
 | CB-31 | Duplicate booking caught at step 1 | ✅ cb-31.spec.js |
 | CB-32 | Returning client NOT on this block — welcome-back flow | ✅ cb-32.spec.js |
 | CB-33 | PAR-Q sign_date stored as proper DATE type | ✅ cb-33.spec.js (strengthened Session 20 — direct parq row assertion) |
+| CB-34 | Book Now works after completing a prior booking (T1-07 regression) | ✅ cb-34.spec.js |
 
 
 </details>
@@ -495,7 +497,7 @@ Gap-analysis tests (not in Excel; added in PB Batch 3):
 | EC-06 | Very long text in booking form | ✅ ec-06.spec.js | Batch 11 |
 | EC-07 | Overbooking prevented — class fills during booking | ✅ ec-07.spec.js | Batch 11 |
 | EC-08 | Duplicate booking same block — server-side rejection | ✅ ec-08.spec.js | Batch 12 |
-| EC-09 | Reserve button disabled during submission | ✅ ec-09.spec.js | Batch 12 |
+| EC-09 | Reserve button disabled during submission (text unchanged — updated Session 46) | ✅ ec-09.spec.js | Batch 12 |
 | EC-10 | Capacity bar resets when bookings are bulk-deleted via SQL | ✅ ec-10.spec.js | Batch 12 |
 | EC-11 | Capacity bar updates automatically when a booking is made | ✅ ec-11.spec.js | Batch 12 |
 | EC-12 | DB-level duplicate booking protection — direct SQL insert rejected | ✅ ec-12.spec.js | Batch 12 |
@@ -1916,6 +1918,33 @@ A returning client trying to book a new class would be wrongly told they're alre
 
 ---
 
+### CB-34 — Book Now works after completing a prior booking (T1-07 regression)
+
+**What this proves:** After a successful bank-transfer booking, closing the success screen and clicking Book Now on another class opens the modal cleanly at Step 1. This is the regression test for T1-07.
+
+**Root cause being guarded against:** `confirmBooking()` previously used `textContent=` to change the button text to "Reserving...", which destroyed the `<span id="m-btnprice">` inside the Reserve button. The next call to `openModal()` tried to update that span's textContent, got `null`, and threw a silent TypeError — crashing the function before the overlay was ever shown. "Nothing happens" was the user-visible result.
+
+**Preconditions:**
+- `returning-two@test.example` exists (already in fixture)
+- `fri-upcoming` block exists
+- Monday current block exists
+
+**Steps the test performs:**
+1. Loads page and asserts TEST MODE banner
+2. Opens booking modal for Friday's current block
+3. Completes a full returning-client booking (Step 1 → Step 3 → T&Cs → Reserve)
+4. Waits for success screen (`#success-view.on`)
+5. Clicks "Back to Schedule" — dismisses the modal
+6. Clicks Book Now on Monday's current block (a different class)
+7. Asserts the overlay is visible and Step 1 is shown — the core regression check
+8. Asserts `#m-btnprice` exists and contains a £ amount (the span that was being destroyed)
+
+**What a fail would mean:** T1-07 has regressed. Customers who complete a booking and try to book another class in the same session would find the Book Now button silently broken, requiring a page refresh.
+
+**Cleanup:** `afterEach` calls `deleteBookingsForCustomerOnBlock` to remove the booking on `fri-upcoming`.
+
+---
+
 </details>
 
 
@@ -2961,7 +2990,9 @@ Someone has changed the anon grant matrix without updating the docs. If anon has
 
 ### EC-09 — Reserve button disabled during submission
 
-**What this proves:** The synchronous disable + text swap at the top of `confirmBooking()` (index.html lines 1502-1503) runs BEFORE any async RPC, preventing a fast double-click from triggering two bookings.
+**What this proves:** The synchronous disable at the top of `confirmBooking()` runs BEFORE any async RPC, preventing a fast double-click from triggering two bookings.
+
+**Updated Session 46 (T1-07 fix):** The button no longer changes its text to "Reserving..." on submit. That behaviour was removed because `textContent=` destroyed the `<span id="m-btnprice">` inside the button, causing `openModal()` to crash silently on the next booking attempt (T1-07). The test now asserts `disabled: true` and verifies the text still contains "Reserve My Spot" (unchanged from before the click).
 
 **Preconditions:**
 - fri-upcoming exists
@@ -2973,8 +3004,9 @@ Someone has changed the anon grant matrix without updating the docs. If anon has
 3. Verifies pre-tick state: Reserve button is disabled, text starts with "Reserve My Spot"
 4. Ticks T&Cs and confirms the button becomes enabled
 5. Clicks Reserve
-6. Uses `expect.poll` with 50/100/200ms intervals on a single `evaluate()` snapshot of `{ disabled, text }` — exits as soon as it sees `{ disabled: true, text: 'Reserving...' }`
-7. Waits for `#success-view.on` so the booking completes and afterEach can clean up
+6. Uses `expect.poll` to assert `disabled: true` as soon as it is set
+7. Asserts button text still matches "Reserve My Spot" (not replaced with "Reserving...")
+8. Waits for `#success-view.on` so the booking completes and afterEach can clean up
 
 **What a fail would mean:** The submit-once protection has regressed and a user double-clicking the Reserve button could trigger two simultaneous booking attempts. The DB unique index would still block the second one, but the user would see a confusing error toast.
 
