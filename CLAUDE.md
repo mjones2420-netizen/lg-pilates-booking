@@ -87,7 +87,7 @@ If drift detected, remind Mark to run: `cd tests-playwright && npm run seed`
 2. **One action per response** — stop and ask before acting on anything non-trivial.
 3. **No git push until `npm test` is green** — including any new specs.
 4. **New/changed functionality gets new Playwright specs in the same session.**
-5. **TEST-PLAN.md updated in the same session as any test change.**
+5. **TEST-PLAN.md is generated — never hand-edit it.** After adding or removing any test, run `cd tests-playwright && npm run test-plan` to regenerate it, in the same session as the test change. Long-form history lives in TEST-PLAN-HISTORY.md.
 6. **GitHub Issues** is the single source of truth for the backlog. Consult open issues at session start (`gh issue list`). Create new issues for any newly identified item before session ends. Close issues when done. BACKLOG.md is kept for historical reference only — do not update it.
 7. **SQL: confirm and explain before running anything against Supabase.**
 8. **Never update documentation until tests are green** (hard rule).
@@ -109,6 +109,7 @@ npm test                   # full suite (reseeds DB automatically)
 npm run test:ui            # interactive UI runner
 npm run seed               # reseed test DB
 npm run schema-check       # verify prod/test schema parity
+npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run after any test change)
 ```
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
