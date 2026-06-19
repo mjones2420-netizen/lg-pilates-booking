@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **198 tests, all passing** (Session 48 / T2-07 group block email built, T1-02 closed).
+Current test count: **204 tests, all passing** (Session 49 / T1-09b auto-refund shipped).
 
 ---
 
@@ -201,15 +201,21 @@ Navigate with `switchDashPage(name)`.
 
 **Payment system (PM-1 to PM-6): COMPLETE**
 - Stripe Checkout + webhook fully built and tested
-- 197 Playwright tests passing
+- 204 Playwright tests passing
 - Production `payment_mode` currently `'stripe'` (system not yet live — confirm before go-live)
+- **Prod Stripe still on a TEST key (sk_test_)** — swap to live at go-live ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30))
+
+**Refund sync (T1-09): T1-09a + T1-09b shipped** — `stripe-refund` edge function (test+prod) issues real refunds from Mark Refunded, fail-safe (no flag flip on Stripe error). RF-01..04 specs. Prod data wiped to a clean slate 2026-06-19.
 
 **Backlog now managed via GitHub Issues** — use `gh issue list` at session start.
 
 **Next likely work:**
+- [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Go-live — swap prod Stripe key test→live + live webhook secret
+- [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
+- [#31](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/31): Mid-block refund overstatement (workaround: manual override)
+- [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain (`book.lg-pilates.co.uk`)
 - [T1-06](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/6): Failed post-payment booking — client notification + correct screen
-- [T2-07](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/25): Group block email built this session — verify in production (real send to a test block)
 
 **Full backlog**: `gh issue list` or https://github.com/mjones2420-netizen/lg-pilates-booking/issues
 
