@@ -117,6 +117,19 @@ async function setBookingStatus(bookingId, status) {
 }
 
 /**
+ * Sets a booking's stripe_payment_intent_id, simulating a card-paid booking
+ * confirmed by the stripe-webhook function. Anon has no UPDATE on bookings,
+ * so direct pg is required. Used by RF specs to verify the intent is
+ * preserved onto the cancellation row when a client is removed from a block.
+ */
+async function setBookingStripeIntent(bookingId, intentId) {
+  await getPool().query(
+    `UPDATE bookings SET stripe_payment_intent_id = $1 WHERE id = $2`,
+    [intentId, bookingId]
+  );
+}
+
+/**
  * Recalculates blocks.booked from the actual non-cancelled booking count.
  * Mirrors the body of sync_block_booked_count() so tests can run it after
  * raw SQL changes that bypass the app-level trigger.
@@ -359,6 +372,7 @@ module.exports = {
   removeManualPriority,
   hasManualPriority,
   setBookingStatus,
+  setBookingStripeIntent,
   resyncBlockBookedCount,
   setBlockBookedCount,
   deleteBookingsForCustomerOnBlock,

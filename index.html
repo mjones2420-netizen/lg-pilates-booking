@@ -2504,7 +2504,7 @@ function renderDashboard(){
       }
       // Load bookings
       var bookingsRes=await sb.from("bookings")
-        .select("id,status,amount_due,refund_amount,block_id,class_id,customer_id")
+        .select("id,status,amount_due,refund_amount,block_id,class_id,customer_id,stripe_payment_intent_id")
         .order("created_at",{ascending:false});
       var dbBookings=bookingsRes.data;
       var bookingsErr=bookingsRes.error;
@@ -2529,6 +2529,7 @@ function renderDashboard(){
           when:(cls.day||"")+" "+(cls.time||"")+" - "+(cls.venue||""),
           blockDates:blk.dates?blk.dates[0]+" \u2013 "+blk.dates[blk.dates.length-1]:"",
           paid:b.amount_due, status:b.status, refundAmount:b.refund_amount,
+          stripePaymentIntentId:b.stripe_payment_intent_id||null,
           day:cls.day||""
         };
       });
@@ -3614,7 +3615,8 @@ function rfbConfirm(){
         sessions_remaining:s.totalSessions-s.sessionsAttended,
         price_per_session:s.pricePerSession,
         refund_amount:refund,
-        refunded:false
+        refunded:false,
+        stripe_payment_intent_id:s.b.stripePaymentIntentId||null
       }).select();
       if(cErr) throw cErr;
       await sb.from("parq").delete().eq("booking_id",s.b.dbId).select();

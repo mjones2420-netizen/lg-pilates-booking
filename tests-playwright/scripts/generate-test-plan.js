@@ -31,6 +31,7 @@ const GROUPS = [
   ['Block Warnings (BLW)', 'blw'],
   ['Security (SEC)', 'sec'],
   ['Stripe (ST)', 'st'],
+  ['Refund Sync (RF)', 'rf'],
 ];
 
 function getRows() {
