@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 19 Jun 2026
-**Total tests:** 204
+**Total tests:** 205
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -116,7 +116,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `bw-02-current-block-session-dates-listed.spec.js` | Thursday card renders one date pill per session in chronological order |
 | `bw-06-upcoming-becomes-active-on-start-date.spec.js` | Monday active block renders as current; upcoming block stays in next-block panel |
 
-## Admin Bookings (AB) — 21 tests
+## Admin Bookings (AB) — 22 tests
 
 | Spec file | Test |
 |---|---|
@@ -141,6 +141,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `ab-19-20-21-missing-parq-banner.spec.js` | AB-21 — banner shows plural count; clicking highlights affected rows |
 | `ab-22-parq-date-format.spec.js` | AB-22 — Declaration section shows "D MMM YYYY" date, not raw ISO |
 | `ab-23-returning-client-parq-view.spec.js` | AB-23 — returning client booking shows PAR-Q from previous booking with badge |
+| `ab-24-rfb-midblock-joiner.spec.js` | AB-24 — mid-block joiner paid £40: refund = £40 not £60 |
 
 ## Admin Classes (AC) — 26 tests
 

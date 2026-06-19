@@ -3444,6 +3444,7 @@ function openRfbModal(idx){
     sessionsAttended:0,
     totalSessions:blk.weeks||6,
     pricePerSession:blk.price||0,
+    amountPaid:parseFloat(b.paid)||0,
     refundOverride:null,
     hasPaid:null
   };
@@ -3472,9 +3473,9 @@ function rfbSetLine(n,done){
 
 function rfbCalcRefund(){
   if(rfbState.refundOverride!==null) return rfbState.refundOverride;
-  // If 0 sessions attended and client hasn't paid, no refund owed
   if(rfbState.sessionsAttended===0&&rfbState.hasPaid===false) return 0;
-  return (rfbState.totalSessions-rfbState.sessionsAttended)*rfbState.pricePerSession;
+  var paid=rfbState.amountPaid>0?rfbState.amountPaid:rfbState.totalSessions*rfbState.pricePerSession;
+  return Math.max(0,paid-rfbState.sessionsAttended*rfbState.pricePerSession);
 }
 
 function renderRfbStep(){
@@ -3513,10 +3514,10 @@ function renderRfbStep(){
       +"</div>"
       +"<p style=\"font-size:13px;color:var(--mid);margin-bottom:14px\">Has this client already paid for the block?</p>"
       +"<div style=\"display:flex;gap:12px\">"
-      +"<button onclick=\"rfbSetPaid(true)\" style=\"flex:1;border:1px solid var(--border);border-radius:4px;padding:14px;font-size:13px;cursor:pointer;font-family:'Open Sans',sans-serif;"+yesStyle+"\">Yes &mdash; paid &pound;"+(s.totalSessions*s.pricePerSession).toFixed(2)+"</button>"
+      +"<button onclick=\"rfbSetPaid(true)\" style=\"flex:1;border:1px solid var(--border);border-radius:4px;padding:14px;font-size:13px;cursor:pointer;font-family:'Open Sans',sans-serif;"+yesStyle+"\">Yes &mdash; paid &pound;"+(s.amountPaid>0?s.amountPaid:s.totalSessions*s.pricePerSession).toFixed(2)+"</button>"
       +"<button onclick=\"rfbSetPaid(false)\" style=\"flex:1;border:1px solid var(--border);border-radius:4px;padding:14px;font-size:13px;cursor:pointer;font-family:'Open Sans',sans-serif;"+noStyle+"\">No &mdash; not paid</button>"
       +"</div>"
-      +(s.hasPaid===true?"<p style=\"font-size:12px;color:var(--clay);margin-top:12px\">Full refund of &pound;"+(s.totalSessions*s.pricePerSession).toFixed(2)+" will be recorded.</p>":"")
+      +(s.hasPaid===true?"<p style=\"font-size:12px;color:var(--clay);margin-top:12px\">Full refund of &pound;"+(s.amountPaid>0?s.amountPaid:s.totalSessions*s.pricePerSession).toFixed(2)+" will be recorded.</p>":"")
       +(s.hasPaid===false?"<p style=\"font-size:12px;color:var(--green);margin-top:12px\">No refund needed &mdash; nothing has been paid.</p>":"");
     footer.innerHTML="<button class=\"step-btn\" onclick=\"rfbGoStep(1)\" style=\"background:none;border:1px solid var(--border);color:var(--mid);padding:12px 22px;font-size:12px\">Back</button>"
       +"<button class=\"step-btn\" onclick=\"rfbGoStep(2)\" style=\"padding:12px 22px;font-size:12px\""+(s.hasPaid===null?" disabled":"\">")+">Next</button>";
