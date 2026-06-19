@@ -88,6 +88,7 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .block-dates { margin-bottom:0; }
 .block-dates-lbl { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); margin-bottom:8px; }
 .block-dates-pills { display:flex; flex-wrap:wrap; gap:5px; }
+.hp-field { display:none; }
 .date-pill { font-size:12px; padding:4px 10px; background:#eef5f5; border:none; border-radius:100px; color:#2a6b6b; font-weight:500; }
 .date-pill.past { background:#fce8ee; border:none; color:#b85070; text-decoration:none; }
 .date-pill.today { background:#2a6b6b; border:none; color:white; font-weight:600; }
@@ -752,6 +753,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
           <label class="flbl">Phone Number <span class="req">*</span></label>
           <input type="text" class="finp" id="b-phone" placeholder="+44 7700 000000" maxlength="20">
           <div class="field-err" id="err-phone">Please enter your phone number.</div>
+          <input type="text" class="hp-field" id="b-website" name="website" tabindex="-1" autocomplete="off">
           <div id="customer-check-msg" style="display:none; font-size:14px; padding:14px 16px; border-radius:3px; margin-bottom:14px; font-weight:500; line-height:1.5;"></div>
           <button class="step-btn" onclick="goStep2()">Continue</button>
         </div>
@@ -1399,7 +1401,7 @@ function openModal(classId, blockId) {
   document.getElementById("mfoot-confirm").style.display="none";
   updateStepIndicator(1, false);
   // Reset fields
-  ["b-firstname","b-lastname","b-email","b-phone","b-health-other"].forEach(function(id){ document.getElementById(id).value=""; });
+  ["b-firstname","b-lastname","b-email","b-phone","b-health-other","b-website"].forEach(function(id){ document.getElementById(id).value=""; });
   window._customerIsReturning=false;
   if(document.getElementById("b-health-conditions")) document.getElementById("b-health-conditions").value="";
   ["b-age","b-emergency-name","b-emergency-relationship","b-emergency-phone","b-print-name"].forEach(function(id){ if(document.getElementById(id)) document.getElementById(id).value=""; });
@@ -2211,6 +2213,7 @@ async function sendBookingEmail(to, subject, html){
 }
 
 function confirmBooking(){
+  if(document.getElementById("b-website").value.trim()!=="") return;
   var c=selected, blk=selectedBlock;
   var fn=document.getElementById("b-firstname").value.trim();
   var ln=document.getElementById("b-lastname").value.trim();
