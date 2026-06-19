@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 19 Jun 2026
-**Total tests:** 200
+**Total tests:** 204
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -291,12 +291,16 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `st-25-webhook-invalid-signature-rejected.spec.js` | incorrect signature returns 400 and leaves pending row untouched |
 | `st-26-webhook-duplicate-delivery.spec.js` | second delivery returns 200 with no booking_id, no duplicate booking created |
 
-## Refund Sync (RF) — 2 tests
+## Refund Sync (RF) — 6 tests
 
 | Spec file | Test |
 |---|---|
 | `rf-01-cancellation-preserves-stripe-intent.spec.js` | RF-01a — card booking: stripe_payment_intent_id preserved on cancellation |
 | `rf-01-cancellation-preserves-stripe-intent.spec.js` | RF-01b — bank-transfer booking: cancellation intent is NULL |
+| `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-02a — card cancellation issues a real Stripe refund for the full amount |
+| `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-02b — refund equals the stored overridden amount, not the full price |
+| `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-03 — bank-transfer cancellation keeps the manual flow (no Stripe call) |
+| `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-04 — Stripe failure leaves the row unrefunded and surfaces an error |
 
 ---
 

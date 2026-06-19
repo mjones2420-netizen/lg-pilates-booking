@@ -3713,6 +3713,24 @@ function markCancellationRefunded(id){
     try{
       var {data:rows,error:fetchErr}=await sb.from("cancellations").select("*").eq("id",id).single();
       if(fetchErr) throw fetchErr;
+      // T1-09b: card-paid cancellations issue the real Stripe refund first.
+      // On any failure, do NOT flip the refunded flag — the report must never
+      // show "refunded" when no money actually moved.
+      if(rows.stripe_payment_intent_id&&(rows.refund_amount||0)>0){
+        var{data:sess}=await sb.auth.getSession();
+        var jwt=(sess&&sess.session&&sess.session.access_token)||SUPABASE_KEY;
+        var refRes=await fetch(SUPABASE_URL+"/functions/v1/stripe-refund",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+jwt},
+          body:JSON.stringify({cancellation_id:id})
+        });
+        if(!refRes.ok){
+          var refErr=await refRes.text();
+          console.error("Stripe refund failed:",refRes.status,refErr);
+          showToast("Stripe refund failed. Not marked refunded. See console.");
+          return;
+        }
+      }
       var {error}=await sb.from("cancellations").update({refunded:true,refunded_at:new Date().toISOString()}).eq("id",id);
       if(error) throw error;
       showToast("Marked as refunded.");
