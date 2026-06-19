@@ -57,23 +57,21 @@ This project follows the **mockup-first-ui** skill for any visual or UI changes:
 This project also follows the **code-quality-review** skill after every code change.
 
 ### Session start
-Mark should upload the latest `index.html` at the start of every session before work begins. Confirm the file is present before proceeding. Do not use any previously cached or in-memory version.
-
-If a second `index.html` is uploaded mid-session, warn Mark that this may overwrite the working copy and ask whether to proceed.
+In Claude Code, read `index.html` directly from the repo — never use a cached version. The session-start checks (index.html line count, time drift, state drift) are defined in CLAUDE.md and run automatically at the start of every session.
 
 ### GitHub commits
-Whenever an updated index.html is ready to push to GitHub, provide a ready-to-copy commit message in this format:
-
-**Title:** Short commit title (e.g. "Add waitlist notification on class full")
-**Description:** 2–3 sentence summary of what changed and why.
+Single-line commit messages only — no em-dashes or backticks (zsh quoting issues). Always run `npm test` and confirm green before pushing.
 
 ---
 
 ## End of Session
 
-When Mark says "End of session", "Wrap up", "Update context", or similar:
-1. Produce an updated `context.txt` reflecting all changes made in the session and present it for download
-2. Remind Mark to push the updated `index.html` to GitHub if not already done
+When Mark says "End of session", "Wrap up", "Update context", or similar, work through this checklist in order:
+
+1. **CLAUDE.md** — update test count, current state, and "Next likely work" to reflect what was done this session. Keep it lean — it's a session-start briefing, not a full archive.
+2. **GitHub Issues** — the single source of truth for the backlog. Close completed issues, open new ones for anything identified this session. BACKLOG.md is historical reference only — do not update it.
+3. **context.txt** — update with session changes for use as a fallback if Claude chat is ever needed. This is lower priority than CLAUDE.md.
+4. **Git** — confirm everything is committed and pushed. Provide the exact commands if not already done.
 
 ---
 
