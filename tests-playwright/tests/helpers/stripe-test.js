@@ -52,13 +52,16 @@ async function stripeGet(path) {
 }
 
 // Creates and confirms a succeeded PaymentIntent in test mode using Stripe's
-// always-succeeds test PaymentMethod (pm_card_visa). Returns the real
-// payment_intent id (pi_...), which is then refundable.
+// always-succeeds Mastercard test PaymentMethod (pm_card_mastercard, card
+// 5555…4444). Deliberately NOT pm_card_visa (4242): the real booking flow uses
+// 4242, and Stripe's dashboard groups charges by card fingerprint, which would
+// otherwise show a real customer's email against these anonymous test charges.
+// Returns the real payment_intent id (pi_...), which is then refundable.
 async function createRefundablePaymentIntent(amountPence) {
   const pi = await stripePost('/payment_intents', {
     'amount': String(amountPence),
     'currency': 'gbp',
-    'payment_method': 'pm_card_visa',
+    'payment_method': 'pm_card_mastercard',
     'confirm': 'true',
     'automatic_payment_methods[enabled]': 'true',
     'automatic_payment_methods[allow_redirects]': 'never',
