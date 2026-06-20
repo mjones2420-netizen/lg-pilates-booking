@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 19 Jun 2026 (session 50 — #31 mid-block refund fix)
+Last updated: 20 Jun 2026 (session 50 continued — security review, issues #32-#40)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -209,14 +209,19 @@ Navigate with `switchDashPage(name)`.
 
 **#31 mid-block refund fix shipped** — `rfbCalcRefund()` now uses `amount_due` (actual prorata paid) as the refund base, not `blk.weeks × price`. AB-24 regression spec added.
 
+**Security review complete (2026-06-19/20)** — full audit of front end, edge functions, RLS, secrets, repo. Foundations solid (key separation, clean git history, anon cannot read PII, webhook HMAC-verified). 9 issues filed (#32–#40). Report: `~/.claude/plans/can-you-carry-out-adaptive-beacon.md`.
+- **#32 HIGH** (pre-go-live): `stripe-checkout` trusts client `amount_pence` — price tampering / pay-what-you-want. Fix: recompute server-side from `block_id`.
+- **#33 HIGH** (live now): `send-email` open relay — anon key passes `verify_jwt:true`. Fix: add real-admin check (pattern already in `stripe-refund`).
+
 **Backlog now managed via GitHub Issues** — use `gh issue list` at session start.
 
-**Next likely work:**
+**Next likely work (priority order):**
+- [#33](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/33): Fix send-email open relay — HIGH, live now
+- [#32](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/32): Fix checkout price tampering — HIGH, must fix before go-live
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Go-live — swap prod Stripe key test→live + live webhook secret
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain (`book.lg-pilates.co.uk`)
-- [T1-06](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/6): Failed post-payment booking — client notification + correct screen
 
 **Full backlog**: `gh issue list` or https://github.com/mjones2420-netizen/lg-pilates-booking/issues
 
