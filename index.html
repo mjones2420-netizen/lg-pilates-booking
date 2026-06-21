@@ -3220,7 +3220,7 @@ function openCatchUpModal(){
   tgtSel.innerHTML="<option value=\"\">Select a block&hellip;</option>";
   blocks.filter(function(b){ return b.status==="active"||b.status==="upcoming"; }).forEach(function(blk){
     var cls=classes.find(function(c){ return c.id===blk.class_id; })||{};
-    var label=(cls.name||"Class")+" — "+(blk.dates&&blk.dates.length?blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:blk.start_date);
+    var label=(cls.day||cls.name||"Class")+(cls.time?" "+cls.time:"")+(cls.loc?" — "+cls.loc:"")+(blk.dates&&blk.dates.length?" — "+blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:" — "+blk.start_date);
     tgtSel.innerHTML+="<option value=\""+blk.id+"\">"+sanitise(label)+"</option>";
   });
   document.getElementById("cu-date").innerHTML="<option value=\"\">Select block first</option>";
@@ -3249,7 +3249,7 @@ function onCuCustomerChange(){
       var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
       var cls=blk?classes.find(function(c){ return c.id===blk.class_id; }):null;
       if(blk&&cls){
-        var label=sanitise(cls.name)+" — "+(blk.dates&&blk.dates.length?blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:blk.start_date);
+        var label=(cls.day||cls.name||"Class")+(cls.time?" "+cls.time:"")+(cls.loc?" — "+cls.loc:"")+(blk.dates&&blk.dates.length?" — "+blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:" — "+blk.start_date);
         opts.push({id:blk.id,label:label});
       }
     }
