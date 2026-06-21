@@ -1,6 +1,6 @@
 ============================================================
 LG PILATES BOOKING SYSTEM — CONTEXT FILE
-Last updated: 15 Jun 2026 (Session 46)
+Last updated: 21 Jun 2026 (Session 51)
 ============================================================
 
 ABOUT THIS FILE
@@ -122,6 +122,11 @@ pending_bookings         — temporary holding table for Stripe bookings in prog
                            and deleted by the stripe-webhook Edge Function after booking confirmed.
                            Abandoned rows expire after 2 hours (manual cleanup needed until a
                            scheduled function is added).
+catch_up_swaps           — Louise-recorded swaps when a customer attends a different block's session
+                           Columns: id (SERIAL PK), customer_id (INT FK→customers), source_block_id (INT FK→blocks),
+                           target_block_id (INT FK→blocks), class_date (DATE), notes (TEXT), created_at (TIMESTAMPTZ)
+                           RLS: authenticated full access; anon revoked entirely.
+                           Migration 14 applied to both test and production DBs (Session 51).
 cancellations            — audit trail of all client removals from blocks
                            Columns: id, customer_id, class_id, block_id, first_name, last_name, email,
                            class_name, venue, block_start_date, block_end_date, sessions_attended,
@@ -888,10 +893,9 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
 8. TO DO (priority order)
 ============================================================
 
-1. PLAYWRIGHT TESTS — ALL EXCEL SCENARIOS COMPLETE ✅
+1. PLAYWRIGHT TESTS — 211 tests, all passing (Session 51)
 
-   All 133 genuine Excel scenarios across all 12 tabs are now automated.
-   169 tests across 14 suites, all passing.
+   All Excel scenarios complete. 211 tests across 15 suites.
 
    Full per-suite detail and spec-to-scenario mapping lives in
    tests-playwright/TEST-PLAN.md (Coverage Tracker at the top).
@@ -1007,7 +1011,35 @@ COMMUNICATION STYLE — MARK'S PREFERENCES
       matches DB-state.
 
 ============================================================
-8a. PAYMENT SYSTEM — REMAINING ITEMS (pre go-live)
+8a. CATCH-UP SWAPS — COMPLETE (Session 51)
+============================================================
+
+Feature allows Louise to record when a customer swaps one session to attend
+a different block's class. Admin-only. Max 2 swaps per customer per source
+block. Capacity-gated per session date. Original booking stays reserved.
+
+- catch_up_swaps table: SERIAL PK, INTEGER FKs to customers + blocks, DATE
+  class_date, TEXT notes, admin-only RLS (anon revoked).
+  Migration 14 applied to BOTH test AND production databases.
+- Admin sidebar: "Catch-up swaps" page (#dbnav-catchup / #dbpage-catchup).
+  Record swap modal: customer → source block → target block → date → notes.
+  Block dropdowns show "Monday 9:30 — Baildon — 1 Jul to 6 Aug" format
+  (cls.day + cls.time + cls.loc + date range).
+  Date dropdown shows future session dates only, computed from start_date +
+  7-day intervals using LOCAL date methods (not toISOString — BST gotcha).
+- By Class view: shows "Catch-Up Visitors" per session below regular bookings.
+  Orange over-cap warning if booked + swaps_on_date > cap.
+- CU-01..06 Playwright specs, all passing.
+- User guide PDF: CATCH-UP-SWAPS-GUIDE.pdf in repo root.
+
+BST GOTCHA (catch-up swaps): blocks.dates[] stores DISPLAY strings ("1 Jul"),
+not ISO dates. Always compute ISO session dates from blk.start_date +
+i * 7 * 24 * 60 * 60 * 1000 using getFullYear()/getMonth()/getDate().
+Both index.html (onCuTargetBlockChange) and tests (getIsoSessionDates helper)
+do this correctly.
+
+============================================================
+8b. PAYMENT SYSTEM — REMAINING ITEMS (pre go-live)
 ============================================================
 
 With PM-6 complete, the payment system build is done. Remaining items before
@@ -1017,12 +1049,11 @@ go-live (none urgent — system not yet public):
   checklist — webhook secret will also change on both test and prod).
 - Switch bookings@lg-pilates.co.uk forwarding from Mark's inbox to Louise's.
 - Confirm/decide production payment_mode before go-live (currently 'stripe',
-  set deliberately in Session 45 — see TO DO item 4).
+  set deliberately in Session 45).
 - Migration files still missing for pending_bookings, the Stripe ID columns,
-  and the stripe-checkout/stripe-webhook Edge Functions (TO DO item 14,
-  AUDIT ITEMS).
-- Netlify migration (TO DO item 10) is now unblocked — was deferred pending
-  payment system completion.
+  and the stripe-checkout/stripe-webhook Edge Functions (AUDIT ITEMS).
+- Netlify migration is now unblocked — was deferred pending payment system
+  completion.
 
 ============================================================
 

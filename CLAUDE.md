@@ -209,7 +209,7 @@ Navigate with `switchDashPage(name)`.
 
 **#31 mid-block refund fix shipped** — `rfbCalcRefund()` now uses `amount_due` (actual prorata paid) as the refund base, not `blk.weeks × price`. AB-24 regression spec added.
 
-**Catch-up swaps (session 51): COMPLETE (test DB)** — Louise can record when a customer swaps to attend a different block's session. Max 2 swaps per customer per source block. Capacity-gated. Shows catch-up visitors in By Class view with over-cap warning. Migration 14 applied to test DB. **Migration 14 still needs applying to production before go-live.**
+**Catch-up swaps (session 51): COMPLETE (test + production)** — Louise can record when a customer swaps to attend a different block's session. Max 2 swaps per customer per source block. Capacity-gated. Shows catch-up visitors in By Class view with over-cap warning. Migration 14 applied to both test and production DBs. User guide PDF: `CATCH-UP-SWAPS-GUIDE.pdf`.
 - `catch_up_swaps` table: SERIAL PK, INTEGER FKs to customers + blocks, DATE class_date, admin-only RLS (anon revoked)
 - CU-01..06 Playwright specs — all 6 passing. `fixture-lookup.js` updated to SELECT `weeks`. `generate-test-plan.js` updated with CU group.
 - BST gotcha: `blocks.dates[]` is display strings ("1 Jul") NOT ISO — always compute ISO from `start_date + 7-day intervals` using local date methods.
@@ -221,8 +221,6 @@ Navigate with `switchDashPage(name)`.
 **Backlog now managed via GitHub Issues** — use `gh issue list` at session start.
 
 **Next likely work (priority order):**
-- Apply migration 14 to production (`catch_up_swaps` table) — must do before go-live
-- Write Louise's user guide for catch-up swaps (deferred from session 51)
 - [#33](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/33): Fix send-email open relay — HIGH, live now
 - [#32](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/32): Fix checkout price tampering — HIGH, must fix before go-live
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Go-live — swap prod Stripe key test→live + live webhook secret
