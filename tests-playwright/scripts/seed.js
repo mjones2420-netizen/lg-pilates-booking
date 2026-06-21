@@ -31,7 +31,10 @@ const PRODUCTION_PROJECT_ID = 'mrlooyixnlxzcfmvnqme';
 // Migrations are applied in order inside a single transaction. Migration 09
 // is the base fixture (3 classes, 9 blocks, 7 bookings). Migration 11 adds
 // the Thursday class with active + locked-window blocks for PB-01.
+// Migration 14 must run first to ensure catch_up_swaps table exists before
+// Migration 09 can clear it.
 const MIGRATION_FILES = [
+  path.join(__dirname, '..', 'migrations', '14_catch_up_swaps.sql'),
   path.join(__dirname, '..', 'migrations', '09_reseed_with_dynamic_dates.sql'),
   path.join(__dirname, '..', 'migrations', '11_add_locked_window_class.sql'),
   path.join(__dirname, '..', 'migrations', '12_reseed_resets_payment_mode.sql'),

@@ -365,6 +365,40 @@ async function getBookingById(id) {
   return rows[0] || null;
 }
 
+/** Returns a customer row by email, or null. */
+async function getCustomerByEmail(email) {
+  const { rows } = await getPool().query(
+    `SELECT id, first_name, last_name, email FROM customers WHERE email = $1`,
+    [email]
+  );
+  return rows[0] || null;
+}
+
+/** Inserts a catch_up_swaps row directly (bypasses RLS + UI). Returns the new row id. */
+async function insertCatchUpSwap(customerId, sourceBlockId, targetBlockId, classDate, notes = null) {
+  const { rows } = await getPool().query(
+    `INSERT INTO catch_up_swaps (customer_id, source_block_id, target_block_id, class_date, notes)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    [customerId, sourceBlockId, targetBlockId, classDate, notes]
+  );
+  return rows[0].id;
+}
+
+/** Deletes all catch_up_swaps rows. */
+async function clearCatchUpSwaps() {
+  await getPool().query(`DELETE FROM catch_up_swaps`);
+}
+
+/** Counts catch_up_swaps rows for a customer+source_block pair. */
+async function countCatchUpSwaps(customerId, sourceBlockId) {
+  const { rows } = await getPool().query(
+    `SELECT COUNT(*)::int AS count FROM catch_up_swaps
+     WHERE customer_id = $1 AND source_block_id = $2`,
+    [customerId, sourceBlockId]
+  );
+  return rows[0].count;
+}
+
 module.exports = {
   getPool,
   closePool,
@@ -386,5 +420,9 @@ module.exports = {
   insertPendingBooking,
   getPendingBookingById,
   deletePendingBookingById,
-  getBookingById
+  getBookingById,
+  getCustomerByEmail,
+  insertCatchUpSwap,
+  clearCatchUpSwaps,
+  countCatchUpSwaps
 };

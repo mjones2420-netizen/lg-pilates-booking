@@ -451,6 +451,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
         <div class="db-nav-item" id="dbnav-byclass" onclick="switchDashPage('byclass')"><i class="ti ti-layout-list" aria-hidden="true"></i> By class</div>
         <div class="db-nav-item" id="dbnav-clients" onclick="switchDashPage('clients')"><i class="ti ti-users" aria-hidden="true"></i> Clients</div>
         <div class="db-nav-item" id="dbnav-cancellations" onclick="switchDashPage('cancellations')"><i class="ti ti-circle-x" aria-hidden="true"></i> Cancellations</div>
+        <div class="db-nav-item" id="dbnav-catchup" onclick="switchDashPage('catchup')"><i class="ti ti-repeat" aria-hidden="true"></i> Catch-up swaps</div>
         <div class="db-nav-section" style="margin-top:6px">Studio</div>
         <div class="db-nav-item" id="dbnav-classes" onclick="switchDashPage('classes')"><i class="ti ti-calendar" aria-hidden="true"></i> Classes</div>
         <div class="db-nav-item" id="dbnav-reports" onclick="switchDashPage('reports')"><i class="ti ti-chart-bar" aria-hidden="true"></i> Reports</div>
@@ -535,6 +536,17 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
           </div>
           <div class="db-result-count" id="cancellations-result-count"></div>
           <table><thead><tr><th>Client</th><th>Class &amp; Venue</th><th>Block Dates</th><th>Sessions Attended</th><th>Refund</th><th>Removed On</th><th>Actions</th></tr></thead><tbody id="cancellations-tbody"><tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- ── Catch-Up Swaps ── -->
+      <div id="dbpage-catchup" class="db-page">
+        <div class="db-topbar">
+          <p class="db-topbar-title">Catch-up swaps</p>
+          <button class="db-topbar-action green" onclick="openCatchUpModal()">+ Record swap</button>
+        </div>
+        <div class="db-content">
+          <div id="catchup-list"><div style="color:var(--light);padding:20px;font-size:13px">Loading&hellip;</div></div>
         </div>
       </div>
 
@@ -1057,12 +1069,49 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
   </div>
 </div>
 
+<!-- CATCH-UP SWAP MODAL -->
+<div class="overlay" id="catchup-overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div><div class="mtitle">Record Catch-Up Swap</div><div class="msub">Customer attending a different block for one session</div></div>
+      <button class="mclose" onclick="closeCatchUpModal()">x</button>
+    </div>
+    <div class="mbody">
+      <div style="margin-bottom:14px">
+        <label class="flbl">Customer</label>
+        <select class="finp" id="cu-customer" onchange="onCuCustomerChange()" style="margin-bottom:0"></select>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="flbl">Their regular block (swapping from)</label>
+        <select class="finp" id="cu-source-block" style="margin-bottom:0"></select>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="flbl">Block they are visiting (swapping to)</label>
+        <select class="finp" id="cu-target-block" onchange="onCuTargetBlockChange()" style="margin-bottom:0"></select>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="flbl">Session date</label>
+        <select class="finp" id="cu-date" style="margin-bottom:0"></select>
+      </div>
+      <div style="margin-bottom:4px">
+        <label class="flbl">Notes (optional)</label>
+        <input type="text" class="finp" id="cu-notes" placeholder="e.g. holiday cover" style="margin-bottom:0">
+      </div>
+      <div id="cu-err" style="color:var(--red,#c04040);font-size:12px;margin-top:10px;display:none;"></div>
+    </div>
+    <div class="mfoot">
+      <button class="confirm-btn" id="cu-btn" onclick="saveCatchUpSwap()">Record Swap</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toastEl"></div>
 
 <script>
 var classes = [];   // permanent class slots
 var blocks  = [];   // all blocks loaded from DB
 var bookings = [];
+var catchUpSwaps = [];   // catch-up swap visitors — loaded in renderDashboard
 var appSettings = {};      // bank details + admin email, loaded at startup
 var PAYMENT_MODE = "bank_transfer"; // "bank_transfer" | "stripe" — loaded from settings on init
 var selected = null;       // selected class
@@ -1459,6 +1508,7 @@ document.getElementById("overlay").addEventListener("click",function(e){ if(e.ta
 document.getElementById("view-overlay").addEventListener("click",function(e){ if(e.target===this) closeViewModal(); });
 document.getElementById("add-class-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddClassModal(); });
 document.getElementById("add-block-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddBlockModal(); });
+document.getElementById("catchup-overlay").addEventListener("click",function(e){ if(e.target===this) closeCatchUpModal(); });
 
 // ─── Pro-rata pricing helper ────────────────────────────────────────────────────────────────────────────────
 function calcProrata(blk){
@@ -2591,6 +2641,25 @@ function renderDashboard(){
       var{data:freshBlocks}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
       if(freshBlocks) blocks=freshBlocks.map(function(b){ return {id:b.id,class_id:b.class_id,start_date:b.start_date,end_date:b.end_date,weeks:b.weeks,dates:b.dates||[],price:b.price,cap:b.cap,booked:b.booked||0,wait:b.wait||0,visible:b.visible!==false,status:b.status}; });
 
+      // Load catch-up swaps (uses customerMap + blocks/classes already loaded)
+      try{
+        var{data:swapsData}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
+        catchUpSwaps=(swapsData||[]).map(function(s){
+          var cust=customerMap[s.customer_id]||{};
+          var srcBlk=blocks.find(function(b){ return b.id===s.source_block_id; })||{};
+          var srcCls=classes.find(function(c){ return c.id===srcBlk.class_id; })||{};
+          var tgtBlk=blocks.find(function(b){ return b.id===s.target_block_id; })||{};
+          var tgtCls=classes.find(function(c){ return c.id===tgtBlk.class_id; })||{};
+          return {
+            id:s.id, customer_id:s.customer_id,
+            customer_name:(cust.first_name||"")+" "+(cust.last_name||""),
+            source_block_id:s.source_block_id, source_class_name:srcCls.name||"Unknown",
+            target_block_id:s.target_block_id, target_class_name:tgtCls.name||"Unknown",
+            class_date:s.class_date, notes:s.notes||""
+          };
+        });
+      }catch(swapErr){ console.error("Catch-up swaps load error:",swapErr); catchUpSwaps=[]; }
+
       // Classes table — each class shows its active and upcoming block
       var chtml="";
       for(var i=0;i<classes.length;i++){
@@ -2640,7 +2709,7 @@ function switchTab(tab){
 }
 
 function switchDashPage(page){
-  var pages=["bookings","byclass","clients","cancellations","classes","reports","settings","backup"];
+  var pages=["bookings","byclass","clients","cancellations","catchup","classes","reports","settings","backup"];
   pages.forEach(function(p){
     var el=document.getElementById("dbpage-"+p);
     if(el) el.classList.toggle("on",p===page);
@@ -2648,7 +2717,7 @@ function switchDashPage(page){
     if(nav) nav.classList.toggle("on",p===page);
   });
   // Mobile bottom nav
-  var mobileMap={bookings:"bookings",byclass:"bookings",cancellations:"bookings",clients:"clients",classes:"classes",reports:"reports"};
+  var mobileMap={bookings:"bookings",byclass:"bookings",cancellations:"bookings",catchup:"bookings",clients:"clients",classes:"classes",reports:"reports"};
   var mobileActive=mobileMap[page]||null;
   ["bookings","clients","classes","reports"].forEach(function(k){
     var bn=document.getElementById("dbbn-"+k);
@@ -2657,6 +2726,7 @@ function switchDashPage(page){
   if(page==="clients") renderCustomersTab();
   if(page==="cancellations") renderCancellationsTab();
   if(page==="reports") renderReportsPage();
+  if(page==="catchup") renderCatchUpSwapsPage();
 }
 
 // ─── Search / filter helpers ──────────────────────────────────────────────────
@@ -3023,6 +3093,30 @@ function renderClassesView(){
           } else {
             html+="<div style=\"font-size:12px;color:var(--light)\">No bookings for this block yet.</div>";
           }
+          // Catch-up visitors for this block
+          var cuToday=new Date(); cuToday.setHours(0,0,0,0);
+          var blkSwaps=catchUpSwaps.filter(function(s){ return s.target_block_id===blk.id; });
+          var futureSwaps=blkSwaps.filter(function(s){ return new Date(s.class_date+"T00:00:00")>=cuToday; });
+          // Over-capacity check: count swaps per future date
+          var cuDateGroups={};
+          blkSwaps.forEach(function(s){
+            var dt=new Date(s.class_date+"T00:00:00");
+            if(dt>=cuToday){ cuDateGroups[s.class_date]=(cuDateGroups[s.class_date]||0)+1; }
+          });
+          var overCapDates=Object.keys(cuDateGroups).filter(function(d){ return (blk.booked+cuDateGroups[d])>blk.cap; });
+          if(overCapDates.length>0){
+            var overLabels=overCapDates.map(function(d){ return new Date(d+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}); });
+            html+="<div style=\"background:#fff0f0;border:1px solid #f0b8b8;border-radius:4px;padding:8px 12px;font-size:12px;color:#c04040;margin-top:8px\">&#9888; Over capacity on: "+overLabels.join(", ")+" &mdash; a catch-up swap plus a new permanent member would exceed the cap for that session.</div>";
+          }
+          if(futureSwaps.length>0){
+            html+="<div style=\"margin-top:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--mid)\">Catch-Up Visitors</div>";
+            html+="<table style=\"margin-top:4px;margin-bottom:0\"><thead><tr><th>Visitor</th><th>Date</th><th>Their regular class</th></tr></thead><tbody>";
+            futureSwaps.forEach(function(s){
+              var dl=new Date(s.class_date+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+              html+="<tr><td>"+sanitise(s.customer_name)+"</td><td style=\"white-space:nowrap\">"+dl+"</td><td>"+sanitise(s.source_class_name)+"</td></tr>";
+            });
+            html+="</tbody></table>";
+          }
           var emailBlockBtn=blkBookings.length>0?"<button class='act' onclick='openBlockEmailModal("+blk.id+")'>Email Block</button>":"";
           html+="<div style='margin-top:8px'><button class='act' onclick='openEditBlockModal("+blk.id+")'>Edit Block</button>"+emailBlockBtn+"<button class='act act-delete' onclick='deleteBlock("+blk.id+")'>Delete Block</button></div>";
           html+="</div></div>";
@@ -3040,6 +3134,212 @@ function toggleClassGroup(id){
   // CSS sets display:none by default; if style.display is empty treat as closed
   var isOpen=el.style.display==="block";
   el.style.display=isOpen?"none":"block";
+}
+
+// ─── Catch-Up Swaps ───────────────────────────────────────────────────────────
+
+async function reloadCatchUpSwaps(){
+  var{data:swapsData}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
+  catchUpSwaps=(swapsData||[]).map(function(s){
+    var custBk=bookings.find(function(b){ return b.customerId===s.customer_id; });
+    var custName=custBk?custBk.client:"Unknown";
+    var srcBlk=blocks.find(function(b){ return b.id===s.source_block_id; })||{};
+    var srcCls=classes.find(function(c){ return c.id===srcBlk.class_id; })||{};
+    var tgtBlk=blocks.find(function(b){ return b.id===s.target_block_id; })||{};
+    var tgtCls=classes.find(function(c){ return c.id===tgtBlk.class_id; })||{};
+    return {
+      id:s.id, customer_id:s.customer_id, customer_name:custName,
+      source_block_id:s.source_block_id, source_class_name:srcCls.name||"Unknown",
+      target_block_id:s.target_block_id, target_class_name:tgtCls.name||"Unknown",
+      class_date:s.class_date, notes:s.notes||""
+    };
+  });
+}
+
+function renderCatchUpSwapsList(){
+  var el=document.getElementById("catchup-list");
+  if(!el) return;
+  var today=new Date(); today.setHours(0,0,0,0);
+  var upcoming=catchUpSwaps.filter(function(s){ return new Date(s.class_date+"T00:00:00")>=today; });
+  var past=catchUpSwaps.filter(function(s){ return new Date(s.class_date+"T00:00:00")<today; });
+  var html="";
+  html+="<div style=\"margin-bottom:14px;font-size:13px;color:var(--mid);line-height:1.7;background:var(--cream);padding:14px 18px;border-radius:4px;border-left:3px solid var(--sage-dk)\">";
+  html+="Record when a customer attends a different block's session for one week. Maximum 2 catch-up swaps per customer per block.";
+  html+="</div>";
+  if(upcoming.length===0){
+    html+="<div style=\"color:var(--light);font-size:13px;padding:8px 0\">No upcoming catch-up swaps. Use &ldquo;Record swap&rdquo; to add one.</div>";
+  } else {
+    html+="<div style=\"font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:10px\">Upcoming swaps</div>";
+    html+="<table><thead><tr><th>Customer</th><th>Visiting</th><th>Date</th><th>Their regular class</th><th>Notes</th><th>Actions</th></tr></thead><tbody>";
+    upcoming.forEach(function(s){
+      var dl=new Date(s.class_date+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+      var notesCell=s.notes?sanitise(s.notes):"<span style=\"color:var(--light)\">&mdash;</span>";
+      html+="<tr><td>"+sanitise(s.customer_name)+"</td><td>"+sanitise(s.target_class_name)+"</td><td style=\"white-space:nowrap\">"+dl+"</td><td>"+sanitise(s.source_class_name)+"</td><td>"+notesCell+"</td>";
+      html+="<td><button class=\"act act-delete\" onclick=\"deleteCatchUpSwap("+s.id+")\">Remove</button></td></tr>";
+    });
+    html+="</tbody></table>";
+  }
+  if(past.length>0){
+    html+="<div style=\"font-size:12px;color:var(--light);margin-top:16px;padding-top:12px;border-top:1px solid var(--border)\">"+past.length+" past swap"+(past.length===1?"":"s")+" (hidden)</div>";
+  }
+  el.innerHTML=html;
+}
+
+function renderCatchUpSwapsPage(){
+  var el=document.getElementById("catchup-list");
+  if(!el) return;
+  el.innerHTML="<div style=\"color:var(--light);padding:20px;font-size:13px\">Loading&hellip;</div>";
+  (async function(){
+    try{
+      await reloadCatchUpSwaps();
+      renderCatchUpSwapsList();
+      renderClassesView();
+    }catch(err){
+      console.error("Catch-up swaps page error:",err);
+      el.innerHTML="<div style=\"color:var(--red);padding:20px\">Error loading catch-up swaps. Please refresh.</div>";
+    }
+  })();
+}
+
+function openCatchUpModal(){
+  var errEl=document.getElementById("cu-err");
+  errEl.style.display="none"; errEl.textContent="";
+  // Customer dropdown — from non-cancelled bookings
+  var seen={};
+  var custOpts=[];
+  bookings.filter(function(b){ return b.status!=="cancelled"; }).forEach(function(b){
+    if(!seen[b.customerId]){ seen[b.customerId]=true; custOpts.push({id:b.customerId,name:b.client}); }
+  });
+  custOpts.sort(function(a,b){ return a.name.localeCompare(b.name); });
+  var cuCust=document.getElementById("cu-customer");
+  cuCust.innerHTML="<option value=\"\">Select customer&hellip;</option>";
+  custOpts.forEach(function(c){ cuCust.innerHTML+="<option value=\""+c.id+"\">"+sanitise(c.name)+"</option>"; });
+  document.getElementById("cu-source-block").innerHTML="<option value=\"\">Select customer first</option>";
+  // Target block dropdown — active/upcoming blocks
+  var tgtSel=document.getElementById("cu-target-block");
+  tgtSel.innerHTML="<option value=\"\">Select a block&hellip;</option>";
+  blocks.filter(function(b){ return b.status==="active"||b.status==="upcoming"; }).forEach(function(blk){
+    var cls=classes.find(function(c){ return c.id===blk.class_id; })||{};
+    var label=(cls.name||"Class")+" — "+(blk.dates&&blk.dates.length?blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:blk.start_date);
+    tgtSel.innerHTML+="<option value=\""+blk.id+"\">"+sanitise(label)+"</option>";
+  });
+  document.getElementById("cu-date").innerHTML="<option value=\"\">Select block first</option>";
+  document.getElementById("cu-notes").value="";
+  document.getElementById("cu-btn").disabled=false;
+  document.getElementById("cu-btn").textContent="Record Swap";
+  document.getElementById("catchup-overlay").className="overlay on";
+  lockBodyScroll();
+}
+
+function closeCatchUpModal(){
+  document.getElementById("catchup-overlay").className="overlay";
+  unlockBodyScroll();
+}
+
+function onCuCustomerChange(){
+  var customerId=parseInt(document.getElementById("cu-customer").value);
+  var srcSel=document.getElementById("cu-source-block");
+  if(!customerId){ srcSel.innerHTML="<option value=\"\">Select customer first</option>"; return; }
+  var custBks=bookings.filter(function(b){ return b.customerId===customerId&&b.status!=="cancelled"; });
+  var seenBlk={};
+  var opts=[];
+  custBks.forEach(function(b){
+    if(!seenBlk[b.blockId]){
+      seenBlk[b.blockId]=true;
+      var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
+      var cls=blk?classes.find(function(c){ return c.id===blk.class_id; }):null;
+      if(blk&&cls){
+        var label=sanitise(cls.name)+" — "+(blk.dates&&blk.dates.length?blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:blk.start_date);
+        opts.push({id:blk.id,label:label});
+      }
+    }
+  });
+  srcSel.innerHTML=opts.length
+    ?opts.map(function(o){ return "<option value=\""+o.id+"\">"+o.label+"</option>"; }).join("")
+    :"<option value=\"\">No active bookings found</option>";
+}
+
+function onCuTargetBlockChange(){
+  var blockId=parseInt(document.getElementById("cu-target-block").value);
+  var dateSel=document.getElementById("cu-date");
+  if(!blockId){ dateSel.innerHTML="<option value=\"\">Select block first</option>"; return; }
+  var blk=blocks.find(function(b){ return b.id===blockId; });
+  if(!blk){ dateSel.innerHTML="<option value=\"\">Block not found</option>"; return; }
+  var today=new Date(); today.setHours(0,0,0,0);
+  // Compute ISO session dates from start_date + 7 days per week
+  // (blk.dates[] contains display strings like "1 Jul", not ISO dates)
+  var sessionDates=[];
+  var start=new Date(blk.start_date+"T00:00:00");
+  var weeks=blk.weeks||6;
+  for(var i=0;i<weeks;i++){
+    var d=new Date(start.getTime()+i*7*24*60*60*1000);
+    var iso=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    sessionDates.push(iso);
+  }
+  var futureDates=sessionDates.filter(function(d){ return new Date(d+"T00:00:00")>=today; });
+  dateSel.innerHTML=futureDates.length
+    ?futureDates.map(function(d){
+        var lbl=new Date(d+"T00:00:00").toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+        return "<option value=\""+sanitise(d)+"\">"+lbl+"</option>";
+      }).join("")
+    :"<option value=\"\">No upcoming sessions</option>";
+}
+
+async function saveCatchUpSwap(){
+  var customerId=parseInt(document.getElementById("cu-customer").value);
+  var sourceBlockId=parseInt(document.getElementById("cu-source-block").value);
+  var targetBlockId=parseInt(document.getElementById("cu-target-block").value);
+  var classDate=document.getElementById("cu-date").value;
+  var notes=document.getElementById("cu-notes").value.trim();
+  var errEl=document.getElementById("cu-err");
+  function showErr(msg){ errEl.textContent=msg; errEl.style.display="block"; }
+  errEl.style.display="none";
+  if(!customerId||!sourceBlockId||!targetBlockId||!classDate){ showErr("Please fill in all required fields."); return; }
+  if(sourceBlockId===targetBlockId){ showErr("The visiting block must be different from the regular block."); return; }
+  var btn=document.getElementById("cu-btn");
+  btn.disabled=true; btn.textContent="Saving…";
+  try{
+    // Cap check: count existing swaps on target block for this date
+    var{data:onDate}=await sb.from("catch_up_swaps").select("id").eq("target_block_id",targetBlockId).eq("class_date",classDate);
+    var swapsOnDate=(onDate||[]).length;
+    var tgtBlk=blocks.find(function(b){ return b.id===targetBlockId; });
+    if(tgtBlk&&(tgtBlk.booked+swapsOnDate+1)>tgtBlk.cap){
+      showErr("That session is already at capacity on "+classDate+". No space for a catch-up swap.");
+      btn.disabled=false; btn.textContent="Record Swap"; return;
+    }
+    // Limit check: max 2 swaps per customer per source block
+    var{data:existing}=await sb.from("catch_up_swaps").select("id").eq("customer_id",customerId).eq("source_block_id",sourceBlockId);
+    if((existing||[]).length>=2){
+      showErr("This customer has already used 2 catch-up swaps for that block.");
+      btn.disabled=false; btn.textContent="Record Swap"; return;
+    }
+    var{error}=await sb.from("catch_up_swaps").insert({customer_id:customerId,source_block_id:sourceBlockId,target_block_id:targetBlockId,class_date:classDate,notes:notes||null}).select();
+    if(error) throw error;
+    closeCatchUpModal();
+    showToast("Catch-up swap recorded.");
+    await reloadCatchUpSwaps();
+    renderCatchUpSwapsList();
+    renderClassesView();
+  }catch(err){
+    console.error("Swap save error:",err);
+    showErr("Error saving. Please try again.");
+    btn.disabled=false; btn.textContent="Record Swap";
+  }
+}
+
+async function deleteCatchUpSwap(id){
+  if(!confirm("Remove this catch-up swap?")) return;
+  try{
+    var{error}=await sb.from("catch_up_swaps").delete().eq("id",id).select();
+    if(error) throw error;
+    showToast("Catch-up swap removed.");
+    await reloadCatchUpSwaps();
+    renderCatchUpSwapsList();
+    renderClassesView();
+  }catch(err){
+    console.error("Delete swap error:",err);
+    showToast("Error removing swap. Please try again.");
+  }
 }
 
 // ─── Add/Edit Class ───────────────────────────────────────────────────────────
