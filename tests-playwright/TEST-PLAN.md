@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 21 Jun 2026
-**Total tests:** 211
+**Total tests:** 212
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -303,7 +303,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-03 — bank-transfer cancellation keeps the manual flow (no Stripe call) |
 | `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-04 — Stripe failure leaves the row unrefunded and surfaces an error |
 
-## Catch-Up Swaps (CU) — 6 tests
+## Catch-Up Swaps (CU) — 7 tests
 
 | Spec file | Test |
 |---|---|
@@ -313,6 +313,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `cu-01-catchup-swaps.spec.js` | CU-04 — Swap blocked when customer already has 2 swaps on source block |
 | `cu-01-catchup-swaps.spec.js` | CU-05 — Delete a catch-up swap removes it from the list |
 | `cu-01-catchup-swaps.spec.js` | CU-06 — Catch-up visitor appears in By Class accordion for the target block |
+| `cu-01-catchup-swaps.spec.js` | CU-07 — Over-capacity warning appears in By Class when a swap pushes attendance above cap |
 
 ---
 

@@ -10,6 +10,7 @@
 //   CU-04: Swap is blocked when the customer already has 2 swaps on their source block
 //   CU-05: Delete a catch-up swap
 //   CU-06: Catch-up visitor appears in the By Class accordion with correct details
+//   CU-07: Over-capacity warning appears in By Class when a swap pushes attendance above cap
 //
 // Fixture:
 //   Customer "Returning One" (returning-one@test.example) has a confirmed
@@ -286,5 +287,42 @@ test.describe('CU — Catch-Up Swaps', () => {
     // Customer name is listed — use current DB name (robust against upsert changes by other tests)
     const customerName = `${customer.first_name} ${customer.last_name}`;
     await expect(wedBody).toContainText(customerName);
+  });
+
+  // ── CU-07: Over-capacity warning in By Class view ─────────────────────────
+
+  test('CU-07 — Over-capacity warning appears in By Class when a swap pushes attendance above cap', async ({ page }) => {
+    // mon-full has cap=2, booked=2 (at capacity after reseed).
+    // A direct DB insert bypasses the UI capacity gate (CU-03 tests that path separately).
+    // With booked(2) + 1 swap on any future date > cap(2), the warning must fire.
+    const srcBlock = await getBlockByRole('mon-current');
+    const tgtBlock = await getBlockByRole('mon-full');
+    const customer = await getCustomerByEmail('returning-one@test.example');
+
+    const futureDates = getFutureIsoDates(tgtBlock);
+    const classDate = futureDates[0];
+    test.skip(!classDate, 'No future date on mon-full — fixture may need reseeding');
+
+    await insertCatchUpSwap(customer.id, srcBlock.id, tgtBlock.id, classDate);
+
+    // Navigate to By Class
+    await page.locator('#dbnav-byclass').click();
+    await expect(page.locator('#dbnav-byclass.on')).toBeVisible();
+
+    const accordion = page.locator('#classes-accordion');
+    await expect(accordion).toBeVisible({ timeout: 8000 });
+
+    // Expand the Monday class group (mon-full is class_id=1, a Monday class)
+    const monGroup = accordion.locator('.class-group').filter({
+      has: page.locator('.class-group-title', { hasText: /Monday/i })
+    }).first();
+    await expect(monGroup).toBeVisible({ timeout: 5000 });
+    await monGroup.locator('.class-group-header').click();
+
+    const monBody = monGroup.locator('.class-group-body');
+    await expect(monBody).toBeVisible({ timeout: 5000 });
+
+    // Over-capacity warning must be visible in the expanded group body
+    await expect(monBody).toContainText('Over capacity on:', { timeout: 5000 });
   });
 });
