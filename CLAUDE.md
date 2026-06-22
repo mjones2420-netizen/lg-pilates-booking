@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 22 Jun 2026 (session 52 — CU-07 over-cap warning spec, 212 tests)
+Last updated: 22 Jun 2026 (session 53 — CORS hardening + stripe-checkout flow fix, 212 tests)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -219,6 +219,8 @@ Navigate with `switchDashPage(name)`.
 - **#33 HIGH** (live now): `send-email` open relay — anon key passes `verify_jwt:true`. Fix: add real-admin check (pattern already in `stripe-refund`).
 
 **Backlog now managed via GitHub Issues** — use `gh issue list` at session start.
+
+**Session 53 (2026-06-22):** CORS hardening (#40 item 1) — Edge Functions (stripe-checkout, stripe-refund, send-email) now restrict to GitHub Pages + future custom domain. Also fixed stripe-checkout repo file: was stale old version (booking_id flow); corrected to pending_bookings flow matching the webhook. Item 2 (leaked-password toggle) blocked — Supabase Pro plan only. Item 3 (rate limiting) deferred.
 
 **Next likely work (priority order):**
 - [#33](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/33): Fix send-email open relay — HIGH, live now
