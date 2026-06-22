@@ -18,21 +18,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  "https://mjones2420-netizen.github.io",
+  "https://book.lg-pilates.co.uk",
+];
 
-function json(body: unknown, status: number) {
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("Origin") ?? "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+}
+
+function json(body: unknown, status: number, req: Request) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders(req), "Content-Type": "application/json" },
   });
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(req) });
   }
 
   try {
@@ -41,28 +49,28 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      return json({ error: "Server not configured" }, 500);
+      return json({ error: "Server not configured" }, 500, req);
     }
     if (!stripeKey) {
-      return json({ error: "Stripe not configured" }, 500);
+      return json({ error: "Stripe not configured" }, 500, req);
     }
 
     // --- Auth gate: require a real authenticated admin (reject anon key) ---
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
     if (!token) {
-      return json({ error: "Unauthorized" }, 401);
+      return json({ error: "Unauthorized" }, 401, req);
     }
     const authClient = createClient(supabaseUrl, supabaseServiceKey);
     const { data: userData, error: userErr } = await authClient.auth.getUser(token);
     if (userErr || !userData?.user) {
-      return json({ error: "Unauthorized" }, 401);
+      return json({ error: "Unauthorized" }, 401, req);
     }
 
     // --- Input ---
     const { cancellation_id } = await req.json();
     if (!cancellation_id) {
-      return json({ error: "Missing cancellation_id" }, 400);
+      return json({ error: "Missing cancellation_id" }, 400, req);
     }
 
     // --- Load cancellation row server-side ---
@@ -74,17 +82,17 @@ serve(async (req) => {
       .single();
 
     if (rowErr || !row) {
-      return json({ error: "Cancellation not found" }, 404);
+      return json({ error: "Cancellation not found" }, 404, req);
     }
     if (row.refunded) {
-      return json({ error: "Already refunded" }, 409);
+      return json({ error: "Already refunded" }, 409, req);
     }
     if (!row.stripe_payment_intent_id) {
-      return json({ error: "No payment intent on this cancellation" }, 400);
+      return json({ error: "No payment intent on this cancellation" }, 400, req);
     }
     const amountPence = Math.round(Number(row.refund_amount) * 100);
     if (!(amountPence > 0)) {
-      return json({ error: "Refund amount must be greater than zero" }, 400);
+      return json({ error: "Refund amount must be greater than zero" }, 400, req);
     }
 
     // --- Issue Stripe refund ---
@@ -114,13 +122,13 @@ serve(async (req) => {
 
     if (!stripeRes.ok) {
       console.error("Stripe refund error:", refund);
-      return json({ error: refund.error?.message || "Stripe refund failed" }, 502);
+      return json({ error: refund.error?.message || "Stripe refund failed" }, 502, req);
     }
 
-    return json({ refund_id: refund.id, status: refund.status, amount: amountPence }, 200);
+    return json({ refund_id: refund.id, status: refund.status, amount: amountPence }, 200, req);
 
   } catch (err) {
     console.error("stripe-refund error:", err);
-    return json({ error: "Internal server error" }, 500);
+    return json({ error: "Internal server error" }, 500, req);
   }
 });
