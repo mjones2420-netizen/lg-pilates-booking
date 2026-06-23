@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 22 Jun 2026 (session 53 — CORS hardening + stripe-checkout flow fix, 212 tests)
+Last updated: 23 Jun 2026 (session 54 — #33 send-email open relay fixed (test), 215 tests)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **212 tests, all passing** (Session 52 / CU-07 over-cap warning added).
+Current test count: **215 tests, all passing** (Session 54 / SEC-01 relay-closed added).
 
 ---
 
@@ -216,14 +216,16 @@ Navigate with `switchDashPage(name)`.
 
 **Security review complete (2026-06-19/20)** — full audit of front end, edge functions, RLS, secrets, repo. Foundations solid (key separation, clean git history, anon cannot read PII, webhook HMAC-verified). 9 issues filed (#32–#40). Report: `~/.claude/plans/can-you-carry-out-adaptive-beacon.md`.
 - **#32 HIGH** (pre-go-live): `stripe-checkout` trusts client `amount_pence` — price tampering / pay-what-you-want. Fix: recompute server-side from `block_id`.
-- **#33 HIGH** (live now): `send-email` open relay — anon key passes `verify_jwt:true`. Fix: add real-admin check (pattern already in `stripe-refund`).
+- **#33 HIGH** (live now): `send-email` open relay — anon key passes `verify_jwt:true`. **FIX BUILT + TEST-DEPLOYED (session 54), prod deploy pending go-live.** Approach (Option A): two PUBLIC email types (`reserved_confirmation`, `new_booking_alert`) are now built server-side in send-email from `{type, booking_id}` only — recipient + HTML derived from the DB, never the caller. All other (admin) emails use a raw `{to,subject,html}` path that now requires a real admin JWT OR the service-role key (internal). Anon key rejected. `stripe-webhook` updated to call send-email with the service-role key (was anon). SEC-01 spec proves the relay is closed. **Prod still vulnerable until prod send-email + stripe-webhook are deployed.**
 
 **Backlog now managed via GitHub Issues** — use `gh issue list` at session start.
 
 **Session 53 (2026-06-22):** CORS hardening (#40 item 1) — Edge Functions (stripe-checkout, stripe-refund, send-email) now restrict to GitHub Pages + future custom domain. Also fixed stripe-checkout repo file: was stale old version (booking_id flow); corrected to pending_bookings flow matching the webhook. Item 2 (leaked-password toggle) blocked — Supabase Pro plan only. Item 3 (rate limiting) deferred.
 
+**Session 54 (2026-06-23):** #33 send-email open relay fixed and verified on TEST (Option A — server-side templating for public emails; admin/internal raw path gated by admin JWT or service-role key). `index.html` reserved/alert sends now use `sendSystemEmail(type, booking_id)`; admin sends carry the admin JWT. `stripe-webhook` source committed to repo (was deployed-only) and switched to the service-role key for its send-email calls. send-email DEPLOYED TO TEST ONLY; stripe-webhook NOT yet redeployed — both go to prod at go-live. **Do NOT push index.html to prod until prod send-email is deployed** (old prod function would reject the new payload; reserved/alert emails would silently stop). New SEC-01 spec; SE-12/SE-14 rewritten to the new payload contract. 215 tests green.
+
 **Next likely work (priority order):**
-- [#33](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/33): Fix send-email open relay — HIGH, live now
+- [#33](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/33): Deploy fixed send-email + stripe-webhook to PROD (still open — fix done + test-verified, prod vulnerable until deployed)
 - [#32](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/32): Fix checkout price tampering — HIGH, must fix before go-live
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Go-live — swap prod Stripe key test→live + live webhook secret
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close

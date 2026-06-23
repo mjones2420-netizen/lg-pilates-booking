@@ -86,15 +86,18 @@ test.describe('SE-12 — Booking reserved email fires on reserve', () => {
     // Wait for success view
     await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 15000 });
 
-    // Assert Edge Function was called — index 0 is the client email, index 1 is the admin alert
+    // Post-#33: the reserved email is built server-side from the booking id.
+    // The browser sends only { type, booking_id, isTest } — no recipient or HTML,
+    // so the anon caller can neither choose the recipient nor inject markup.
     expect(capturedPayloads.length, 'send-email was not called').toBeGreaterThanOrEqual(1);
     const capturedPayload = capturedPayloads[0];
-    expect(capturedPayload.to).toBe(EMAIL);
-    expect(capturedPayload.subject).toContain('reserved');
+    expect(capturedPayload.type).toBe('reserved_confirmation');
+    expect(capturedPayload.booking_id, 'booking_id must be present').toBeTruthy();
     expect(capturedPayload.isTest).toBe(true);
-    expect(capturedPayload.html).toBeTruthy();
-    expect(capturedPayload.html).toContain(FIRST);
-    expect(capturedPayload.html).toContain('48 hours');
+    // The old client-built fields must NOT be present any more.
+    expect(capturedPayload.to).toBeUndefined();
+    expect(capturedPayload.html).toBeUndefined();
+    expect(capturedPayload.subject).toBeUndefined();
 
     // Capture customer ID for cleanup
     const lookup = await sb.rpc('lookup_customer', { p_email: EMAIL });

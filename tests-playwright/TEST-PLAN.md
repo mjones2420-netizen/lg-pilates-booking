@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 21 Jun 2026
-**Total tests:** 212
+**Last updated:** 23 Jun 2026
+**Total tests:** 215
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -253,10 +253,13 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 6 tests
+## Security (SEC) — 9 tests
 
 | Spec file | Test |
 |---|---|
+| `sec-01-send-email-relay-closed.spec.js` | anon key cannot send a raw arbitrary-recipient/HTML email |
+| `sec-01-send-email-relay-closed.spec.js` | missing Authorization header is rejected on the raw path |
+| `sec-01-send-email-relay-closed.spec.js` | public type path is reachable with the anon key but is bound to a real booking |
 | `sec-02-anon-settings-read.spec.js` | SEC-02 — anon can SELECT settings rows directly |
 | `sec-02-anon-settings-read.spec.js` | SEC-02 — bank details render on payment screen for anon user |
 | `sec-06-admin-dashboard-tour.spec.js` | SEC-06 — admin can sign in and reach the dashboard |

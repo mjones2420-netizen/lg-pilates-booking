@@ -103,35 +103,19 @@ test.describe('SE-14 — New booking admin alert email', () => {
     ]);
 
     // --- Assertions on the admin alert payload ---
-
-    // Fetch admin email from settings to confirm recipient
-    const { data: settingsRows } = await sb.from('settings').select('value').eq('key', 'admin_email').single();
-    const adminEmail = settingsRows?.value || '';
-    expect(adminEmail).toBeTruthy();
-    expect(adminPayload.to).toBe(adminEmail);
-
-    // Subject contains client name and venue
-    expect(adminPayload.subject).toContain(TEST_FIRST);
-    expect(adminPayload.subject).toContain(TEST_LAST);
-
-    // isTest flag set correctly in test mode
+    // Post-#33: the alert is built server-side from the booking id. The browser
+    // sends only { type, booking_id, isTest } — recipient (admin email) and HTML
+    // are resolved inside the Edge Function, not chosen by the (anon) caller.
+    expect(adminPayload.type).toBe('new_booking_alert');
+    expect(adminPayload.booking_id, 'booking_id must be present').toBeTruthy();
     expect(adminPayload.isTest).toBe(true);
+    expect(adminPayload.to).toBeUndefined();
+    expect(adminPayload.html).toBeUndefined();
+    expect(adminPayload.subject).toBeUndefined();
 
-    // HTML contains "New booking" banner text
-    expect(adminPayload.html).toContain('New booking');
-
-    // HTML contains client name
-    expect(adminPayload.html).toContain(TEST_FIRST);
-    expect(adminPayload.html).toContain(TEST_LAST);
-
-    // New client — PAR-Q flag present
-    expect(adminPayload.html).toContain('PAR-Q health form has been submitted');
-
-    // Dashboard link present
-    expect(adminPayload.html).toContain('#dashboard');
-
-    // Client type shown as "New client"
-    expect(adminPayload.html).toContain('New client');
+    // The reserved email (call[0]) and the alert (call[1]) must carry the SAME
+    // booking_id — both reference the one booking just created.
+    expect(adminPayload.booking_id).toBe(capturedPayloads[0].booking_id);
   });
 
   test('Admin alert email sent on returning-client reserve — no PAR-Q flag', async ({ page }) => {
@@ -192,14 +176,13 @@ test.describe('SE-14 — New booking admin alert email', () => {
       new Promise((_, reject) => setTimeout(() => reject(new Error('Admin email not received within 10s')), 10000))
     ]);
 
-    // PAR-Q flag must NOT be present for returning client
-    expect(adminPayload.html).not.toContain('PAR-Q health form has been submitted');
-
-    // Client type shown as "Returning client"
-    expect(adminPayload.html).toContain('Returning client');
-
-    // Core checks still pass
+    // Post-#33: payload is the server-side contract; returning-vs-new and the
+    // PAR-Q flag are now decided inside the Edge Function from the booking's
+    // customer_type, not in the browser payload.
+    expect(adminPayload.type).toBe('new_booking_alert');
+    expect(adminPayload.booking_id, 'booking_id must be present').toBeTruthy();
     expect(adminPayload.isTest).toBe(true);
-    expect(adminPayload.html).toContain('New booking');
+    expect(adminPayload.to).toBeUndefined();
+    expect(adminPayload.html).toBeUndefined();
   });
 });
