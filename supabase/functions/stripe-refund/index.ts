@@ -21,6 +21,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const ALLOWED_ORIGINS = [
   "https://mjones2420-netizen.github.io",
   "https://book.lg-pilates.co.uk",
+  "http://localhost:8000", // local dev + Playwright tests (#42)
 ];
 
 function corsHeaders(req: Request): Record<string, string> {

@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 23 Jun 2026
-**Total tests:** 215
+**Last updated:** 25 Jun 2026
+**Total tests:** 217
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -253,7 +253,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 9 tests
+## Security (SEC) — 11 tests
 
 | Spec file | Test |
 |---|---|
@@ -262,6 +262,8 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-01-send-email-relay-closed.spec.js` | public type path is reachable with the anon key but is bound to a real booking |
 | `sec-02-anon-settings-read.spec.js` | SEC-02 — anon can SELECT settings rows directly |
 | `sec-02-anon-settings-read.spec.js` | SEC-02 — bank details render on payment screen for anon user |
+| `sec-03-checkout-price-tampering.spec.js` | a forged 1p amount_pence is ignored — pending row gets the real server-computed price |
+| `sec-03-checkout-price-tampering.spec.js` | a block_id that does not belong to the given class_id is rejected |
 | `sec-06-admin-dashboard-tour.spec.js` | SEC-06 — admin can sign in and reach the dashboard |
 | `sec-06-admin-dashboard-tour.spec.js` | SEC-06 — all 4 dashboard tabs render their panels |
 | `sec-06-admin-dashboard-tour.spec.js` | SEC-06 — below-tab sections (Upcoming Classes, Settings, Backup & Export) render |

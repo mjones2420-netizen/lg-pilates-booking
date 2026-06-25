@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const ALLOWED_ORIGINS = [
   "https://mjones2420-netizen.github.io",
   "https://book.lg-pilates.co.uk",
+  "http://localhost:8000", // local dev + Playwright tests (#42)
 ];
 
 function corsHeaders(req: Request): Record<string, string> {
@@ -12,6 +13,35 @@ function corsHeaders(req: Request): Record<string, string> {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   };
+}
+
+// Server-side mirror of calcProrata() in index.html — recomputes the price
+// from the block's own data so a tampered client-side amount can never be
+// trusted (#32: stripe-checkout price tampering). Uses local date parts
+// (not toISOString) per the BST gotcha — index.html does the same.
+function calcProrataPence(block: { price: number; weeks: number; dates: string[] }): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dates = block.dates || [];
+  const fullPrice = block.price * block.weeks;
+  const monthMap: Record<string, number> = {
+    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+  };
+  const remaining = dates.filter((d) => {
+    const parts = d.trim().split(" ");
+    if (parts.length < 2) return true;
+    const day = parseInt(parts[0], 10);
+    const mon = monthMap[parts[1]];
+    if (isNaN(day) || mon === undefined) return true;
+    const yr = today.getFullYear();
+    const dt = new Date(yr, mon, day);
+    if (dt < new Date(yr, 0, 1)) dt.setFullYear(yr + 1);
+    return dt >= today;
+  }).length;
+  const isProrata = remaining < dates.length && remaining > 0;
+  const totalPrice = isProrata ? block.price * remaining : fullPrice;
+  return Math.round(totalPrice * 100);
 }
 
 serve(async (req) => {
@@ -23,12 +53,12 @@ serve(async (req) => {
     const {
       class_id, block_id,
       first_name, last_name, email, phone,
-      customer_type, amount_pence, class_name,
+      customer_type, class_name,
       parq_data, success_url, cancel_url, is_test,
     } = await req.json();
 
     if (!class_id || !block_id || !first_name || !last_name || !email ||
-        !amount_pence || !class_name || !success_url || !cancel_url) {
+        !class_name || !success_url || !cancel_url) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { ...corsHeaders(req), "Content-Type": "application/json" },
@@ -52,15 +82,46 @@ serve(async (req) => {
       });
     }
 
-    // Insert pending_bookings row — holds booking intent until Stripe webhook confirms
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Recompute the price server-side from the block's own data — never trust
+    // the client-supplied amount_pence (#32). Also confirms class_id/block_id
+    // actually belong together.
+    const { data: block, error: blockErr } = await adminClient
+      .from("blocks")
+      .select("price, weeks, dates, class_id")
+      .eq("id", block_id)
+      .single();
+
+    if (blockErr || !block) {
+      return new Response(JSON.stringify({ error: "Block not found" }), {
+        status: 400,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+    if (block.class_id !== class_id) {
+      return new Response(JSON.stringify({ error: "Block does not belong to class" }), {
+        status: 400,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
+    const verifiedAmountPence = calcProrataPence(block);
+    if (verifiedAmountPence <= 0) {
+      return new Response(JSON.stringify({ error: "Invalid block price" }), {
+        status: 400,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
+    // Insert pending_bookings row — holds booking intent until Stripe webhook confirms
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
     const { data: pendingRow, error: pendingErr } = await adminClient
       .from("pending_bookings")
       .insert({
         class_id, block_id,
         first_name, last_name, email, phone: phone || "",
-        customer_type, amount_pence,
+        customer_type, amount_pence: verifiedAmountPence,
         parq_data: parq_data || null,
         expires_at: expiresAt,
       })
@@ -83,7 +144,7 @@ serve(async (req) => {
       "payment_method_types[]": "card",
       "line_items[0][price_data][currency]": "gbp",
       "line_items[0][price_data][product_data][name]": `LG Pilates — ${class_name}`,
-      "line_items[0][price_data][unit_amount]": String(amount_pence),
+      "line_items[0][price_data][unit_amount]": String(verifiedAmountPence),
       "line_items[0][quantity]": "1",
       "mode": "payment",
       "success_url": success_url,
