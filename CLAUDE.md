@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 23 Jun 2026 (session 54 — #33 send-email open relay fixed (test), 215 tests)
+Last updated: 25 Jun 2026 (session 55 — #32 price tampering + #42 CORS fixed, deployed test+prod, 217 tests)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **215 tests, all passing** (Session 54 / SEC-01 relay-closed added).
+Current test count: **217 tests, all passing** (Session 55 / SEC-03 price-tampering-closed added).
 
 ---
 
@@ -214,19 +214,20 @@ Navigate with `switchDashPage(name)`.
 - CU-01..07 Playwright specs — all 7 passing. CU-07 (session 52) verifies the red over-capacity warning banner appears in By Class when a swap pushes a block above cap (uses mon-full + direct DB insert to bypass the UI gate). `fixture-lookup.js` updated to SELECT `weeks`. `generate-test-plan.js` updated with CU group.
 - BST gotcha: `blocks.dates[]` is display strings ("1 Jul") NOT ISO — always compute ISO from `start_date + 7-day intervals` using local date methods.
 
-**Security review complete (2026-06-19/20)** — full audit of front end, edge functions, RLS, secrets, repo. Foundations solid (key separation, clean git history, anon cannot read PII, webhook HMAC-verified). 9 issues filed (#32–#40). Report: `~/.claude/plans/can-you-carry-out-adaptive-beacon.md`.
-- **#32 HIGH** (pre-go-live): `stripe-checkout` trusts client `amount_pence` — price tampering / pay-what-you-want. Fix: recompute server-side from `block_id`.
-- **#33 HIGH** (live now): `send-email` open relay — anon key passes `verify_jwt:true`. **FIX BUILT + TEST-DEPLOYED (session 54), prod deploy pending go-live.** Approach (Option A): two PUBLIC email types (`reserved_confirmation`, `new_booking_alert`) are now built server-side in send-email from `{type, booking_id}` only — recipient + HTML derived from the DB, never the caller. All other (admin) emails use a raw `{to,subject,html}` path that now requires a real admin JWT OR the service-role key (internal). Anon key rejected. `stripe-webhook` updated to call send-email with the service-role key (was anon). SEC-01 spec proves the relay is closed. **Prod still vulnerable until prod send-email + stripe-webhook are deployed.**
+**Security review (2026-06-19/20)** — full audit of front end, edge functions, RLS, secrets, repo. Foundations solid (key separation, clean git history, anon cannot read PII, webhook HMAC-verified). 9 issues filed (#32–#40). Report: `~/.claude/plans/can-you-carry-out-adaptive-beacon.md`.
+- **#32 FIXED + CLOSED (session 55)**: `stripe-checkout` price tampering. Server now recomputes price from the block's own price/weeks/dates (`calcProrataPence()`, mirrors `index.html`'s `calcProrata()`), rejects mismatched class_id/block_id. SEC-03 spec. Deployed test+prod.
+- **#33 FIXED + CLOSED**: `send-email` open relay. Server-side templating for public emails (`reserved_confirmation`, `new_booking_alert`); admin/internal raw path gated by admin JWT or service-role key. Deployed test+prod (session 54 test, session 55 prod). SEC-01 spec.
 
 **Backlog now managed via GitHub Issues** — use `gh issue list` at session start.
 
 **Session 53 (2026-06-22):** CORS hardening (#40 item 1) — Edge Functions (stripe-checkout, stripe-refund, send-email) now restrict to GitHub Pages + future custom domain. Also fixed stripe-checkout repo file: was stale old version (booking_id flow); corrected to pending_bookings flow matching the webhook. Item 2 (leaked-password toggle) blocked — Supabase Pro plan only. Item 3 (rate limiting) deferred.
 
-**Session 54 (2026-06-23):** #33 send-email open relay fixed and verified on TEST (Option A — server-side templating for public emails; admin/internal raw path gated by admin JWT or service-role key). `index.html` reserved/alert sends now use `sendSystemEmail(type, booking_id)`; admin sends carry the admin JWT. `stripe-webhook` source committed to repo (was deployed-only) and switched to the service-role key for its send-email calls. send-email DEPLOYED TO TEST ONLY; stripe-webhook NOT yet redeployed — both go to prod at go-live. **Do NOT push index.html to prod until prod send-email is deployed** (old prod function would reject the new payload; reserved/alert emails would silently stop). New SEC-01 spec; SE-12/SE-14 rewritten to the new payload contract. 215 tests green.
+**Session 54 (2026-06-23):** #33 send-email open relay fixed and verified on TEST. `index.html` reserved/alert sends now use `sendSystemEmail(type, booking_id)`; admin sends carry the admin JWT. `stripe-webhook` source committed to repo and switched to the service-role key for its send-email calls.
+
+**Session 55 (2026-06-25):** #32 stripe-checkout price tampering fixed (server-side recompute, SEC-03 spec). Mid-session found + fixed #42: the session-53 CORS hardening had silently never been redeployed to test (repo/deploy drift, same pattern as #33) — `http://localhost:8000` wasn't in `ALLOWED_ORIGINS`, so every browser-driven Playwright test hitting stripe-checkout/send-email/stripe-refund from localhost was silently failing CORS (ST-17 specifically). Added localhost to all three functions' allowlists, deployed test then prod. Verified prod `stripe-webhook` was already running the #33 service-role-key fix (no drift there). 217/217 tests green, deployed to prod, pushed (`bcb03f9`), #32 and #42 closed.
+- **Process lesson (same as #33):** an Edge Function commit does NOT reach the live function until explicitly redeployed via `deploy_edge_function` — git push alone does nothing. Confirm deploy status (test AND prod) any time an Edge Function source file changes.
 
 **Next likely work (priority order):**
-- [#33](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/33): Deploy fixed send-email + stripe-webhook to PROD (still open — fix done + test-verified, prod vulnerable until deployed)
-- [#32](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/32): Fix checkout price tampering — HIGH, must fix before go-live
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Go-live — swap prod Stripe key test→live + live webhook secret
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
