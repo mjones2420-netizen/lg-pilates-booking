@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 25 Jun 2026 (session 55 — #32 price tampering + #42 CORS fixed, deployed test+prod, 217 tests)
+Last updated: 25 Jun 2026 (session 56 — catch-up over-cap warning moved to top dashboard banner, 217 tests)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **217 tests, all passing** (Session 55 / SEC-03 price-tampering-closed added).
+Current test count: **217 tests, all passing** (Session 56 / CU-07 reworked for new banner location).
 
 ---
 
@@ -226,6 +226,8 @@ Navigate with `switchDashPage(name)`.
 
 **Session 55 (2026-06-25):** #32 stripe-checkout price tampering fixed (server-side recompute, SEC-03 spec). Mid-session found + fixed #42: the session-53 CORS hardening had silently never been redeployed to test (repo/deploy drift, same pattern as #33) — `http://localhost:8000` wasn't in `ALLOWED_ORIGINS`, so every browser-driven Playwright test hitting stripe-checkout/send-email/stripe-refund from localhost was silently failing CORS (ST-17 specifically). Added localhost to all three functions' allowlists, deployed test then prod. Verified prod `stripe-webhook` was already running the #33 service-role-key fix (no drift there). 217/217 tests green, deployed to prod, pushed (`bcb03f9`), #32 and #42 closed.
 - **Process lesson (same as #33):** an Edge Function commit does NOT reach the live function until explicitly redeployed via `deploy_edge_function` — git push alone does nothing. Confirm deploy status (test AND prod) any time an Edge Function source file changes.
+
+**Session 56 (2026-06-25):** UI tweak — the catch-up swap over-capacity warning was buried inside the By Class accordion (had to expand the right class group to see it). Moved to the global `#block-warnings` banner at the top of every dashboard page, alongside the existing hidden-class / no-next-block / pending-refund warnings, with a "View By Class" jump button. Removed the now-redundant inline banner from `renderClassesView()`. CU-07 rewritten to assert on the top banner instead of the accordion body — required adding a page reload mid-test since catch-up swap data is fetched once at login, not live. 217/217 tests green (1 unrelated pre-existing flake on SE-14, confirmed flaky on rerun, not touched this session). Committed and pushed (`7c7d619`).
 
 **Next likely work (priority order):**
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Go-live — swap prod Stripe key test→live + live webhook secret
