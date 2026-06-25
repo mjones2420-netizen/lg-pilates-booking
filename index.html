@@ -2335,6 +2335,20 @@ function renderBlockWarnings(){
     return relevant.length===1;
   });
 
+  // ADVISORY: catch-up swaps that push a block's future attendance over cap
+  var cuToday=new Date(); cuToday.setHours(0,0,0,0);
+  var overCapByBlock={};
+  blocks.forEach(function(blk){
+    var dateGroups={};
+    catchUpSwaps.filter(function(s){ return s.target_block_id===blk.id; }).forEach(function(s){
+      var dt=new Date(s.class_date+"T00:00:00");
+      if(dt>=cuToday){ dateGroups[s.class_date]=(dateGroups[s.class_date]||0)+1; }
+    });
+    var overDates=Object.keys(dateGroups).filter(function(d){ return (blk.booked+dateGroups[d])>blk.cap; });
+    if(overDates.length>0){ overCapByBlock[blk.id]={blk:blk,dates:overDates}; }
+  });
+  var overCapEntries=Object.keys(overCapByBlock).map(function(k){ return overCapByBlock[k]; });
+
   // ADVISORY: cancellations with refund_amount > 0 not yet marked as refunded
   (async function(){
     var pendingRefundCount=0;
@@ -2343,7 +2357,7 @@ function renderBlockWarnings(){
       pendingRefundCount=pending?pending.length:0;
     }catch(e){ pendingRefundCount=0; }
 
-    if(hidden.length===0 && expiring.length===0 && pendingRefundCount===0){ el.style.display="none"; el.innerHTML=""; return; }
+    if(hidden.length===0 && expiring.length===0 && overCapEntries.length===0 && pendingRefundCount===0){ el.style.display="none"; el.innerHTML=""; return; }
 
     var html="";
 
@@ -2381,6 +2395,22 @@ function renderBlockWarnings(){
         html+='<div><div class="block-warning-class">'+sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time)+'</div>';
         html+='<div class="block-warning-meta">'+sanitise(c.venue)+', '+sanitise(c.loc)+(endsStr?' &mdash; current block ends '+sanitise(endsStr):'')+'</div></div>';
         html+='<button class="act act-confirm" onclick="openAddBlockModal('+c.id+',\''+nextStartDate+'\')" style="white-space:nowrap">+ Add Block</button>';
+        html+='</div>';
+      });
+      html+='</div>';
+    }
+
+    if(overCapEntries.length>0){
+      html+='<div class="block-warning" style="background:#fff0f0;border-color:#f0b8b8;margin-bottom:'+(pendingRefundCount>0?'12px':'28px')+'">';
+      html+='<div class="block-warning-title" style="color:#c04040">&#9888; '+overCapEntries.length+' block'+(overCapEntries.length>1?"s have":" has")+' a catch-up swap that will exceed capacity</div>';
+      overCapEntries.forEach(function(entry){
+        var blk=entry.blk;
+        var c=classes.find(function(cc){ return cc.id===blk.class_id; });
+        var overLabels=entry.dates.map(function(d){ return new Date(d+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}); });
+        html+='<div class="block-warning-row">';
+        html+='<div><div class="block-warning-class">'+(c?sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time):'Block #'+blk.id)+'</div>';
+        html+='<div class="block-warning-meta">'+(c?sanitise(c.venue)+', '+sanitise(c.loc)+' &mdash; ':'')+'over capacity on: '+overLabels.join(", ")+'</div></div>';
+        html+='<button class="act act-confirm" onclick="switchDashPage(\'byclass\')" style="white-space:nowrap">View By Class</button>';
         html+='</div>';
       });
       html+='</div>';
@@ -2956,17 +2986,6 @@ function renderClassesView(){
           var cuToday=new Date(); cuToday.setHours(0,0,0,0);
           var blkSwaps=catchUpSwaps.filter(function(s){ return s.target_block_id===blk.id; });
           var futureSwaps=blkSwaps.filter(function(s){ return new Date(s.class_date+"T00:00:00")>=cuToday; });
-          // Over-capacity check: count swaps per future date
-          var cuDateGroups={};
-          blkSwaps.forEach(function(s){
-            var dt=new Date(s.class_date+"T00:00:00");
-            if(dt>=cuToday){ cuDateGroups[s.class_date]=(cuDateGroups[s.class_date]||0)+1; }
-          });
-          var overCapDates=Object.keys(cuDateGroups).filter(function(d){ return (blk.booked+cuDateGroups[d])>blk.cap; });
-          if(overCapDates.length>0){
-            var overLabels=overCapDates.map(function(d){ return new Date(d+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}); });
-            html+="<div style=\"background:#fff0f0;border:1px solid #f0b8b8;border-radius:4px;padding:8px 12px;font-size:12px;color:#c04040;margin-top:8px\">&#9888; Over capacity on: "+overLabels.join(", ")+" &mdash; a catch-up swap plus a new permanent member would exceed the cap for that session.</div>";
-          }
           if(futureSwaps.length>0){
             html+="<div style=\"margin-top:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--mid)\">Catch-Up Visitors</div>";
             html+="<table style=\"margin-top:4px;margin-bottom:0\"><thead><tr><th>Visitor</th><th>Date</th><th>Their regular class</th></tr></thead><tbody>";

@@ -289,9 +289,9 @@ test.describe('CU — Catch-Up Swaps', () => {
     await expect(wedBody).toContainText(customerName);
   });
 
-  // ── CU-07: Over-capacity warning in By Class view ─────────────────────────
+  // ── CU-07: Over-capacity warning at top of dashboard ───────────────────────
 
-  test('CU-07 — Over-capacity warning appears in By Class when a swap pushes attendance above cap', async ({ page }) => {
+  test('CU-07 — Over-capacity warning appears in the top dashboard banner when a swap pushes attendance above cap', async ({ page }) => {
     // mon-full has cap=2, booked=2 (at capacity after reseed).
     // A direct DB insert bypasses the UI capacity gate (CU-03 tests that path separately).
     // With booked(2) + 1 swap on any future date > cap(2), the warning must fire.
@@ -305,24 +305,18 @@ test.describe('CU — Catch-Up Swaps', () => {
 
     await insertCatchUpSwap(customer.id, srcBlock.id, tgtBlock.id, classDate);
 
-    // Navigate to By Class
-    await page.locator('#dbnav-byclass').click();
+    // The dashboard fetches catch-up swaps once at login, so the top banner
+    // needs a reload to pick up the freshly inserted swap. The session
+    // persists in localStorage, so reload lands back on the dashboard.
+    await page.reload();
+    await loginAsAdmin(page);
+
+    const warnings = page.locator('#block-warnings');
+    await expect(warnings).toContainText('catch-up swap that will exceed capacity', { timeout: 8000 });
+    await expect(warnings).toContainText('over capacity on:', { timeout: 5000 });
+
+    // Button jumps straight to By Class
+    await warnings.getByRole('button', { name: 'View By Class' }).click();
     await expect(page.locator('#dbnav-byclass.on')).toBeVisible();
-
-    const accordion = page.locator('#classes-accordion');
-    await expect(accordion).toBeVisible({ timeout: 8000 });
-
-    // Expand the Monday class group (mon-full is class_id=1, a Monday class)
-    const monGroup = accordion.locator('.class-group').filter({
-      has: page.locator('.class-group-title', { hasText: /Monday/i })
-    }).first();
-    await expect(monGroup).toBeVisible({ timeout: 5000 });
-    await monGroup.locator('.class-group-header').click();
-
-    const monBody = monGroup.locator('.class-group-body');
-    await expect(monBody).toBeVisible({ timeout: 5000 });
-
-    // Over-capacity warning must be visible in the expanded group body
-    await expect(monBody).toContainText('Over capacity on:', { timeout: 5000 });
   });
 });

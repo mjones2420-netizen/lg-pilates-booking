@@ -318,7 +318,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `cu-01-catchup-swaps.spec.js` | CU-04 — Swap blocked when customer already has 2 swaps on source block |
 | `cu-01-catchup-swaps.spec.js` | CU-05 — Delete a catch-up swap removes it from the list |
 | `cu-01-catchup-swaps.spec.js` | CU-06 — Catch-up visitor appears in By Class accordion for the target block |
-| `cu-01-catchup-swaps.spec.js` | CU-07 — Over-capacity warning appears in By Class when a swap pushes attendance above cap |
+| `cu-01-catchup-swaps.spec.js` | CU-07 — Over-capacity warning appears in the top dashboard banner when a swap pushes attendance above cap |
 
 ---
 
