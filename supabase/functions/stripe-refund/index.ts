@@ -56,7 +56,7 @@ serve(async (req) => {
       return json({ error: "Stripe not configured" }, 500, req);
     }
 
-    // --- Auth gate: require a real authenticated admin (reject anon key) ---
+    // --- Auth gate: require a real authenticated admin ---
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
     if (!token) {
@@ -66,6 +66,10 @@ serve(async (req) => {
     const { data: userData, error: userErr } = await authClient.auth.getUser(token);
     if (userErr || !userData?.user) {
       return json({ error: "Unauthorized" }, 401, req);
+    }
+    const adminEmails = (Deno.env.get("ADMIN_EMAILS") || "").split(",").map(e => e.trim().toLowerCase());
+    if (!adminEmails.includes((userData.user.email || "").toLowerCase())) {
+      return json({ error: "Forbidden" }, 403, req);
     }
 
     // --- Input ---

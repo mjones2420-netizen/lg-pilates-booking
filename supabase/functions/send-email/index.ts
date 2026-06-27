@@ -285,6 +285,10 @@ serve(async (req: Request) => {
         if (userErr || !userData?.user) {
           return json({ error: 'Unauthorized' }, 401, req);
         }
+        const adminEmails = (Deno.env.get("ADMIN_EMAILS") || "").split(",").map(e => e.trim().toLowerCase());
+        if (!adminEmails.includes((userData.user.email || "").toLowerCase())) {
+          return json({ error: 'Forbidden' }, 403, req);
+        }
       }
 
       const { to, subject: rawSubject, html: rawHtml } = body;
