@@ -1,6 +1,6 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 25 Jun 2026
+**Last updated:** 27 Jun 2026
 **Total tests:** 217
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)

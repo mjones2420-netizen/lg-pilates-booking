@@ -2265,14 +2265,18 @@ function confirmBooking(){
           var answers={};
           var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
           for(var qi=0;qi<parqData.questions.length;qi++){ answers[qKeys[qi]]=parqData.questions[qi].a; }
-          // Note: no .select() — anon has INSERT but not SELECT on parq, so
-          // RETURNING would 401. The returned row isn't used anyway.
-          await sb.from("parq").insert(Object.assign({
-            booking_id:savedBookingId, customer_id:customerId, age:parqData.age,
-            emergency_name:parqData.emergencyName, emergency_relationship:parqData.emergencyRelationship,
-            emergency_phone:parqData.emergencyPhone, yes_details:parqData.details,
-            additional_notes:parqData.other, print_name:parqData.printName, sign_date:parqData.signDate
-          },answers));
+          var a=answers;
+          await sb.rpc("insert_parq",{
+            p_booking_id:savedBookingId, p_customer_id:customerId, p_age:parqData.age,
+            p_q1_heart:a.q1_heart, p_q2_circulatory:a.q2_circulatory, p_q3_blood_pressure:a.q3_blood_pressure,
+            p_q4_chest_pain:a.q4_chest_pain, p_q5_joint:a.q5_joint, p_q6_dizziness:a.q6_dizziness,
+            p_q7_pregnant:a.q7_pregnant, p_q8_doctor_advised:a.q8_doctor_advised, p_q9_spinal:a.q9_spinal,
+            p_q10_medication:a.q10_medication, p_q11_asthma:a.q11_asthma, p_q12_other_reasons:a.q12_other_reasons,
+            p_yes_details:parqData.details, p_additional_notes:parqData.other,
+            p_emergency_name:parqData.emergencyName, p_emergency_relationship:parqData.emergencyRelationship,
+            p_emergency_phone:parqData.emergencyPhone,
+            p_print_name:parqData.printName, p_sign_date:parqData.signDate
+          });
         }catch(parqErr){ console.error("PAR-Q save error (booking still saved):",parqErr); }
       }
 

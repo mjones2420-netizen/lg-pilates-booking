@@ -10,13 +10,12 @@
 //
 //     blocks           → SELECT
 //     classes          → SELECT
-//     parq             → INSERT
 //     pending_bookings → INSERT
 //     settings         → SELECT
 //
-//   All other tables (bookings, customers, cancellations, waitlist,
-//   customer_class_priority) should have NO anon grants. Public reads of
-//   customer or booking data must go through SECURITY DEFINER functions.
+//   All other tables (bookings, customers, parq, cancellations, waitlist,
+//   customer_class_priority) should have NO anon grants. Writes to parq go
+//   through the insert_parq() SECURITY DEFINER RPC (migration 15, #34).
 //
 //   This spec is the canary for accidental grant regressions. If someone
 //   later adds `GRANT SELECT ON bookings TO anon` either deliberately or
@@ -34,7 +33,7 @@
 // What a fail would mean:
 //   - Anon has gained grants on a table it shouldn't: a security regression
 //     that potentially exposes customer/booking data.
-//   - Anon has lost grants on settings/classes/blocks/parq: the public
+//   - Anon has lost grants on settings/classes/blocks: the public
 //     booking flow will silently break.
 
 const { test, expect } = require('@playwright/test');
@@ -47,7 +46,6 @@ const APP_URL = process.env.TEST_APP_URL;
 const EXPECTED_ANON_GRANTS = {
   blocks:            ['SELECT'],
   classes:           ['SELECT'],
-  parq:              ['INSERT'],
   pending_bookings:  ['INSERT'],
   settings:          ['SELECT'],
 };
@@ -56,6 +54,7 @@ const EXPECTED_ANON_GRANTS = {
 const FORBIDDEN_ANON_TABLES = [
   'bookings',
   'customers',
+  'parq',
   'cancellations',
   'waitlist',
   'customer_class_priority',
