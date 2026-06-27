@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 25 Jun 2026 (session 56 — catch-up over-cap warning moved to top dashboard banner, 217 tests)
+Last updated: 28 Jun 2026 (session 57 — security #34 + #36 fixed, 217 tests)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -229,9 +229,15 @@ Navigate with `switchDashPage(name)`.
 
 **Session 56 (2026-06-25):** UI tweak — the catch-up swap over-capacity warning was buried inside the By Class accordion (had to expand the right class group to see it). Moved to the global `#block-warnings` banner at the top of every dashboard page, alongside the existing hidden-class / no-next-block / pending-refund warnings, with a "View By Class" jump button. Removed the now-redundant inline banner from `renderClassesView()`. CU-07 rewritten to assert on the top banner instead of the accordion body — required adding a page reload mid-test since catch-up swap data is fetched once at login, not live. 217/217 tests green (1 unrelated pre-existing flake on SE-14, confirmed flaky on rerun, not touched this session). Committed and pushed (`7c7d619`).
 
+**Session 57 (2026-06-28):** Two security issues fixed.
+- **#34 FIXED + CLOSED**: Anon direct-insert backdoors. Migration 15 — new `insert_parq()` SECURITY DEFINER RPC validates booking ownership before writing PAR-Q. index.html updated to call `supabase.rpc('insert_parq', ...)`. Dropped `public_create_booking`, `public_create_customer`, `public_insert_parq` RLS policies. Revoked `GRANT INSERT ON parq FROM anon`. SEC-07 spec updated (parq now in forbidden list). Applied test + prod. Pushed `eecb08d`.
+- **#36 FIXED + CLOSED**: stripe-refund + send-email only checked `authenticated`, not admin. Added `ADMIN_EMAILS` secret (prod: `mjones970@live.co.uk`; test: adds `admin@lg-pilates-test.local`). Both functions now check `userData.user.email` against the allowlist after `getUser()`. Service-role key path in send-email bypassed (internal stripe-webhook caller). Deployed test + prod. Pushed `083661f`.
+- **#35 DEFERRED**: `lookup_customer` email enumeration — no rate-limiting fix available without Supabase Pro (#19). Left open.
+
 **Next likely work (priority order):**
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Go-live — swap prod Stripe key test→live + live webhook secret
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
+- Remaining security: #35 (needs Pro), #37 (Edge Function drift docs), #38 (settings world-readable), #39 (unescaped names in emails)
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain (`book.lg-pilates.co.uk`)
 
