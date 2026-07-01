@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 28 Jun 2026 (session 57 — security #34 + #36 fixed, 217 tests)
+Last updated: 01 Jul 2026 (session 58 — security #39 fixed, 224 tests)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **217 tests, all passing** (Session 56 / CU-07 reworked for new banner location).
+Current test count: **224 tests, all passing** (Session 58 / SEC-08 added for #39 email escaping).
 
 ---
 
@@ -234,10 +234,12 @@ Navigate with `switchDashPage(name)`.
 - **#36 FIXED + CLOSED**: stripe-refund + send-email only checked `authenticated`, not admin. Added `ADMIN_EMAILS` secret (prod: `mjones970@live.co.uk`; test: adds `admin@lg-pilates-test.local`). Both functions now check `userData.user.email` against the allowlist after `getUser()`. Service-role key path in send-email bypassed (internal stripe-webhook caller). Deployed test + prod. Pushed `083661f`.
 - **#35 DEFERRED**: `lookup_customer` email enumeration — no rate-limiting fix available without Supabase Pro (#19). Left open.
 
+**Session 58 (2026-07-01):** #39 FIXED + CLOSED — email builders interpolated firstName/lastName/email/phone with no escaping (some builders called `sanitise()`, others didn't). Fixed 4 client-side builders in index.html (`buildConfirmedEmailHtml`, `buildCancelledAdminEmailHtml`, `buildRefundClientEmailHtml`, `buildRefundAdminEmailHtml`) to wrap those fields in `sanitise()`. `stripe-webhook` had no escape function at all — added `esc()` and applied it in all 3 of its builders (`buildConfirmedEmailHtml`, `buildAdminAlertEmailHtml`, `buildPaymentFailedAdminEmailHtml`). Also updated the stale JS mirror of these builders in `tests-playwright/tests/helpers/email-templates.js` (used by ST-21/ST-22) so it doesn't drift from the real deployed function. New SEC-08 spec (7 tests) proves an HTML-bearing name comes out escaped on both the client and webhook copies. 224/224 tests green. Deployed `stripe-webhook` to test then prod (version 6 both, `verify_jwt: false` preserved). Committed and pushed (`22de100`).
+
 **Next likely work (priority order):**
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Go-live — swap prod Stripe key test→live + live webhook secret
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
-- Remaining security: #35 (needs Pro), #37 (Edge Function drift docs), #38 (settings world-readable), #39 (unescaped names in emails)
+- Remaining security: #35 (needs Pro), #37 (Edge Function drift docs), #38 (settings world-readable)
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain (`book.lg-pilates.co.uk`)
 

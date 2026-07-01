@@ -1620,4 +1620,39 @@ SESSION 45 LEARNINGS — PM-6 PLAYWRIGHT COMPLETE (ST-17 TO ST-26)
   (~1-3 file) residual gap vs `ls tests/*.spec.js` on disk that predates this
   session and wasn't chased further (low value).
 
+SESSION 58 (2026-07-01) — #39 EMAIL NAME/EMAIL ESCAPING FIX
+-------------------------------------------------------------------
+- Fixed the security review's #39 finding: 4 client-side email builders in
+  index.html (buildConfirmedEmailHtml, buildCancelledAdminEmailHtml,
+  buildRefundClientEmailHtml, buildRefundAdminEmailHtml) interpolated
+  opts.firstName/lastName/email raw, while buildBlockEmailHtml and
+  buildBlockEmailAdminCopyHtml already called sanitise() — inconsistent from
+  the start, not a regression. Wrapped the missing fields in sanitise().
+- stripe-webhook (test+prod) had NO escape function at all across its 3
+  builders (buildConfirmedEmailHtml, buildAdminAlertEmailHtml,
+  buildPaymentFailedAdminEmailHtml) — worse than index.html. Added a local
+  esc() (same &/</>/" replace chain as send-email's esc(), from the #33 fix)
+  and applied it to firstName/lastName/email/phone in all 3.
+- Closed the Session-45-flagged drift risk for real: tests/helpers/
+  email-templates.js (the "4th copy" of these builders, used by ST-21/22 as
+  a template-fidelity check since webhook-to-send-email is server-to-server
+  and Playwright can't intercept it) was updated with the same esc() fix.
+  Without this, ST-21/22 would keep passing against stale unescaped logic
+  forever — the tests don't fail just because the real function changed
+  under them.
+- New SEC-08 spec (7 tests): 5 exercise the real index.html builders via
+  page.evaluate() (these are plain global functions, not module-scoped, so
+  calling them directly from a Playwright page.evaluate() works with no
+  extra wiring — same pattern already used elsewhere for calcProrata-style
+  checks, just not previously used for the email builders specifically); 2
+  exercise the email-templates.js mirror directly as plain Node functions.
+  Asserts a crafted `<img src=x onerror=...>` name never appears raw in the
+  output HTML.
+- Deployed stripe-webhook to test then prod via MCP deploy_edge_function,
+  verify_jwt: false preserved both times (intentional — HMAC is the auth
+  gate, not JWT; get this wrong and Stripe's webhook calls start failing
+  auth with no useful error).
+- 224/224 tests green (217 existing + 7 new SEC-08). Committed and pushed
+  (22de100). #39 closed.
+
 ============================================================
