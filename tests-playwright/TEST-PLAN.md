@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 27 Jun 2026
-**Total tests:** 217
+**Last updated:** 1 Jul 2026
+**Total tests:** 224
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -253,7 +253,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 11 tests
+## Security (SEC) — 18 tests
 
 | Spec file | Test |
 |---|---|
@@ -268,6 +268,13 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-06-admin-dashboard-tour.spec.js` | SEC-06 — all 4 dashboard tabs render their panels |
 | `sec-06-admin-dashboard-tour.spec.js` | SEC-06 — below-tab sections (Upcoming Classes, Settings, Backup & Export) render |
 | `sec-07-anon-grant-matrix.spec.js` | SEC-07 — anon grant matrix matches the documented spec |
+| `sec-08-email-name-escaping.spec.js` | index.html sanitise() escapes angle brackets and quotes |
+| `sec-08-email-name-escaping.spec.js` | index.html buildConfirmedEmailHtml escapes firstName |
+| `sec-08-email-name-escaping.spec.js` | index.html buildCancelledAdminEmailHtml escapes firstName, lastName and email |
+| `sec-08-email-name-escaping.spec.js` | index.html buildRefundClientEmailHtml escapes firstName |
+| `sec-08-email-name-escaping.spec.js` | index.html buildRefundAdminEmailHtml escapes firstName, lastName and email |
+| `sec-08-email-name-escaping.spec.js` | stripe-webhook mirror: buildConfirmedEmailHtml escapes firstName |
+| `sec-08-email-name-escaping.spec.js` | stripe-webhook mirror: buildAdminAlertEmailHtml escapes firstName and lastName |
 
 ## Stripe (ST) — 23 tests
 

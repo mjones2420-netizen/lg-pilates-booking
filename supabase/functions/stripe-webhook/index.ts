@@ -44,6 +44,15 @@ async function verifyStripeSignature(payload: string, sigHeader: string | null, 
   return mismatch === 0;
 }
 
+// --- Escape customer-supplied fields before interpolating into email HTML ---
+function esc(s: unknown): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // --- Email HTML builders (mirrors index.html buildConfirmedEmailHtml / buildAdminAlertEmailHtml) ---
 function buildConfirmedEmailHtml(opts: {
   firstName: string; className: string; venue: string; loc: string;
@@ -72,7 +81,7 @@ function buildConfirmedEmailHtml(opts: {
     + `<div style="font-size:13px;color:#2a5a3a;line-height:1.6;">Payment received, your booking is now confirmed. We look forward to seeing you.</div>`
     + `</td></tr>`
     + `<tr><td style="padding:24px 32px;">`
-    + `<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi ${opts.firstName},</p>`
+    + `<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi ${esc(opts.firstName)},</p>`
     + `<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Your booking</div>`
     + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">`
     + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.className}</td></tr>`
@@ -116,12 +125,12 @@ function buildAdminAlertEmailHtml(opts: {
     + `</td></tr>`
     + `<tr><td style="background:#e8f0fb;border-left:4px solid #3a6abf;padding:18px 32px;">`
     + `<div style="font-size:15px;font-weight:600;color:#1a3a7a;margin-bottom:6px;">New booking</div>`
-    + `<div style="font-size:13px;color:#2a4a8a;line-height:1.6;">${opts.firstName} ${opts.lastName} (${isNew ? "New client" : "Returning client"}) has made a new booking via card payment.</div>`
+    + `<div style="font-size:13px;color:#2a4a8a;line-height:1.6;">${esc(opts.firstName)} ${esc(opts.lastName)} (${isNew ? "New client" : "Returning client"}) has made a new booking via card payment.</div>`
     + `</td></tr>`
     + `<tr><td style="padding:24px 32px;">`
     + `<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Booking details</div>`
     + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Client</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.firstName} ${opts.lastName}</td></tr>`
+    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Client</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${esc(opts.firstName)} ${esc(opts.lastName)}</td></tr>`
     + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.className}</td></tr>`
     + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.venue}, ${opts.loc}</td></tr>`
     + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.day}, ${opts.time} &ndash; ${opts.endTime}</td></tr>`
@@ -154,14 +163,14 @@ function buildPaymentFailedAdminEmailHtml(opts: {
     + `</td></tr>`
     + `<tr><td style="background:#fdeaea;border-left:4px solid #c04040;padding:18px 32px;">`
     + `<div style="font-size:15px;font-weight:600;color:#8a2a2a;margin-bottom:6px;">Action needed: payment taken, booking not placed</div>`
-    + `<div style="font-size:13px;color:#7a2a2a;line-height:1.6;">${opts.firstName} ${opts.lastName} paid for a class but their booking could not be created (${opts.reason === "ALREADY_BOOKED" ? "they already have a booking on this block" : "the class is now full"}). This needs manual follow-up &mdash; likely a refund and a message to the client.</div>`
+    + `<div style="font-size:13px;color:#7a2a2a;line-height:1.6;">${esc(opts.firstName)} ${esc(opts.lastName)} paid for a class but their booking could not be created (${opts.reason === "ALREADY_BOOKED" ? "they already have a booking on this block" : "the class is now full"}). This needs manual follow-up &mdash; likely a refund and a message to the client.</div>`
     + `</td></tr>`
     + `<tr><td style="padding:24px 32px;">`
     + `<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Details</div>`
     + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Client</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.firstName} ${opts.lastName}</td></tr>`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Email</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.email}</td></tr>`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Phone</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.phone}</td></tr>`
+    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Client</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${esc(opts.firstName)} ${esc(opts.lastName)}</td></tr>`
+    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Email</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${esc(opts.email)}</td></tr>`
+    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Phone</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${esc(opts.phone)}</td></tr>`
     + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.className}</td></tr>`
     + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.venue}, ${opts.loc}</td></tr>`
     + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.day}, ${opts.time} &ndash; ${opts.endTime}</td></tr>`
