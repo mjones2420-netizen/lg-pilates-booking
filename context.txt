@@ -1655,4 +1655,64 @@ SESSION 58 (2026-07-01) — #39 EMAIL NAME/EMAIL ESCAPING FIX
 - 224/224 tests green (217 existing + 7 new SEC-08). Committed and pushed
   (22de100). #39 closed.
 
+SESSION 60 (2026-07-02/03) — CATCH-UP SWAP OVERHAUL (#58, #59, #60, #62)
+-------------------------------------------------------------------
+- Migration 16 (tests-playwright/migrations/16_record_catch_up_swap_rpc.sql):
+  new record_catch_up_swap(p_customer_id, p_source_block_id,
+  p_target_block_id, p_class_date, p_notes) SECURITY DEFINER RPC. Locks the
+  target blocks row (FOR UPDATE) then the customers row, re-checks
+  capacity-per-date (booked + swaps_on_date + 1 <= cap) and
+  max-2-per-source-block inside the transaction, RAISEs coded errors
+  (CU_MISSING_FIELDS / CU_SAME_BLOCK / CU_BLOCK_NOT_FOUND /
+  CU_CUSTOMER_NOT_FOUND / CU_FULL / CU_LIMIT). Grant hygiene is the gate
+  (SECURITY DEFINER bypasses RLS): REVOKE PUBLIC + anon, GRANT authenticated
+  + service_role. Lock order blocks->customers checked against
+  book_if_available (locks blocks only) — no deadlock cycle.
+  Applied to test AND production (prod approved by Mark mid-session; the
+  ordering rule is that this RPC must exist in prod BEFORE index.html is
+  pushed, because GitHub Pages deploys immediately and the new save path
+  calls the RPC). Grants verified on both projects.
+- index.html: saveCatchUpSwap now calls sb.rpc('record_catch_up_swap',...).
+  Browser-side capacity/max-2 pre-checks REMOVED (deviation from #59's
+  "keep as nicety" — two reviewers flagged them: duplicated business rules
+  + a stale-cache false-reject regression in the two-tab case; the pickers
+  provide the instant feedback instead). Error codes map to friendly
+  messages via a single CU_MSGS map.
+- Pickers (#58): class picker options show "— N spaces" (cap - booked) or
+  "— FULL" and full blocks are disabled; week picker shows per-date spaces
+  (cap - booked - swaps on that date via cuSwapsOnDate()) with FULL dates
+  disabled. Labels built by shared cuBlockLabel() + cuSpacesLabel().
+- Wording + auto-select (#60): modal labels now "Who's coming?", "Their
+  usual class", "Which class are they joining?", "Which week?". If the
+  customer has exactly one current block it auto-selects; several blocks
+  get a "Select their usual class…" placeholder forcing an explicit choice
+  (previously the first block was silently pre-selected).
+- Loader consolidation (#62): renderDashboard's inline swap mapping and
+  reloadCatchUpSwaps now share mapSwapRows(swapsData, customerMap);
+  renderDashboard stores its customer map in the new dashCustomerMap global
+  and reloadCatchUpSwaps reuses it, so both loaders resolve names the same
+  way (map hit -> bookings fallback -> "Unknown").
+- CU specs rewritten: 7 -> 10 tests. CU-03 now proves the DB gate directly
+  (page.evaluate rpc on the page's authenticated sb client) + proves anon
+  gets permission-denied; CU-04 proves max-2 at UI AND RPC level; CU-08
+  asserts spaces/FULL/disabled in both pickers (setBlockBookedCount to
+  cap-1 + one swap fills a date); CU-09 proves the #59 double-save race is
+  closed (two sequential RPC calls into the last space — second gets
+  CU_FULL, exactly one row lands); CU-10 asserts plain labels + auto-select
+  (admin-dummy@test.example is the single-block fixture customer). CU-07
+  re-documented as the DRIFT monitor test (direct SQL insert bypasses the
+  gate — banner is the only thing that catches over-cap after the fact).
+  New afterEach resyncBlockBookedCount() restores booked tampering.
+- #61 (max-2 rule keep/soften/drop) left open — business decision for
+  Louise; the rule now lives in the RPC so any change is a one-line
+  migration + CU spec tweak.
+- Review process: 5 parallel finder agents (4 died on a session limit,
+  cleanup finder survived) + 1 consolidated correctness verifier agent.
+  Actioned: shared dashCustomerMap, CU_MSGS single message map, hoisted
+  rpcArgs in CU-03, pre-check removal (stale-cache false-reject).
+  Rejected: dropping the migration's source-block existence check (explicit
+  coded error preferred over raw FK violation; one indexed lookup).
+- 227/227 tests green (full suite run twice: before and after review
+  fixes). TEST-PLAN.md regenerated (227 tests / 163 spec files).
+
 ============================================================

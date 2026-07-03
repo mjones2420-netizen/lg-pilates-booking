@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 02 Jul 2026 (session 59 — full system review, 20 issues filed, 224 tests)
+Last updated: 03 Jul 2026 (session 60 — catch-up swap overhaul #58/#59/#60/#62, 227 tests)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **224 tests, all passing** (Session 58 / SEC-08 added for #39 email escaping).
+Current test count: **227 tests, all passing** (Session 60 — CU suite rewritten to 10 tests for the catch-up swap overhaul).
 
 ---
 
@@ -243,6 +243,14 @@ Navigate with `switchDashPage(name)`.
 - Bugs found: [#50](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/50) (Reports "Revenue MTD" always shows £0 — created_at never selected), [#51](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/51) (failed saves show success toasts — unchecked supabase errors).
 - Refactor recommendations: [#53](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/53) (move all email building server-side, kills 3 duplicated template copies), [#54](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/54) (ISO dates as source of truth, kills the Dec–Jan prorata pricing bug), [#55](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/55) (real admin_users table instead of authenticated=admin), [#56](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/56) (transactional cascade-delete RPCs), [#57](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/57) (small housekeeping cleanups).
 - **Catch-up swap feature review** (Mark found it fiddly / hard to avoid overbooking) — 5 issues filed: [#58](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/58) (show spaces/FULL in the class + date pickers — the big usability win), [#59](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/59) (move the capacity + max-2 checks into a DB RPC so overbooking-at-save becomes impossible; **keep** the over-cap warning banner — it's the only thing that catches a class drifting over capacity *after* a valid swap already exists, which a save-time check can't see), [#60](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/60) (plainer wording + auto-select the customer's home block), [#61](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/61) (confirm or drop the "max 2 swaps per block" rule with Louise), [#62](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/62) (consolidate two duplicated swap-loader code paths).
+
+**Session 60 (2026-07-02/03):** Catch-up swap overhaul — #58, #59, #60, #62 implemented; #61 left open (Louise decision).
+- **#59**: New `record_catch_up_swap` SECURITY DEFINER RPC (migration 16) — locks the target block row + customer row, re-checks capacity-per-date and max-2-per-source-block inside the DB, RAISEs coded errors (CU_FULL / CU_LIMIT / etc.). Grant hygiene: REVOKE anon+PUBLIC, GRANT authenticated+service_role. `saveCatchUpSwap` now calls the RPC; browser pre-checks removed (reviewers flagged stale-cache false-rejects — the pickers give the instant feedback, the RPC is the sole gate). Over-cap banner kept as the drift monitor.
+- **#58**: Class + week pickers show "— N spaces" / "— FULL"; full options disabled. Per-date spaces = cap − booked − swaps landing that date.
+- **#60**: Modal relabelled ("Who's coming?", "Their usual class", "Which class are they joining?", "Which week?"); usual class auto-selects when the customer has exactly one block, placeholder forces a choice when several.
+- **#62**: Both swap loaders share `mapSwapRows()` + new `dashCustomerMap` global — one name-resolution path.
+- CU specs 7→10 (CU-01..CU-10): DB-gate rejection + anon permission-denied (CU-03), max-2 at UI+RPC level (CU-04), picker labels/disabled (CU-08), double-save race closed (CU-09), labels + auto-select (CU-10). 227/227 green, TEST-PLAN.md regenerated.
+- Migration 16 applied to BOTH test and production (prod approved by Mark mid-session, applied before the push so the deployed index.html never called a missing RPC). Grants verified on both: authenticated + service_role only, no anon.
 
 **Next likely work (priority order):**
 - [#43](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/43): **Disable public signups on both Supabase projects** (dashboard toggle, Mark) — top priority, ahead of go-live

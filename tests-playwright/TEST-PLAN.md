@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 1 Jul 2026
-**Total tests:** 224
+**Last updated:** 2 Jul 2026
+**Total tests:** 227
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -315,17 +315,20 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-03 — bank-transfer cancellation keeps the manual flow (no Stripe call) |
 | `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-04 — Stripe failure leaves the row unrefunded and surfaces an error |
 
-## Catch-Up Swaps (CU) — 7 tests
+## Catch-Up Swaps (CU) — 10 tests
 
 | Spec file | Test |
 |---|---|
 | `cu-01-catchup-swaps.spec.js` | CU-01 — Catch-up swaps nav item is present and page loads with info text |
 | `cu-01-catchup-swaps.spec.js` | CU-02 — Record a catch-up swap via UI and it appears in the list |
-| `cu-01-catchup-swaps.spec.js` | CU-03 — Swap blocked when target session is already at capacity |
+| `cu-01-catchup-swaps.spec.js` | CU-03 — record_catch_up_swap RPC rejects a swap at capacity; anon cannot call it |
 | `cu-01-catchup-swaps.spec.js` | CU-04 — Swap blocked when customer already has 2 swaps on source block |
 | `cu-01-catchup-swaps.spec.js` | CU-05 — Delete a catch-up swap removes it from the list |
 | `cu-01-catchup-swaps.spec.js` | CU-06 — Catch-up visitor appears in By Class accordion for the target block |
 | `cu-01-catchup-swaps.spec.js` | CU-07 — Over-capacity warning appears in the top dashboard banner when a swap pushes attendance above cap |
+| `cu-01-catchup-swaps.spec.js` | CU-08 — Class and week pickers show spaces left, mark full options FULL and disable them |
+| `cu-01-catchup-swaps.spec.js` | CU-09 — Two saves into the last space: first succeeds, second is rejected by the DB |
+| `cu-01-catchup-swaps.spec.js` | CU-10 — Modal uses plain labels and auto-selects the usual class for a single-block customer |
 
 ---
 

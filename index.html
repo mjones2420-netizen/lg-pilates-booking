@@ -1073,24 +1073,24 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 <div class="overlay" id="catchup-overlay">
   <div class="modal">
     <div class="mhead">
-      <div><div class="mtitle">Record Catch-Up Swap</div><div class="msub">Customer attending a different block for one session</div></div>
+      <div><div class="mtitle">Record Catch-Up Swap</div><div class="msub">A customer coming to a different class for one week</div></div>
       <button class="mclose" onclick="closeCatchUpModal()">x</button>
     </div>
     <div class="mbody">
       <div style="margin-bottom:14px">
-        <label class="flbl">Customer</label>
+        <label class="flbl">Who's coming?</label>
         <select class="finp" id="cu-customer" onchange="onCuCustomerChange()" style="margin-bottom:0"></select>
       </div>
       <div style="margin-bottom:14px">
-        <label class="flbl">Their regular block (swapping from)</label>
+        <label class="flbl">Their usual class</label>
         <select class="finp" id="cu-source-block" style="margin-bottom:0"></select>
       </div>
       <div style="margin-bottom:14px">
-        <label class="flbl">Block they are visiting (swapping to)</label>
+        <label class="flbl">Which class are they joining?</label>
         <select class="finp" id="cu-target-block" onchange="onCuTargetBlockChange()" style="margin-bottom:0"></select>
       </div>
       <div style="margin-bottom:14px">
-        <label class="flbl">Session date</label>
+        <label class="flbl">Which week?</label>
         <select class="finp" id="cu-date" style="margin-bottom:0"></select>
       </div>
       <div style="margin-bottom:4px">
@@ -1112,6 +1112,7 @@ var classes = [];   // permanent class slots
 var blocks  = [];   // all blocks loaded from DB
 var bookings = [];
 var catchUpSwaps = [];   // catch-up swap visitors — loaded in renderDashboard
+var dashCustomerMap = null;   // id -> customers row, built in renderDashboard
 var appSettings = {};      // bank details + admin email, loaded at startup
 var PAYMENT_MODE = "bank_transfer"; // "bank_transfer" | "stripe" — loaded from settings on init
 var selected = null;       // selected class
@@ -2457,6 +2458,7 @@ function renderDashboard(){
       var custsRes=await sb.from("customers").select("id,first_name,last_name,email,phone,customer_type");
       var customerMap={};
       if(custsRes.data) custsRes.data.forEach(function(c){ customerMap[c.id]=c; });
+      dashCustomerMap=customerMap;
 
       bookings=dbBookings.map(function(b){
         var cls=classes.find(function(c){ return c.id===b.class_id; })||{};
@@ -2537,20 +2539,7 @@ function renderDashboard(){
       // Load catch-up swaps (uses customerMap + blocks/classes already loaded)
       try{
         var{data:swapsData}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
-        catchUpSwaps=(swapsData||[]).map(function(s){
-          var cust=customerMap[s.customer_id]||{};
-          var srcBlk=blocks.find(function(b){ return b.id===s.source_block_id; })||{};
-          var srcCls=classes.find(function(c){ return c.id===srcBlk.class_id; })||{};
-          var tgtBlk=blocks.find(function(b){ return b.id===s.target_block_id; })||{};
-          var tgtCls=classes.find(function(c){ return c.id===tgtBlk.class_id; })||{};
-          return {
-            id:s.id, customer_id:s.customer_id,
-            customer_name:(cust.first_name||"")+" "+(cust.last_name||""),
-            source_block_id:s.source_block_id, source_class_name:srcCls.name||"Unknown",
-            target_block_id:s.target_block_id, target_class_name:tgtCls.name||"Unknown",
-            class_date:s.class_date, notes:s.notes||""
-          };
-        });
+        catchUpSwaps=mapSwapRows(swapsData,customerMap);
       }catch(swapErr){ console.error("Catch-up swaps load error:",swapErr); catchUpSwaps=[]; }
 
       // Classes table — each class shows its active and upcoming block
@@ -3020,11 +3009,20 @@ function toggleClassGroup(id){
 
 // ─── Catch-Up Swaps ───────────────────────────────────────────────────────────
 
-async function reloadCatchUpSwaps(){
-  var{data:swapsData}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
-  catchUpSwaps=(swapsData||[]).map(function(s){
-    var custBk=bookings.find(function(b){ return b.customerId===s.customer_id; });
-    var custName=custBk?custBk.client:"Unknown";
+// Single mapper for catch_up_swaps rows — used by both renderDashboard and
+// reloadCatchUpSwaps so the two loaders can't drift apart. Name resolution:
+// customerMap (id -> customers row) when supplied, else the customer's
+// booking rows, else "Unknown".
+function mapSwapRows(swapsData,customerMap){
+  return (swapsData||[]).map(function(s){
+    var custName="Unknown";
+    var cust=customerMap?customerMap[s.customer_id]:null;
+    if(cust){
+      custName=((cust.first_name||"")+" "+(cust.last_name||"")).trim()||"Unknown";
+    } else {
+      var custBk=bookings.find(function(b){ return b.customerId===s.customer_id; });
+      if(custBk) custName=custBk.client;
+    }
     var srcBlk=blocks.find(function(b){ return b.id===s.source_block_id; })||{};
     var srcCls=classes.find(function(c){ return c.id===srcBlk.class_id; })||{};
     var tgtBlk=blocks.find(function(b){ return b.id===s.target_block_id; })||{};
@@ -3038,6 +3036,35 @@ async function reloadCatchUpSwaps(){
   });
 }
 
+// Dropdown label for a block in the catch-up modal (raw text — callers sanitise)
+function cuBlockLabel(blk){
+  var cls=classes.find(function(c){ return c.id===blk.class_id; })||{};
+  return (cls.day||cls.name||"Class")+(cls.time?" "+cls.time:"")+(cls.loc?" — "+cls.loc:"")+(blk.dates&&blk.dates.length?" — "+blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:" — "+blk.start_date);
+}
+
+// Existing catch-up swaps landing on a given block + ISO date
+function cuSwapsOnDate(blockId,isoDate){
+  return catchUpSwaps.filter(function(s){ return s.target_block_id===blockId&&s.class_date===isoDate; }).length;
+}
+
+// "— 3 spaces" / "— FULL" suffix for the modal dropdowns
+function cuSpacesLabel(spaces){
+  return spaces<=0?" — FULL":" — "+spaces+" space"+(spaces===1?"":"s");
+}
+
+// One copy of each save-rejection message — shown by both the instant
+// browser pre-checks and the record_catch_up_swap RPC error mapping.
+var CU_MSGS={
+  CU_FULL:"That week is already at capacity — no space for a catch-up swap.",
+  CU_LIMIT:"This customer has already used 2 catch-up swaps for that block.",
+  CU_SAME_BLOCK:"The class they are joining must be different from their usual class."
+};
+
+async function reloadCatchUpSwaps(){
+  var{data:swapsData}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
+  catchUpSwaps=mapSwapRows(swapsData,dashCustomerMap);
+}
+
 function renderCatchUpSwapsList(){
   var el=document.getElementById("catchup-list");
   if(!el) return;
@@ -3046,7 +3073,7 @@ function renderCatchUpSwapsList(){
   var past=catchUpSwaps.filter(function(s){ return new Date(s.class_date+"T00:00:00")<today; });
   var html="";
   html+="<div style=\"margin-bottom:14px;font-size:13px;color:var(--mid);line-height:1.7;background:var(--cream);padding:14px 18px;border-radius:4px;border-left:3px solid var(--sage-dk)\">";
-  html+="Record when a customer attends a different block's session for one week. Maximum 2 catch-up swaps per customer per block.";
+  html+="Record when a customer comes to a different class for one week to catch up a missed session. Maximum 2 catch-up swaps per customer per block.";
   html+="</div>";
   if(upcoming.length===0){
     html+="<div style=\"color:var(--light);font-size:13px;padding:8px 0\">No upcoming catch-up swaps. Use &ldquo;Record swap&rdquo; to add one.</div>";
@@ -3097,15 +3124,17 @@ function openCatchUpModal(){
   cuCust.innerHTML="<option value=\"\">Select customer&hellip;</option>";
   custOpts.forEach(function(c){ cuCust.innerHTML+="<option value=\""+c.id+"\">"+sanitise(c.name)+"</option>"; });
   document.getElementById("cu-source-block").innerHTML="<option value=\"\">Select customer first</option>";
-  // Target block dropdown — active/upcoming blocks
+  // Target block dropdown — active/upcoming blocks, with spaces left / FULL.
+  // Block-level spaces = cap - booked (per-week swaps refine this in the
+  // date dropdown); a block with no base spaces can never take a swap, so
+  // its option is disabled.
   var tgtSel=document.getElementById("cu-target-block");
-  tgtSel.innerHTML="<option value=\"\">Select a block&hellip;</option>";
+  tgtSel.innerHTML="<option value=\"\">Select a class&hellip;</option>";
   blocks.filter(function(b){ return b.status==="active"||b.status==="upcoming"; }).forEach(function(blk){
-    var cls=classes.find(function(c){ return c.id===blk.class_id; })||{};
-    var label=(cls.day||cls.name||"Class")+(cls.time?" "+cls.time:"")+(cls.loc?" — "+cls.loc:"")+(blk.dates&&blk.dates.length?" — "+blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:" — "+blk.start_date);
-    tgtSel.innerHTML+="<option value=\""+blk.id+"\">"+sanitise(label)+"</option>";
+    var spaces=blk.cap-blk.booked;
+    tgtSel.innerHTML+="<option value=\""+blk.id+"\""+(spaces<=0?" disabled":"")+">"+sanitise(cuBlockLabel(blk)+cuSpacesLabel(spaces))+"</option>";
   });
-  document.getElementById("cu-date").innerHTML="<option value=\"\">Select block first</option>";
+  document.getElementById("cu-date").innerHTML="<option value=\"\">Select class first</option>";
   document.getElementById("cu-notes").value="";
   document.getElementById("cu-btn").disabled=false;
   document.getElementById("cu-btn").textContent="Record Swap";
@@ -3129,24 +3158,23 @@ function onCuCustomerChange(){
     if(!seenBlk[b.blockId]){
       seenBlk[b.blockId]=true;
       var blk=blocks.find(function(bl){ return bl.id===b.blockId; });
-      var cls=blk?classes.find(function(c){ return c.id===blk.class_id; }):null;
-      if(blk&&cls){
-        var label=(cls.day||cls.name||"Class")+(cls.time?" "+cls.time:"")+(cls.loc?" — "+cls.loc:"")+(blk.dates&&blk.dates.length?" — "+blk.dates[0]+" to "+blk.dates[blk.dates.length-1]:" — "+blk.start_date);
-        opts.push({id:blk.id,label:label});
-      }
+      if(blk){ opts.push({id:blk.id,label:cuBlockLabel(blk)}); }
     }
   });
+  // Exactly one current block: auto-select it (the usual case). Several:
+  // force an explicit choice via a placeholder.
   srcSel.innerHTML=opts.length
-    ?opts.map(function(o){ return "<option value=\""+o.id+"\">"+o.label+"</option>"; }).join("")
+    ?(opts.length===1?"":"<option value=\"\">Select their usual class&hellip;</option>")
+      +opts.map(function(o){ return "<option value=\""+o.id+"\">"+sanitise(o.label)+"</option>"; }).join("")
     :"<option value=\"\">No active bookings found</option>";
 }
 
 function onCuTargetBlockChange(){
   var blockId=parseInt(document.getElementById("cu-target-block").value);
   var dateSel=document.getElementById("cu-date");
-  if(!blockId){ dateSel.innerHTML="<option value=\"\">Select block first</option>"; return; }
+  if(!blockId){ dateSel.innerHTML="<option value=\"\">Select class first</option>"; return; }
   var blk=blocks.find(function(b){ return b.id===blockId; });
-  if(!blk){ dateSel.innerHTML="<option value=\"\">Block not found</option>"; return; }
+  if(!blk){ dateSel.innerHTML="<option value=\"\">Class not found</option>"; return; }
   var today=new Date(); today.setHours(0,0,0,0);
   // Compute ISO session dates from start_date + 7 days per week
   // (blk.dates[] contains display strings like "1 Jul", not ISO dates)
@@ -3159,10 +3187,13 @@ function onCuTargetBlockChange(){
     sessionDates.push(iso);
   }
   var futureDates=sessionDates.filter(function(d){ return new Date(d+"T00:00:00")>=today; });
+  // Per-week spaces = cap - booked - swaps already landing that week;
+  // full weeks show FULL and are disabled.
   dateSel.innerHTML=futureDates.length
     ?futureDates.map(function(d){
         var lbl=new Date(d+"T00:00:00").toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
-        return "<option value=\""+sanitise(d)+"\">"+lbl+"</option>";
+        var spaces=blk.cap-blk.booked-cuSwapsOnDate(blk.id,d);
+        return "<option value=\""+sanitise(d)+"\""+(spaces<=0?" disabled":"")+">"+lbl+cuSpacesLabel(spaces)+"</option>";
       }).join("")
     :"<option value=\"\">No upcoming sessions</option>";
 }
@@ -3177,26 +3208,28 @@ async function saveCatchUpSwap(){
   function showErr(msg){ errEl.textContent=msg; errEl.style.display="block"; }
   errEl.style.display="none";
   if(!customerId||!sourceBlockId||!targetBlockId||!classDate){ showErr("Please fill in all required fields."); return; }
-  if(sourceBlockId===targetBlockId){ showErr("The visiting block must be different from the regular block."); return; }
+  if(sourceBlockId===targetBlockId){ showErr(CU_MSGS.CU_SAME_BLOCK); return; }
   var btn=document.getElementById("cu-btn");
   btn.disabled=true; btn.textContent="Saving…";
+  function fail(msg){ showErr(msg); btn.disabled=false; btn.textContent="Record Swap"; }
+  // No browser-side capacity/max-2 checks here: the pickers already show
+  // FULL/disabled options as instant feedback, and the record_catch_up_swap
+  // RPC re-checks both rules inside the database against live data — a
+  // stale local check could only disagree with the authoritative one.
   try{
-    // Cap check: count existing swaps on target block for this date
-    var{data:onDate}=await sb.from("catch_up_swaps").select("id").eq("target_block_id",targetBlockId).eq("class_date",classDate);
-    var swapsOnDate=(onDate||[]).length;
-    var tgtBlk=blocks.find(function(b){ return b.id===targetBlockId; });
-    if(tgtBlk&&(tgtBlk.booked+swapsOnDate+1)>tgtBlk.cap){
-      showErr("That session is already at capacity on "+classDate+". No space for a catch-up swap.");
-      btn.disabled=false; btn.textContent="Record Swap"; return;
+    var{error}=await sb.rpc("record_catch_up_swap",{
+      p_customer_id:customerId,
+      p_source_block_id:sourceBlockId,
+      p_target_block_id:targetBlockId,
+      p_class_date:classDate,
+      p_notes:notes||null
+    });
+    if(error){
+      var msg=error.message||"";
+      var code=Object.keys(CU_MSGS).find(function(c){ return msg.indexOf(c)>-1; });
+      if(code){ fail(CU_MSGS[code]); return; }
+      throw error;
     }
-    // Limit check: max 2 swaps per customer per source block
-    var{data:existing}=await sb.from("catch_up_swaps").select("id").eq("customer_id",customerId).eq("source_block_id",sourceBlockId);
-    if((existing||[]).length>=2){
-      showErr("This customer has already used 2 catch-up swaps for that block.");
-      btn.disabled=false; btn.textContent="Record Swap"; return;
-    }
-    var{error}=await sb.from("catch_up_swaps").insert({customer_id:customerId,source_block_id:sourceBlockId,target_block_id:targetBlockId,class_date:classDate,notes:notes||null}).select();
-    if(error) throw error;
     closeCatchUpModal();
     showToast("Catch-up swap recorded.");
     await reloadCatchUpSwaps();
