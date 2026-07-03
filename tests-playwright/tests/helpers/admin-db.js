@@ -274,6 +274,19 @@ async function setPaymentMode(mode) {
 }
 
 /**
+ * Upserts a single settings row.
+ * Anon has no INSERT/UPDATE on settings, so direct pg is required.
+ * Used by SEC-10 to give new_booking_alert a deterministic admin_email.
+ */
+async function setSetting(key, value) {
+  await getPool().query(
+    `INSERT INTO settings (key, value) VALUES ($1, $2)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [key, value]
+  );
+}
+
+/**
  * Returns the most recent pending_bookings row for a given email, or null.
  * anon cannot SELECT pending_bookings (service-role only), so direct pg is
  * the only way to verify rows written by the stripe-checkout Edge Function.
@@ -414,6 +427,7 @@ module.exports = {
   getParqByCustomerId,
   resetPaymentMode,
   setPaymentMode,
+  setSetting,
   getPendingBookingByEmail,
   deletePendingBookingByEmail,
   countBookingsForCustomerOnBlock,

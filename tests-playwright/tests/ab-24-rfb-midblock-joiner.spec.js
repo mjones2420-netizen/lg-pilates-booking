@@ -9,7 +9,11 @@
 // (always the full block), ignoring the actual amount_due stored at booking time.
 //
 // Block: fri-upcoming — price £10/session, 6 weeks (full price £60).
-// Booking: p_amount_due = 40 (prorata: joined mid-block, 4 sessions remaining).
+// Booking: booked normally, then amount_due set to 40 by direct admin SQL to
+// stage the mid-block-joiner state (4 sessions remaining when they joined).
+// Since #46, book_if_available IGNORES p_amount_due and computes the price
+// server-side, so the old shortcut of passing p_amount_due: 40 no longer
+// writes 40 — the direct UPDATE is how a legitimate prorata row is staged.
 
 const { test, expect } = require('@playwright/test');
 const { sb } = require('./helpers/supabase');
@@ -49,7 +53,9 @@ test.describe('AB-24 — RFB: mid-block joiner refund calc', () => {
     expect(custErr, 'upsert_customer should not error').toBeNull();
     createdCustomerId = custId;
 
-    // Prorata booking: joined mid-block, only 4 sessions remaining → paid £40
+    // Prorata booking: joined mid-block, only 4 sessions remaining → paid £40.
+    // The RPC computes amount_due itself (#46), so stage the prorata figure
+    // with a direct admin UPDATE after booking.
     const { data: bookingId, error: bookErr } = await sb.rpc('book_if_available', {
       p_block_id:    block.id,
       p_class_id:    block.class_id,
@@ -59,6 +65,7 @@ test.describe('AB-24 — RFB: mid-block joiner refund calc', () => {
     expect(bookErr, 'book_if_available should not error').toBeNull();
     expect(bookingId).toBeTruthy();
 
+    await getPool().query('UPDATE bookings SET amount_due = 40 WHERE id = $1', [bookingId]);
     await setBookingStatus(bookingId, 'confirmed');
 
     await page.goto(APP_PATH);

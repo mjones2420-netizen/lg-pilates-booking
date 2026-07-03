@@ -11,6 +11,9 @@
 //   The recipient is derived from the data (customer email / settings admin
 //   email) — never from the caller — and the body is a fixed template, so an
 //   anon caller cannot choose the recipient or inject arbitrary HTML.
+//   Each public email is one-shot per booking (#45): a timestamp stamp on
+//   the bookings row is claimed atomically before sending, so repeat calls
+//   (spam/harassment vector — booking ids are sequential) return 429.
 //
 //   ADMIN (raw) path — any other call:
 //     Caller supplies { to, subject, html }. Requires a real authenticated
@@ -243,6 +246,9 @@ serve(async (req: Request) => {
     let recipient: string;
     let subject: string;
     let html: string;
+    // Set on the public path: clears the one-shot stamp if the send fails,
+    // so a genuine retry after a Resend outage isn't locked out forever.
+    let rollbackStamp: (() => Promise<void>) | null = null;
 
     if (type === 'reserved_confirmation' || type === 'new_booking_alert') {
       // --- PUBLIC path: no caller-supplied recipient or HTML ---
@@ -268,6 +274,35 @@ serve(async (req: Request) => {
         subject = 'New booking — ' + ctx.firstName + ' ' + ctx.lastName + ', ' + ctx.day + ' ' + ctx.time + ', ' + ctx.venue;
         html = buildAdminAlertEmailHtml(ctx);
       }
+
+      // One-shot guard (#45): each booking gets each public email exactly
+      // once. Claim the stamp atomically BEFORE sending — the WHERE ... IS
+      // NULL makes concurrent duplicate requests lose the race instead of
+      // each passing a check-then-send gap. Runs after the recipient checks
+      // above so an unsendable email never consumes the booking's one shot.
+      const stampCol = type === 'reserved_confirmation'
+        ? 'reserved_email_sent_at'
+        : 'alert_email_sent_at';
+      const { data: claimed, error: claimErr } = await admin
+        .from('bookings')
+        .update({ [stampCol]: new Date().toISOString() })
+        .eq('id', booking_id)
+        .is(stampCol, null)
+        .select('id');
+      if (claimErr) {
+        console.error('send-email stamp claim error:', claimErr);
+        return json({ error: 'Could not verify send status' }, 500, req);
+      }
+      if (!claimed || claimed.length === 0) {
+        return json({ error: 'This email has already been sent for this booking' }, 429, req);
+      }
+      rollbackStamp = async () => {
+        const { error: rbErr } = await admin
+          .from('bookings')
+          .update({ [stampCol]: null })
+          .eq('id', booking_id);
+        if (rbErr) console.error('send-email stamp rollback error:', rbErr);
+      };
     } else {
       // --- ADMIN raw path: caller supplies {to,subject,html} ---
       // Trusted iff the bearer is EITHER the service-role key (internal
@@ -303,23 +338,30 @@ serve(async (req: Request) => {
     // In test mode, redirect all recipients to Resend's silent sink address
     const finalRecipient = isTest ? 'delivered@resend.dev' : recipient;
 
-    const response = await fetch(RESEND_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'LG Pilates <bookings@lg-pilates.co.uk>',
-        to: [finalRecipient],
-        subject,
-        html,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(RESEND_API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'LG Pilates <bookings@lg-pilates.co.uk>',
+          to: [finalRecipient],
+          subject,
+          html,
+        }),
+      });
+    } catch (fetchErr) {
+      if (rollbackStamp) await rollbackStamp();
+      throw fetchErr;
+    }
 
     const data = await response.json();
     if (!response.ok) {
       console.error('Resend error:', data);
+      if (rollbackStamp) await rollbackStamp();
       return json({ error: data }, response.status, req);
     }
     return json({ id: data.id }, 200, req);

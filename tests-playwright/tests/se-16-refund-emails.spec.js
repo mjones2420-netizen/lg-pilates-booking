@@ -6,7 +6,8 @@ const { sb } = require('./helpers/supabase');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const {
   deleteCustomerCascade,
-  setBookingStatus
+  setBookingStatus,
+  getPool
 } = require('./helpers/admin-db');
 
 // ─── SE-16 — Refund confirmation emails ─────────────────────────────────────
@@ -46,6 +47,10 @@ test.describe('SE-16 — Refund confirmation emails', () => {
     });
     expect(bookErr).toBeNull();
 
+    // Since #46 the RPC computes amount_due itself (prorata for mid-block
+    // mon-current), so stage the full-price figure this spec's refund flow
+    // relies on (a refund must be owed for the refund emails to exist).
+    await getPool().query('UPDATE bookings SET amount_due = 60 WHERE id = $1', [bookingId]);
     await setBookingStatus(bookingId, 'confirmed');
 
   });

@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 2 Jul 2026
-**Total tests:** 227
+**Last updated:** 3 Jul 2026
+**Total tests:** 232
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -253,7 +253,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 18 tests
+## Security (SEC) — 23 tests
 
 | Spec file | Test |
 |---|---|
@@ -275,6 +275,11 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-08-email-name-escaping.spec.js` | index.html buildRefundAdminEmailHtml escapes firstName, lastName and email |
 | `sec-08-email-name-escaping.spec.js` | stripe-webhook mirror: buildConfirmedEmailHtml escapes firstName |
 | `sec-08-email-name-escaping.spec.js` | stripe-webhook mirror: buildAdminAlertEmailHtml escapes firstName and lastName |
+| `sec-09-book-rpc-price-tampering.spec.js` | a forged 1p amount_due is ignored — booking row gets the server-computed price |
+| `sec-09-book-rpc-price-tampering.spec.js` | a forged class_id is rejected with CLASS_MISMATCH and no booking is created |
+| `sec-10-send-email-one-shot.spec.js` | reserved_confirmation: first call sends, second call is refused with 429 |
+| `sec-10-send-email-one-shot.spec.js` | new_booking_alert: first call sends, second call is refused with 429 |
+| `sec-10-send-email-one-shot.spec.js` | a concurrent burst yields exactly one accepted send |
 
 ## Stripe (ST) — 23 tests
 

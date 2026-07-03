@@ -6,7 +6,8 @@ const { sb } = require('./helpers/supabase');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const {
   deleteCustomerCascade,
-  setBookingStatus
+  setBookingStatus,
+  getPool
 } = require('./helpers/admin-db');
 
 // ─── SE-15 — No email fires on Remove From Block (refund > 0) ────────────────
@@ -45,6 +46,10 @@ test.describe('SE-15 — No email fires on Remove From Block (refund > 0)', () =
     });
     expect(bookErr).toBeNull();
 
+    // Since #46 the RPC computes amount_due itself (prorata for mid-block
+    // mon-current), so stage the full-price figure this spec's refund maths
+    // relies on (refund must stay > 0 with 2 sessions attended).
+    await getPool().query('UPDATE bookings SET amount_due = 60 WHERE id = $1', [bookingId]);
     await setBookingStatus(bookingId, 'confirmed');
   });
 
