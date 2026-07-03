@@ -1715,4 +1715,73 @@ SESSION 60 (2026-07-02/03) — CATCH-UP SWAP OVERHAUL (#58, #59, #60, #62)
 - 227/227 tests green (full suite run twice: before and after review
   fixes). TEST-PLAN.md regenerated (227 tests / 163 spec files).
 
+SESSION 61 (2026-07-03) — SECURITY #46 + #45 (commit 3c221b1)
+-------------------------------------------------------------------
+- #46 (book_if_available trusts client amount/class): Migration 17
+  (tests-playwright/migrations/17_book_if_available_server_price.sql)
+  rewrites the RPC. Same 4-parameter signature (index.html and the
+  deployed stripe-webhook keep calling it unchanged) but p_amount_due is
+  now IGNORED: the function locks the blocks row, recomputes remaining
+  sessions from ISO dates (start_date + i*7 >= CURRENT_DATE over weeks),
+  charges price*remaining when some-but-not-all sessions remain, else
+  price*weeks. Mirrors calcProrata()'s behaviour without the dates[]
+  display-string parsing (Dec–Jan year-inference bug #54, BST pitfalls).
+  Also validates p_class_id against the block's real class_id (raises
+  CLASS_MISMATCH; new BLOCK_NOT_FOUND for missing block) and writes the
+  block's own class_id on the booking. CLASS_FULL / ALREADY_BOOKED /
+  unique_violation handling unchanged. Grants deliberately untouched
+  (CREATE OR REPLACE preserves ACL): anon MUST keep EXECUTE — this is the
+  public booking path; the tamper-proofing is what makes that safe.
+  Applied to test AND prod; verified on prod (proacl shows anon EXECUTE,
+  prosrc contains CLASS_MISMATCH).
+  NOT fixed: the customer_id half of #46's title (attaching a booking to
+  someone else's record). That needs the identity design decision in #48.
+  Known edge accepted: Stripe path — webhook books after payment, so a
+  payment just before midnight + webhook just after can record amount_due
+  one session lower than what Stripe charged. Rare; flagged to Mark.
+- #45 (send-email unlimited re-sends): Migration 18 adds nullable
+  reserved_email_sent_at + alert_email_sent_at to bookings (anon can't
+  read bookings, so no exposure). send-email public path claims the stamp
+  atomically — UPDATE ... SET col=now() WHERE id=? AND col IS NULL
+  RETURNING id — BEFORE calling Resend: losers get 429, a concurrent
+  burst yields exactly one send (no check-then-send gap). Claim runs
+  AFTER the recipient checks so a booking with no customer email / no
+  admin_email configured never consumes its one shot. On Resend failure
+  (non-OK or fetch throw) the stamp is rolled back so a genuine retry
+  isn't locked out forever. Admin raw path and stripe-webhook's
+  service-role path untouched. Deployed v11 test / v12 prod,
+  verify_jwt: false preserved. ORDERING RULE: migration 18 must be
+  applied before the function deploy on any project — the function
+  UPDATEs those columns and would 500 on public sends without them.
+  Drift check done on both projects before overwriting (test v10 and
+  prod v11 both matched the repo pre-change — no clobbered changes).
+- New specs: sec-09-book-rpc-price-tampering.spec.js (forged 1p
+  p_amount_due → booking row shows server-computed price + block's own
+  class_id; forged class_id → CLASS_MISMATCH, no row) and
+  sec-10-send-email-one-shot.spec.js (reserved + alert each one-shot with
+  stamp visible via admin-db; 3-way Promise.all burst → exactly one 200,
+  two 429s). New admin-db helper setSetting(key, value).
+- Fixture fallout (three specs relied on the closed hole): AB-24, SE-15,
+  SE-16 staged prorata/full-price state by passing p_amount_due (40 / 60 /
+  60). SE-15 failure mode was subtle: mon-current had 1 session left on
+  the run date → recomputed amount_due £10 → 2 attended × £10 = refund £0
+  → the app sends the no-refund cancellation email → "no email fires"
+  assertion failed. All three now stage amount_due via direct admin SQL
+  UPDATE after booking. Rule for future specs: need a specific amount_due?
+  Stage it with getPool().query UPDATE — the RPC won't take it from you.
+- Test-DB state lesson (broke 3 specs mid-run before being caught):
+  settings.admin_email = 'mjones970@live.co.uk' is BASELINE PERSISTENT
+  state — smoke-01 asserts the exact settings key list including it,
+  SE-10/SE-11 restore it in afterEach. First draft of SEC-10 deleted the
+  key in cleanup; parallel workers saw it vanish mid-run (smoke-01,
+  SE-15/16 casualties). Fixed: SEC-10 restores the baseline value, never
+  deletes; the deleted row was manually restored in the test DB.
+- Process note: prod writes through the supabase-prod MCP were denied by
+  the auto-mode permission classifier ("go ahead" in auto mode is not
+  specific enough for prod DDL). Mark switched permission mode and
+  approved the two migrations + function deploy per-call. Expect the same
+  dance for every future prod migration/deploy.
+- 232/232 tests green. TEST-PLAN.md regenerated (232 tests / 165 spec
+  files). Issues #45 + #46 closed with fix summaries.
+
 ============================================================

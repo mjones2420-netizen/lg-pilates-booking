@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 03 Jul 2026 (session 60 — catch-up swap overhaul #58/#59/#60/#62, 227 tests)
+Last updated: 03 Jul 2026 (session 61 — security #45 + #46 fixed, 232 tests)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **227 tests, all passing** (Session 60 — CU suite rewritten to 10 tests for the catch-up swap overhaul).
+Current test count: **232 tests, all passing** (Session 61 — new SEC-09/SEC-10 for the #46/#45 fixes).
 
 ---
 
@@ -252,11 +252,19 @@ Navigate with `switchDashPage(name)`.
 - CU specs 7→10 (CU-01..CU-10): DB-gate rejection + anon permission-denied (CU-03), max-2 at UI+RPC level (CU-04), picker labels/disabled (CU-08), double-save race closed (CU-09), labels + auto-select (CU-10). 227/227 green, TEST-PLAN.md regenerated.
 - Migration 16 applied to BOTH test and production (prod approved by Mark mid-session, applied before the push so the deployed index.html never called a missing RPC). Grants verified on both: authenticated + service_role only, no anon.
 
+**Session 61 (2026-07-03):** Security #46 + #45 fixed and closed (commit `3c221b1`), applied to BOTH test and production.
+- **#46 FIXED + CLOSED**: `book_if_available` trusted the client's `p_amount_due` and `p_class_id`. Migration 17 — the RPC now recomputes `amount_due` server-side from the block's own price/weeks/start_date (ISO date arithmetic, mirrors calcProrata without the Dec–Jan string bug), validates class_id against the block (`CLASS_MISMATCH`), writes the block's own class_id, and ignores `p_amount_due` (kept in the signature so index.html and stripe-webhook callers work unchanged). Anon EXECUTE preserved — it's the public booking path. NOTE: the customer_id-attach half of #46's title is NOT fixed here — that's the #48 design decision.
+- **#45 FIXED + CLOSED**: send-email public path allowed unlimited re-sends per booking_id. Migration 18 adds `reserved_email_sent_at`/`alert_email_sent_at` to `bookings`; the function claims the stamp atomically (`UPDATE ... WHERE col IS NULL RETURNING`) BEFORE sending → repeat calls 429, concurrent burst yields exactly one send; stamp rolls back on Resend failure; claim runs after the recipient checks so an unsendable email never burns the one shot. Deployed v11 test / v12 prod, `verify_jwt: false` preserved. **Order matters: migrations before function deploy** (the function needs the columns).
+- New specs: SEC-09 (forged 1p ignored; forged class_id rejected) + SEC-10 (one-shot both types; 3-way concurrent burst → exactly one 200).
+- Fixture fallout worth remembering: AB-24/SE-15/SE-16 had staged prorata state by passing `p_amount_due` — the very hole being closed. They now stage `amount_due` via direct admin SQL UPDATE after booking. Any future spec needing a specific amount_due must do the same.
+- Test-DB gotcha learned the hard way: `settings.admin_email = 'mjones970@live.co.uk'` is baseline persistent state (smoke-01 asserts it, SE-10/SE-11 restore it). Specs must RESTORE it, never delete — deleting it mid-run broke 3 unrelated specs.
+- Prod writes via the supabase-prod MCP are blocked by the auto-mode permission classifier — Mark switches permission mode and approves each call. Expect this on every prod migration/deploy.
+
 **Next likely work (priority order):**
 - [#43](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/43): **Disable public signups on both Supabase projects** (dashboard toggle, Mark) — top priority, ahead of go-live
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Go-live — swap prod Stripe key test→live + live webhook secret
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
-- Remaining security from session 59: #44–#49, #52 (see above)
+- Remaining security from session 59: #44, #47, #48, #49, #52 (#45 + #46 fixed in session 61)
 - Remaining security (older): #35 (needs Pro), #37 (Edge Function drift docs), #38 (settings world-readable)
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain (`book.lg-pilates.co.uk`)
