@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 03 Jul 2026 (session 61 — security #45 + #46 fixed, 232 tests)
+Last updated: 04 Jul 2026 (session 62 — release plan written, issues #63–#70, no code changed)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -260,14 +260,20 @@ Navigate with `switchDashPage(name)`.
 - Test-DB gotcha learned the hard way: `settings.admin_email = 'mjones970@live.co.uk'` is baseline persistent state (smoke-01 asserts it, SE-10/SE-11 restore it). Specs must RESTORE it, never delete — deleting it mid-run broke 3 unrelated specs.
 - Prod writes via the supabase-prod MCP are blocked by the auto-mode permission classifier — Mark switches permission mode and approves each call. Expect this on every prod migration/deploy.
 
+**Session 62 (2026-07-04):** RELEASE PLAN written — no code changed. `RELEASE-PLAN.md` at repo root (commit `41a02f0`): phased rollout of the new Astro/Sanity website + booking system. Phases: 0 pre-flight security (#43 + token rotation) → 1 new site live on Netlify, booking = email Louise → 1.5 booking system to Netlify at `book.lg-pilates.co.uk`, hidden (implements #4) → 2a private pilot with select customers on bank transfer (payment_mode flips BEFORE pilot — pilot bookings are real) → 2b full bank-transfer launch → 3 Stripe live (#30) → 4 cancel GoDaddy hosting. GitHub tracking: umbrella issue [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) with native sub-issues #63–#69 (label `release`), each phase issue has step checkboxes, gates, rollback.
+- Key facts verified via live DNS: email is Microsoft 365 via GoDaddy (separate from hosting — cancelling hosting cannot break it); nameservers stay at GoDaddy, only 2 records change; website rollback value = A record `160.153.0.161`. Bank-transfer mode needs NO Stripe changes (keys sit unused).
+- New Astro site facts: lives at `~/Claude Code/Pilates Website`, NOT in git yet, needs `@astrojs/netlify` adapter (`output: 'server'`), no "How to Book" page yet; GitHub repo `lg-pilates-website` currently holds old WordPress theme files (will be reused).
+- Deploy routine amended (`.claude/commands/deploy.md`, local only): new step 0 — docs/plan-only changes skip tests + code review + security review, straight to commit/push. Any code change = full pipeline.
+
 **Next likely work (priority order):**
-- [#43](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/43): **Disable public signups on both Supabase projects** (dashboard toggle, Mark) — top priority, ahead of go-live
-- [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Go-live — swap prod Stripe key test→live + live webhook secret
+- **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — first step is the #43 signup toggle (dashboard, Mark), then token rotation
+- [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Stripe go-live key swap — now scheduled as release Phase 3 (#68)
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
 - Remaining security from session 59: #44, #47, #48, #49, #52 (#45 + #46 fixed in session 61)
 - Remaining security (older): #35 (needs Pro), #37 (Edge Function drift docs), #38 (settings world-readable)
+- Bugs: #50 (Revenue MTD £0), #51 (false success toasts)
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
-- [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain (`book.lg-pilates.co.uk`)
+- [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain — now scheduled as release Phase 1.5 (#65)
 
 **Full backlog**: `gh issue list` or https://github.com/mjones2420-netizen/lg-pilates-booking/issues
 
