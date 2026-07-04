@@ -570,7 +570,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
           <div class="db-stat-grid">
             <div class="db-stat-card"><p class="db-stat-lbl">Active bookings</p><p class="db-stat-val" id="rpt-active-bookings">0</p><p class="db-stat-sub">across all classes</p></div>
             <div class="db-stat-card"><p class="db-stat-lbl">Revenue MTD</p><p class="db-stat-val" id="rpt-revenue-mtd">£0</p><p class="db-stat-sub" id="rpt-revenue-month"></p></div>
-            <div class="db-stat-card"><p class="db-stat-lbl">Fill rate</p><p class="db-stat-val" id="rpt-fill-rate">0%</p><p class="db-stat-sub">confirmed bookings</p></div>
+            <div class="db-stat-card"><p class="db-stat-lbl">Confirmed rate</p><p class="db-stat-val" id="rpt-fill-rate">0%</p><p class="db-stat-sub">confirmed bookings</p></div>
             <div class="db-stat-card"><p class="db-stat-lbl">Pending refunds</p><p class="db-stat-val" id="rpt-pending-refunds">0</p><p class="db-stat-sub-warn" id="rpt-refund-sub">&nbsp;</p></div>
           </div>
           <div class="db-section-card">
@@ -1499,9 +1499,6 @@ function openModal(classId, blockId) {
   if(abView) abView.style.display="none";
   var pipsWrap=document.getElementById("step-progress");
   if(pipsWrap) pipsWrap.style.opacity="1";
-  // Reset success view back to form view
-  document.getElementById("success-view").className="success";
-  document.getElementById("form-view").style.display="block";
 }
 
 function closeModal(){
@@ -1808,10 +1805,6 @@ function onTcsChange(){
   hint.style.display=checked?"none":"block";
 }
 
-function initiateStripeCheckout(){
-  // No longer called directly — Stripe checkout is initiated inside confirmBooking()
-}
-
 function hasAnyYes(){
   for(var i=1;i<=12;i++){
     var radios=document.querySelectorAll("input[name=\"q"+i+"\"]");
@@ -1832,7 +1825,6 @@ function getParqAnswers(){
 }
 
 function updateYesSection(){ document.getElementById("parq-yes-section").style.display=hasAnyYes()?"block":"none"; }
-function toggleHealthForm(){}
 
 // ─── Email helpers ────────────────────────────────────────────────────────────
 function buildConfirmedEmailHtml(opts){
@@ -2119,7 +2111,7 @@ function buildRefundAdminEmailHtml(opts){
 // for caller-supplied {to,subject,html} (issue #33), so we pass the logged-in
 // admin's access token, not the public anon key.
 async function sendBookingEmail(to, subject, html){
-  if(IS_NO_EMAIL) return;
+  if(IS_NO_EMAIL) return true;
   try{
     var{data:sess}=await sb.auth.getSession();
     var jwt=(sess&&sess.session&&sess.session.access_token)||SUPABASE_KEY;
@@ -2128,8 +2120,9 @@ async function sendBookingEmail(to, subject, html){
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+jwt},
       body:JSON.stringify({to:to,subject:subject,html:html,isTest:IS_TEST_ENV})
     });
-    if(!res.ok){ console.warn("Email send failed (non-fatal):",res.status,await res.text()); }
-  }catch(emailErr){ console.warn("Email send error (non-fatal):",emailErr); }
+    if(!res.ok){ console.warn("Email send failed (non-fatal):",res.status,await res.text()); return false; }
+    return true;
+  }catch(emailErr){ console.warn("Email send error (non-fatal):",emailErr); return false; }
 }
 
 // Public system email (booking reserved + new-booking alert). Fires during an
@@ -2590,12 +2583,6 @@ function scrollToFirstMissingParq(){
   rows.forEach(function(r){ r.classList.add("parq-missing-highlight"); });
   // Scroll the first one into view
   rows[0].scrollIntoView({behavior:"smooth",block:"center"});
-}
-
-function switchTab(tab){
-  // Legacy shim — maps old tab names to new page names
-  var map={bookings:"bookings",classes:"byclass",customers:"clients",cancellations:"cancellations"};
-  switchDashPage(map[tab]||tab);
 }
 
 function switchDashPage(page){
@@ -3662,10 +3649,8 @@ async function sendBlockEmail(){
     var r=recipients[i];
     sendBtn.textContent="Sending "+(i+1)+" of "+recipients.length+"…";
     var html=buildBlockEmailHtml({ firstName:r.firstName, messageHtml:messageHtml });
-    try{
-      await sendBookingEmail(r.email, subject, html);
-      sent++;
-    }catch(err){ console.warn("Block email send failed (non-fatal):",r.email,err); }
+    var ok=await sendBookingEmail(r.email, subject, html);
+    if(ok) sent++;
     if(i<recipients.length-1){ await new Promise(function(res){ setTimeout(res,500); }); }  // throttle for Resend rate limit
   }
 
