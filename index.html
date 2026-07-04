@@ -1098,9 +1098,17 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
         <input type="text" class="finp" id="cu-notes" placeholder="e.g. holiday cover" style="margin-bottom:0">
       </div>
       <div id="cu-err" style="color:var(--red,#c04040);font-size:12px;margin-top:10px;display:none;"></div>
+      <div id="cu-warn" style="display:none;margin-top:10px;font-size:13px;color:#7a5300;line-height:1.6;background:#fdf3df;border:1px solid #ecc36f;border-radius:4px;padding:14px 16px;">
+        <strong style="display:block;margin-bottom:4px;color:#5c3e00;">Heads up</strong>
+        <span id="cu-warn-text"></span>
+      </div>
     </div>
     <div class="mfoot">
       <button class="confirm-btn" id="cu-btn" onclick="saveCatchUpSwap()">Record Swap</button>
+      <div id="cu-override-row" style="display:none;gap:10px;margin-top:10px;">
+        <button class="confirm-btn" style="width:auto;flex:1;background:none;border:1px solid var(--border);color:var(--mid);text-transform:uppercase;" onclick="cancelCuOverride()">Cancel</button>
+        <button class="confirm-btn" id="cu-override-btn" style="width:auto;flex:1;background:#c9860a;" onclick="saveCatchUpSwap(true)">Save Anyway</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3073,7 +3081,7 @@ function renderCatchUpSwapsList(){
   var past=catchUpSwaps.filter(function(s){ return new Date(s.class_date+"T00:00:00")<today; });
   var html="";
   html+="<div style=\"margin-bottom:14px;font-size:13px;color:var(--mid);line-height:1.7;background:var(--cream);padding:14px 18px;border-radius:4px;border-left:3px solid var(--sage-dk)\">";
-  html+="Record when a customer comes to a different class for one week to catch up a missed session. Maximum 2 catch-up swaps per customer per block.";
+  html+="Record when a customer comes to a different class for one week to catch up a missed session. Louise can override the usual 2-per-block guideline if needed.";
   html+="</div>";
   if(upcoming.length===0){
     html+="<div style=\"color:var(--light);font-size:13px;padding:8px 0\">No upcoming catch-up swaps. Use &ldquo;Record swap&rdquo; to add one.</div>";
@@ -3138,6 +3146,7 @@ function openCatchUpModal(){
   document.getElementById("cu-notes").value="";
   document.getElementById("cu-btn").disabled=false;
   document.getElementById("cu-btn").textContent="Record Swap";
+  cancelCuOverride();
   document.getElementById("catchup-overlay").className="overlay on";
   lockBodyScroll();
 }
@@ -3198,7 +3207,17 @@ function onCuTargetBlockChange(){
     :"<option value=\"\">No upcoming sessions</option>";
 }
 
-async function saveCatchUpSwap(){
+function cancelCuOverride(){
+  document.getElementById("cu-warn").style.display="none";
+  document.getElementById("cu-override-row").style.display="none";
+  document.getElementById("cu-btn").style.display="";
+  document.getElementById("cu-btn").disabled=false;
+  document.getElementById("cu-btn").textContent="Record Swap";
+  document.getElementById("cu-override-btn").disabled=false;
+  document.getElementById("cu-override-btn").textContent="Save Anyway";
+}
+
+async function saveCatchUpSwap(overrideLimit){
   var customerId=parseInt(document.getElementById("cu-customer").value);
   var sourceBlockId=parseInt(document.getElementById("cu-source-block").value);
   var targetBlockId=parseInt(document.getElementById("cu-target-block").value);
@@ -3207,11 +3226,16 @@ async function saveCatchUpSwap(){
   var errEl=document.getElementById("cu-err");
   function showErr(msg){ errEl.textContent=msg; errEl.style.display="block"; }
   errEl.style.display="none";
-  if(!customerId||!sourceBlockId||!targetBlockId||!classDate){ showErr("Please fill in all required fields."); return; }
-  if(sourceBlockId===targetBlockId){ showErr(CU_MSGS.CU_SAME_BLOCK); return; }
+  // Any definitive error (validation or save failure) clears the CU_LIMIT
+  // warning UI too — otherwise a stale "Heads up" banner and a hidden
+  // Record Swap button can persist alongside a newer, unrelated error.
+  function fail(msg){ cancelCuOverride(); showErr(msg); }
+  if(!customerId||!sourceBlockId||!targetBlockId||!classDate){ fail("Please fill in all required fields."); return; }
+  if(sourceBlockId===targetBlockId){ fail(CU_MSGS.CU_SAME_BLOCK); return; }
   var btn=document.getElementById("cu-btn");
-  btn.disabled=true; btn.textContent="Saving…";
-  function fail(msg){ showErr(msg); btn.disabled=false; btn.textContent="Record Swap"; }
+  var overrideBtn=document.getElementById("cu-override-btn");
+  if(overrideLimit){ overrideBtn.disabled=true; overrideBtn.textContent="Saving…"; }
+  else { btn.disabled=true; btn.textContent="Saving…"; }
   // No browser-side capacity/max-2 checks here: the pickers already show
   // FULL/disabled options as instant feedback, and the record_catch_up_swap
   // RPC re-checks both rules inside the database against live data — a
@@ -3222,23 +3246,33 @@ async function saveCatchUpSwap(){
       p_source_block_id:sourceBlockId,
       p_target_block_id:targetBlockId,
       p_class_date:classDate,
-      p_notes:notes||null
+      p_notes:notes||null,
+      p_allow_over_limit:!!overrideLimit
     });
     if(error){
       var msg=error.message||"";
+      // CU_LIMIT is a soft guideline (issue #61): offer an override instead
+      // of a hard block. Every other coded error stays a hard fail.
+      if(msg.indexOf("CU_LIMIT")>-1&&!overrideLimit){
+        document.getElementById("cu-warn-text").textContent=CU_MSGS.CU_LIMIT+" Save anyway if that's fine.";
+        document.getElementById("cu-warn").style.display="block";
+        document.getElementById("cu-override-row").style.display="flex";
+        btn.disabled=true;
+        btn.style.display="none";
+        return;
+      }
       var code=Object.keys(CU_MSGS).find(function(c){ return msg.indexOf(c)>-1; });
       if(code){ fail(CU_MSGS[code]); return; }
       throw error;
     }
     closeCatchUpModal();
-    showToast("Catch-up swap recorded.");
+    showToast(overrideLimit?"Catch-up swap recorded (override: 3rd+ swap this block).":"Catch-up swap recorded.");
     await reloadCatchUpSwaps();
     renderCatchUpSwapsList();
     renderClassesView();
   }catch(err){
     console.error("Swap save error:",err);
-    showErr("Error saving. Please try again.");
-    btn.disabled=false; btn.textContent="Record Swap";
+    fail("Error saving. Please try again.");
   }
 }
 

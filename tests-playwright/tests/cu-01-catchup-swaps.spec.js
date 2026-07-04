@@ -133,7 +133,7 @@ test.describe('CU — Catch-Up Swaps', () => {
     await goToCatchUpPage(page);
 
     // Info box visible
-    await expect(page.locator('#catchup-list')).toContainText('Maximum 2 catch-up swaps per customer per block');
+    await expect(page.locator('#catchup-list')).toContainText('Louise can override the usual 2-per-block guideline');
 
     // Empty state message when no swaps exist
     await expect(page.locator('#catchup-list')).toContainText('No upcoming catch-up swaps');
@@ -223,9 +223,9 @@ test.describe('CU — Catch-Up Swaps', () => {
     expect(anonError.message).toMatch(/permission denied|not allowed|denied/i);
   });
 
-  // ── CU-04: Blocked at 2-swap limit (UI + DB) ──────────────────────────────
+  // ── CU-04: Softened 2-swap limit — warning + override (issue #61) ────────
 
-  test('CU-04 — Swap blocked when customer already has 2 swaps on source block', async ({ page }) => {
+  test('CU-04 — 3rd swap on a source block warns, offers Cancel/Save Anyway, and the DB still gates without the override flag', async ({ page }) => {
     const srcBlock = await getBlockByRole('mon-current');
     const tgtBlock = await getBlockByRole('wed-upcoming');
     const customer = await getCustomerByEmail('returning-one@test.example');
@@ -249,23 +249,52 @@ test.describe('CU — Catch-Up Swaps', () => {
 
     await page.locator('#cu-btn').click();
 
-    // Error: limit reached (instant browser pre-check)
-    await expect(page.locator('#cu-err')).toBeVisible({ timeout: 3000 });
-    await expect(page.locator('#cu-err')).toContainText('2 catch-up swaps');
+    // Warning shown instead of a hard error; Cancel/Save Anyway offered
+    await expect(page.locator('#cu-warn')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('#cu-warn')).toContainText('2 catch-up swaps');
+    await expect(page.locator('#cu-btn')).toBeHidden();
+    await expect(page.locator('#cu-override-row')).toBeVisible();
 
-    // Count in DB should still be 2
+    // Nothing saved yet
     expect(await countCatchUpSwaps(customer.id, srcBlock.id)).toBe(2);
 
-    // The DB enforces the same rule even if the browser pre-check is bypassed
-    const res = await callSwapRpc(page, {
+    // Cancel dismisses the warning and restores the normal form (modal stays open)
+    await page.locator('#cu-override-row button', { hasText: 'Cancel' }).click();
+    await expect(page.locator('#cu-warn')).toBeHidden();
+    await expect(page.locator('#cu-btn')).toBeVisible();
+    await expect(page.locator('#catchup-overlay.on')).toBeVisible();
+
+    // Retry and this time confirm the override
+    await page.locator('#cu-btn').click();
+    await expect(page.locator('#cu-override-row')).toBeVisible({ timeout: 3000 });
+    await page.locator('#cu-override-row button', { hasText: 'Save Anyway' }).click();
+
+    await expect(page.locator('#catchup-overlay.on')).not.toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#toastEl')).toContainText('override', { timeout: 5000 });
+    expect(await countCatchUpSwaps(customer.id, srcBlock.id)).toBe(3);
+
+    // The DB rule is still the real gate: without the override flag it still
+    // raises CU_LIMIT; with it, it still allows a further swap.
+    const blocked = await callSwapRpc(page, {
       p_customer_id: customer.id,
       p_source_block_id: srcBlock.id,
       p_target_block_id: tgtBlock.id,
       p_class_date: futureDates[3],
       p_notes: null,
     });
-    expect(res.error).toContain('CU_LIMIT');
-    expect(await countCatchUpSwaps(customer.id, srcBlock.id)).toBe(2);
+    expect(blocked.error).toContain('CU_LIMIT');
+    expect(await countCatchUpSwaps(customer.id, srcBlock.id)).toBe(3);
+
+    const allowed = await callSwapRpc(page, {
+      p_customer_id: customer.id,
+      p_source_block_id: srcBlock.id,
+      p_target_block_id: tgtBlock.id,
+      p_class_date: futureDates[3],
+      p_notes: null,
+      p_allow_over_limit: true,
+    });
+    expect(allowed.error).toBeNull();
+    expect(await countCatchUpSwaps(customer.id, srcBlock.id)).toBe(4);
   });
 
   // ── CU-05: Delete a catch-up swap ─────────────────────────────────────────
