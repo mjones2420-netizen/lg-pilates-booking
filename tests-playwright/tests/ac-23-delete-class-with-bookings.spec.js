@@ -114,6 +114,16 @@ test.describe('AC-23 — Delete class with bookings + PAR-Qs completes cleanly',
     await page.locator('#nb-schedule').click();
     await expect(page.locator('.card', { hasText: 'AC23 Test Class' })).toHaveCount(0);
 
+    // #56: orphan-check — booking and parq cascaded away with the class,
+    // proving admin_delete_class's single DELETE actually cascaded rather
+    // than leaving orphaned rows behind.
+    const { rows: bookingRows } = await pool.query('SELECT id FROM bookings WHERE id = $1', [bookingId]);
+    expect(bookingRows.length, 'booking should be cascade-deleted with the class').toBe(0);
+    const { rows: parqRows } = await pool.query('SELECT id FROM parq WHERE booking_id = $1', [bookingId]);
+    expect(parqRows.length, 'parq should be cascade-deleted with the class').toBe(0);
+    const { rows: blockRows } = await pool.query('SELECT id FROM blocks WHERE class_id = $1', [createdClassId]);
+    expect(blockRows.length, 'block should be cascade-deleted with the class').toBe(0);
+
     // afterEach cleanup skips if rows already deleted — safe to leave createdClassId/CustomerId set
   });
 

@@ -49,6 +49,15 @@ test.describe('AB-05/AB-06 — Remove from Block', () => {
     const email = `ab05-${Date.now()}@test.example`;
     const block = await getBlockByRole('mon-current');
 
+    // #56: capture blocks.booked baseline so we can verify it resyncs back
+    // down after the removal (admin_remove_from_block deletes the booking
+    // row, which fires trg_sync_block_booked_count same as any DELETE).
+    const { rows: bookedBaseline } = await getPool().query(
+      `SELECT booked FROM blocks WHERE id = $1`,
+      [block.id]
+    );
+    const initialBooked = bookedBaseline[0].booked;
+
     // Create per-run customer
     const { data: custId, error: custErr } = await sb.rpc('upsert_customer', {
       p_first_name: 'Ab05',
@@ -144,5 +153,22 @@ test.describe('AB-05/AB-06 — Remove from Block', () => {
       [createdCustomerId]
     );
     expect(custAfter.length, 'customer record should survive block removal').toBe(1);
+
+    // #56: blocks.booked resynced back to baseline (orphan-check — proves
+    // the RPC's DELETE actually fired the trigger, not just returned success)
+    const { rows: blockAfter } = await getPool().query(
+      `SELECT booked FROM blocks WHERE id = $1`,
+      [block.id]
+    );
+    expect(blockAfter[0].booked, 'blocks.booked should resync after removal').toBe(initialBooked);
+
+    // #56: cancellations row was written by the admin_remove_from_block RPC
+    // (server-side insert now, not the old client-side insert+delete chain)
+    const { rows: cancelRows } = await getPool().query(
+      `SELECT class_name, venue, sessions_attended FROM cancellations WHERE customer_id = $1`,
+      [createdCustomerId]
+    );
+    expect(cancelRows.length, 'cancellations row should be written by the RPC').toBe(1);
+    expect(cancelRows[0].sessions_attended).toBe(0);
   });
 });

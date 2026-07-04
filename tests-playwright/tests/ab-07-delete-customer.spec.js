@@ -10,9 +10,10 @@
 // page.on('dialog', d => d.accept()) registered BEFORE the button click.
 //
 // Setup: per-run customer + booking + parq row created via RPC + direct pg.
-// The deleteCustomer function in the app runs its own DELETE queries (not
-// going through deleteCustomerCascade), so we verify the DB state directly
-// after the flow completes rather than relying on the helper.
+// deleteCustomer() calls the admin_delete_customer RPC (#56, migration 21) —
+// one transaction, not the old client-side delete chain — so we verify the
+// DB state directly after the flow completes rather than relying on the
+// deleteCustomerCascade test helper.
 //
 // Cleanup: afterEach calls deleteCustomerCascade as a safety net in case
 // the test fails before the in-app deletion completes. Idempotent — if the
@@ -46,6 +47,13 @@ test.describe('AB-07 — Permanently Delete Customer', () => {
   test('AB-07 — Del Customer removes customer, booking, and parq from DB', async ({ page }) => {
     const email = `ab07-${Date.now()}@test.example`;
     const block = await getBlockByRole('mon-current');
+
+    // #56: capture blocks.booked baseline to verify resync after deletion
+    const { rows: bookedBaseline } = await getPool().query(
+      `SELECT booked FROM blocks WHERE id = $1`,
+      [block.id]
+    );
+    const initialBooked = bookedBaseline[0].booked;
 
     // Create per-run customer
     const { data: custId, error: custErr } = await sb.rpc('upsert_customer', {
@@ -123,6 +131,14 @@ test.describe('AB-07 — Permanently Delete Customer', () => {
       [createdCustomerId]
     );
     expect(parqRows.length, 'parq should be deleted from DB').toBe(0);
+
+    // #56: blocks.booked resynced back to baseline (orphan-check — proves
+    // the RPC's bookings DELETE actually fired the trigger)
+    const { rows: blockAfter } = await getPool().query(
+      `SELECT booked FROM blocks WHERE id = $1`,
+      [block.id]
+    );
+    expect(blockAfter[0].booked, 'blocks.booked should resync after customer deletion').toBe(initialBooked);
 
     // Customer deleted — afterEach safety net will find 0 rows and exit cleanly
   });

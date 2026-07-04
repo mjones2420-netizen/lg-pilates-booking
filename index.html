@@ -3511,14 +3511,8 @@ function deleteBlock(blockId){
   if(!confirm("Delete this block? Any existing bookings for this block will also be deleted.")) return;
   (async function(){
     try{
-      // Fetch booking IDs for this block first, then delete their PAR-Q records correctly
-      var{data:blockBookings}=await sb.from("bookings").select("id").eq("block_id",blockId);
-      if(blockBookings&&blockBookings.length>0){
-        var bookingIds=blockBookings.map(function(b){ return b.id; });
-        await sb.from("parq").delete().in("booking_id",bookingIds).select();
-      }
-      await sb.from("bookings").delete().eq("block_id",blockId).select();
-      await sb.from("blocks").delete().eq("id",blockId).select();
+      var{error}=await sb.rpc("admin_delete_block",{p_block_id:blockId});
+      if(error) throw error;
       blocks=blocks.filter(function(b){ return b.id!==blockId; });
       buildFilters(); renderGrid(); renderDashboard();
       showToast("Block deleted.");
@@ -3537,20 +3531,8 @@ function deleteClass(id){
   if(!confirm(msg)) return;
   (async function(){
     try{
-      // Fetch booking IDs for this class first, then delete PAR-Q records by booking_id
-      // (parq.booking_id is ON DELETE NO ACTION — we must clear it explicitly)
-      var{data:classBookings}=await sb.from("bookings").select("id").eq("class_id",id);
-      if(classBookings&&classBookings.length>0){
-        var bookingIds=classBookings.map(function(b){ return b.id; });
-        await sb.from("parq").delete().in("booking_id",bookingIds).select();
-      }
-      // Clear per-class manual priority grants (CASCADE would handle this on class delete
-      // but explicit delete makes the intent clear and surfaces permission issues early)
-      await sb.from("customer_class_priority").delete().eq("class_id",id).select();
-      // Then bookings, blocks, class itself
-      await sb.from("bookings").delete().eq("class_id",id).select();
-      await sb.from("blocks").delete().eq("class_id",id).select();
-      await sb.from("classes").delete().eq("id",id).select();
+      var{error}=await sb.rpc("admin_delete_class",{p_class_id:id});
+      if(error) throw error;
       classes=classes.filter(function(c){ return c.id!==id; });
       blocks=blocks.filter(function(b){ return b.class_id!==id; });
       buildFilters(); renderGrid(); renderDashboard();
@@ -3835,28 +3817,12 @@ function rfbConfirm(){
     try{
       var cls=classes.find(function(c){ return c.id===s.b.classId; })||{};
       var blkObj=blocks.find(function(bl){ return bl.id===s.b.blockId; })||{};
-      var {error:cErr}=await sb.from("cancellations").insert({
-        customer_id:s.b.customerId,
-        class_id:s.b.classId,
-        block_id:s.b.blockId,
-        first_name:s.b.client.split(" ")[0]||"",
-        last_name:s.b.client.split(" ").slice(1).join(" ")||"",
-        email:s.b.email||"",
-        class_name:s.b.cls||"",
-        venue:(cls.venue||cls.loc||""),
-        block_start_date:blkObj.start_date||null,
-        block_end_date:blkObj.end_date||null,
-        sessions_attended:s.sessionsAttended,
-        sessions_remaining:s.totalSessions-s.sessionsAttended,
-        price_per_session:s.pricePerSession,
-        refund_amount:refund,
-        refunded:false,
-        stripe_payment_intent_id:s.b.stripePaymentIntentId||null
-      }).select();
-      if(cErr) throw cErr;
-      await sb.from("parq").delete().eq("booking_id",s.b.dbId).select();
-      var {error:bErr}=await sb.from("bookings").delete().eq("id",s.b.dbId).select();
-      if(bErr) throw bErr;
+      var {error}=await sb.rpc("admin_remove_from_block",{
+        p_booking_id:s.b.dbId,
+        p_sessions_attended:s.sessionsAttended,
+        p_refund_amount:refund
+      });
+      if(error) throw error;
 
       // Send cancellation emails (non-fatal)
       var cancelOpts={
@@ -4026,9 +3992,8 @@ function deleteCustomer(idx){
   var b=bookings[idx];
   (async function(){
     try{
-      await sb.from("parq").delete().eq("customer_id",b.customerId).select();
-      await sb.from("bookings").delete().eq("customer_id",b.customerId).select();
-      await sb.from("customers").delete().eq("id",b.customerId).select();
+      var{error}=await sb.rpc("admin_delete_customer",{p_customer_id:b.customerId});
+      if(error) throw error;
       showToast("Customer deleted."); renderDashboard();
     }catch(err){ console.error(err); showToast("Error deleting customer."); }
   })();
