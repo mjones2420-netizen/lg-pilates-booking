@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 04 Jul 2026 (session 62 — release plan written, issues #63–#70, no code changed)
+Last updated: 04 Jul 2026 (session 63 — waiting-list feature planned + mocked up, issues #71–#76, no code changed)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -264,6 +264,14 @@ Navigate with `switchDashPage(name)`.
 - Key facts verified via live DNS: email is Microsoft 365 via GoDaddy (separate from hosting — cancelling hosting cannot break it); nameservers stay at GoDaddy, only 2 records change; website rollback value = A record `160.153.0.161`. Bank-transfer mode needs NO Stripe changes (keys sit unused).
 - New Astro site facts: lives at `~/Claude Code/Pilates Website`, NOT in git yet, needs `@astrojs/netlify` adapter (`output: 'server'`), no "How to Book" page yet; GitHub repo `lg-pilates-website` currently holds old WordPress theme files (will be reused).
 - Deploy routine amended (`.claude/commands/deploy.md`, local only): new step 0 — docs/plan-only changes skip tests + code review + security review, straight to commit/push. Any code change = full pipeline.
+
+**Session 63 (2026-07-04):** Waiting-list feature — planned, mocked up, backlogged. No code changed.
+- Design settled via Q&A: full block → "Join Waiting List" button + public "N on waiting list" count; join = name/email/phone; Louise-driven enforced holds (no cron — she is the timer) via new admin **Waitlist** dashboard page (Offer space / Release hold / Remove); reservation rule (public spaces = cap − booked − everyone on the list, floor 0) so a freed space is invisible to the public while anyone's waiting; offer email carries a personal `?offer=TOKEN` link that opens the normal booking flow (prefilled, "reserved for you" banner) even though the block shows FULL, DB-validated so only that person can take it; list dies with the block.
+- Full plan with 9 worked scenarios + per-test descriptions: `~/.claude/plans/wobbly-imagining-cherny.md` (session-local, not in repo).
+- Mockup approved (all UI + both emails, real site styles): 4 review decisions confirmed — join button **amber**, waiting count **shown publicly**, offer email **asks booking within 24h** (wording only, no timer — Louise enforces via Release hold), queue position **shown** to joiner ("You're #3"). Decisions logged as a comment on [#71](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/71).
+- GitHub: tracking issue [#71](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/71) + 5 native sub-issues in build order: [#72](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/72) migration 19 (table reshape, wait-count trigger, `join_waitlist`/`offer_waitlist_space`/`release_waitlist_hold`/`get_offer_details` RPCs, `book_if_available` v3 via DROP+CREATE with `p_offer_token` param — new signature, do NOT overload), [#73](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/73) edge functions (two new send-email public types + Stripe token pass-through), [#74](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/74) public site, [#75](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/75) admin page, [#76](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/76) WL-01..13 Playwright specs + TEST-PLAN regen.
+- Reused existing scaffolding: the empty `waitlist` table (reshaped, not rebuilt) and the already-loaded-but-unused `blocks.wait` column (now trigger-maintained).
+- Decision: catch-up swaps deliberately ignore waitlist holds — a hold reserves a whole block, a catch-up occupies one physical session date, so a held (empty) chair can still host a one-week catch-up visitor. Flagged for Louise to confirm later; one-line change if she disagrees.
 
 **Next likely work (priority order):**
 - **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — first step is the #43 signup toggle (dashboard, Mark), then token rotation
