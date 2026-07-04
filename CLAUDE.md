@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 04 Jul 2026 (session 64 — #61 fixed and closed, catch-up max-2 rule softened, commit 39a8b3f)
+Last updated: 04 Jul 2026 (session 65 — #57 housekeeping cleanups fixed and closed, commit 1fa0335)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -280,6 +280,13 @@ Navigate with `switchDashPage(name)`.
 - Code review caught a real bug before commit: if the override attempt failed for any other reason (capacity filled in the interim, user changed the picker to the same block, network error), the warning banner and hidden Record Swap button never reset, leaving the modal stuck. Fixed by having `fail()` call `cancelCuOverride()` first; also deduped the catch block, which had copy-pasted `fail()`'s body instead of calling it.
 - CU-04 rewritten to cover the full flow: warn → cancel → retry → override → DB still gates without the flag → DB allows with it. 232/232 green. Security review: no findings (flag only softens a business rule already gated to authenticated/admin; capacity check untouched; no new anon exposure).
 - Bookkeeping: migration 19 was reserved for the waitlist feature (#72) — since this took it, waitlist is renumbered to migration 20 (noted on #72, and above).
+
+**Session 65 (2026-07-04):** #57 housekeeping grab-bag fixed and closed (commit `1fa0335`). No DB/Edge Function changes, index.html only.
+- Reports "Fill rate" relabelled to "Confirmed rate" — it was always measuring confirmed ÷ total bookings, not class fullness. No calculation change, no test referenced the old label.
+- Block email send counter fixed: `sendBookingEmail` now returns true/false instead of swallowing the result; `sendBlockEmail` only increments `sent` on an actual success. The "Sent to N of N clients" toast can no longer overstate when an individual send silently fails.
+- Dead code removed: `initiateStripeCheckout()`, `toggleHealthForm()`, the legacy `switchTab()` shim, and duplicate success-view/form-view reset lines in `openModal()`. Confirmed all four were unreferenced anywhere (index.html, tests) before deleting.
+- Item 1 of #57 (missing `sanitise()` on the `cu-customer` dropdown) turned out to already be fixed — the session 60 catch-up overhaul (`a97e783`) rewrote that dropdown and added it. No change needed.
+- 232/232 tests green (no new specs needed — no test asserted the old "Fill rate" label or exact toast wording). Code review: no findings. Security review skipped — no payments/auth/DB/Edge Function files touched.
 
 **Next likely work (priority order):**
 - **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — first step is the #43 signup toggle (dashboard, Mark), then token rotation
