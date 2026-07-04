@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 04 Jul 2026 (session 65 — #57 housekeeping cleanups fixed and closed, commit 1fa0335)
+Last updated: 04 Jul 2026 (session 66 — #55 admin DB gate + #56 cascade-delete RPCs fixed and closed, commit c0ed69c)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **232 tests, all passing** (Session 61 — new SEC-09/SEC-10 for the #46/#45 fixes).
+Current test count: **233 tests, all passing** (Session 66 — new SEC-11 for the #55 fix).
 
 ---
 
@@ -288,15 +288,25 @@ Navigate with `switchDashPage(name)`.
 - Item 1 of #57 (missing `sanitise()` on the `cu-customer` dropdown) turned out to already be fixed — the session 60 catch-up overhaul (`a97e783`) rewrote that dropdown and added it. No change needed.
 - 232/232 tests green (no new specs needed — no test asserted the old "Fill rate" label or exact toast wording). Code review: no findings. Security review skipped — no payments/auth/DB/Edge Function files touched.
 
+**Session 66 (2026-07-04):** #55 (real admin DB gate) + #56 (transactional cascade-delete RPCs) fixed and closed (commit `c0ed69c`). Applied to test AND production.
+- **#55**: Migration 20 — new `admin_users` table (RLS enabled, zero policies, reachable only via a SECURITY DEFINER `is_admin()` function) plus ~20 RLS policies rewritten from `USING (true)` to `USING (is_admin())` across classes/blocks/bookings/customers/parq/settings/cancellations/customer_class_priority/waitlist/catch_up_swaps/pending_bookings. Belt-and-braces on top of #43 (still not flipped) — even an accidental or future account gets nothing unless explicitly listed. New SEC-11 spec creates a real non-admin authenticated user (direct `auth.users`/`auth.identities` insert with bcrypt via pgcrypto — `client.auth.signUp` was rejected by this project's Auth email validation, both `@test.example` and `@example.com`) and proves it gets zero rows/rejected writes everywhere, and that the #56 RPCs reject it outright.
+- **#56**: Migration 21 — `admin_delete_block`, `admin_delete_class`, `admin_delete_customer`, `admin_remove_from_block` SECURITY DEFINER RPCs, each admin-gated, each one transaction. index.html's `deleteBlock`/`deleteClass`/`deleteCustomer`/`rfbConfirm` now call these instead of chaining separate `sb.from().delete()` calls from the browser.
+- **Real bug caught by the new tests before shipping**: `admin_delete_class` doing a bare `DELETE FROM classes` failed with an FK-ordering error — `bookings` has both a direct `NO ACTION` FK to `classes` and an indirect `CASCADE` path via `blocks`, and Postgres doesn't guarantee the cascade finishes before the direct FK is checked. Fixed by explicitly deleting `waitlist`/`bookings` before `classes`.
+- **Code review caught two more before shipping**: `admin_delete_customer` was missing the same `waitlist` cleanup as the class case (same FK class); `admin_remove_from_block`'s first draft trusted a client-supplied name/email (split from a display string) instead of reading the customer row it already had the ID for — reworked to a 3-param signature (`p_booking_id, p_sessions_attended, p_refund_amount`) that joins `customers` server-side. Required `DROP FUNCTION` + recreate on both test and prod since the signature changed.
+- Orphan-check assertions added to AB-05/06, AB-07, AC-05, AC-23 (parq/bookings cascade away with the parent row, `blocks.booked` resyncs via the existing trigger). New AC-05 fixture now includes a booking+parq to actually exercise the cascade.
+- 233/233 tests green (1 unrelated pre-existing flake on CU-04, confirmed flaky on isolated rerun, not touched this session). Code review: 2 findings, both fixed before commit. Security review: no findings.
+- **Process note**: production Supabase writes go through an explicit confirm-first gate (the auto-mode permission classifier blocks them outright without a visible confirmation in the transcript, on top of the CLAUDE.md "confirm before touching production" rule) — every migration and grant-fix in this session was applied to test first, confirmed with Mark, then applied to prod.
+
 **Next likely work (priority order):**
-- **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — first step is the #43 signup toggle (dashboard, Mark), then token rotation
+- **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — first step is the #43 signup toggle (dashboard, Mark), then token rotation. Note: #55 now gives a second line of defence even before #43 is flipped, but #43 is still the right thing to do.
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Stripe go-live key swap — now scheduled as release Phase 3 (#68)
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
-- Remaining security from session 59: #44, #47, #48, #49, #52 (#45 + #46 fixed in session 61)
+- Remaining security from session 59: #44, #47, #48, #49, #52 (#45/#46 fixed session 61, #55/#56 fixed session 66)
 - Remaining security (older): #35 (needs Pro), #37 (Edge Function drift docs), #38 (settings world-readable)
 - Bugs: #50 (Revenue MTD £0), #51 (false success toasts)
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain — now scheduled as release Phase 1.5 (#65)
+- Remaining refactor recommendations from session 59: #53 (server-side email templates), #54 (ISO dates as source of truth)
 
 **Full backlog**: `gh issue list` or https://github.com/mjones2420-netizen/lg-pilates-booking/issues
 
