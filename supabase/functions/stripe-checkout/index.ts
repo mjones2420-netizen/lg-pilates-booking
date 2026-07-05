@@ -17,29 +17,25 @@ function corsHeaders(req: Request): Record<string, string> {
 
 // Server-side mirror of calcProrata() in index.html — recomputes the price
 // from the block's own data so a tampered client-side amount can never be
-// trusted (#32: stripe-checkout price tampering). Uses local date parts
-// (not toISOString) per the BST gotcha — index.html does the same.
-function calcProrataPence(block: { price: number; weeks: number; dates: string[] }): number {
+// trusted (#32: stripe-checkout price tampering). Session dates are derived
+// from start_date + i*7 days (#54: the reliable ISO source of truth), using
+// local date parts (not toISOString) per the BST gotcha. This replaces the old
+// heuristic that guessed a year from the display-string dates[] and mispriced
+// any block spanning Dec into Jan.
+function calcProrataPence(block: { price: number; weeks: number; dates: string[]; start_date: string }): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const dates = block.dates || [];
-  const fullPrice = block.price * block.weeks;
-  const monthMap: Record<string, number> = {
-    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-  };
-  const remaining = dates.filter((d) => {
-    const parts = d.trim().split(" ");
-    if (parts.length < 2) return true;
-    const day = parseInt(parts[0], 10);
-    const mon = monthMap[parts[1]];
-    if (isNaN(day) || mon === undefined) return true;
-    const yr = today.getFullYear();
-    const dt = new Date(yr, mon, day);
-    if (dt < new Date(yr, 0, 1)) dt.setFullYear(yr + 1);
-    return dt >= today;
-  }).length;
-  const isProrata = remaining < dates.length && remaining > 0;
+  const weeks = block.weeks || (block.dates ? block.dates.length : 0);
+  const fullPrice = block.price * weeks;
+  const start = new Date(block.start_date + "T00:00:00");
+  let remaining = 0;
+  for (let i = 0; i < weeks; i++) {
+    const dt = new Date(start);
+    dt.setDate(start.getDate() + i * 7);
+    dt.setHours(0, 0, 0, 0);
+    if (dt >= today) remaining++;
+  }
+  const isProrata = remaining < weeks && remaining > 0;
   const totalPrice = isProrata ? block.price * remaining : fullPrice;
   return Math.round(totalPrice * 100);
 }
@@ -89,7 +85,7 @@ serve(async (req) => {
     // actually belong together.
     const { data: block, error: blockErr } = await adminClient
       .from("blocks")
-      .select("price, weeks, dates, class_id")
+      .select("price, weeks, dates, class_id, start_date")
       .eq("id", block_id)
       .single();
 

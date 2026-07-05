@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 4 Jul 2026
-**Total tests:** 233
+**Last updated:** 5 Jul 2026
+**Total tests:** 239
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -282,7 +282,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-10-send-email-one-shot.spec.js` | a concurrent burst yields exactly one accepted send |
 | `sec-11-admin-users-gate.spec.js` | SEC-11 — non-admin authenticated user gets zero rows / rejected writes |
 
-## Stripe (ST) — 23 tests
+## Stripe (ST) — 25 tests
 
 | Spec file | Test |
 |---|---|
@@ -309,6 +309,8 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `st-25-webhook-invalid-signature-rejected.spec.js` | missing stripe-signature header returns 400 and leaves pending row untouched |
 | `st-25-webhook-invalid-signature-rejected.spec.js` | incorrect signature returns 400 and leaves pending row untouched |
 | `st-26-webhook-duplicate-delivery.spec.js` | second delivery returns 200 with no booking_id, no duplicate booking created |
+| `st-27-webhook-stale-timestamp-rejected.spec.js` | timestamp older than the 5-minute tolerance returns 400 and leaves pending row untouched |
+| `st-27-webhook-stale-timestamp-rejected.spec.js` | fresh timestamp on the same payload is accepted (proves only stale events are rejected) |
 
 ## Refund Sync (RF) — 6 tests
 
@@ -335,6 +337,15 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `cu-01-catchup-swaps.spec.js` | CU-08 — Class and week pickers show spaces left, mark full options FULL and disable them |
 | `cu-01-catchup-swaps.spec.js` | CU-09 — Two saves into the last space: first succeeds, second is rejected by the DB |
 | `cu-01-catchup-swaps.spec.js` | CU-10 — Modal uses plain labels and auto-selects the usual class for a single-block customer |
+
+## Pricing / Prorata (PR) — 4 tests
+
+| Spec file | Test |
+|---|---|
+| `pr-01-prorata-year-boundary.spec.js` | mid-block in January → prorated for the 2 remaining sessions, not full price |
+| `pr-01-prorata-year-boundary.spec.js` | one session left in January → charge for exactly that session |
+| `pr-01-prorata-year-boundary.spec.js` | before the block starts → full price, not prorated |
+| `pr-01-prorata-year-boundary.spec.js` | after the block ends → zero remaining, full price fallback (never negative) |
 
 ---
 

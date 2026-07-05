@@ -1518,24 +1518,23 @@ document.getElementById("catchup-overlay").addEventListener("click",function(e){
 
 // ─── Pro-rata pricing helper ────────────────────────────────────────────────────────────────────────────────
 function calcProrata(blk){
+  // Session dates are derived from the block's own start_date + i*7 days —
+  // the reliable ISO source of truth (#54). The blk.dates[] display strings
+  // ("29 Dec") carry no year, so guessing a year from them broke for any block
+  // spanning Dec into Jan (a past Dec session was read as next December, i.e.
+  // still to come, so a January joiner was wrongly charged the full price).
   var today=new Date(); today.setHours(0,0,0,0);
-  var dates=blk.dates||[];
-  var fullPrice=blk.price*blk.weeks;
-  var monthMap={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-  var remaining=dates.filter(function(d){
-    var parts=d.trim().split(" ");
-    if(parts.length<2) return true;
-    var day=parseInt(parts[0],10);
-    var mon=monthMap[parts[1]];
-    if(isNaN(day)||mon===undefined) return true;
-    var yr=today.getFullYear();
-    var dt=new Date(yr,mon,day);
-    if(dt<new Date(yr,0,1)) dt.setFullYear(yr+1);
-    return dt>=today;
-  }).length;
-  var isProrata=remaining<dates.length&&remaining>0;
+  var weeks=blk.weeks||(blk.dates?blk.dates.length:0);
+  var fullPrice=blk.price*weeks;
+  var start=new Date(blk.start_date+"T00:00:00");
+  var remaining=0;
+  for(var i=0;i<weeks;i++){
+    var dt=new Date(start); dt.setDate(start.getDate()+i*7); dt.setHours(0,0,0,0);
+    if(dt>=today) remaining++;
+  }
+  var isProrata=remaining<weeks&&remaining>0;
   var totalPrice=isProrata?blk.price*remaining:fullPrice;
-  return {sessionsRemaining:remaining,totalSessions:dates.length,totalPrice:totalPrice,fullPrice:fullPrice,isProrata:isProrata};
+  return {sessionsRemaining:remaining,totalSessions:weeks,totalPrice:totalPrice,fullPrice:fullPrice,isProrata:isProrata};
 }
 
 function scrollModalTop(){

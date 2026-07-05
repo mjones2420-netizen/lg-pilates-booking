@@ -24,6 +24,14 @@ async function verifyStripeSignature(payload: string, sigHeader: string | null, 
   const sig = parts["v1"];
   if (!timestamp || !sig) return false;
 
+  // Replay protection: reject events whose signed timestamp is outside a
+  // 5-minute tolerance (Stripe's recommended default). Blocks an old, already
+  // valid, captured event from being replayed later.
+  const tsSeconds = parseInt(timestamp, 10);
+  if (!Number.isFinite(tsSeconds)) return false;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (Math.abs(nowSeconds - tsSeconds) > 300) return false;
+
   const signedPayload = `${timestamp}.${payload}`;
   const key = await crypto.subtle.importKey(
     "raw",
@@ -370,6 +378,16 @@ serve(async (req) => {
       }
     }
 
+    // Delete the pending row now — AFTER the booking is confirmed and PAR-Q
+    // saved (so the critical state is persisted before we drop the idempotency
+    // key), but BEFORE the slower email sends. A duplicate/retried delivery of
+    // the same event then finds no pending row and takes the "already
+    // processed" early return above, instead of racing into book_if_available,
+    // hitting ALREADY_BOOKED, and misfiring the "payment taken, booking failed"
+    // alarm. All data needed for the emails (pending.*, class/block) is already
+    // loaded / about to be fetched by id, so it doesn't depend on this row.
+    await adminClient.from("pending_bookings").delete().eq("id", pendingId);
+
     // Fetch class + block details for the emails
     const { data: cls } = await adminClient.from("classes").select("*").eq("id", pending.class_id).single();
     const { data: blk } = await adminClient.from("blocks").select("*").eq("id", pending.block_id).single();
@@ -414,9 +432,6 @@ serve(async (req) => {
           adminHtml, isTest);
       }
     }
-
-    // Clean up the pending row now the real booking exists
-    await adminClient.from("pending_bookings").delete().eq("id", pendingId);
 
     return new Response(JSON.stringify({ received: true, booking_id: bookingId }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },

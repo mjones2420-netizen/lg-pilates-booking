@@ -33,6 +33,7 @@ const GROUPS = [
   ['Stripe (ST)', 'st'],
   ['Refund Sync (RF)', 'rf'],
   ['Catch-Up Swaps (CU)', 'cu'],
+  ['Pricing / Prorata (PR)', 'pr'],
 ];
 
 function getRows() {
