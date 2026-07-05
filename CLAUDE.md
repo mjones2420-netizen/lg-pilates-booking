@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 05 Jul 2026 (session 68 — #53 server-side email templates fixed and closed (targeted scope), commit ee91c39, deployed test+prod)
+Last updated: 05 Jul 2026 (session 69 — #44 #47 #48 customer-data hardening fixed and closed (migration 22), commit 2c78e84, deployed test+prod)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **237 tests, all passing** (Session 68 — #53 reworked ST-21/ST-22/SEC-08 into real server-side checks; net -2 from 239).
+Current test count: **239 tests, all passing** (Session 69 — added SEC-12, +2 from 237).
 
 ---
 
@@ -314,12 +314,21 @@ Navigate with `switchDashPage(name)`.
 - Deploy method: Supabase CLI from disk (session 67 lesson). CLI linked to PROD, so `--project-ref ngzfhamjuviwfwuncrjo` for test; bare/`mrlooyixnlxzcfmvnqme` for prod. Both functions `verify_jwt:false` on both projects — preserved with `--no-verify-jwt`. Now: **test** send-email v15 / stripe-webhook v9; **prod** send-email v13 / stripe-webhook v8.
 - 237/237 tests green. Code review: no findings. Security review: no findings (typed paths more locked down than what they replace; escaping preserved + now tested end-to-end; echo confined to authenticated+test).
 
+**Session 69 (2026-07-05):** #44 + #47 + #48 customer-data hardening fixed and closed (migration 22, commit 2c78e84). Applied to test AND production. index.html unchanged (verified — callers only use lookup id/existence).
+- **#47**: `lookup_customer` trimmed to `RETURNS TABLE(id integer, first_name text)` — last_name/phone/customer_type no longer leak to anon. Return-type change needs DROP + CREATE (CREATE OR REPLACE can't change the signature); the drop clears the anon grant so the migration re-REVOKEs from PUBLIC + re-GRANTs to anon. Free-tier slice of #35; the rate-limiting/enumeration half still needs Pro (#19) and stays open.
+- **#48**: `upsert_customer` now name-locked / phone-open — on an existing email it NEVER overwrites first_name/last_name; refreshes phone + customer_type only. New email still inserts a fresh row (email is the identity match key; merging stays a manual admin job — Mark's decision). Accepted trade-off: anon can still change an existing customer's phone by email (a reduction from the prior name+phone+type clobber). New SEC-12 spec (2 tests) proves both halves.
+- **#44**: dropped the legacy `anon_insert_pending_bookings` policy + revoked anon INSERT on pending_bookings (stripe-checkout writes it with the service-role key), and revoked the default PUBLIC/anon/authenticated EXECUTE on the `sync_block_booked_count()` trigger function. SEC-07 grant-matrix spec moved pending_bookings from expected-INSERT to the anon-forbidden list.
+- **Spec fallout from #47**: smoke-02 + cb-01 read `last_name`/`customer_type` off the lookup result — both rewired. smoke-02 now asserts the exact trimmed key set `['first_name','id']`; cb-01 reads customer_type via a new `getCustomerById(id)` admin-db helper (SELECTs phone + customer_type, which lookup no longer returns). Any future spec needing customer_type/phone must read via pg, not lookup_customer.
+- **Cross-file trace (clean)**: no Edge Function calls `lookup_customer`; send-email reads customers via a direct table SELECT (service role), unaffected by the shape change. stripe-webhook's `upsert_customer` call still works — in Stripe mode the customer is created client-side (index.html ~2150) BEFORE redirect, so name-lock drops nothing; brand-new emails still INSERT the full name. sync_block_booked_count is a trigger function (invoked internally, needs no EXECUTE grant on the invoker), so revoking authenticated can't break admin writes.
+- **Process note (Mark flagged)**: ran the test-site suite during PLAN verification BEFORE the code/security reviews — wrong for a shipping change. Deploy order (code review → security review → tests) governs even during plan execution; plan-verification is not a licence to jump the reviews. Memory `feedback-review-before-tests` updated with this refinement.
+- Deploy: migrations applied to test first (MCP), suite green (239/239), code review no findings, security review no findings, committed + pushed, then prod migration applied (confirm-first). `get_advisors(security)` on prod shows no regression (pending_bookings anon INSERT gone; all remaining lints pre-existing/expected). No Edge Function source changed → no redeploy needed.
+
 **Next likely work (priority order):**
 - **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — #43 (public signup) is now DONE (2026-07-04, same session as #55/#56): Mark disabled "Allow new users to sign up" on both test and production, verified via `GET /auth/v1/settings` (`disable_signup: true` on both). Next step in Phase 0 is token rotation.
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Stripe go-live key swap — now scheduled as release Phase 3 (#68)
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
-- Remaining security from session 59: #44, #47, #48, #49 (#45/#46 fixed session 61, #52 fixed session 67, #55/#56 fixed session 66)
-- Remaining security (older): #35 (needs Pro), #37 (Edge Function drift docs), #38 (settings world-readable)
+- Remaining security from session 59: #49 (pending_bookings/health-data retention — no cleanup job) — #44/#47/#48 fixed session 69, #45/#46 fixed session 61, #52 fixed session 67, #55/#56 fixed session 66
+- Remaining security (older): #35 (needs Pro — enumeration/rate-limiting half of #47), #37 (Edge Function drift docs), #38 (settings world-readable)
 - Bugs: #50 (Revenue MTD £0), #51 (false success toasts)
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain — now scheduled as release Phase 1.5 (#65)
