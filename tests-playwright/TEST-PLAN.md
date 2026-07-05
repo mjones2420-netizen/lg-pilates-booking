@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 5 Jul 2026
-**Total tests:** 239
+**Total tests:** 237
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -208,7 +208,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `se-10-notification-email-loads.spec.js` | SE-10 — notification email field is populated on dashboard load |
 | `se-11-notification-email-saves.spec.js` | SE-11 — admin saves notification email and value persists to DB |
 | `se-12-booking-reserved-email.spec.js` | Edge Function called with correct recipient, subject, and isTest flag |
-| `se-13-booking-confirmed-email.spec.js` | Edge Function called with correct recipient, subject, isTest, and HTML on confirm |
+| `se-13-booking-confirmed-email.spec.js` | Edge Function called with typed confirmed_booking payload on confirm |
 | `se-14-admin-alert-email.spec.js` | Admin alert email sent on new-client reserve — correct payload and PAR-Q flag |
 | `se-14-admin-alert-email.spec.js` | Admin alert email sent on returning-client reserve — no PAR-Q flag |
 | `se-15-cancellation-emails.spec.js` | no email fires when a client is removed via RFB modal with sessions attended |
@@ -253,7 +253,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 24 tests
+## Security (SEC) — 23 tests
 
 | Spec file | Test |
 |---|---|
@@ -268,13 +268,12 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-06-admin-dashboard-tour.spec.js` | SEC-06 — all 4 dashboard tabs render their panels |
 | `sec-06-admin-dashboard-tour.spec.js` | SEC-06 — below-tab sections (Upcoming Classes, Settings, Backup & Export) render |
 | `sec-07-anon-grant-matrix.spec.js` | SEC-07 — anon grant matrix matches the documented spec |
+| `sec-08-email-name-escaping.spec.js` | confirmed_booking escapes the client name |
+| `sec-08-email-name-escaping.spec.js` | card_payment_alert escapes the client name |
 | `sec-08-email-name-escaping.spec.js` | index.html sanitise() escapes angle brackets and quotes |
-| `sec-08-email-name-escaping.spec.js` | index.html buildConfirmedEmailHtml escapes firstName |
 | `sec-08-email-name-escaping.spec.js` | index.html buildCancelledAdminEmailHtml escapes firstName, lastName and email |
 | `sec-08-email-name-escaping.spec.js` | index.html buildRefundClientEmailHtml escapes firstName |
 | `sec-08-email-name-escaping.spec.js` | index.html buildRefundAdminEmailHtml escapes firstName, lastName and email |
-| `sec-08-email-name-escaping.spec.js` | stripe-webhook mirror: buildConfirmedEmailHtml escapes firstName |
-| `sec-08-email-name-escaping.spec.js` | stripe-webhook mirror: buildAdminAlertEmailHtml escapes firstName and lastName |
 | `sec-09-book-rpc-price-tampering.spec.js` | a forged 1p amount_due is ignored — booking row gets the server-computed price |
 | `sec-09-book-rpc-price-tampering.spec.js` | a forged class_id is rejected with CLASS_MISMATCH and no booking is created |
 | `sec-10-send-email-one-shot.spec.js` | reserved_confirmation: first call sends, second call is refused with 429 |
@@ -282,7 +281,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-10-send-email-one-shot.spec.js` | a concurrent burst yields exactly one accepted send |
 | `sec-11-admin-users-gate.spec.js` | SEC-11 — non-admin authenticated user gets zero rows / rejected writes |
 
-## Stripe (ST) — 25 tests
+## Stripe (ST) — 24 tests
 
 | Spec file | Test |
 |---|---|
@@ -299,11 +298,10 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `st-18-stripe-cancel-redirect-preserves-pending.spec.js` | shows cancellation toast and leaves the pending_bookings row untouched |
 | `st-19-webhook-success-confirms-booking.spec.js` | booking is confirmed with stripe_payment_intent_id and stripe_checkout_session_id populated |
 | `st-20-webhook-success-saves-parq.spec.js` | parq row is created with correct field mapping and all 12 question answers |
-| `st-21-client-confirmation-email-template.spec.js` | Sessions row shows past dates greyed and upcoming dates teal, with correct booking details |
-| `st-22-admin-alert-email-template.spec.js` | subject mentions card payment and includes client name, class and venue |
-| `st-22-admin-alert-email-template.spec.js` | new client: body shows client name, amount paid, and PAR-Q warning box |
-| `st-22-admin-alert-email-template.spec.js` | returning client: body shows client name and amount paid, no PAR-Q warning box |
-| `st-22-admin-alert-email-template.spec.js` | no dashboardUrl: dashboard link is omitted |
+| `st-21-client-confirmation-email-template.spec.js` | confirmed_booking builds the confirmed template from the booking id |
+| `st-22-admin-alert-email-template.spec.js` | subject mentions card payment and includes the client name |
+| `st-22-admin-alert-email-template.spec.js` | new client: body shows the card-payment wording and a PAR-Q warning box |
+| `st-22-admin-alert-email-template.spec.js` | returning client: card-payment wording, no PAR-Q warning box |
 | `st-23-webhook-class-full-retains-pending.spec.js` | returns booking_failed_after_payment, pending row retained, no bookings row created |
 | `st-24-webhook-already-booked-retains-pending.spec.js` | returns booking_failed_after_payment, pending row retained, existing booking untouched |
 | `st-25-webhook-invalid-signature-rejected.spec.js` | missing stripe-signature header returns 400 and leaves pending row untouched |

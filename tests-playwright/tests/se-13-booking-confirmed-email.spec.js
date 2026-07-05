@@ -2,9 +2,13 @@
 //
 // What this proves:
 //   When Louise clicks Confirm on a reserved booking in the admin dashboard,
-//   the send-email Edge Function is called with the client's email as recipient,
-//   a subject containing the class time and venue, isTest: true, and HTML
-//   containing "confirmed" and the client's first name.
+//   the send-email Edge Function is called with the typed payload
+//   { type: 'confirmed_booking', booking_id, isTest: true } — and NOT with a
+//   client-built recipient/subject/html. Post-#53 the confirmed email is built
+//   server-side from the booking id (single source of truth); the browser only
+//   names the type and the booking, so it can neither choose the recipient nor
+//   inject markup. The server-built template content itself is asserted by
+//   ST-21 (which calls the deployed function directly).
 //
 // Approach:
 //   A reserved booking is created via the RPC (book_if_available) before the
@@ -61,7 +65,7 @@ test.describe('SE-13 — Booking confirmed email fires on admin confirm', () => 
     }
   });
 
-  test('Edge Function called with correct recipient, subject, isTest, and HTML on confirm', async ({ page }) => {
+  test('Edge Function called with typed confirmed_booking payload on confirm', async ({ page }) => {
     // Intercept the Edge Function call before navigating
     let capturedPayload = null;
     let emailCaptured;
@@ -92,20 +96,17 @@ test.describe('SE-13 — Booking confirmed email fires on admin confirm', () => 
     // Assert the Edge Function was called
     expect(capturedPayload).not.toBeNull();
 
-    // Recipient must be the client's email
-    expect(capturedPayload.to).toBe(TEST_EMAIL);
-
-    // Subject must include the time and venue (not the class name)
-    expect(capturedPayload.subject).toContain('confirmed');
+    // Typed payload — server builds the email from the booking id (#53)
+    expect(capturedPayload.type).toBe('confirmed_booking');
+    expect(capturedPayload.booking_id, 'booking_id must be present').toBeTruthy();
 
     // isTest must be true — no real email sent in test mode
     expect(capturedPayload.isTest).toBe(true);
 
-    // HTML must be present and contain the client's first name
-    expect(capturedPayload.html).toBeTruthy();
-    expect(capturedPayload.html).toContain(TEST_FIRST);
-
-    // HTML must contain the confirmed banner text
-    expect(capturedPayload.html).toContain('Payment received');
+    // The old client-built fields must NOT be present any more — the browser
+    // no longer chooses the recipient or supplies the HTML.
+    expect(capturedPayload.to).toBeUndefined();
+    expect(capturedPayload.html).toBeUndefined();
+    expect(capturedPayload.subject).toBeUndefined();
   });
 });

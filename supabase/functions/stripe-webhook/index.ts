@@ -61,101 +61,13 @@ function esc(s: unknown): string {
     .replace(/"/g, '&quot;');
 }
 
-// --- Email HTML builders (mirrors index.html buildConfirmedEmailHtml / buildAdminAlertEmailHtml) ---
-function buildConfirmedEmailHtml(opts: {
-  firstName: string; className: string; venue: string; loc: string;
-  day: string; time: string; endTime: string; blockDates: string[];
-}): string {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const months: Record<string, number> = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11 };
-  const pillsHtml = (opts.blockDates || []).map((d) => {
-    const parts = d.split(" ");
-    const dt = new Date(new Date().getFullYear(), months[parts[1]] || 0, parseInt(parts[0]) || 1);
-    const past = dt < today;
-    return past
-      ? `<span style="display:inline-block;padding:3px 8px;border-radius:100px;font-size:11px;font-weight:500;margin:2px 3px 2px 0;background:#f0f0f0;color:#aaaaaa;border:1px solid #dddddd;">${d}</span>`
-      : `<span style="display:inline-block;padding:3px 8px;border-radius:100px;font-size:11px;font-weight:500;margin:2px 3px 2px 0;background:#eef5f5;color:#2a6b6b;border:1px solid #cde0e0;">${d}</span>`;
-  }).join("");
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">`
-    + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">`
-    + `<tr><td align="center">`
-    + `<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">`
-    + `<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">`
-    + `<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>`
-    + `<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>`
-    + `</td></tr>`
-    + `<tr><td style="background:#e8f5e8;border-left:4px solid #3a8a6a;padding:18px 32px;">`
-    + `<div style="font-size:15px;font-weight:600;color:#2a6a4a;margin-bottom:6px;">Booking confirmed</div>`
-    + `<div style="font-size:13px;color:#2a5a3a;line-height:1.6;">Payment received, your booking is now confirmed. We look forward to seeing you.</div>`
-    + `</td></tr>`
-    + `<tr><td style="padding:24px 32px;">`
-    + `<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi ${esc(opts.firstName)},</p>`
-    + `<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Your booking</div>`
-    + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.className}</td></tr>`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.venue}, ${opts.loc}</td></tr>`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.day}, ${opts.time} &ndash; ${opts.endTime}</td></tr>`
-    + (pillsHtml ? `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;vertical-align:top;padding-top:8px;">Sessions</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;text-align:right;">${pillsHtml}</td></tr>` : "")
-    + `</table>`
-    + `<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">What to bring</div>`
-    + `<p style="font-size:13px;color:#4a6060;line-height:1.7;margin:0 0 20px;">Please wear comfortable clothing and bring a water bottle. Please arrive no more than 10 minutes before the session starts.</p>`
-    + `</td></tr>`
-    + `<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">`
-    + `<div style="font-size:11px;color:#8aabab;line-height:1.6;">Questions? Reply to this email or contact Louise at <a href="mailto:bookings@lg-pilates.co.uk" style="color:#3a8a8a;text-decoration:none;">bookings@lg-pilates.co.uk</a><br>LG Pilates &middot; Baildon &amp; Guiseley</div>`
-    + `</td></tr>`
-    + `</table></td></tr></table></body></html>`;
-}
-
-function buildAdminAlertEmailHtml(opts: {
-  firstName: string; lastName: string; className: string; venue: string; loc: string;
-  day: string; time: string; endTime: string; blockDates: string[];
-  amountDue: number; customerType: string; dashboardUrl: string;
-}): string {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const isNew = opts.customerType === "new";
-  const months: Record<string, number> = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11 };
-  const pillsHtml = (opts.blockDates || []).map((d) => {
-    const parts = d.split(" ");
-    const dt = new Date(new Date().getFullYear(), months[parts[1]] || 0, parseInt(parts[0]) || 1);
-    const past = dt < today;
-    return past
-      ? `<span style="display:inline-block;padding:3px 8px;border-radius:100px;font-size:11px;font-weight:500;margin:2px 3px 2px 0;background:#f0f0f0;color:#aaaaaa;border:1px solid #dddddd;">${d}</span>`
-      : `<span style="display:inline-block;padding:3px 8px;border-radius:100px;font-size:11px;font-weight:500;margin:2px 3px 2px 0;background:#eef5f5;color:#2a6b6b;border:1px solid #cde0e0;">${d}</span>`;
-  }).join("");
-
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">`
-    + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">`
-    + `<tr><td align="center">`
-    + `<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">`
-    + `<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">`
-    + `<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>`
-    + `<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>`
-    + `</td></tr>`
-    + `<tr><td style="background:#e8f0fb;border-left:4px solid #3a6abf;padding:18px 32px;">`
-    + `<div style="font-size:15px;font-weight:600;color:#1a3a7a;margin-bottom:6px;">New booking</div>`
-    + `<div style="font-size:13px;color:#2a4a8a;line-height:1.6;">${esc(opts.firstName)} ${esc(opts.lastName)} (${isNew ? "New client" : "Returning client"}) has made a new booking via card payment.</div>`
-    + `</td></tr>`
-    + `<tr><td style="padding:24px 32px;">`
-    + `<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Booking details</div>`
-    + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Client</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${esc(opts.firstName)} ${esc(opts.lastName)}</td></tr>`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.className}</td></tr>`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.venue}, ${opts.loc}</td></tr>`
-    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${opts.day}, ${opts.time} &ndash; ${opts.endTime}</td></tr>`
-    + (pillsHtml ? `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;vertical-align:top;padding-top:8px;">Sessions</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;text-align:right;">${pillsHtml}</td></tr>` : "")
-    + `<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Amount paid</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;${opts.amountDue}</td></tr>`
-    + `</table>`
-    + (isNew ? `<table width="100%" cellpadding="0" cellspacing="0" style="background:#fff8e8;border-left:4px solid #e07b4a;border-radius:0 6px 6px 0;margin-bottom:20px;">`
-      + `<tr><td style="padding:14px 18px;font-size:13px;color:#7a4010;">&#9888;&nbsp; A PAR-Q health form has been submitted with this booking. You can view it in the dashboard.</td></tr>`
-      + `</table>` : "")
-    + (opts.dashboardUrl ? `<p style="font-size:13px;color:#4a6060;margin:0 0 8px;"><a href="${opts.dashboardUrl}" style="color:#3a8a8a;font-weight:600;text-decoration:none;">View full details in the dashboard &rarr;</a></p>` : "")
-    + `</td></tr>`
-    + `<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">`
-    + `<div style="font-size:11px;color:#8aabab;line-height:1.6;">LG Pilates &middot; Baildon &amp; Guiseley</div>`
-    + `</td></tr>`
-    + `</table></td></tr></table></body></html>`;
-}
-
+// --- Email HTML builder ---
+// buildConfirmedEmailHtml and buildAdminAlertEmailHtml used to live here as
+// hand-synced copies of the index.html / send-email versions (the drift that
+// caused #39). They now live ONLY in the send-email function and are invoked
+// via the typed calls below (confirmed_booking / card_payment_alert), #53.
+// Only the payment-failed alert — which has no counterpart anywhere else —
+// remains built inline here.
 function buildPaymentFailedAdminEmailHtml(opts: {
   firstName: string; lastName: string; email: string; phone: string;
   className: string; venue: string; loc: string; day: string; time: string; endTime: string;
@@ -210,6 +122,25 @@ async function sendEmail(supabaseUrl: string, authKey: string, to: string, subje
   }
 }
 
+// Typed server-built email (confirmed_booking / card_payment_alert). send-email
+// loads the recipient and builds the HTML itself from the booking id — the
+// single source of truth for these templates (#53). Authenticated with the
+// service-role key (internal caller).
+async function sendTypedEmail(supabaseUrl: string, authKey: string, type: string, bookingId: string, isTest: boolean) {
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${authKey}` },
+      body: JSON.stringify({ type, booking_id: bookingId, isTest }),
+    });
+    if (!res.ok) {
+      console.warn("send-email (typed) failed (non-fatal):", type, res.status, await res.text());
+    }
+  } catch (e) {
+    console.warn("send-email (typed) error (non-fatal):", type, e);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -254,7 +185,6 @@ serve(async (req) => {
   const metadata = session?.metadata || {};
   const pendingId = metadata.pending_booking_id;
   const isTest = metadata.is_test === "true";
-  const appBaseUrl = metadata.app_base_url || "";
 
   if (!pendingId) {
     console.error("checkout.session.completed with no pending_booking_id metadata");
@@ -388,50 +318,12 @@ serve(async (req) => {
     // loaded / about to be fetched by id, so it doesn't depend on this row.
     await adminClient.from("pending_bookings").delete().eq("id", pendingId);
 
-    // Fetch class + block details for the emails
-    const { data: cls } = await adminClient.from("classes").select("*").eq("id", pending.class_id).single();
-    const { data: blk } = await adminClient.from("blocks").select("*").eq("id", pending.block_id).single();
-
-    if (cls && blk) {
-      // Trigger 2: client confirmation email
-      const clientHtml = buildConfirmedEmailHtml({
-        firstName: pending.first_name,
-        className: cls.name,
-        venue: cls.venue,
-        loc: cls.loc,
-        day: cls.day,
-        time: cls.time,
-        endTime: cls.end_time,
-        blockDates: blk.dates || [],
-      });
-      await sendEmail(supabaseUrl, supabaseServiceKey, pending.email,
-        `Your LG Pilates booking is confirmed — ${cls.name}`, clientHtml, isTest);
-
-      // Trigger 5S: admin payment alert email
-      const { data: settingsRows } = await adminClient.from("settings").select("key,value").eq("key", "admin_email");
-      const adminEmail = settingsRows && settingsRows[0] ? settingsRows[0].value : null;
-
-      if (adminEmail) {
-        const dashboardUrl = appBaseUrl ? `${appBaseUrl}#dashboard` : "";
-        const adminHtml = buildAdminAlertEmailHtml({
-          firstName: pending.first_name,
-          lastName: pending.last_name,
-          className: cls.name,
-          venue: cls.venue,
-          loc: cls.loc,
-          day: cls.day,
-          time: cls.time,
-          endTime: cls.end_time,
-          blockDates: blk.dates || [],
-          amountDue: amountDue,
-          customerType: pending.customer_type,
-          dashboardUrl: dashboardUrl,
-        });
-        await sendEmail(supabaseUrl, supabaseServiceKey, adminEmail,
-          `New booking (card payment) — ${pending.first_name} ${pending.last_name}, ${cls.day} ${cls.time}, ${cls.venue}`,
-          adminHtml, isTest);
-      }
-    }
+    // Trigger 2 (client confirmation) + Trigger 5S (admin card-payment alert).
+    // Both are built server-side by send-email from the booking id — recipient,
+    // amount, and template all resolved there (single source of truth, #53).
+    // send-email skips the admin alert itself if no admin_email is configured.
+    await sendTypedEmail(supabaseUrl, supabaseServiceKey, "confirmed_booking", bookingId, isTest);
+    await sendTypedEmail(supabaseUrl, supabaseServiceKey, "card_payment_alert", bookingId, isTest);
 
     return new Response(JSON.stringify({ received: true, booking_id: bookingId }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },

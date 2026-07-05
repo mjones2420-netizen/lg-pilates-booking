@@ -1826,65 +1826,9 @@ function getParqAnswers(){
 function updateYesSection(){ document.getElementById("parq-yes-section").style.display=hasAnyYes()?"block":"none"; }
 
 // ─── Email helpers ────────────────────────────────────────────────────────────
-function buildConfirmedEmailHtml(opts){
-  // opts: { firstName, className, venue, loc, day, time, endTime, blockDates }
-  var today=new Date(); today.setHours(0,0,0,0);
-  var pillsHtml=opts.blockDates&&opts.blockDates.length>0?opts.blockDates.map(function(d){
-    var parts=d.split(' ');
-    var months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-    var dt=new Date(new Date().getFullYear(),months[parts[1]]||0,parseInt(parts[0])||1);
-    var past=dt<today;
-    return past
-      ? '<span style="display:inline-block;padding:3px 8px;border-radius:100px;font-size:11px;font-weight:500;margin:2px 3px 2px 0;background:#f0f0f0;color:#aaaaaa;border:1px solid #dddddd;">'+d+'</span>'
-      : '<span style="display:inline-block;padding:3px 8px;border-radius:100px;font-size:11px;font-weight:500;margin:2px 3px 2px 0;background:#eef5f5;color:#2a6b6b;border:1px solid #cde0e0;">'+d+'</span>';
-  }).join(''):'';
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
-    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
-    +'<tr><td align="center">'
-    +'<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">'
-
-    // Header
-    +'<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">'
-    +'<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>'
-    +'<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>'
-    +'</td></tr>'
-
-    // Confirmed banner
-    +'<tr><td style="background:#e8f5e8;border-left:4px solid #3a8a6a;padding:18px 32px;">'
-    +'<div style="font-size:15px;font-weight:600;color:#2a6a4a;margin-bottom:6px;">Booking confirmed</div>'
-    +'<div style="font-size:13px;color:#2a5a3a;line-height:1.6;">Payment received, your booking is now confirmed. We look forward to seeing you.</div>'
-    +'</td></tr>'
-
-    // Body
-    +'<tr><td style="padding:24px 32px;">'
-
-    // Greeting
-    +'<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi '+sanitise(opts.firstName)+',</p>'
-
-    // Booking summary
-    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Your booking</div>'
-    +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">'
-    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.className+'</td></tr>'
-    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.venue+', '+opts.loc+'</td></tr>'
-    +'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">'+opts.day+', '+opts.time+' &ndash; '+opts.endTime+'</td></tr>'
-    +(pillsHtml?'<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;vertical-align:top;padding-top:8px;">Sessions</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;text-align:right;">'+pillsHtml+'</td></tr>':'')
-    +'</table>'
-
-    // What to bring
-    +'<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">What to bring</div>'
-    +'<p style="font-size:13px;color:#4a6060;line-height:1.7;margin:0 0 20px;">Please wear comfortable clothing and bring a water bottle. Please arrive no more than 10 minutes before the session starts.</p>'
-
-    +'</td></tr>'
-
-    // Footer
-    +'<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">'
-    +'<div style="font-size:11px;color:#8aabab;line-height:1.6;">Questions? Reply to this email or contact Louise at <a href="mailto:bookings@lg-pilates.co.uk" style="color:#3a8a8a;text-decoration:none;">bookings@lg-pilates.co.uk</a><br>LG Pilates &middot; Baildon &amp; Guiseley</div>'
-    +'</td></tr>'
-
-    +'</table>'
-    +'</td></tr></table>'
-    +'</body></html>';
-}
+// buildConfirmedEmailHtml used to live here. The client "booking confirmed"
+// email is now built server-side by the send-email function and triggered via
+// sendTypedEmail('confirmed_booking', bookingId) — single source of truth (#53).
 
 // Convert Louise's plain-text message into safe HTML: escape, then turn
 // newlines into <br>. Keeps her wording verbatim with no HTML injection risk.
@@ -2138,6 +2082,25 @@ async function sendSystemEmail(type, bookingId){
     });
     if(!res.ok){ console.warn("System email failed (non-fatal):",type,res.status,await res.text()); }
   }catch(emailErr){ console.warn("System email error (non-fatal):",type,emailErr); }
+}
+
+// Trusted typed email (confirmed_booking) triggered by a logged-in admin.
+// Carries only {type, booking_id}: the send-email function loads the recipient
+// and builds the HTML server-side (single source of truth, #53). Uses the
+// admin's JWT — the anon key is rejected on this path.
+async function sendTypedEmail(type, bookingId){
+  if(IS_NO_EMAIL) return true;
+  try{
+    var{data:sess}=await sb.auth.getSession();
+    var jwt=(sess&&sess.session&&sess.session.access_token)||SUPABASE_KEY;
+    var res=await fetch(SUPABASE_URL+"/functions/v1/send-email",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+jwt},
+      body:JSON.stringify({type:type,booking_id:bookingId,isTest:IS_TEST_ENV})
+    });
+    if(!res.ok){ console.warn("Typed email failed (non-fatal):",type,res.status,await res.text()); return false; }
+    return true;
+  }catch(emailErr){ console.warn("Typed email error (non-fatal):",type,emailErr); return false; }
 }
 
 function confirmBooking(){
@@ -3551,21 +3514,7 @@ function confirmBookingAdmin(idx){
 
       // Send booking confirmed email (non-fatal — booking already confirmed)
       try{
-        var cls=classes.find(function(c){ return c.id===b.classId; })||{};
-        var blk=blocks.find(function(bl){ return bl.id===b.blockId; })||{};
-        var firstName=(b.client||"").split(" ")[0]||"";
-        var subject="Your booking is confirmed \u2014 "+cls.day+" "+cls.time+", "+(cls.venue||"");
-        var emailHtml=buildConfirmedEmailHtml({
-          firstName:firstName,
-          className:cls.name||b.cls,
-          venue:cls.venue||"",
-          loc:cls.loc||"",
-          day:cls.day||b.day,
-          time:cls.time||"",
-          endTime:cls.end_time||"",
-          blockDates:blk.dates||[]
-        });
-        await sendBookingEmail(b.email,subject,emailHtml);
+        await sendTypedEmail("confirmed_booking",b.dbId);
       }catch(emailErr){ console.warn("Confirmed email error (non-fatal):",emailErr); }
 
       renderDashboard();

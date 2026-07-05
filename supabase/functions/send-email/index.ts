@@ -144,9 +144,53 @@ function buildReservedEmailHtml(o: EmailContext): string {
     + '</body></html>';
 }
 
-function buildAdminAlertEmailHtml(o: EmailContext): string {
+// Client "booking confirmed" email — sent after payment is received (card
+// payment via stripe-webhook, or a bank transfer confirmed by Louise). Single
+// source of truth: previously duplicated in index.html and stripe-webhook (#53).
+function buildConfirmedEmailHtml(o: EmailContext): string {
+  const pillsHtml = datePills(o.blockDates);
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
+    + '<tr><td align="center">'
+    + '<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">'
+    + '<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">'
+    + '<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>'
+    + '<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>'
+    + '</td></tr>'
+    + '<tr><td style="background:#e8f5e8;border-left:4px solid #3a8a6a;padding:18px 32px;">'
+    + '<div style="font-size:15px;font-weight:600;color:#2a6a4a;margin-bottom:6px;">Booking confirmed</div>'
+    + '<div style="font-size:13px;color:#2a5a3a;line-height:1.6;">Payment received, your booking is now confirmed. We look forward to seeing you.</div>'
+    + '</td></tr>'
+    + '<tr><td style="padding:24px 32px;">'
+    + '<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi ' + esc(o.firstName) + ',</p>'
+    + '<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Your booking</div>'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">'
+    + '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">' + esc(o.className) + '</td></tr>'
+    + '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">' + esc(o.venue) + ', ' + esc(o.loc) + '</td></tr>'
+    + '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">' + esc(o.day) + ', ' + esc(o.time) + ' &ndash; ' + esc(o.endTime) + '</td></tr>'
+    + (pillsHtml ? '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;vertical-align:top;padding-top:8px;">Sessions</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;text-align:right;">' + pillsHtml + '</td></tr>' : '')
+    + '</table>'
+    + '<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">What to bring</div>'
+    + '<p style="font-size:13px;color:#4a6060;line-height:1.7;margin:0 0 20px;">Please wear comfortable clothing and bring a water bottle. Please arrive no more than 10 minutes before the session starts.</p>'
+    + '</td></tr>'
+    + '<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">'
+    + '<div style="font-size:11px;color:#8aabab;line-height:1.6;">Questions? Reply to this email or contact Louise at <a href="mailto:bookings@lg-pilates.co.uk" style="color:#3a8a8a;text-decoration:none;">bookings@lg-pilates.co.uk</a><br>LG Pilates &middot; Baildon &amp; Guiseley</div>'
+    + '</td></tr>'
+    + '</table>'
+    + '</td></tr></table>'
+    + '</body></html>';
+}
+
+// Admin "new booking" alert. isPaid=true is the card-payment variant (webhook
+// trigger 5S): "via card payment" + "Amount paid". isPaid=false is the
+// reserved-flow variant (new_booking_alert): plain wording + "Amount due".
+function buildAdminAlertEmailHtml(o: EmailContext, isPaid: boolean): string {
   const isNew = o.customerType === 'new';
   const pillsHtml = datePills(o.blockDates);
+  const madeText = isPaid
+    ? ' has made a new booking via card payment.'
+    : ' has made a new booking.';
+  const amountLabel = isPaid ? 'Amount paid' : 'Amount due';
   return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
     + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
     + '<tr><td align="center">'
@@ -157,7 +201,7 @@ function buildAdminAlertEmailHtml(o: EmailContext): string {
     + '</td></tr>'
     + '<tr><td style="background:#e8f0fb;border-left:4px solid #3a6abf;padding:18px 32px;">'
     + '<div style="font-size:15px;font-weight:600;color:#1a3a7a;margin-bottom:6px;">New booking</div>'
-    + '<div style="font-size:13px;color:#2a4a8a;line-height:1.6;">' + esc(o.firstName) + ' ' + esc(o.lastName) + ' (' + (isNew ? 'New client' : 'Returning client') + ') has made a new booking.</div>'
+    + '<div style="font-size:13px;color:#2a4a8a;line-height:1.6;">' + esc(o.firstName) + ' ' + esc(o.lastName) + ' (' + (isNew ? 'New client' : 'Returning client') + ')' + madeText + '</div>'
     + '</td></tr>'
     + '<tr><td style="padding:24px 32px;">'
     + '<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Booking details</div>'
@@ -167,7 +211,7 @@ function buildAdminAlertEmailHtml(o: EmailContext): string {
     + '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">' + esc(o.venue) + ', ' + esc(o.loc) + '</td></tr>'
     + '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">' + esc(o.day) + ', ' + esc(o.time) + ' &ndash; ' + esc(o.endTime) + '</td></tr>'
     + (pillsHtml ? '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;vertical-align:top;padding-top:8px;">Sessions</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;text-align:right;">' + pillsHtml + '</td></tr>' : '')
-    + '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Amount due</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;' + esc(o.amountDue) + '</td></tr>'
+    + '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">' + amountLabel + '</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">&pound;' + esc(o.amountDue) + '</td></tr>'
     + '</table>'
     + (isNew ? '<table width="100%" cellpadding="0" cellspacing="0" style="background:#fff8e8;border-left:4px solid #e07b4a;border-radius:0 6px 6px 0;margin-bottom:20px;">'
       + '<tr><td style="padding:14px 18px;font-size:13px;color:#7a4010;">&#9888;&nbsp; A PAR-Q health form has been submitted with this booking. You can view it in the dashboard.</td></tr>'
@@ -224,6 +268,35 @@ async function loadBookingContext(
   return { ctx, customerEmail: customer?.email || '', adminEmail: s.admin_email || '' };
 }
 
+// Auth gate for the non-public paths (trusted-typed + raw). The caller must be
+// EITHER the service-role key (internal server-to-server, e.g. stripe-webhook)
+// OR a real authenticated admin JWT. The public anon key is rejected — that
+// closes the open relay (#33), since the anon key is embedded in the page.
+// Returns an error Response if the caller is not trusted, or null if it is.
+async function requireTrustedCaller(
+  req: Request,
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+): Promise<Response | null> {
+  const authHeader = req.headers.get('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  if (!token) {
+    return json({ error: 'Unauthorized' }, 401, req);
+  }
+  if (token !== supabaseServiceKey) {
+    const authClient = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: userData, error: userErr } = await authClient.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return json({ error: 'Unauthorized' }, 401, req);
+    }
+    const adminEmails = (Deno.env.get('ADMIN_EMAILS') || '').split(',').map((e) => e.trim().toLowerCase());
+    if (!adminEmails.includes((userData.user.email || '').toLowerCase())) {
+      return json({ error: 'Forbidden' }, 403, req);
+    }
+  }
+  return null;
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders(req) });
@@ -249,6 +322,12 @@ serve(async (req: Request) => {
     // Set on the public path: clears the one-shot stamp if the send fails,
     // so a genuine retry after a Resend outage isn't locked out forever.
     let rollbackStamp: (() => Promise<void>) | null = null;
+    // In test mode (isTest), the authenticated paths echo the intended
+    // recipient/subject/html back in the response so the Playwright suite can
+    // assert on the server-built template (ST-21/ST-22/SEC-08). NEVER set on
+    // the public/anon path — that would leak booking details to an anon caller
+    // who only supplied a sequential booking id.
+    let echoHtml = false;
 
     if (type === 'reserved_confirmation' || type === 'new_booking_alert') {
       // --- PUBLIC path: no caller-supplied recipient or HTML ---
@@ -272,7 +351,7 @@ serve(async (req: Request) => {
         if (!adminEmail) return json({ ok: true, skipped: 'no admin email configured' }, 200, req);
         recipient = adminEmail;
         subject = 'New booking — ' + ctx.firstName + ' ' + ctx.lastName + ', ' + ctx.day + ' ' + ctx.time + ', ' + ctx.venue;
-        html = buildAdminAlertEmailHtml(ctx);
+        html = buildAdminAlertEmailHtml(ctx, false);
       }
 
       // One-shot guard (#45): each booking gets each public email exactly
@@ -303,28 +382,44 @@ serve(async (req: Request) => {
           .eq('id', booking_id);
         if (rbErr) console.error('send-email stamp rollback error:', rbErr);
       };
+    } else if (type === 'confirmed_booking' || type === 'card_payment_alert') {
+      // --- TRUSTED-TYPED path: server builds the HTML from booking_id ---
+      // Callable only by the service-role key (stripe-webhook) or a real admin
+      // JWT (Louise confirming a bank-transfer booking). No caller-supplied
+      // recipient or HTML — the single source of truth for these templates now
+      // lives here, not in index.html or stripe-webhook (#53).
+      const authErr = await requireTrustedCaller(req, supabaseUrl, supabaseServiceKey);
+      if (authErr) return authErr;
+
+      if (!booking_id) {
+        return json({ error: 'Missing booking_id' }, 400, req);
+      }
+      const admin = createClient(supabaseUrl, supabaseServiceKey);
+      const loaded = await loadBookingContext(admin, booking_id);
+      if (!loaded) {
+        return json({ error: 'Booking not found' }, 404, req);
+      }
+      const { ctx, customerEmail, adminEmail } = loaded;
+
+      if (type === 'confirmed_booking') {
+        if (!customerEmail) return json({ error: 'No customer email on booking' }, 400, req);
+        recipient = customerEmail;
+        subject = 'Your LG Pilates booking is confirmed — ' + ctx.className;
+        html = buildConfirmedEmailHtml(ctx);
+      } else {
+        // card_payment_alert — recipient is the configured admin address only
+        if (!adminEmail) return json({ ok: true, skipped: 'no admin email configured' }, 200, req);
+        recipient = adminEmail;
+        subject = 'New booking (card payment) — ' + ctx.firstName + ' ' + ctx.lastName + ', ' + ctx.day + ' ' + ctx.time + ', ' + ctx.venue;
+        html = buildAdminAlertEmailHtml(ctx, true);
+      }
+      echoHtml = isTest === true;
     } else {
       // --- ADMIN raw path: caller supplies {to,subject,html} ---
-      // Trusted iff the bearer is EITHER the service-role key (internal
-      // server-to-server caller, e.g. stripe-webhook) OR a real authenticated
-      // admin JWT. The public anon key is rejected — that closes the open
-      // relay (#33), since the anon key is embedded in the page.
-      const authHeader = req.headers.get('Authorization') || '';
-      const token = authHeader.replace(/^Bearer\s+/i, '');
-      if (!token) {
-        return json({ error: 'Unauthorized' }, 401, req);
-      }
-      if (token !== supabaseServiceKey) {
-        const authClient = createClient(supabaseUrl, supabaseServiceKey);
-        const { data: userData, error: userErr } = await authClient.auth.getUser(token);
-        if (userErr || !userData?.user) {
-          return json({ error: 'Unauthorized' }, 401, req);
-        }
-        const adminEmails = (Deno.env.get("ADMIN_EMAILS") || "").split(",").map(e => e.trim().toLowerCase());
-        if (!adminEmails.includes((userData.user.email || "").toLowerCase())) {
-          return json({ error: 'Forbidden' }, 403, req);
-        }
-      }
+      // Still used for the block / cancellation / refund emails sent from the
+      // dashboard. Same trusted-caller gate as the typed path above.
+      const authErr = await requireTrustedCaller(req, supabaseUrl, supabaseServiceKey);
+      if (authErr) return authErr;
 
       const { to, subject: rawSubject, html: rawHtml } = body;
       if (!to || !rawSubject || !rawHtml) {
@@ -333,6 +428,7 @@ serve(async (req: Request) => {
       recipient = to;
       subject = rawSubject;
       html = rawHtml;
+      echoHtml = isTest === true;
     }
 
     // In test mode, redirect all recipients to Resend's silent sink address
@@ -364,7 +460,14 @@ serve(async (req: Request) => {
       if (rollbackStamp) await rollbackStamp();
       return json({ error: data }, response.status, req);
     }
-    return json({ id: data.id }, 200, req);
+    // echoHtml is only ever true on the authenticated paths in test mode —
+    // lets the Playwright suite assert on the server-built template. In prod
+    // isTest is false for real traffic, so nothing is echoed.
+    return json(
+      echoHtml ? { id: data.id, to: recipient, subject, html } : { id: data.id },
+      200,
+      req,
+    );
 
   } catch (err) {
     console.error('send-email function error:', err);
