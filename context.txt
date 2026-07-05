@@ -259,14 +259,20 @@ Table grants to anon:
   classes   — SELECT only
   blocks    — SELECT only
   settings  — SELECT only
-  parq      — INSERT only (PAR-Q save during booking)
+  (No anon table INSERT grants. parq writes go through the insert_parq() RPC
+   since #34/migration 15; pending_bookings' legacy anon INSERT was revoked in
+   #44/migration 22 — stripe-checkout writes it with the service-role key.)
 
 Tables with NO anon grants at all:
-  bookings, customers, cancellations, waitlist, customer_class_priority
+  bookings, customers, parq, pending_bookings, cancellations, waitlist,
+  customer_class_priority
 
 Function EXECUTE grants to anon:
   book_if_available, check_priority_access, has_active_booking_on_block,
-  lookup_customer, upsert_customer, get_schema_fingerprint
+  lookup_customer, upsert_customer, insert_parq, get_schema_fingerprint
+  Note (#47/#48, migration 22): lookup_customer now returns only (id,
+  first_name); upsert_customer is name-locked / phone-open (never overwrites
+  first_name/last_name on an existing email, refreshes phone + customer_type).
 
 The `authenticated` role retains ALL on every table (admin dashboard unaffected).
 

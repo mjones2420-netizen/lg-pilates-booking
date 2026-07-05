@@ -4,15 +4,18 @@
 -- editor — the web editor's parser rejects the DECLARE variables (Supabase bug
 -- confirmed in Session 6). CLI / apply_migration works fine.
 
+-- lookup_customer trimmed to (id, first_name) in migration 22 (#47) — the
+-- booking flow only uses existence + id, so last_name/phone/customer_type
+-- were leaking to anon for free.
 CREATE OR REPLACE FUNCTION public.lookup_customer(p_email text)
- RETURNS TABLE(id integer, first_name text, last_name text, phone text, customer_type text)
+ RETURNS TABLE(id integer, first_name text)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
 BEGIN
   RETURN QUERY
-  SELECT c.id, c.first_name, c.last_name, c.phone, c.customer_type
+  SELECT c.id, c.first_name
   FROM customers c
   WHERE c.email = p_email
   LIMIT 1;
@@ -31,8 +34,10 @@ DECLARE
 BEGIN
   SELECT id INTO existing_id FROM customers WHERE email = p_email LIMIT 1;
   IF existing_id IS NOT NULL THEN
+    -- name-locked / phone-open (migration 22, #48): never overwrite
+    -- first_name/last_name; refresh phone + customer_type only.
     UPDATE customers
-    SET first_name=p_first_name, last_name=p_last_name, phone=p_phone, customer_type=p_customer_type
+    SET phone=p_phone, customer_type=p_customer_type
     WHERE id = existing_id;
     RETURN existing_id;
   ELSE

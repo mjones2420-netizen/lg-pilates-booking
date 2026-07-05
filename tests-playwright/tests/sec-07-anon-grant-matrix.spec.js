@@ -10,12 +10,14 @@
 //
 //     blocks           → SELECT
 //     classes          → SELECT
-//     pending_bookings → INSERT
 //     settings         → SELECT
 //
 //   All other tables (bookings, customers, parq, cancellations, waitlist,
-//   customer_class_priority) should have NO anon grants. Writes to parq go
-//   through the insert_parq() SECURITY DEFINER RPC (migration 15, #34).
+//   customer_class_priority, pending_bookings) should have NO anon grants.
+//   Writes to parq go through the insert_parq() SECURITY DEFINER RPC
+//   (migration 15, #34). pending_bookings lost its legacy anon INSERT in
+//   migration 22 (#44) — the stripe-checkout edge function writes it with the
+//   service-role key.
 //
 //   This spec is the canary for accidental grant regressions. If someone
 //   later adds `GRANT SELECT ON bookings TO anon` either deliberately or
@@ -46,11 +48,13 @@ const APP_URL = process.env.TEST_APP_URL;
 const EXPECTED_ANON_GRANTS = {
   blocks:            ['SELECT'],
   classes:           ['SELECT'],
-  pending_bookings:  ['INSERT'],
   settings:          ['SELECT'],
 };
 
 // Tables that MUST NOT have any anon grants.
+// pending_bookings joined this list in migration 22 (#44): its legacy anon
+// INSERT door was closed — the stripe-checkout edge function writes that row
+// with the service-role key, so nothing legitimate needs anon access.
 const FORBIDDEN_ANON_TABLES = [
   'bookings',
   'customers',
@@ -58,6 +62,7 @@ const FORBIDDEN_ANON_TABLES = [
   'cancellations',
   'waitlist',
   'customer_class_priority',
+  'pending_bookings',
 ];
 
 test.describe('SEC-07 — Anon grant matrix audit', () => {

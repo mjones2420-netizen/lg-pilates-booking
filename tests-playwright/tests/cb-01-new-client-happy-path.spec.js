@@ -38,7 +38,7 @@ const {
   agreeAndReserve,
   uniqueTestEmail
 } = require('./helpers/booking-flow');
-const { deleteCustomerCascade, getParqByCustomerId } = require('./helpers/admin-db');
+const { deleteCustomerCascade, getParqByCustomerId, getCustomerById } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -92,7 +92,9 @@ test.describe('CB-01 — New client happy path', () => {
     expect(customer).toBeTruthy();
     expect(customer.length).toBe(1);
     expect(customer[0].first_name).toBe(firstName);
-    expect(customer[0].customer_type).toBe('new');
+    // customer_type no longer returned by lookup_customer (#47) — read via pg.
+    const custRow = await getCustomerById(customer[0].id);
+    expect(custRow.customer_type).toBe('new');
     createdCustomerIds.push(customer[0].id);
   });
 
@@ -256,7 +258,9 @@ test.describe('CB-01 — New client happy path', () => {
     const { data: customer } = await sb.rpc('lookup_customer', { p_email: email });
     expect(customer).toBeTruthy();
     expect(customer.length).toBe(1);
-    expect(customer[0].customer_type).toBe('new');
+    // customer_type no longer returned by lookup_customer (#47) — read via pg.
+    const custRow = await getCustomerById(customer[0].id);
+    expect(custRow.customer_type).toBe('new');
     createdCustomerIds.push(customer[0].id);
 
     const parq = await getParqByCustomerId(customer[0].id);

@@ -32,8 +32,15 @@ test.describe('Smoke 02 — anon RPCs', () => {
     expect(data).not.toBeNull();
     expect(data.length).toBe(1);
     expect(data[0].first_name).toBe('Returning');
-    expect(data[0].last_name).toBe('One');
-    expect(data[0].customer_type).toBe('returning');
+
+    // #47 (migration 22): lookup_customer must return ONLY id + first_name.
+    // The booking flow uses existence + id (and could greet by first name);
+    // last_name/phone/customer_type must NOT leak to the anon caller. Assert
+    // the exact key set so a future column re-add is caught here.
+    expect(Object.keys(data[0]).sort()).toEqual(['first_name', 'id']);
+    expect(data[0].last_name).toBeUndefined();
+    expect(data[0].phone).toBeUndefined();
+    expect(data[0].customer_type).toBeUndefined();
   });
 
   test('lookup_customer returns empty for unknown email', async () => {

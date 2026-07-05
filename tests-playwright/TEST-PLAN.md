@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 5 Jul 2026
-**Total tests:** 237
+**Total tests:** 239
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -253,7 +253,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 23 tests
+## Security (SEC) — 25 tests
 
 | Spec file | Test |
 |---|---|
@@ -280,6 +280,8 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-10-send-email-one-shot.spec.js` | new_booking_alert: first call sends, second call is refused with 429 |
 | `sec-10-send-email-one-shot.spec.js` | a concurrent burst yields exactly one accepted send |
 | `sec-11-admin-users-gate.spec.js` | SEC-11 — non-admin authenticated user gets zero rows / rejected writes |
+| `sec-12-upsert-customer-name-locked.spec.js` | name is locked, phone + type are refreshed on an existing email |
+| `sec-12-upsert-customer-name-locked.spec.js` | a new email creates a fresh customer row (identity-key behaviour unchanged) |
 
 ## Stripe (ST) — 24 tests
 

@@ -387,6 +387,19 @@ async function getCustomerByEmail(email) {
   return rows[0] || null;
 }
 
+/**
+ * Returns a customer row by id (incl. phone + customer_type), or null.
+ * lookup_customer no longer returns those columns (migration 22, #47), so
+ * specs that need to assert customer_type or phone must read them via pg.
+ */
+async function getCustomerById(id) {
+  const { rows } = await getPool().query(
+    `SELECT id, first_name, last_name, email, phone, customer_type FROM customers WHERE id = $1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
 /** Inserts a catch_up_swaps row directly (bypasses RLS + UI). Returns the new row id. */
 async function insertCatchUpSwap(customerId, sourceBlockId, targetBlockId, classDate, notes = null) {
   const { rows } = await getPool().query(
@@ -436,6 +449,7 @@ module.exports = {
   deletePendingBookingById,
   getBookingById,
   getCustomerByEmail,
+  getCustomerById,
   insertCatchUpSwap,
   clearCatchUpSwaps,
   countCatchUpSwaps
