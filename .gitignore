@@ -1,3 +1,6 @@
 .DS_Store
 supabase/.temp/
 .claude/commands/
+
+# review-before-tests gate marker (transient, local)
+.claude/.review-marker
