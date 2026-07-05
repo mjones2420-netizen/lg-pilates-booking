@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 5 Jul 2026
-**Total tests:** 241
+**Total tests:** 242
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -192,7 +192,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sd-05-reset-all-classes.spec.js` | clicking All Classes after a filter restores full grid and hides day buttons |
 | `sd-06-class-without-blocks-hidden.spec.js` | hiding a class's only visible block removes it from the grid |
 
-## Settings & Export (SE) — 22 tests
+## Settings & Export (SE) — 23 tests
 
 | Spec file | Test |
 |---|---|
@@ -218,6 +218,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `se-19-payment-mode-toggle-persists.spec.js` | SE-19: toggling payment mode to Stripe and back persists correctly |
 | `se-20-stripe-pk-saves-reloads.spec.js` | SE-20: Stripe publishable key saves and reloads correctly |
 | `se-21-failed-save-error-toast.spec.js` | SE-21 — signed-out save is rejected and shows an error toast |
+| `se-22-test-mode-skips-resend.spec.js` | isTest send returns the no-send sentinel id and still echoes the template |
 
 ## Edge Cases (EC) — 15 tests
 

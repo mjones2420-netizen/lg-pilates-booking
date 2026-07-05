@@ -21,8 +21,10 @@
 //     token implies admin. Used for the confirmed / block / cancellation /
 //     refund emails, all triggered from the dashboard.
 //
-// In test mode (isTest: true) all recipients are redirected to
-// delivered@resend.dev so no real emails are delivered during test runs.
+// In test mode (isTest: true) the Resend API is not called at all — the
+// function returns a synthetic success ({ id: 'test-mode-no-send' }) plus the
+// usual echo, so the Playwright suite exercises every path without sending a
+// real email or consuming the daily quota. Prod (isTest falsey) sends for real.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -431,34 +433,42 @@ serve(async (req: Request) => {
       echoHtml = isTest === true;
     }
 
-    // In test mode, redirect all recipients to Resend's silent sink address
-    const finalRecipient = isTest ? 'delivered@resend.dev' : recipient;
+    // In test mode, skip the Resend API entirely. The Playwright suite only
+    // asserts on the server-built echo (html/subject/to) + status codes, never
+    // on Resend's reply — a real send just burns the 100/day free-tier quota to
+    // a sink address for nothing. The one-shot claim above has already run, so
+    // SEC-10's 200->429 ordering and the rollback-on-failure path are unchanged.
+    // Prod (isTest falsey) still sends for real — behaviour there is identical.
+    let data: { id: string };
+    if (isTest === true) {
+      data = { id: 'test-mode-no-send' };
+    } else {
+      let response: Response;
+      try {
+        response = await fetch(RESEND_API_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'LG Pilates <bookings@lg-pilates.co.uk>',
+            to: [recipient],
+            subject,
+            html,
+          }),
+        });
+      } catch (fetchErr) {
+        if (rollbackStamp) await rollbackStamp();
+        throw fetchErr;
+      }
 
-    let response: Response;
-    try {
-      response = await fetch(RESEND_API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'LG Pilates <bookings@lg-pilates.co.uk>',
-          to: [finalRecipient],
-          subject,
-          html,
-        }),
-      });
-    } catch (fetchErr) {
-      if (rollbackStamp) await rollbackStamp();
-      throw fetchErr;
-    }
-
-    const data = await response.json();
-    if (!response.ok) {
-      console.error('Resend error:', data);
-      if (rollbackStamp) await rollbackStamp();
-      return json({ error: data }, response.status, req);
+      data = await response.json();
+      if (!response.ok) {
+        console.error('Resend error:', data);
+        if (rollbackStamp) await rollbackStamp();
+        return json({ error: data }, response.status, req);
+      }
     }
     // echoHtml is only ever true on the authenticated paths in test mode —
     // lets the Playwright suite assert on the server-built template. In prod
