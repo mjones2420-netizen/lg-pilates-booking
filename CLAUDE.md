@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 05 Jul 2026 (session 67 — #52 webhook hardening + #54 year-boundary prorata fixed and closed, commit 69038f0; #53 deferred)
+Last updated: 05 Jul 2026 (session 68 — #53 server-side email templates fixed and closed (targeted scope), commit ee91c39, deployed test+prod)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **239 tests, all passing** (Session 67 — new PR-01 x4 for #54, ST-27 x2 for #52).
+Current test count: **237 tests, all passing** (Session 68 — #53 reworked ST-21/ST-22/SEC-08 into real server-side checks; net -2 from 239).
 
 ---
 
@@ -305,6 +305,15 @@ Navigate with `switchDashPage(name)`.
 - **Deploy method note**: used the Supabase CLI (`supabase functions deploy <fn> --project-ref <ref> --use-api`) to deploy edge functions from disk instead of pasting ~440-line files through the MCP `deploy_edge_function` tool — far less error-prone for large function bodies. **The CLI is linked to PROD** (`~/dev/lg-pilates-booking/supabase/.temp/project-ref` = `mrlooyixnlxzcfmvnqme`), so ALWAYS pass `--project-ref ngzfhamjuviwfwuncrjo` for test; a bare deploy hits prod. **verify_jwt drift**: stripe-checkout is `verify_jwt:true` on PROD but `false` on TEST — preserve each project's own setting on deploy (omit `--no-verify-jwt` for prod stripe-checkout; pass it for both webhooks). Prod now: stripe-checkout v9, stripe-webhook v7. Test: stripe-checkout v14, stripe-webhook v8.
 - 239/239 tests green. Code review: 1 finding (fixed). Security review: no findings (replay check strengthens the signature gate; the rest is DB-write ordering with no new attack surface).
 
+**Session 68 (2026-07-05):** #53 (server-side email templates) fixed and closed — TARGETED scope (Mark's call), commit ee91c39, deployed test AND prod.
+- **Scope decision**: only the genuinely CROSS-FILE-duplicated templates moved server-side — the confirmed-booking email and the card-payment admin alert, which existed as hand-synced copies in index.html + stripe-webhook + a test mirror (the exact drift that caused #39). The block / cancellation / refund emails were deliberately LEFT on the raw admin-JWT path: each already lives in exactly one place (index.html only) so there's no drift to kill, and moving the block-email batch loop server-side would lose its live "Sending 3 of 12" progress + risk edge-function timeouts, while the refund emails build from the deleted `cancellations` row (not a booking id) so they'd need new loaders for zero anti-drift gain.
+- **send-email**: new `confirmed_booking` + `card_payment_alert` typed paths — server loads the booking by id and builds the HTML itself (single source of truth). Auth via new `requireTrustedCaller` helper (service-role key OR allow-listed admin JWT; anon → 401, non-admin → 403 — stricter than the client-built path they replace). `buildAdminAlertEmailHtml` parameterised with `isPaid` (true = "via card payment"/"Amount paid", false = reserved-flow wording). Recipients stay server-derived — open relay (#33) stays closed.
+- **stripe-webhook**: deleted its 2 duplicated builders (`buildConfirmedEmailHtml`, `buildAdminAlertEmailHtml`), now calls the typed paths with the service-role key via a new `sendTypedEmail` helper. `buildPaymentFailedAdminEmailHtml` (single copy, no counterpart) stays inline. Email ordering unchanged (pending-delete before emails, #52 intact).
+- **index.html**: deleted `buildConfirmedEmailHtml`; `confirmBookingAdmin` now calls new `sendTypedEmail('confirmed_booking', bookingId)` with the admin JWT. `sendBookingEmail` retained for block/cancel/refund. Confirmed-email subject standardised to "Your LG Pilates booking is confirmed — {className}".
+- **Test-observability win**: deleted the stale `helpers/email-templates.js` mirror (the "4th copy"). Added a **test-mode html echo** to send-email — on the AUTHENTICATED paths only (never the public/anon path, never prod: gated `isTest===true` + trusted caller), the 200 response echoes `{to, subject, html}`. ST-21/ST-22/SEC-08 now call the REAL deployed test function (via new `helpers/admin-jwt.js` → admin sign-in) and assert on genuine server output — closes the long-documented "template checks only test a copy" coverage gap. SE-13 rewritten to assert the new typed payload shape (like SE-12). SEC-08 dropped the 2 mirror tests + the deleted client builder, added 2 server-side escaping checks.
+- Deploy method: Supabase CLI from disk (session 67 lesson). CLI linked to PROD, so `--project-ref ngzfhamjuviwfwuncrjo` for test; bare/`mrlooyixnlxzcfmvnqme` for prod. Both functions `verify_jwt:false` on both projects — preserved with `--no-verify-jwt`. Now: **test** send-email v15 / stripe-webhook v9; **prod** send-email v13 / stripe-webhook v8.
+- 237/237 tests green. Code review: no findings. Security review: no findings (typed paths more locked down than what they replace; escaping preserved + now tested end-to-end; echo confined to authenticated+test).
+
 **Next likely work (priority order):**
 - **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — #43 (public signup) is now DONE (2026-07-04, same session as #55/#56): Mark disabled "Allow new users to sign up" on both test and production, verified via `GET /auth/v1/settings` (`disable_signup: true` on both). Next step in Phase 0 is token rotation.
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Stripe go-live key swap — now scheduled as release Phase 3 (#68)
@@ -314,7 +323,7 @@ Navigate with `switchDashPage(name)`.
 - Bugs: #50 (Revenue MTD £0), #51 (false success toasts)
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain — now scheduled as release Phase 1.5 (#65)
-- **#53 (server-side email templates) — DEFERRED, recommended next email work**: its own dedicated session. Moves ~5 email templates server-side + reworks ~10 call sites and 6-8 specs in the payment-email path. Kills the 3 duplicated template copies that caused #39. (#54 done session 67.)
+- **#53 DONE (session 68, targeted)**: confirmed + card-payment-alert templates moved server-side, killing the cross-file duplication that caused #39. Block/cancel/refund emails left on the raw admin path by design (single copies, no drift). If ever wanted, moving those too is optional future work (would need server loaders for the cancellation-row-based refund emails + a rethink of the block-email batch loop UX).
 
 **Full backlog**: `gh issue list` or https://github.com/mjones2420-netizen/lg-pilates-booking/issues
 
