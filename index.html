@@ -2411,7 +2411,7 @@ function renderDashboard(){
       }
       // Load bookings
       var bookingsRes=await sb.from("bookings")
-        .select("id,status,amount_due,refund_amount,block_id,class_id,customer_id,stripe_payment_intent_id")
+        .select("id,status,amount_due,refund_amount,block_id,class_id,customer_id,stripe_payment_intent_id,created_at")
         .order("created_at",{ascending:false});
       var dbBookings=bookingsRes.data;
       var bookingsErr=bookingsRes.error;
@@ -2437,6 +2437,7 @@ function renderDashboard(){
           when:(cls.day||"")+" "+(cls.time||"")+" - "+(cls.venue||""),
           blockDates:blk.dates?blk.dates[0]+" \u2013 "+blk.dates[blk.dates.length-1]:"",
           paid:b.amount_due, status:b.status, refundAmount:b.refund_amount,
+          createdAt:b.created_at,
           stripePaymentIntentId:b.stripe_payment_intent_id||null,
           day:cls.day||""
         };
@@ -2795,11 +2796,13 @@ function toggleClassPriority(customerId, classId, currentlyGranted){
   (async function(){
     try{
       if(currentlyGranted){
-        await sb.from("customer_class_priority").delete().select()
+        var{error:delErr}=await sb.from("customer_class_priority").delete().select()
           .eq("customer_id",customerId).eq("class_id",classId);
+        if(delErr) throw delErr;
         showToast("Manual priority removed.");
       } else {
-        await sb.from("customer_class_priority").insert({customer_id:customerId,class_id:classId}).select();
+        var{error:insErr}=await sb.from("customer_class_priority").insert({customer_id:customerId,class_id:classId}).select();
+        if(insErr) throw insErr;
         showToast("Manual priority granted.");
       }
       renderCustomersTab();
@@ -3290,7 +3293,8 @@ function saveNewClass(){
     try{
       if(editingClassId){
         // Update existing
-        await sb.from("classes").update({name:level,level:level,day:day,time:time,end_time:end,venue:venue,loc:loc}).eq("id",editingClassId).select();
+        var{error}=await sb.from("classes").update({name:level,level:level,day:day,time:time,end_time:end,venue:venue,loc:loc}).eq("id",editingClassId).select();
+        if(error) throw error;
         var c=classes.find(function(x){ return x.id===editingClassId; });
         if(c){ c.name=level; c.level=level; c.day=day; c.time=time; c.end_time=end; c.venue=venue; c.loc=loc; }
         showToast("Class updated!");
@@ -3458,7 +3462,8 @@ function saveEditBlock(blockId){
   var endStr=endDate.getFullYear()+"-"+String(endDate.getMonth()+1).padStart(2,"0")+"-"+String(endDate.getDate()).padStart(2,"0");
   (async function(){
     try{
-      await sb.from("blocks").update({start_date:start,end_date:endStr,weeks:weeks,dates:dates,price:price,cap:cap}).eq("id",blockId).select();
+      var{error}=await sb.from("blocks").update({start_date:start,end_date:endStr,weeks:weeks,dates:dates,price:price,cap:cap}).eq("id",blockId).select();
+      if(error) throw error;
       var blk=blocks.find(function(b){ return b.id===blockId; });
       if(blk){ blk.start_date=start; blk.end_date=endStr; blk.weeks=weeks; blk.dates=dates; blk.price=price; blk.cap=cap; }
       closeAddBlockModal();
@@ -3509,7 +3514,8 @@ function confirmBookingAdmin(idx){
   showToast("Confirming...");
   (async function(){
     try{
-      await sb.from("bookings").update({status:"confirmed"}).eq("id",b.dbId).select();
+      var{error}=await sb.from("bookings").update({status:"confirmed"}).eq("id",b.dbId).select();
+      if(error) throw error;
       showToast("Booking confirmed for "+b.client+"!");
 
       // Send booking confirmed email (non-fatal — booking already confirmed)
@@ -4041,7 +4047,8 @@ function saveSettings(){
     try{
       var rows=[{key:"bank_name",value:bn},{key:"bank_sort_code",value:bs},{key:"bank_account_no",value:ba}];
       if(ae) rows.push({key:"admin_email",value:ae});
-      await sb.from("settings").upsert(rows);
+      var{error}=await sb.from("settings").upsert(rows);
+      if(error) throw error;
       ["bank-name-1","bank-name-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bn; });
       ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
       ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
@@ -4062,7 +4069,8 @@ function savePaymentSettings(){
     try{
       var rows=[{key:"payment_mode",value:modeVal}];
       if(pk) rows.push({key:"stripe_publishable_key",value:pk});
-      await sb.from("settings").upsert(rows);
+      var{error}=await sb.from("settings").upsert(rows);
+      if(error) throw error;
       PAYMENT_MODE=modeVal;
       updateStripeBadge();
       showToast("Settings saved!");

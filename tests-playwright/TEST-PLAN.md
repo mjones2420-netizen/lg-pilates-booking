@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 5 Jul 2026
-**Total tests:** 239
+**Total tests:** 241
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -192,7 +192,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sd-05-reset-all-classes.spec.js` | clicking All Classes after a filter restores full grid and hides day buttons |
 | `sd-06-class-without-blocks-hidden.spec.js` | hiding a class's only visible block removes it from the grid |
 
-## Settings & Export (SE) — 21 tests
+## Settings & Export (SE) — 22 tests
 
 | Spec file | Test |
 |---|---|
@@ -217,6 +217,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `se-18-payment-mode-card-visible.spec.js` | SE-18: payment mode card is visible on Settings page |
 | `se-19-payment-mode-toggle-persists.spec.js` | SE-19: toggling payment mode to Stripe and back persists correctly |
 | `se-20-stripe-pk-saves-reloads.spec.js` | SE-20: Stripe publishable key saves and reloads correctly |
+| `se-21-failed-save-error-toast.spec.js` | SE-21 — signed-out save is rejected and shows an error toast |
 
 ## Edge Cases (EC) — 15 tests
 
@@ -346,6 +347,12 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `pr-01-prorata-year-boundary.spec.js` | one session left in January → charge for exactly that session |
 | `pr-01-prorata-year-boundary.spec.js` | before the block starts → full price, not prorated |
 | `pr-01-prorata-year-boundary.spec.js` | after the block ends → zero remaining, full price fallback (never negative) |
+
+## Reports (RP) — 1 tests
+
+| Spec file | Test |
+|---|---|
+| `rp-01-revenue-mtd.spec.js` | RP-01 — a confirmed booking this month makes Revenue MTD greater than £0 |
 
 ---
 
