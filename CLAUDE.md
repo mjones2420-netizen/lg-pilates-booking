@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 05 Jul 2026 (session 69 — #44 #47 #48 customer-data hardening fixed and closed (migration 22), commit 2c78e84, deployed test+prod)
+Last updated: 05 Jul 2026 (session 70 — #50 #51 #49 fixed and closed (revenue MTD, unchecked save errors, pending_bookings cleanup migration 23), commit 0d8ece7; plus review-before-tests enforcement hook, commit 631cb99; both deployed test+prod, pushed)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **239 tests, all passing** (Session 69 — added SEC-12, +2 from 237).
+Current test count: **241 tests, all passing** (Session 70 — added RP-01 + SE-21, +2 from 239).
 
 ---
 
@@ -323,13 +323,20 @@ Navigate with `switchDashPage(name)`.
 - **Process note (Mark flagged)**: ran the test-site suite during PLAN verification BEFORE the code/security reviews — wrong for a shipping change. Deploy order (code review → security review → tests) governs even during plan execution; plan-verification is not a licence to jump the reviews. Memory `feedback-review-before-tests` updated with this refinement.
 - Deploy: migrations applied to test first (MCP), suite green (239/239), code review no findings, security review no findings, committed + pushed, then prod migration applied (confirm-first). `get_advisors(security)` on prod shows no regression (pending_bookings anon INSERT gone; all remaining lints pre-existing/expected). No Edge Function source changed → no redeploy needed.
 
+**Session 70 (2026-07-05):** Three backlog items fixed + closed (commit 0d8ece7, test+prod), plus a process-enforcement hook (commit 631cb99).
+- **#50 FIXED + CLOSED**: Reports "Revenue MTD" always showed £0 — `renderDashboard` never SELECTed `bookings.created_at`, so every booking looked date-less and none counted toward the month. Added `created_at` to the select and `createdAt:b.created_at` to the mapped booking (renderReportsPage already read `b.created_at||b.createdAt`). New RP-01 spec (freezes nothing — seeds a confirmed booking with amount_due=60, created_at defaults to now(), asserts Revenue MTD > £0). New generate-test-plan group "Reports (RP)".
+- **#51 FIXED + CLOSED**: failed saves showed success toasts — Supabase `.update()/.upsert()` hands errors back quietly and the code never checked them, so a signed-out/expired session could "save" bank details or confirm a booking and see green while nothing persisted. Error-checked six write sites: saveSettings, savePaymentSettings, confirmBookingAdmin, saveNewClass (update branch), saveEditBlock, toggleClassPriority (both branches, distinct delErr/insErr var names). Delete chains were already covered by the session-66 admin RPCs. New SE-21 spec (signs out the browser sb client mid-page, calls saveSettings, asserts "Error saving settings." not "Settings saved!", and DB unchanged).
+- **#49 FIXED + CLOSED**: expired pending_bookings (incl. PAR-Q health data) never deleted. DISCOVERY: a daily pg_cron job `cleanup-expired-pending-bookings` (03:00, `DELETE ... WHERE expires_at < NOW()`) was ALREADY LIVE on both test and prod from an earlier session — never captured as a migration, issue never closed (drift). Migration 23 versions it as a tracked idempotent `cron.schedule(...)` and adds the 1-day grace the issue recommended (`expires_at < NOW() - interval '1 day'`) so a slow/retried Stripe webhook can't race the delete. `cron.schedule` keys on jobname → updated the live job in place on both projects (verified single job, grace clause, active). pg_cron already installed on both (v1.6.4). Mark chose "migration + grace" from a 3-option decision.
+- **Process: review-before-tests enforcement.** Twice this session (and once in session 69) I ran the full suite before the code/security reviews. Root cause: the pipeline order lives in `.claude/commands/deploy.md`, which only fires on a deploy trigger word — a plain "fix" request slips past it and I improvised the order. Fix (two layers): (1) a `PreToolUse` Bash hook `.claude/hooks/require-review-before-tests.sh` (registered in new committed `.claude/settings.json`) BLOCKS `npm test`/`playwright test` while PRODUCT files (index.html, migrations, supabase/functions) are changed-but-unreviewed; clears via `touch .claude/.review-marker` after reviews; spec/helper edits not gated. (2) deploy.md + global `~/.claude/CLAUDE.md` reworded: the order is NOT gated on a trigger word. **Activation caveat: a settings.json created mid-session isn't watched until `/hooks` is opened once or Claude Code restarts — Mark needs to do that to arm the hook.** deploy.md stays local-only (gitignored); the hook + settings.json + gitignore line are committed (631cb99).
+- Verification: 241/241 green, code review no findings, security review no findings (`get_advisors(security)` on test unchanged by migration 23 — all lints pre-existing/expected). Deploy order this session (after Mark's correction): reviews → tests → commit/push → prod migration (confirm-first).
+
 **Next likely work (priority order):**
 - **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — #43 (public signup) is now DONE (2026-07-04, same session as #55/#56): Mark disabled "Allow new users to sign up" on both test and production, verified via `GET /auth/v1/settings` (`disable_signup: true` on both). Next step in Phase 0 is token rotation.
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Stripe go-live key swap — now scheduled as release Phase 3 (#68)
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
-- Remaining security from session 59: #49 (pending_bookings/health-data retention — no cleanup job) — #44/#47/#48 fixed session 69, #45/#46 fixed session 61, #52 fixed session 67, #55/#56 fixed session 66
+- Remaining security from session 59: (all closed) — #44/#47/#48 fixed session 69, #45/#46 fixed session 61, #49 fixed session 70, #52 fixed session 67, #55/#56 fixed session 66
 - Remaining security (older): #35 (needs Pro — enumeration/rate-limiting half of #47), #37 (Edge Function drift docs), #38 (settings world-readable)
-- Bugs: #50 (Revenue MTD £0), #51 (false success toasts)
+- Bugs: (both closed session 70) — #50 (Revenue MTD £0) and #51 (false success toasts) fixed
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain — now scheduled as release Phase 1.5 (#65)
 - **#53 DONE (session 68, targeted)**: confirmed + card-payment-alert templates moved server-side, killing the cross-file duplication that caused #39. Block/cancel/refund emails left on the raw admin path by design (single copies, no drift). If ever wanted, moving those too is optional future work (would need server loaders for the cancellation-row-based refund emails + a rethink of the block-email batch loop UX).
