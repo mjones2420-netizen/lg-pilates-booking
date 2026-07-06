@@ -11,6 +11,7 @@ const { test, expect } = require('@playwright/test');
 const { APP_PATH_EMAIL } = require('./helpers/app-url');
 const { loginAsAdmin } = require('./helpers/admin-auth');
 const { sb } = require('./helpers/supabase');
+const { getPool } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -87,8 +88,12 @@ test.describe('SE-17 — Group block email', () => {
     expect(seenRecipients.size).toBe(recipientCount);
 
     // --- Admin confirmation copy ---
-    const { data: settingsRows } = await sb.from('settings').select('value').eq('key', 'admin_email').single();
-    const adminEmail = settingsRows?.value || '';
+    // admin_email is hidden from the anon role by RLS (#38, migration 24), so
+    // read it via the service-role pool (bypasses RLS) rather than the anon sb.
+    const { rows: settingsRows } = await getPool().query(
+      `SELECT value FROM settings WHERE key = 'admin_email'`
+    );
+    const adminEmail = settingsRows[0]?.value || '';
     expect(adminEmail).toBeTruthy();
     expect(adminPayload.to).toBe(adminEmail);
     expect(adminPayload.subject).toContain('Copy:');

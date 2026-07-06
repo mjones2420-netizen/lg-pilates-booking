@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 5 Jul 2026
-**Total tests:** 242
+**Last updated:** 6 Jul 2026
+**Total tests:** 244
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -34,7 +34,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 |---|---|
 | `smoke-01-anon-reads.spec.js` | anon can SELECT from classes and sees the 4 seed classes |
 | `smoke-01-anon-reads.spec.js` | anon can SELECT from blocks and sees 11 seed blocks |
-| `smoke-01-anon-reads.spec.js` | anon can SELECT from settings and sees bank details |
+| `smoke-01-anon-reads.spec.js` | anon can SELECT from settings and sees bank details (but NOT admin_email) |
 | `smoke-02-anon-rpcs.spec.js` | lookup_customer returns a known seed customer |
 | `smoke-02-anon-rpcs.spec.js` | lookup_customer returns empty for unknown email |
 | `smoke-02-anon-rpcs.spec.js` | check_priority_access returns TRUE for manual priority grant |
@@ -255,7 +255,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 25 tests
+## Security (SEC) — 27 tests
 
 | Spec file | Test |
 |---|---|
@@ -284,6 +284,8 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-11-admin-users-gate.spec.js` | SEC-11 — non-admin authenticated user gets zero rows / rejected writes |
 | `sec-12-upsert-customer-name-locked.spec.js` | name is locked, phone + type are refreshed on an existing email |
 | `sec-12-upsert-customer-name-locked.spec.js` | a new email creates a fresh customer row (identity-key behaviour unchanged) |
+| `sec-13-settings-admin-email-hidden.spec.js` | anon SELECT on settings excludes admin_email but keeps the public keys |
+| `sec-13-settings-admin-email-hidden.spec.js` | an authenticated admin CAN read admin_email |
 
 ## Stripe (ST) — 24 tests
 

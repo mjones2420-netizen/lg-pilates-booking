@@ -32,11 +32,14 @@ test.describe('Smoke 01 — anon reads', () => {
     expect(fullBlocks[0].booked).toBe(2);
   });
 
-  test('anon can SELECT from settings and sees bank details', async () => {
+  test('anon can SELECT from settings and sees bank details (but NOT admin_email)', async () => {
     const { data, error } = await sb.from('settings').select('key, value');
 
     expect(error).toBeNull();
     const keys = data.map(s => s.key).sort();
-    expect(keys).toEqual(['admin_email', 'bank_account_no', 'bank_name', 'bank_sort_code', 'payment_mode', 'stripe_publishable_key']);
+    // admin_email is now hidden from anon by row-level RLS (#38, migration 24) —
+    // the public booking screen only needs the bank + payment keys.
+    expect(keys).toEqual(['bank_account_no', 'bank_name', 'bank_sort_code', 'payment_mode', 'stripe_publishable_key']);
+    expect(keys, 'admin_email must not be readable by anon').not.toContain('admin_email');
   });
 });

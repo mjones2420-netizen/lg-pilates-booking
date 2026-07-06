@@ -2251,10 +2251,11 @@ function confirmBooking(){
           // reserved confirmation goes to the customer, the alert to Louise.
           await sendSystemEmail("reserved_confirmation", savedBookingId);
 
-          // Send new booking alert to Louise (trigger #5) — non-fatal
-          if(appSettings.adminEmail){
-            await sendSystemEmail("new_booking_alert", savedBookingId);
-          }
+          // Send new booking alert to Louise (trigger #5) — non-fatal.
+          // No client-side admin_email guard: the public page can no longer read
+          // admin_email (RLS #38), and send-email derives the recipient
+          // server-side and skips cleanly when none is configured.
+          await sendSystemEmail("new_booking_alert", savedBookingId);
         }catch(emailErr){ console.warn("Email step error (non-fatal):",emailErr); }
       }
 
@@ -4011,6 +4012,7 @@ function showDashboard(){
   (async function(){
     var{data:s}=await sb.auth.getSession();
     show(s.session?"dashboard":"dash-login");
+    if(s.session) await loadSettings();  // authenticated reload — repopulate admin_email (#38)
   })();
 }
 
@@ -4026,6 +4028,7 @@ async function checkDashLogin(){
     btn.textContent="Sign In";
     btn.disabled=false;
     show("dashboard");
+    await loadSettings();  // re-read as authenticated so admin_email populates (#38)
   }
 }
 
@@ -4241,10 +4244,12 @@ function onTimeBlur(fieldId){
   if(el) el.value=formatTimeInput(el.value);
 }
 
-// ─── Page load ────────────────────────────────────────────────────────────────
-(async function(){
+// Load settings from the DB and populate appSettings + the settings form.
+// At page load this runs as anon, so admin_email is filtered out by RLS (#38).
+// It is re-run after admin login (authenticated) so admin_email — needed for the
+// block-email admin copy and the settings form — populates correctly.
+async function loadSettings(){
   try{
-    // Load settings
     var{data:settingsRows}=await sb.from("settings").select("key,value");
     if(settingsRows){
       var s={}; settingsRows.forEach(function(r){ s[r.key]=r.value; });
@@ -4267,6 +4272,11 @@ function onTimeBlur(fieldId){
       updateStripeBadge();
     }
   }catch(err){ console.error("Settings error:",err); }
+}
+
+// ─── Page load ────────────────────────────────────────────────────────────────
+(async function(){
+  await loadSettings();
 
   try{
     // Load classes
