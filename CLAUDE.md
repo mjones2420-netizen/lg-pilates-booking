@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 05 Jul 2026 (session 71 — send-email test-mode no longer calls Resend, commit c800a51; deployed test+prod; SE-22 spec; fixes the Resend 100/day free-tier quota exhaustion caused by the suite)
+Last updated: 06 Jul 2026 (session 72 — #38 settings admin_email hidden from anon, commit 703cf1d; migration 24 test+prod; SEC-13 spec; #37 closed after byte-diff verify; #35 downgraded to nice-to-have)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **242 tests, all passing** (Session 71 — added SE-22, +1 from 241).
+Current test count: **244 tests, all passing** (Session 72 — added SEC-13 x2, +2 from 242).
 
 ---
 
@@ -337,12 +337,21 @@ Navigate with `switchDashPage(name)`.
 - **Sequencing note:** deploy-to-test had to run BEFORE `npm test` (like migrations) — otherwise the suite runs against the old quota-exhausted function and email specs fail on the throttle. Order this session: code review (no findings) → security review (no findings) → deploy test → npm test (242/242; CU-08 flaked in full run, green isolated) → commit/push → deploy prod (confirm-first).
 - **Not done (optional):** separate Resend API key for test vs prod (option 2) — unnecessary now that test never calls Resend, but would fully isolate the two accounts if ever wanted. No issue filed.
 
+**Session 72 (2026-07-06):** #38 fixed + closed (commit 703cf1d, migration 24 test+prod), plus #37 verified + closed and #35 downgraded — no new product bug work, one security hole closed.
+- **#38 FIXED + CLOSED**: settings table was world-readable — `public_view_settings` was `FOR SELECT TO anon, authenticated USING (true)`, so anyone with the anon key read every row incl. `admin_email` (harvestable for phishing). Migration 24 makes the anon read **row-level**: anon SELECT limited to `key IN ('bank_name','bank_sort_code','bank_account_no','payment_mode','stripe_publishable_key')`; new `admin_view_settings` (`TO authenticated USING is_admin()`) gives a logged-in admin all rows. INSERT/UPDATE unchanged (is_admin(), migration 20). Bank details stay anon-readable by design (shown on the public bank-transfer screen); only `admin_email` moves behind the gate.
+- **index.html**: the startup settings read runs as anon (so admin_email is now filtered out), and the admin dashboard REUSED that startup read — so `loadSettings()` was extracted and is re-called after admin login (`checkDashLogin` + `showDashboard` session branch) so admin_email repopulates the settings form + block-email admin copy. Also dropped the public `if(appSettings.adminEmail)` guard on the `new_booking_alert` send (line ~2255) — send-email gates on admin_email server-side (`skipped` when none), so Louise's alert still fires; the public page no longer needs the value.
+- **Edge functions unaffected**: all settings reads in send-email (`loadBookingContext`) and stripe-webhook use the service-role key (bypasses RLS) — verified before shipping. No function redeploy needed.
+- **Specs**: new SEC-13 (anon SELECT excludes admin_email + keeps public keys; authenticated admin CAN read admin_email — uses a dedicated signed-in client). **smoke-01** line 40 `toEqual` updated to drop admin_email from the expected anon key set (would otherwise fail). **se-17** line 90 rewired from an anon `sb` read of admin_email (now returns nothing) to a service-role `getPool()` read. 244/244 green. Code review + security review: no findings.
+- Deploy order: reviews → drift-check test (no drift) → migration 24 test → npm test (244) → regen TEST-PLAN → commit/push (703cf1d, live front-end) → drift-check prod (no drift) → migration 24 prod (confirm-first). index.html works under BOTH old and new RLS, so pushing before the prod migration was the safe order (old live index.html would break under new prod RLS — no re-read, and its admin_email guard would kill public alerts).
+- **#37 CLOSED** (Edge Function drift): verified by downloading live prod source (`supabase functions download --project-ref mrlooyixnlxzcfmvnqme --use-api`) and byte-diffing against the repo — stripe-checkout / stripe-webhook / send-email IDENTICAL; stripe-refund differs only by a code comment + trailing newline (repo slightly ahead, no behaviour drift). All 4 now tracked in git; CLI deploy-from-disk keeps them synced. Test-vs-prod parity remains a documented manual check (expected version gaps, not drift).
+- **#35 DOWNGRADED** to "NICE TO HAVE" (retitled): the PII field-leak half was fixed session 69 (#47, lookup_customer trimmed to id+first_name); the remaining rate-limit/enumeration half is NOT blocked on Supabase Pro — free-plan options exist (edge function + throttle, Cloudflare Turnstile, or a DB counter table). Note added to the issue. Low real-world risk now; don't spend effort pre-launch.
+
 **Next likely work (priority order):**
 - **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — #43 (public signup) is now DONE (2026-07-04, same session as #55/#56): Mark disabled "Allow new users to sign up" on both test and production, verified via `GET /auth/v1/settings` (`disable_signup: true` on both). Next step in Phase 0 is token rotation.
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Stripe go-live key swap — now scheduled as release Phase 3 (#68)
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close
 - Remaining security from session 59: (all closed) — #44/#47/#48 fixed session 69, #45/#46 fixed session 61, #49 fixed session 70, #52 fixed session 67, #55/#56 fixed session 66
-- Remaining security (older): #35 (needs Pro — enumeration/rate-limiting half of #47), #37 (Edge Function drift docs), #38 (settings world-readable)
+- Remaining security (older): #35 (NICE TO HAVE — enumeration/rate-limiting half of #47; not Pro-blocked, free options exist). #37 (Edge Function drift) CLOSED session 72. #38 (settings world-readable) FIXED + CLOSED session 72.
 - Bugs: (both closed session 70) — #50 (Revenue MTD £0) and #51 (false success toasts) fixed
 - [#29](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/29): T1-09c inbound refund webhook sync (deferred)
 - [T1-04](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/4): Netlify migration + custom domain — now scheduled as release Phase 1.5 (#65)
