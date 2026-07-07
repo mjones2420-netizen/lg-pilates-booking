@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 06 Jul 2026 (session 72 — #38 settings admin_email hidden from anon, commit 703cf1d; migration 24 test+prod; SEC-13 spec; #37 closed after byte-diff verify; #35 downgraded to nice-to-have)
+Last updated: 07 Jul 2026 (session 73 — GitHub Project board created as canonical backlog priority list, no code changes)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -88,7 +88,7 @@ If drift detected, remind Mark to run: `cd tests-playwright && npm run seed`
 3. **No git push until `npm test` is green** — including any new specs.
 4. **New/changed functionality gets new Playwright specs in the same session.**
 5. **TEST-PLAN.md is generated — never hand-edit it.** After adding or removing any test, run `cd tests-playwright && npm run test-plan` to regenerate it, in the same session as the test change. Long-form history lives in TEST-PLAN-HISTORY.md.
-6. **GitHub Issues** is the single source of truth for the backlog. Consult open issues at session start (`gh issue list`). Create new issues for any newly identified item before session ends. Close issues when done. BACKLOG.md is kept for historical reference only — do not update it.
+6. **GitHub Issues** is the single source of truth for what's in the backlog. Consult open issues at session start (`gh issue list --limit 200`). Create new issues for any newly identified item before session ends. **The GitHub Project board ("Booking System Backlog", project #1, https://github.com/users/mjones2420-netizen/projects/1) is the priority order** — top to bottom, not issue number. When an issue's work finishes: close it on the Issues tab AND set it to Done on the project board (both, not just one). BACKLOG.md is kept for historical reference only — do not update it.
 7. **SQL: confirm and explain before running anything against Supabase.**
 8. **Never update documentation until tests are green** (hard rule).
 9. **Plain English summary alongside any technical detail.**
@@ -346,7 +346,15 @@ Navigate with `switchDashPage(name)`.
 - **#37 CLOSED** (Edge Function drift): verified by downloading live prod source (`supabase functions download --project-ref mrlooyixnlxzcfmvnqme --use-api`) and byte-diffing against the repo — stripe-checkout / stripe-webhook / send-email IDENTICAL; stripe-refund differs only by a code comment + trailing newline (repo slightly ahead, no behaviour drift). All 4 now tracked in git; CLI deploy-from-disk keeps them synced. Test-vs-prod parity remains a documented manual check (expected version gaps, not drift).
 - **#35 DOWNGRADED** to "NICE TO HAVE" (retitled): the PII field-leak half was fixed session 69 (#47, lookup_customer trimmed to id+first_name); the remaining rate-limit/enumeration half is NOT blocked on Supabase Pro — free-plan options exist (edge function + throttle, Cloudflare Turnstile, or a DB counter table). Note added to the issue. Low real-world risk now; don't spend effort pre-launch.
 
-**Next likely work (priority order):**
+**Session 73 (2026-07-07):** GitHub Project board built and adopted as the canonical backlog priority list. No code, DB, or test changes.
+- Created "Booking System Backlog" (project #1, https://github.com/users/mjones2420-netizen/projects/1), linked to the repo (`gh project link`) so it shows under the repo's Projects tab.
+- All 60 open issues added. Final board order top→bottom: misc/older backlog (bugs, chores, T1/T2/T3 items, go-live #30, security #35) → Waitlist (#71-76) → Release (#63-70) → Future Feature Upgrades (#80-100, bottom).
+- Status field trimmed to just **Todo / Done** (removed the default "In Progress" option — Mark tracks in-progress via the session, not the board). All 60 items set to Todo.
+- New workflow rule (also in section "WORKFLOW — NON-NEGOTIABLE RULES" item 6 above): closing an issue's work now means BOTH closing it on the Issues tab AND setting it Done on the board.
+- Required a one-time `gh auth refresh -s project` (device-code flow, Mark approved on his phone since he was remote) to get the `project` OAuth scope — `gh` didn't have it before.
+- Labels (Labels field already exists on the board, just not shown as a column by default) — Mark can toggle it on via the view's column settings in the browser; no CLI lever for that.
+
+**Next likely work (priority order — see the [project board](https://github.com/users/mjones2420-netizen/projects/1) for the live version, this list may drift):**
 - **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — #43 (public signup) is now DONE (2026-07-04, same session as #55/#56): Mark disabled "Allow new users to sign up" on both test and production, verified via `GET /auth/v1/settings` (`disable_signup: true` on both). Next step in Phase 0 is token rotation.
 - [#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30): Stripe go-live key swap — now scheduled as release Phase 3 (#68)
 - [#28](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/28): T1-09b prod manual verify, then close

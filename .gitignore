@@ -2,5 +2,9 @@
 supabase/.temp/
 .claude/commands/
 
+# internal session notes — not for public repo
+context.txt
+context_old.txt
+
 # review-before-tests gate marker (transient, local)
 .claude/.review-marker
