@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 07 Jul 2026 (session 73 — GitHub Project board created as canonical backlog priority list, no code changes)
+Last updated: 11 Jul 2026 (session 74 — Booking History page added; ended blocks hidden from All Bookings + By Class)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -114,7 +114,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **244 tests, all passing** (Session 72 — added SEC-13 x2, +2 from 242).
+Current test count: **248 tests, all passing** (Session 74 — added AB-25 x2 + AB-26 x2, +4 from 244).
 
 ---
 
@@ -353,6 +353,18 @@ Navigate with `switchDashPage(name)`.
 - New workflow rule (also in section "WORKFLOW — NON-NEGOTIABLE RULES" item 6 above): closing an issue's work now means BOTH closing it on the Issues tab AND setting it Done on the board.
 - Required a one-time `gh auth refresh -s project` (device-code flow, Mark approved on his phone since he was remote) to get the `project` OAuth scope — `gh` didn't have it before.
 - Labels (Labels field already exists on the board, just not shown as a column by default) — Mark can toggle it on via the view's column settings in the browser; no CLI lever for that.
+
+**Session 74 (2026-07-11):** New "Booking history" dashboard page — ended blocks hidden from All Bookings + By Class (commit 6441c05, index.html + specs only, NO DB/Edge Function/production changes). Mark's question ("when a block ends, should its customer details clear from the dashboard?") — confirmed nothing is automatic today, then built the hide-by-default behaviour he wanted.
+- **Behaviour**: bookings whose block has ended (`end_date < today`) now render on a new view-only `#dbpage-history` page (own search box `filterHistoryTable`, View button only — no Confirm/Remove/Del) instead of `#btbody`; current/upcoming stay on All Bookings. `renderClassesView` filters ended blocks out entirely (By Class = current/upcoming only). Nothing deleted — display-only relocation. Cutoff = day AFTER end_date, no grace period.
+- **New helper `isBlockPast(block)`** (index.html ~1259, after getNextBlock) — single date-driven cutoff (`end_date < local-midnight-today`, BST-safe via `+"T00:00:00"`+`setHours(0,0,0,0)`). blocks.status deliberately NOT consulted (it's never auto-updated). NOTE: pre-existing inline end_date comparisons (getActiveBlock, renderBlockWarnings, public schedule, catch-up pickers' `status==='active'` gate) were NOT migrated to it — flagged in review as drift risk, left as-is (out of scope). If isBlockPast's rule ever changes, those need revisiting.
+- **renderDashboard** now builds two row strings (bhtml current / hhtml past) in one pass, both indexing the same global `bookings` array so `viewBooking(i)` etc. work from either table. New `setBookingTables()` mirrors loading/error states into BOTH tbodies (review fix — History was showing stale rows on error). All-bookings empty state now distinguishes "none at all" vs "all on past blocks — see Booking history".
+- **PAR-Q missing-form banner** now skips past-block bookings (`!b.blockPast`) — a missing form on an ended block isn't actionable and its row lives in History where the scroll-to-highlight can't reach. Deliberate; flagged as removing the only audit signal for a never-collected form (low risk, noted for Louise).
+- **By Class empty-state** reworded (Mark chose Option 2): "No current or upcoming blocks — see Booking history for past terms." (class with only-past blocks). Dead "archived" blkStatus branch removed (past blocks never reach that loop now — 2-state active/upcoming).
+- **Mockup-first**: approved Artifact mockup (3 iterations: initial → View-only History rows after Mark caught the pointless "Remove from Block" on ended bookings → Option 2 wording baked in).
+- **Decisions Mark confirmed**: History stays VIEW-ONLY (no self-serve late-refund/late-payment/customer-delete for past-only bookings — rare, would need Mark+Claude via DB); ended blocks can no longer be edited/deleted from the UI (Edit/Delete Block lived only in By Class) — ACCEPTED, they just accumulate invisibly (deleting one would wipe its history anyway).
+- **Specs**: AB-25 (a: past bookings on History not All Bookings, view-only, data intact, View works; b: History search filters) + AB-26 (a: ended blocks don't render in By Class, badge counts non-past, no Archived badge; b: only-past class shows Option 2 empty state + working Add Block). ac-05 empty-state assertion updated ("No blocks yet"→"No current or upcoming blocks"). AB-26b creates its own class+block via pg (no fixture has an only-past class) and self-cleans in afterEach — needs `page.reload()` after the insert because `classes` is fetched once at page load. 248/248 green, TEST-PLAN regenerated (248 tests, 175 files).
+- **Reports page deliberately untouched** — it shows lifetime totals by design; splitting past/current there would be a separate request.
+- Code review (high effort): 10 findings — 5 fixed pre-commit (ac-05-not-a-finding-but-caught, stale History on error, misleading empty message, dead archived branch, over-promising "Nothing is deleted" banner softened to "when a block ends"), 5 accepted by Mark's decisions above. Security review skipped (display-only; no payments/auth/DB/Edge Function surface). No production Supabase changes this session.
 
 **Next likely work (priority order — see the [project board](https://github.com/users/mjones2420-netizen/projects/1) for the live version, this list may drift):**
 - **Release execution: start at [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → Phase 0 ([#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63))** — #43 (public signup) is now DONE (2026-07-04, same session as #55/#56): Mark disabled "Allow new users to sign up" on both test and production, verified via `GET /auth/v1/settings` (`disable_signup: true` on both). Next step in Phase 0 is token rotation.
