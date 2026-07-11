@@ -449,6 +449,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
         <div class="db-nav-section">Bookings</div>
         <div class="db-nav-item on" id="dbnav-bookings" onclick="switchDashPage('bookings')"><i class="ti ti-list" aria-hidden="true"></i> All bookings</div>
         <div class="db-nav-item" id="dbnav-byclass" onclick="switchDashPage('byclass')"><i class="ti ti-layout-list" aria-hidden="true"></i> By class</div>
+        <div class="db-nav-item" id="dbnav-history" onclick="switchDashPage('history')"><i class="ti ti-history" aria-hidden="true"></i> Booking history</div>
         <div class="db-nav-item" id="dbnav-clients" onclick="switchDashPage('clients')"><i class="ti ti-users" aria-hidden="true"></i> Clients</div>
         <div class="db-nav-item" id="dbnav-cancellations" onclick="switchDashPage('cancellations')"><i class="ti ti-circle-x" aria-hidden="true"></i> Cancellations</div>
         <div class="db-nav-item" id="dbnav-catchup" onclick="switchDashPage('catchup')"><i class="ti ti-repeat" aria-hidden="true"></i> Catch-up swaps</div>
@@ -502,6 +503,22 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
         </div>
         <div class="db-content">
           <div id="classes-accordion"></div>
+        </div>
+      </div>
+
+      <!-- ── Booking History ── -->
+      <div id="dbpage-history" class="db-page">
+        <div class="db-topbar">
+          <p class="db-topbar-title">Booking history</p>
+        </div>
+        <div class="db-content">
+          <div style="background:white;border:1px solid var(--border);border-radius:4px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--mid);">Bookings from ended blocks live here. Nothing is deleted when a block ends &mdash; search to find any past customer or block.</div>
+          <div class="db-search-wrap">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input class="db-search-input" id="history-search" type="text" placeholder="Search by client name or class…" autocomplete="off" oninput="filterHistoryTable()">
+          </div>
+          <div class="db-result-count" id="history-result-count"></div>
+          <table><thead><tr><th>Client</th><th>Class</th><th>When</th><th>Block</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead><tbody id="historytbody"></tbody></table>
         </div>
       </div>
 
@@ -1237,6 +1254,14 @@ function getNextBlock(classId, currentBlockId) {
   var future = classBlocks.filter(function(b){ return new Date(b.start_date+"T00:00:00")>today; });
   future.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
   return future[0] || null;
+}
+
+// A block is "past" from the day after its end_date. Computed live from dates —
+// blocks.status is never auto-updated and must not be used for this.
+function isBlockPast(block){
+  if(!block || !block.end_date) return false;
+  var today = new Date(); today.setHours(0,0,0,0);
+  return new Date(block.end_date+"T00:00:00") < today;
 }
 
 function toggleNextBlk(id){
@@ -2401,13 +2426,22 @@ function renderBlockWarnings(){
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
+// Both booking tables (All Bookings + Booking History) are rendered by the same
+// pass, so loading/error states must be mirrored into both or History shows
+// stale rows from the previous render.
+function setBookingTables(rowHtml){
+  document.getElementById("btbody").innerHTML=rowHtml;
+  var hb=document.getElementById("historytbody");
+  if(hb) hb.innerHTML=rowHtml;
+}
+
 function renderDashboard(){
-  document.getElementById("btbody").innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>';
+  setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>');
   (async function(){
     try{
       var{data:sessionData}=await sb.auth.getSession();
       if(!sessionData.session){
-        document.getElementById("btbody").innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Not authenticated. Please log in again.</td></tr>';
+        setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">Not authenticated. Please log in again.</td></tr>');
         return;
       }
       // Load bookings
@@ -2440,7 +2474,8 @@ function renderDashboard(){
           paid:b.amount_due, status:b.status, refundAmount:b.refund_amount,
           createdAt:b.created_at,
           stripePaymentIntentId:b.stripe_payment_intent_id||null,
-          day:cls.day||""
+          day:cls.day||"",
+          blockPast:isBlockPast(blk)
         };
       });
 
@@ -2454,7 +2489,10 @@ function renderDashboard(){
         var parqBookingIds={};
         if(parqRes.data) parqRes.data.forEach(function(p){ if(p.booking_id) parqBookingIds[p.booking_id]=true; });
         bookings.forEach(function(b){
-          if(b.customerType==="new" && b.status!=="cancelled" && !parqBookingIds[b.dbId]){
+          // Past-block bookings are excluded: a missing PAR-Q on an ended block is
+          // no longer actionable, and its row lives on the History page where the
+          // banner's scroll-to-highlight can't reach it.
+          if(b.customerType==="new" && b.status!=="cancelled" && !b.blockPast && !parqBookingIds[b.dbId]){
             parqMissingIds[b.dbId]=true;
             b.parqMissing=true;
           }
@@ -2478,24 +2516,34 @@ function renderDashboard(){
         }
       }
 
-      // All Bookings tab
-      var bhtml="";
-      if(bookings.length===0){
-        bhtml='<tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">No bookings yet.</td></tr>';
-      } else {
-        for(var i=0;i<bookings.length;i++){
-          var b=bookings[i];
-          var blockCell=b.blockDates?sanitise(b.blockDates):'<span style="color:var(--light)">—</span>';
-          var rowAttrs=b.parqMissing?' data-parq-missing="true"':'';
-          var searchVal=(b.client+' '+b.cls+' '+(b.email||'')).toLowerCase();
-          rowAttrs+=' data-search="'+searchVal.replace(/"/g,'&quot;')+'"';
-          bhtml+="<tr"+rowAttrs+"><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.cls)+"</td><td style=\"font-size:12px\">"+sanitise(b.when)+"</td><td style=\"font-size:12px\">"+blockCell+"</td><td>&pound;"+sanitise(String(b.paid))+"</td>";
-          bhtml+="<td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
+      // All Bookings tab (current/upcoming blocks) + Booking History tab (ended blocks).
+      // Both loops index into the same global bookings array, so viewBooking(i) etc.
+      // work identically from either table.
+      var bhtml="", hhtml="";
+      for(var i=0;i<bookings.length;i++){
+        var b=bookings[i];
+        var blockCell=b.blockDates?sanitise(b.blockDates):'<span style="color:var(--light)">—</span>';
+        var rowAttrs=b.parqMissing?' data-parq-missing="true"':'';
+        var searchVal=(b.client+' '+b.cls+' '+(b.email||'')).toLowerCase();
+        rowAttrs+=' data-search="'+searchVal.replace(/"/g,'&quot;')+'"';
+        var rowHtml="<tr"+rowAttrs+"><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.cls)+"</td><td style=\"font-size:12px\">"+sanitise(b.when)+"</td><td style=\"font-size:12px\">"+blockCell+"</td><td>&pound;"+sanitise(String(b.paid))+"</td>";
+        rowHtml+="<td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
+        if(b.blockPast){
+          // History rows are view-only: the block has ended, so Confirm / Remove
+          // from Block / Del Customer no longer make sense here.
+          rowHtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button></td></tr>";
+          hhtml+=rowHtml;
+        } else {
           var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+i+")\">Confirm</button>":"";
-          bhtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button>"+confirmBtn+"<button class=\"act act-delete\" onclick=\"openRfbModal("+i+")\">Remove from Block</button><button class=\"act act-delete\" onclick=\"deleteCustomer("+i+")\">Del Customer</button></td></tr>";
+          rowHtml+="<td><button class=\"act\" onclick=\"viewBooking("+i+")\">View</button>"+confirmBtn+"<button class=\"act act-delete\" onclick=\"openRfbModal("+i+")\">Remove from Block</button><button class=\"act act-delete\" onclick=\"deleteCustomer("+i+")\">Del Customer</button></td></tr>";
+          bhtml+=rowHtml;
         }
       }
+      if(!bhtml) bhtml='<tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">'+(bookings.length>0?'No bookings on current or upcoming blocks &mdash; see Booking history for past blocks.':'No bookings yet.')+'</td></tr>';
+      if(!hhtml) hhtml='<tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">No past bookings yet. Bookings appear here once their block ends.</td></tr>';
       document.getElementById("btbody").innerHTML=bhtml;
+      var historyBody=document.getElementById("historytbody");
+      if(historyBody) historyBody.innerHTML=hhtml;
 
       // Reload blocks fully from DB — ensures deleted/added blocks are reflected
       var{data:freshBlocks}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
@@ -2531,7 +2579,7 @@ function renderDashboard(){
 
     }catch(err){
       console.error("Dashboard error:",err);
-      document.getElementById("btbody").innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading. Please refresh.</td></tr>';
+      setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">Error loading. Please refresh.</td></tr>');
     }
   })();
 }
@@ -2550,7 +2598,7 @@ function scrollToFirstMissingParq(){
 }
 
 function switchDashPage(page){
-  var pages=["bookings","byclass","clients","cancellations","catchup","classes","reports","settings","backup"];
+  var pages=["bookings","byclass","history","clients","cancellations","catchup","classes","reports","settings","backup"];
   pages.forEach(function(p){
     var el=document.getElementById("dbpage-"+p);
     if(el) el.classList.toggle("on",p===page);
@@ -2558,7 +2606,7 @@ function switchDashPage(page){
     if(nav) nav.classList.toggle("on",p===page);
   });
   // Mobile bottom nav
-  var mobileMap={bookings:"bookings",byclass:"bookings",cancellations:"bookings",catchup:"bookings",clients:"clients",classes:"classes",reports:"reports"};
+  var mobileMap={bookings:"bookings",byclass:"bookings",history:"bookings",cancellations:"bookings",catchup:"bookings",clients:"clients",classes:"classes",reports:"reports"};
   var mobileActive=mobileMap[page]||null;
   ["bookings","clients","classes","reports"].forEach(function(k){
     var bn=document.getElementById("dbbn-"+k);
@@ -2582,6 +2630,19 @@ function filterBookingsTable(){
     if(match) visible++;
   });
   var count=document.getElementById("bookings-result-count");
+  if(count) count.textContent=q?(visible+" booking"+(visible===1?"":"s")+" matched"):"";
+}
+
+function filterHistoryTable(){
+  var q=document.getElementById("history-search").value.toLowerCase().trim();
+  var rows=document.querySelectorAll("#historytbody tr[data-search]");
+  var visible=0;
+  rows.forEach(function(row){
+    var match=!q||row.getAttribute("data-search").toLowerCase().indexOf(q)>-1;
+    row.style.display=match?"":"none";
+    if(match) visible++;
+  });
+  var count=document.getElementById("history-result-count");
   if(count) count.textContent=q?(visible+" booking"+(visible===1?"":"s")+" matched"):"";
 }
 
@@ -2894,7 +2955,8 @@ function renderClassesView(){
     html+="<span class=\"class-group-loc-count\">"+locClasses.length+" class"+(locClasses.length===1?"":"es")+"</span>";
     html+="</div>";
     locClasses.forEach(function(c){
-      var classBlocks=blocks.filter(function(b){ return b.class_id===c.id; });
+      // Ended blocks are excluded — their bookings live on the Booking History page.
+      var classBlocks=blocks.filter(function(b){ return b.class_id===c.id && !isBlockPast(b); });
       classBlocks.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
       var groupId="cg-"+c.id;
       html+="<div class=\"class-group\" style=\"margin-bottom:0;border:none;border-top:1px solid var(--border);border-radius:0;\">";
@@ -2904,20 +2966,18 @@ function renderClassesView(){
       html+="<div style=\"display:flex;align-items:center;gap:10px\"><span class=\"class-group-badge\">"+classBlocks.length+" block(s)</span><span style=\"font-size:16px\">&#8964;</span></div></div>";
       html+="<div class=\"class-group-body\" id=\""+groupId+"\">";
       if(classBlocks.length===0){
-        html+="<div class=\"class-group-empty\">No blocks yet. <button class='act act-confirm' onclick='openAddBlockModal("+c.id+")' style='margin-left:8px'>+ Add Block</button></div>";
+        html+="<div class=\"class-group-empty\">No current or upcoming blocks &mdash; see Booking history for past terms. <button class='act act-confirm' onclick='openAddBlockModal("+c.id+")' style='margin-left:8px'>+ Add Block</button></div>";
       } else {
         classBlocks.forEach(function(blk){
+          // Past blocks never reach this loop (filtered above), so a block is
+          // either active (started) or upcoming.
           var today=new Date(); today.setHours(0,0,0,0);
-          var s=new Date(blk.start_date+"T00:00:00"), e=new Date(blk.end_date+"T00:00:00");
-          var blkStatus=e<today?"archived":(s<=today&&e>=today?"active":"upcoming");
-          var statusColour=blkStatus==="active"?"var(--green)":blkStatus==="upcoming"?"var(--clay)":"var(--light)";
-          var blkBg=blkStatus==="active"?"#f0f9f5":blkStatus==="upcoming"?"#fff9f0":"#f7f7f7";
-          var blkBorder=blkStatus==="active"?"#b8d8c8":blkStatus==="upcoming"?"#f0d8a8":"var(--border)";
+          var blkStatus=new Date(blk.start_date+"T00:00:00")<=today?"active":"upcoming";
+          var blkBg=blkStatus==="active"?"#f0f9f5":"#fff9f0";
+          var blkBorder=blkStatus==="active"?"#b8d8c8":"#f0d8a8";
           var badgeHtml=blkStatus==="active"
             ?"<span style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:#e8f5ee;color:var(--green);font-weight:500;margin-left:8px\">Active</span>"
-            :blkStatus==="upcoming"
-            ?"<span style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:#fef3e8;color:var(--clay);font-weight:500;margin-left:8px\">Upcoming</span>"
-            :"<span style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:var(--cream);color:var(--light);margin-left:8px\">Archived</span>";
+            :"<span style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:#fef3e8;color:var(--clay);font-weight:500;margin-left:8px\">Upcoming</span>";
           var blkBookings=bookings.filter(function(b){ return b.blockId===blk.id; });
           html+="<div style=\"margin-bottom:10px;border:1px solid "+blkBorder+";border-radius:4px;background:"+blkBg+";overflow:hidden;\">";
           html+="<div style=\"display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid "+blkBorder+";\">";

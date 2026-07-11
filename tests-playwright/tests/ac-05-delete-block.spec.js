@@ -124,8 +124,9 @@ test.describe('AC-05 — Delete a block', () => {
     // Toast confirms deletion
     await expect(page.locator('#toastEl')).toContainText('Block deleted.');
 
-    // The class group now shows "No blocks yet"
-    await expect(groupBody).toContainText('No blocks yet');
+    // The class group now shows the no-blocks empty state (wording changed when
+    // the Booking History page was added)
+    await expect(groupBody).toContainText('No current or upcoming blocks');
 
     // Class is no longer visible on the public booking page
     await page.locator('#nb-schedule').click();

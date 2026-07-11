@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 6 Jul 2026
-**Total tests:** 244
+**Last updated:** 11 Jul 2026
+**Total tests:** 248
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -116,7 +116,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `bw-02-current-block-session-dates-listed.spec.js` | Thursday card renders one date pill per session in chronological order |
 | `bw-06-upcoming-becomes-active-on-start-date.spec.js` | Monday active block renders as current; upcoming block stays in next-block panel |
 
-## Admin Bookings (AB) — 22 tests
+## Admin Bookings (AB) — 26 tests
 
 | Spec file | Test |
 |---|---|
@@ -142,6 +142,10 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `ab-22-parq-date-format.spec.js` | AB-22 — Declaration section shows "D MMM YYYY" date, not raw ISO |
 | `ab-23-returning-client-parq-view.spec.js` | AB-23 — returning client booking shows PAR-Q from previous booking with badge |
 | `ab-24-rfb-midblock-joiner.spec.js` | AB-24 — mid-block joiner paid £40: refund = £40 not £60 |
+| `ab-25-booking-history-page.spec.js` | AB-25a — past-block bookings appear on History (not All Bookings), view-only |
+| `ab-25-booking-history-page.spec.js` | AB-25b — History search box filters rows |
+| `ab-26-by-class-hides-past-blocks.spec.js` | AB-26a — ended blocks do not render; upcoming blocks do |
+| `ab-26-by-class-hides-past-blocks.spec.js` | AB-26b — class with only ended blocks shows redirect empty state |
 
 ## Admin Classes (AC) — 26 tests
 
