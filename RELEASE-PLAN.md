@@ -80,6 +80,7 @@ Moves the booking system from GitHub Pages to its final home at `book.lg-pilates
 | 16 | MARK | GoDaddy DNS → add a **CNAME** record: `book` → the booking site's `.netlify.app` address. Add `book.lg-pilates.co.uk` as the custom domain in Netlify. |
 | 17 | CLAUDE | Verify the deployed Supabase Edge Functions (test AND prod) really allow `book.lg-pilates.co.uk` — the repo copies do, but deployed versions must be spot-checked (lesson from #33/#42). Then smoke-test a booking flow on the new address. |
 | 18 | — | Reminder: hidden = unlinked + no Google, **not** password-protected. Don't share the URL publicly. |
+| 19 | CLAUDE | Update `DASHBOARD_URL` in `send-email` (test + prod) from the GitHub Pages address to `book.lg-pilates.co.uk`, then redeploy. Fixes the admin alert email's "View in dashboard" link ([#77](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/77)). |
 
 > **ROLLBACK (Phase 1.5):** nothing customer-facing changed — delete the `book` DNS record if needed and the old GitHub Pages address still works.
 
