@@ -57,8 +57,13 @@ test.describe('RP-01 — Reports Revenue MTD', () => {
     await page.locator('#dbnav-reports').click();
     await expect(page.locator('#dbnav-reports.on')).toBeVisible();
 
-    // Revenue MTD should now reflect this month's bookings, not the old constant £0.
-    const revText = (await page.locator('#rpt-revenue-mtd').textContent()).trim();
+    // Revenue MTD renders after an async booking fetch. Wait for the tile to
+    // settle on a non-zero value (auto-retrying assertion) instead of reading it
+    // once — the one-shot read raced the fetch and flaked in CI (#79). The wait
+    // is for the data to land, not a weaker assertion.
+    const revLocator = page.locator('#rpt-revenue-mtd');
+    await expect(revLocator).toHaveText(/£[1-9]/);
+    const revText = (await revLocator.textContent()).trim();
     const revValue = Number(revText.replace(/[^0-9.]/g, ''));
     expect(revText).not.toBe('£0');
     expect(revValue).toBeGreaterThan(0);

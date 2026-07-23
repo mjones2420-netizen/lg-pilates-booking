@@ -422,6 +422,19 @@ test.describe('CU — Catch-Up Swaps', () => {
     await goToCatchUpPage(page);
     await openRecordSwapModal(page);
 
+    // The week picker is built from the catchUpSwaps global, fetched async at
+    // login + on the catch-up page render. If we select the class before that
+    // fetch lands, the date options build WITHOUT the existing swap and never
+    // rebuild (nothing re-triggers onCuTargetBlockChange) — the CU-08 CI flake
+    // (#79). Wait for the swap data to be present before interacting. This is a
+    // ready-state wait, not a weaker assertion.
+    await page.waitForFunction(
+      (blockId) => Array.isArray(window.catchUpSwaps)
+        && window.catchUpSwaps.some((s) => s.target_block_id === blockId),
+      wedUpcoming.id,
+      { timeout: 5000 }
+    );
+
     // Class picker: mon-full (booked >= cap) is FULL and disabled
     const monFullOpt = page.locator(`#cu-target-block option[value="${monFull.id}"]`);
     await expect(monFullOpt).toContainText('FULL');
