@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 23 Jul 2026
-**Total tests:** 251
+**Total tests:** 252
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -291,7 +291,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-14-case-insensitive-email.spec.js` | upsert_customer with a mixed-case email matches the existing row (no duplicate) |
 | `sec-14-case-insensitive-email.spec.js` | check_priority_access grants a mixed-case email its manual priority |
 
-## Stripe (ST) — 27 tests
+## Stripe (ST) — 28 tests
 
 | Spec file | Test |
 |---|---|
@@ -322,6 +322,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `st-28-post-payment-outcome-screen.spec.js` | RPC returns true for a confirmed booking on the session, false otherwise |
 | `st-28-post-payment-outcome-screen.spec.js` | confirmed booking → green confirmed screen (not the failure screen) |
 | `st-28-post-payment-outcome-screen.spec.js` | no booking for the session → amber "could not secure your place" screen |
+| `st-29-webhook-failure-client-email-nonfatal.spec.js` | CLASS_FULL after payment still returns booking_failed_after_payment, pending retained, no booking |
 
 ## Refund Sync (RF) — 6 tests
 

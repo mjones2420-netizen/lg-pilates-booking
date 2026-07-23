@@ -104,6 +104,37 @@ function buildPaymentFailedAdminEmailHtml(opts: {
     + `</table></td></tr></table></body></html>`;
 }
 
+// Customer-facing email when payment succeeded but the booking could not be
+// placed (#6b — CLASS_FULL / ALREADY_BOOKED after payment). Mirrors the on-screen
+// "payment received, place not secured" message (#6a). The recipient is
+// server-derived (the pending row's own email) so this stays off the send-email
+// open-relay path (#33); the name is esc()'d (#39). Single copy, no counterpart
+// elsewhere — like buildPaymentFailedAdminEmailHtml it is built inline here.
+function buildPaymentFailedClientEmailHtml(opts: {
+  firstName: string; className: string; day: string; time: string;
+}): string {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">`
+    + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">`
+    + `<tr><td align="center">`
+    + `<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">`
+    + `<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">`
+    + `<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>`
+    + `<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>`
+    + `</td></tr>`
+    + `<tr><td style="background:#fbf1e3;border-left:4px solid #c9821f;padding:18px 32px;">`
+    + `<div style="font-size:15px;font-weight:600;color:#8a5a12;margin-bottom:6px;">Payment received &mdash; but we couldn&rsquo;t secure your place</div>`
+    + `<div style="font-size:13px;color:#7a5a2a;line-height:1.6;">Hi ${esc(opts.firstName)}, your payment went through, but ${esc(opts.className)} (${esc(opts.day)}, ${esc(opts.time)}) filled up in the moments while you were paying, so we couldn&rsquo;t hold your spot.</div>`
+    + `</td></tr>`
+    + `<tr><td style="padding:24px 32px;">`
+    + `<p style="font-size:14px;color:#4a6060;line-height:1.7;margin:0 0 14px;">Louise has been notified automatically and will be in touch to arrange a <strong>full refund</strong> or offer you an alternative class. <strong>You don&rsquo;t need to do anything.</strong></p>`
+    + `<p style="font-size:14px;color:#4a6060;line-height:1.7;margin:0;">We&rsquo;re sorry for the inconvenience &mdash; classes occasionally fill in the last few seconds before payment completes.</p>`
+    + `</td></tr>`
+    + `<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">`
+    + `<div style="font-size:11px;color:#8aabab;line-height:1.6;">LG Pilates &middot; Baildon &amp; Guiseley</div>`
+    + `</td></tr>`
+    + `</table></td></tr></table></body></html>`;
+}
+
 // Internal server-to-server call to the send-email function. Authenticates with
 // the service-role key (NOT the public anon key) so send-email trusts it as an
 // internal caller after the #33 open-relay hardening.
@@ -244,28 +275,47 @@ serve(async (req) => {
         const { data: settingsRows } = await adminClient.from("settings").select("key,value").eq("key", "admin_email");
         const adminEmail = settingsRows && settingsRows[0] ? settingsRows[0].value : null;
 
-        if (adminEmail && cls) {
-          const failHtml = buildPaymentFailedAdminEmailHtml({
-            firstName: pending.first_name,
-            lastName: pending.last_name,
-            email: pending.email,
-            phone: pending.phone,
-            className: cls.name,
-            venue: cls.venue,
-            loc: cls.loc,
-            day: cls.day,
-            time: cls.time,
-            endTime: cls.end_time,
-            amountDue: amountDue,
-            reason: reason,
-            pendingId: pendingId,
-          });
-          await sendEmail(supabaseUrl, supabaseServiceKey, adminEmail,
-            `Action needed — payment taken but booking failed (${pending.first_name} ${pending.last_name})`,
-            failHtml, isTest);
+        if (cls) {
+          // Client-facing (#6b): tell the customer their payment took but the
+          // place wasn't secured. Sends even if admin_email is unset, and each
+          // send is independently non-fatal so one failure can't block the other.
+          try {
+            const clientHtml = buildPaymentFailedClientEmailHtml({
+              firstName: pending.first_name,
+              className: cls.name,
+              day: cls.day,
+              time: cls.time,
+            });
+            await sendEmail(supabaseUrl, supabaseServiceKey, pending.email,
+              "About your LG Pilates payment", clientHtml, isTest);
+          } catch (e) {
+            console.warn("Failed to send payment-failed client email (non-fatal):", e);
+          }
+
+          // Admin alert (unchanged) — needs admin_email configured.
+          if (adminEmail) {
+            const failHtml = buildPaymentFailedAdminEmailHtml({
+              firstName: pending.first_name,
+              lastName: pending.last_name,
+              email: pending.email,
+              phone: pending.phone,
+              className: cls.name,
+              venue: cls.venue,
+              loc: cls.loc,
+              day: cls.day,
+              time: cls.time,
+              endTime: cls.end_time,
+              amountDue: amountDue,
+              reason: reason,
+              pendingId: pendingId,
+            });
+            await sendEmail(supabaseUrl, supabaseServiceKey, adminEmail,
+              `Action needed — payment taken but booking failed (${pending.first_name} ${pending.last_name})`,
+              failHtml, isTest);
+          }
         }
       } catch (e) {
-        console.warn("Failed to send payment-failed admin alert (non-fatal):", e);
+        console.warn("Failed to send payment-failed emails (non-fatal):", e);
       }
 
       return new Response(JSON.stringify({ received: true, warning: "booking_failed_after_payment" }), {
