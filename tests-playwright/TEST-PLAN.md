@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 23 Jul 2026
-**Total tests:** 248
+**Total tests:** 251
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -291,7 +291,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-14-case-insensitive-email.spec.js` | upsert_customer with a mixed-case email matches the existing row (no duplicate) |
 | `sec-14-case-insensitive-email.spec.js` | check_priority_access grants a mixed-case email its manual priority |
 
-## Stripe (ST) — 24 tests
+## Stripe (ST) — 27 tests
 
 | Spec file | Test |
 |---|---|
@@ -319,6 +319,9 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `st-26-webhook-duplicate-delivery.spec.js` | second delivery returns 200 with no booking_id, no duplicate booking created |
 | `st-27-webhook-stale-timestamp-rejected.spec.js` | timestamp older than the 5-minute tolerance returns 400 and leaves pending row untouched |
 | `st-27-webhook-stale-timestamp-rejected.spec.js` | fresh timestamp on the same payload is accepted (proves only stale events are rejected) |
+| `st-28-post-payment-outcome-screen.spec.js` | RPC returns true for a confirmed booking on the session, false otherwise |
+| `st-28-post-payment-outcome-screen.spec.js` | confirmed booking → green confirmed screen (not the failure screen) |
+| `st-28-post-payment-outcome-screen.spec.js` | no booking for the session → amber "could not secure your place" screen |
 
 ## Refund Sync (RF) — 6 tests
 

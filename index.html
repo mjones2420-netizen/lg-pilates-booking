@@ -2220,7 +2220,7 @@ function confirmBooking(){
             amount_pence:Math.round(calcProrata(blk).totalPrice*100),
             class_name:c.name,
             parq_data:pendingParq,
-            success_url:window.location.origin+window.location.pathname+"?payment=success",
+            success_url:window.location.origin+window.location.pathname+"?payment=success&session_id={CHECKOUT_SESSION_ID}",
             cancel_url:window.location.origin+window.location.pathname+"?payment=cancelled",
             is_test:IS_TEST_ENV
           })
@@ -4373,6 +4373,71 @@ async function loadSettings(){
   }catch(err){ console.error("Settings error:",err); }
 }
 
+// ─── Post-Stripe-payment outcome (#6) ──────────────────────────────────────────
+// Payment success and booking success are separate: the booking runs async in
+// stripe-webhook and can fail (CLASS_FULL / ALREADY_BOOKED) if the block filled
+// while the customer was paying. So we verify the booking actually landed before
+// telling them it's confirmed, rather than trusting the ?payment=success redirect.
+function setStripeSuccessHeader(icon,title,sub,msg){
+  document.getElementById("sso-icon").innerHTML=icon;
+  document.getElementById("sso-title").textContent=title;
+  document.getElementById("sso-sub").textContent=sub;
+  document.getElementById("sso-msg").textContent=msg;
+}
+
+// Neutral "confirming" state shown while we poll — must NOT claim the place is
+// secured, since we don't know the booking outcome yet (#6).
+function showStripeChecking(){
+  setStripeSuccessHeader("&#8987;","Confirming your booking","One moment…",
+    "We’re just confirming your place — this only takes a few seconds.");
+  document.getElementById("stripe-success-detail").innerHTML="";
+  document.getElementById("stripe-success-overlay").style.display="flex";
+}
+
+function showStripeConfirmed(){
+  setStripeSuccessHeader("&#10003;","Payment confirmed","Your booking is now secured",
+    "Thank you — your payment has been received and your place is confirmed. A confirmation email is on its way to you.");
+  document.getElementById("stripe-success-detail").innerHTML=
+    '<div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);font-size:13px;">'+
+      '<span style="color:var(--mid);">Status</span>'+
+      '<span style="font-weight:500;color:#3a8a6a;">&#10003; Confirmed</span>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;padding:10px 14px;font-size:13px;">'+
+      '<span style="color:var(--mid);">Next step</span>'+
+      '<span style="font-weight:500;">Check your email for details</span>'+
+    '</div>';
+  document.getElementById("stripe-success-overlay").style.display="flex";
+}
+
+function showStripeFailed(){
+  document.getElementById("stripe-success-overlay").style.display="none";
+  document.getElementById("stripe-failed-overlay").style.display="flex";
+}
+
+// Poll booking_confirmed_for_session for the checkout session; show the green
+// confirmed screen once TRUE, or the honest "couldn't secure your place" screen
+// if still FALSE after the poll window. Graceful fallbacks preserve the original
+// confirmed screen when we can't verify (no session id, or the RPC isn't
+// deployed yet on this environment) so there is no regression before rollout.
+async function showStripeOutcome(sessionId){
+  if(!sessionId){ showStripeConfirmed(); return; }   // no id to check against — keep old behaviour
+  showStripeChecking();   // neutral state — does not claim the place is secured yet
+  for(var i=0;i<6;i++){
+    try{
+      var res=await sb.rpc("booking_confirmed_for_session",{p_session_id:sessionId});
+      if(res.error) throw res.error;
+      if(res.data===true){ showStripeConfirmed(); return; }
+    }catch(e){
+      // RPC unavailable (e.g. not yet deployed here) — fall back to confirmed, no regression.
+      console.warn("Booking outcome check unavailable:",e&&e.message);
+      showStripeConfirmed(); return;
+    }
+    await new Promise(function(r){ setTimeout(r,2000); });
+  }
+  // Still no confirmed booking after ~12s — payment took but the place wasn't secured.
+  showStripeFailed();
+}
+
 // ─── Page load ────────────────────────────────────────────────────────────────
 (async function(){
   fillClassTimeOptions();   // populate the Add/Edit Class time dropdowns (#5)
@@ -4398,22 +4463,12 @@ async function loadSettings(){
     var params=new URLSearchParams(window.location.search);
     var payment=params.get("payment");
     if(!payment) return;
+    var sessionId=params.get("session_id");   // carried across the redirect via Stripe's {CHECKOUT_SESSION_ID}
     // Clean the URL so a refresh doesn't re-trigger
     var cleanUrl=window.location.pathname+(IS_TEST_ENV?"?env=test":"");
     window.history.replaceState({},"",cleanUrl);
     if(payment==="success"){
-      var overlay=document.getElementById("stripe-success-overlay");
-      var detailEl=document.getElementById("stripe-success-detail");
-      overlay.style.display="flex";
-      detailEl.innerHTML=
-        '<div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);font-size:13px;">'+
-          '<span style="color:var(--mid);">Status</span>'+
-          '<span style="font-weight:500;color:#3a8a6a;">&#10003; Confirmed</span>'+
-        '</div>'+
-        '<div style="display:flex;justify-content:space-between;padding:10px 14px;font-size:13px;">'+
-          '<span style="color:var(--mid);">Next step</span>'+
-          '<span style="font-weight:500;">Check your email for details</span>'+
-        '</div>';
+      showStripeOutcome(sessionId);
     } else if(payment==="cancelled"){
       showToast("Payment was not completed — you can try again.");
     }
@@ -4426,14 +4481,35 @@ async function loadSettings(){
 <div class="overlay" id="stripe-success-overlay" style="display:none;align-items:center;justify-content:center;">
   <div class="modal" style="max-width:480px;overflow:hidden;border-radius:12px;padding:0;">
     <div style="background:var(--sage);padding:28px 28px 24px;text-align:center;">
-      <div style="font-size:48px;color:#fff;margin-bottom:12px;">&#10003;</div>
-      <div style="font-size:22px;font-weight:500;color:#fff;font-family:'Raleway',sans-serif;margin-bottom:6px;">Payment confirmed</div>
-      <div style="font-size:14px;color:rgba(255,255,255,0.85);font-family:'Open Sans',sans-serif;">Your booking is now secured</div>
+      <div id="sso-icon" style="font-size:48px;color:#fff;margin-bottom:12px;">&#10003;</div>
+      <div id="sso-title" style="font-size:22px;font-weight:500;color:#fff;font-family:'Raleway',sans-serif;margin-bottom:6px;">Payment confirmed</div>
+      <div id="sso-sub" style="font-size:14px;color:rgba(255,255,255,0.85);font-family:'Open Sans',sans-serif;">Your booking is now secured</div>
     </div>
     <div style="padding:24px 28px;">
-      <p style="font-size:14px;color:var(--mid);margin:0 0 20px;line-height:1.6;font-family:'Open Sans',sans-serif;">Thank you — your payment has been received and your place is confirmed. A confirmation email is on its way to you.</p>
+      <p id="sso-msg" style="font-size:14px;color:var(--mid);margin:0 0 20px;line-height:1.6;font-family:'Open Sans',sans-serif;">Thank you — your payment has been received and your place is confirmed. A confirmation email is on its way to you.</p>
       <div id="stripe-success-detail" style="background:var(--cream);border-radius:4px;overflow:hidden;margin-bottom:24px;"></div>
       <button class="confirm-btn" onclick="document.getElementById('stripe-success-overlay').style.display='none';">Back to Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment received but place not secured (#6) -->
+<div class="overlay" id="stripe-failed-overlay" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal" style="max-width:480px;overflow:hidden;border-radius:12px;padding:0;">
+    <div style="background:#c9821f;padding:28px 28px 24px;text-align:center;">
+      <div style="font-size:46px;color:#fff;margin-bottom:10px;">&#9888;</div>
+      <div style="font-size:22px;font-weight:500;color:#fff;font-family:'Raleway',sans-serif;margin-bottom:6px;">Payment received</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.9);font-family:'Open Sans',sans-serif;">We couldn&rsquo;t secure your place</div>
+    </div>
+    <div style="padding:24px 28px;">
+      <p style="font-size:14px;color:var(--charcoal);margin:0 0 14px;line-height:1.6;font-family:'Open Sans',sans-serif;"><strong>Your payment went through, but the class filled up in the moments while you were paying, so we couldn&rsquo;t hold your spot.</strong></p>
+      <p style="font-size:14px;color:var(--mid);margin:0 0 20px;line-height:1.6;font-family:'Open Sans',sans-serif;">Louise has been notified automatically and will be in touch to arrange a full refund or offer you an alternative class. You don&rsquo;t need to do anything.</p>
+      <div style="background:var(--cream);border-radius:4px;overflow:hidden;margin-bottom:24px;">
+        <div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);font-size:13px;"><span style="color:var(--mid);">Payment</span><span style="font-weight:500;color:#3a8a6a;">&#10003; Received</span></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);font-size:13px;"><span style="color:var(--mid);">Place</span><span style="font-weight:500;color:#a86a12;">Not secured &mdash; class full</span></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 14px;font-size:13px;"><span style="color:var(--mid);">What happens next</span><span style="font-weight:500;">Louise will contact you</span></div>
+      </div>
+      <button class="confirm-btn" onclick="document.getElementById('stripe-failed-overlay').style.display='none';">Back to Schedule</button>
     </div>
   </div>
 </div>
