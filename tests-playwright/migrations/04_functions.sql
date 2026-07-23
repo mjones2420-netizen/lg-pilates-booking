@@ -17,7 +17,7 @@ BEGIN
   RETURN QUERY
   SELECT c.id, c.first_name
   FROM customers c
-  WHERE c.email = p_email
+  WHERE LOWER(c.email) = LOWER(p_email)
   LIMIT 1;
 END;
 $function$;
@@ -32,7 +32,7 @@ DECLARE
   existing_id integer;
   new_id integer;
 BEGIN
-  SELECT id INTO existing_id FROM customers WHERE email = p_email LIMIT 1;
+  SELECT id INTO existing_id FROM customers WHERE LOWER(email) = LOWER(p_email) LIMIT 1;
   IF existing_id IS NOT NULL THEN
     -- name-locked / phone-open (migration 22, #48): never overwrite
     -- first_name/last_name; refresh phone + customer_type only.
@@ -112,7 +112,7 @@ DECLARE
   v_has_prev_booking BOOLEAN;
 BEGIN
   SELECT id INTO v_customer_id
-  FROM customers WHERE email = p_email LIMIT 1;
+  FROM customers WHERE LOWER(email) = LOWER(p_email) LIMIT 1;
 
   IF v_customer_id IS NULL THEN RETURN FALSE; END IF;
 

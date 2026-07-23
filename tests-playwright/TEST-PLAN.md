@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 11 Jul 2026
-**Total tests:** 248
+**Last updated:** 23 Jul 2026
+**Total tests:** 251
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -259,7 +259,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 27 tests
+## Security (SEC) — 30 tests
 
 | Spec file | Test |
 |---|---|
@@ -290,6 +290,9 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-12-upsert-customer-name-locked.spec.js` | a new email creates a fresh customer row (identity-key behaviour unchanged) |
 | `sec-13-settings-admin-email-hidden.spec.js` | anon SELECT on settings excludes admin_email but keeps the public keys |
 | `sec-13-settings-admin-email-hidden.spec.js` | an authenticated admin CAN read admin_email |
+| `sec-14-case-insensitive-email.spec.js` | lookup_customer matches a mixed-case query against a lower-case row |
+| `sec-14-case-insensitive-email.spec.js` | upsert_customer with a mixed-case email matches the existing row (no duplicate) |
+| `sec-14-case-insensitive-email.spec.js` | check_priority_access grants a mixed-case email its manual priority |
 
 ## Stripe (ST) — 24 tests
 
