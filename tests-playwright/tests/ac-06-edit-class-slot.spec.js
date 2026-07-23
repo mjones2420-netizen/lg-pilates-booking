@@ -79,8 +79,21 @@ test.describe('AC-06 — Edit a class slot', () => {
 
     // Change venue and time
     await page.locator('#ac-venue').fill('New Venue');
-    await page.locator('#ac-time').fill('8:00pm');
-    await page.locator('#ac-end').fill('8:45pm');
+    // The edit modal should have populated the time dropdowns from the stored
+    // "7:00pm" / "7:45pm" (#5 — setClassTimePicker parses the stored format).
+    await expect(page.locator('#ac-time-h')).toHaveValue('7');
+    await expect(page.locator('#ac-time-m')).toHaveValue('00');
+    await expect(page.locator('#ac-time-ap')).toHaveValue('pm');
+    await expect(page.locator('#ac-end-h')).toHaveValue('7');
+    await expect(page.locator('#ac-end-m')).toHaveValue('45');
+    await expect(page.locator('#ac-end-ap')).toHaveValue('pm');
+    // Change to 8:00pm - 8:45pm via the dropdowns
+    await page.locator('#ac-time-h').selectOption('8');
+    await page.locator('#ac-time-m').selectOption('00');
+    await page.locator('#ac-time-ap').selectOption('pm');
+    await page.locator('#ac-end-h').selectOption('8');
+    await page.locator('#ac-end-m').selectOption('45');
+    await page.locator('#ac-end-ap').selectOption('pm');
 
     // Save
     await page.locator('#ac-btn').click();

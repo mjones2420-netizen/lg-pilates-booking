@@ -50,8 +50,13 @@ test.describe('AC-01 — Add a new class', () => {
     // Fill the form
     await page.locator('#ac-day').selectOption('Monday');
     await page.locator('#ac-level').fill(uniqueName);
-    await page.locator('#ac-time').fill('9:00am');
-    await page.locator('#ac-end').fill('9:45am');
+    // Start/End time via the dropdown pickers (#5) — 9:00am to 9:45am
+    await page.locator('#ac-time-h').selectOption('9');
+    await page.locator('#ac-time-m').selectOption('00');
+    await page.locator('#ac-time-ap').selectOption('am');
+    await page.locator('#ac-end-h').selectOption('9');
+    await page.locator('#ac-end-m').selectOption('45');
+    await page.locator('#ac-end-ap').selectOption('am');
     await page.locator('#ac-venue').fill('Test Venue');
     await page.locator('#ac-loc').selectOption('Baildon');
 
@@ -63,6 +68,13 @@ test.describe('AC-01 — Add a new class', () => {
 
     // Modal closes
     await expect(page.locator('#add-class-overlay.on')).not.toBeVisible();
+
+    // The dropdown selections are stored in the existing "9:45am" text format
+    // (#5 — storage unchanged, so all display code keeps working).
+    const { rows: stored } = await getPool().query(
+      'SELECT time, end_time FROM classes WHERE name = $1', [uniqueName]);
+    expect(stored[0].time).toBe('9:00am');
+    expect(stored[0].end_time).toBe('9:45am');
 
     // Class appears in the Upcoming Classes table (#ctbody)
     const row = page.locator('#ctbody tr').filter({ hasText: uniqueName });

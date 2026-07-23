@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 23 Jul 2026
-**Total tests:** 251
+**Total tests:** 248
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -147,7 +147,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `ab-26-by-class-hides-past-blocks.spec.js` | AB-26a — ended blocks do not render; upcoming blocks do |
 | `ab-26-by-class-hides-past-blocks.spec.js` | AB-26b — class with only ended blocks shows redirect empty state |
 
-## Admin Classes (AC) — 26 tests
+## Admin Classes (AC) — 23 tests
 
 | Spec file | Test |
 |---|---|
@@ -169,14 +169,11 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `ac-16-prevent-overlap.spec.js` | start date overlapping existing block shows overlap error and does not save |
 | `ac-17-prevent-same-day-start.spec.js` | start date equal to existing block end_date shows same-day error |
 | `ac-18-edit-block-overlap.spec.js` | editing a block to overlap another block shows overlap error |
-| `ac-19-20-21-22-auto-ampm.spec.js` | AC-19 — 24hr time (18:30) is converted to 6:30pm on blur |
-| `ac-19-20-21-22-auto-ampm.spec.js` | AC-20 — bare hour:minute (9:45) gets am suffix added on blur |
-| `ac-19-20-21-22-auto-ampm.spec.js` | AC-21 — already-formatted input (10:00am) is left unchanged on blur |
-| `ac-19-20-21-22-auto-ampm.spec.js` | AC-22 — End Time field also converts 24hr (19:15 → 7:15pm) |
 | `ac-23-delete-class-with-bookings.spec.js` | deleting a class with bookings and PAR-Qs shows success toast and removes class |
 | `ac-24-block-validation.spec.js` | AC-24a — negative price is rejected with validation error |
 | `ac-24-block-validation.spec.js` | AC-24b — zero capacity is rejected with validation error |
 | `ac-24-block-validation.spec.js` | AC-24c — zero weeks is rejected with validation error |
+| `ac-25-class-time-picker-legacy-minutes.spec.js` | edit populates odd minutes and saving unchanged preserves the stored time |
 
 ## Admin Clients (ACL) — 2 tests
 
