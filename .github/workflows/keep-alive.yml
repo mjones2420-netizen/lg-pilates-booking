@@ -29,7 +29,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"p_email":"keepalive-ping@example.invalid"}'
         env:
-          PROD_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ybG9veWl4bmx4emNmbXZucW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM2MDAsImV4cCI6MjA4ODQ4OTYwMH0.k1LbLenXS29NosaayGnQn3SR2G1xXVDBICeH7w7bD_c
+          PROD_ANON_KEY: sb_publishable_8PxvOxmytzkhdMgAuzuKpA_20rZcz_8
 
       - name: Ping test Supabase
         run: |
@@ -40,4 +40,4 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"p_email":"keepalive-ping@example.invalid"}'
         env:
-          TEST_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nemZoYW1qdXZpd2Z3dW5jcmpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1OTM1ODksImV4cCI6MjA5MjE2OTU4OX0.okVYL1VLSDd3I7nD5VPuUCOZmY_G7mzC4o3Y3lx16Pg
+          TEST_ANON_KEY: sb_publishable_RgKTW_ZdIxRVy2bBK4sDOw_Vgc65rS2
