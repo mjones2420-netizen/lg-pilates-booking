@@ -59,6 +59,11 @@ test.describe('AC-08 — Class hidden when it has no blocks', () => {
     await page.goto(APP_PATH);
     await expect(page.locator('#test-mode-banner.on')).toBeVisible();
     await loginAsAdmin(page);
+    // #101: login triggers an async settings re-fetch (admin_email repopulate).
+    // Under parallel load that in-flight request can still be settling when
+    // the test's first click fires, occasionally pushing it past the 30s
+    // actionability timeout. Wait for network to actually go quiet first.
+    await page.waitForLoadState('networkidle');
   });
 
   test.afterEach(async () => {

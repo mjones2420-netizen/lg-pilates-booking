@@ -36,7 +36,7 @@ const {
   agreeAndReserve
 } = require('./helpers/booking-flow');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
-const { deleteBookingsForCustomerOnBlock } = require('./helpers/admin-db');
+const { deleteBookingsForCustomerOnBlock, resetPaymentMode } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 const RETURNING_EMAIL = 'returning-one@test.example';
@@ -51,6 +51,9 @@ test.describe('CB-32 — Returning client NOT on this block — welcome-back flo
 
   test.beforeEach(async ({ page }) => {
     createdBooking = null;
+    // #101: force bank_transfer before load — a parallel ST spec can flip this
+    // mid-run and leave #reserve-btn disabled behind #stripe-pay-btn.
+    await resetPaymentMode();
     await page.goto(APP_PATH);
     await expect(page.getByText(/Monday|Wednesday|Friday/).first()).toBeVisible({ timeout: 10000 });
     await expect(

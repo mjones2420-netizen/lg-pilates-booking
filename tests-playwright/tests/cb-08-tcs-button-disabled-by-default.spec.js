@@ -19,9 +19,13 @@ const {
   fillStep2Emergency,
   uniqueTestEmail
 } = require('./helpers/booking-flow');
+const { resetPaymentMode } = require('./helpers/admin-db');
 
 test.describe('CB-08: T&Cs — Reserve button disabled by default', () => {
   test.beforeEach(async ({ page }) => {
+    // #101: force bank_transfer before load — a parallel ST spec can flip this
+    // mid-run and leave #reserve-btn disabled behind #stripe-pay-btn.
+    await resetPaymentMode();
     await page.goto(APP_PATH);
     await expect(page.locator('#test-mode-banner.on'), 'TEST MODE banner missing — refusing to run against production').toBeVisible();
   });

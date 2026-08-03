@@ -38,7 +38,7 @@ const {
   agreeAndReserve,
   uniqueTestEmail
 } = require('./helpers/booking-flow');
-const { deleteCustomerCascade, getParqByCustomerId, getCustomerById } = require('./helpers/admin-db');
+const { deleteCustomerCascade, getParqByCustomerId, getCustomerById, resetPaymentMode } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -53,6 +53,9 @@ test.describe('CB-01 — New client happy path', () => {
 
   test.beforeEach(async ({ page }) => {
     createdCustomerIds = [];
+    // #101: force bank_transfer before load — a parallel ST spec can flip this
+    // mid-run and leave #reserve-btn disabled behind #stripe-pay-btn.
+    await resetPaymentMode();
     await page.goto(APP_PATH);
     await expect(page.getByText(/Monday|Wednesday|Friday/).first()).toBeVisible({ timeout: 10000 });
     // SAFETY: every CB test must verify we're in TEST MODE before touching the DB.

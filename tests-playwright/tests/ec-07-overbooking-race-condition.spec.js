@@ -183,6 +183,12 @@ test.describe('EC-07 — Overbooking prevented when class fills during booking',
     // Step 4 — tick T&Cs and click Reserve. Front-end will call book_if_available,
     // which sees booked >= cap and raises CLASS_FULL.
     await page.locator('#tcs-agree').check();
+    // #101: this test rolled its own check+click instead of using the shared
+    // agreeAndReserve() helper, which skips the helper's toBeEnabled() wait.
+    // Under parallel load the change-event that flips #reserve-btn's disabled
+    // state hasn't always run by the next command — click Reserve before it
+    // enables and the RPC never fires, so no CLASS_FULL toast ever appears.
+    await expect(page.locator('#reserve-btn')).toBeEnabled();
     await page.locator('#reserve-btn').click();
 
     // The toast should appear with the CLASS_FULL message.
