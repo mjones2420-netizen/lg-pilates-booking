@@ -35,6 +35,7 @@ const GROUPS = [
   ['Catch-Up Swaps (CU)', 'cu'],
   ['Pricing / Prorata (PR)', 'pr'],
   ['Reports (RP)', 'rp'],
+  ['Mobile Dashboard (MB)', 'mb'],
 ];
 
 function getRows() {

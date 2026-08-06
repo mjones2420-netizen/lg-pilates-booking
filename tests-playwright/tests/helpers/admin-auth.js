@@ -67,7 +67,13 @@ async function loginAsAdmin(page) {
 
   // Wait for the dashboard to render.
   await expect(page.locator('#pg-dashboard.on')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('#dbnav-bookings.on')).toBeVisible();
+  // Assert the active-page STATE, not the sidebar item's visibility: the
+  // sidebar is display:none below 940px under the mobile dashboard layout
+  // (#103), so a visibility check here would fail every phone-viewport spec.
+  // #dbpage-bookings.on is the stronger claim anyway — it is the page itself,
+  // and it is visible at every width.
+  await expect(page.locator('#dbnav-bookings')).toHaveClass(/\bon\b/);
+  await expect(page.locator('#dbpage-bookings.on')).toBeVisible();
 }
 
 /**

@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 23 Jul 2026
-**Total tests:** 252
+**Last updated:** 6 Aug 2026
+**Total tests:** 266
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -364,6 +364,25 @@ npx playwright show-report   # video, trace and screenshots after a run
 | Spec file | Test |
 |---|---|
 | `rp-01-revenue-mtd.spec.js` | RP-01 — a confirmed booking this month makes Revenue MTD greater than £0 |
+
+## Mobile Dashboard (MB) — 14 tests
+
+| Spec file | Test |
+|---|---|
+| `mb-01-mobile-bottom-nav.spec.js` | MB-01 — bottom nav visible and fully on screen, banner collapsed and expanded |
+| `mb-02-warnings-collapse.spec.js` | MB-02 — banner starts collapsed, content stays reachable, tap expands it |
+| `mb-03-no-horizontal-overflow.spec.js` | MB-03 — every page fits the viewport width |
+| `mb-04-expandable-rows.spec.js` | MB-04a — detail cells hide until the row is tapped |
+| `mb-04-expandable-rows.spec.js` | MB-04b — tapping an action button does not collapse the row |
+| `mb-04-expandable-rows.spec.js` | MB-04c — search still filters while rows are collapsed |
+| `mb-05-more-sheet.spec.js` | MB-05a — More lists all ten pages and navigating closes the sheet |
+| `mb-05-more-sheet.spec.js` | MB-05b — the four direct slots switch pages and take the highlight |
+| `mb-05-more-sheet.spec.js` | MB-05c — scrim tap and Escape close the sheet |
+| `mb-06-byclass-and-clients.spec.js` | MB-06a — block card, its bookings and its footer buttons are all reachable |
+| `mb-06-byclass-and-clients.spec.js` | MB-06b — expanding a client reveals the per-class priority panel in one tap |
+| `mb-07-desktop-unchanged.spec.js` | MB-07a — desktop chrome: sidebar in, mobile nav and More sheet out |
+| `mb-07-desktop-unchanged.spec.js` | MB-07b — tables render as real tables, mobile-only markup hidden |
+| `mb-07-desktop-unchanged.spec.js` | MB-07c — Classes dots and By Class eyebrow labels are hidden on desktop |
 
 ---
 

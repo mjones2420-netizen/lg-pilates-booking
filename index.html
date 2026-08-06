@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LG Pilates - Book a Class</title>
 <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&family=Open+Sans:wght@300;400;500&family=Barlow:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet">
@@ -210,7 +210,14 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .srow span:first-child { color:var(--mid); }
 .srow span:last-child { font-weight:500; }
 /* ── Sidebar dashboard layout ───────────────────────────────────────────── */
-.db-layout { display:flex; height:calc(100vh - 61px); overflow:hidden; }
+/* Height is "whatever is left below whatever sits above me". --db-top is
+   measured by syncDashLayoutHeight() rather than hardcoded, because the
+   height of the chrome above the dashboard varies: the site nav alone in
+   production, nav + TEST MODE banner under ?env=test, and it reflows at
+   narrow widths. A hardcoded offset was what pushed the mobile bottom nav
+   off the bottom of the screen. 100dvh second so old browsers keep the
+   100vh fallback — on iOS Safari 100vh exceeds the visible area. */
+.db-layout { display:flex; height:calc(100vh - 61px); height:calc(100dvh - var(--db-top, 61px)); overflow:hidden; }
 .db-sidebar { width:210px; min-width:210px; background:var(--charcoal); display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; min-height:0; }
 .db-sidebar-brand { padding:20px 18px 16px; border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0; }
 .db-sidebar-brand-title { font-family:'Raleway',sans-serif; color:#eef5f5; font-size:15px; font-weight:500; margin:0; }
@@ -299,7 +306,7 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .blk-badge-upcoming { background:#fef3e8; color:var(--clay); }
 /* mobile bottom nav */
 .db-bottom-nav { display:none !important; background:var(--charcoal); padding:6px 0 2px; flex-shrink:0; }
-@media(max-width:700px){ .db-bottom-nav { display:flex !important; } }
+@media(max-width:940px){ .db-bottom-nav { display:flex !important; } }
 .db-bn-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 0; }
 .db-bn-item i { font-size:20px; color:var(--mid); }
 .db-bn-item span { font-size:10px; color:var(--mid); }
@@ -389,20 +396,204 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 .tooltip-box { display:none; position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:var(--charcoal); color:white; font-size:12px; line-height:1.5; padding:9px 12px; border-radius:4px; width:220px; text-align:left; z-index:50; pointer-events:none; }
 .tooltip-box::after { content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--charcoal); }
 .tooltip-wrap:hover .tooltip-box, .tooltip-wrap:focus .tooltip-box { display:block; }
+/* Mobile-only dashboard markup (#103). Emitted on every render and hidden
+   here, rather than emitted conditionally, so rotating or resizing the window
+   can never leave the wrong markup on screen. The mobile query at the bottom
+   of this stylesheet turns each of these on. */
+.m-sub, .m-dot, .db-warn-summary, .db-more-scrim, .db-more-sheet { display:none; }
+.blk-eyebrow { display:none; }
 @media(max-width:700px) {
   nav { padding:14px 18px; }
   .hero { padding:40px 18px 28px; }
   .filters { padding:0 18px 28px; } .filter-prompt { padding:14px 18px; font-size:14px; } .filter-loc-row { gap:8px; } .fb-all, .loc-pill { padding:12px 20px; font-size:15px; } .fb { padding:10px 16px; font-size:14px; }
   .grid { padding:0 18px 40px; grid-template-columns:1fr; }
   .acc-wrap { padding:36px 18px; }
-  .db-sidebar { display:none; }
-  .db-bottom-nav { display:flex; }
-  .db-layout { height:calc(100vh - 55px); }
-  .db-stat-grid { grid-template-columns:1fr 1fr; }
-  .db-topbar { padding:12px 16px; }
-  .db-content { padding:16px; }
   .hero h1 { font-size:38px; }
   .overlay { padding:10px; }
+}
+/* ── Dashboard mobile layout (#103) ──────────────────────────────────────────
+   Gated at 940px rather than 700px so iPhone landscape (844-932px wide) gets
+   the mobile layout instead of a cramped desktop sidebar. The public-site
+   rules above stay on 700px. Accepted side effect: a desktop window dragged
+   narrower than 940px now flips to the mobile layout.
+
+   Two guards learned from bugs found while prototyping, applied throughout:
+   any flex row holding buttons gets flex-wrap:wrap, and any flex column child
+   gets flex-shrink:0 (a shrinkable child with overflow:hidden is squashed and
+   clipped instead of making the page scroll — the original .db-warnings bug). */
+@media(max-width:940px) {
+  .db-sidebar { display:none; }
+  .db-bottom-nav { display:flex; }
+  .db-stat-grid { grid-template-columns:1fr 1fr; }
+  .db-topbar { padding:12px 16px; }
+  .db-topbar-title { font-size:18px; }
+  .db-content { padding:12px; }
+  .db-main > * { flex-shrink:0; }
+  .db-page.on { flex-shrink:1; }
+
+  /* ── Warnings banner ──
+     Hard cap so a long warnings list can never starve the content pane to
+     zero height again, collapsed by default behind a one-line summary. */
+  .db-warnings { max-height:40dvh; overflow-y:auto; }
+  #block-warnings { padding:0 !important; }
+  .db-warn-summary { display:flex; align-items:center; gap:10px; padding:11px 13px;
+                     border-left:4px solid var(--clay); background:#fff8ec; cursor:pointer;
+                     position:sticky; top:0; z-index:2; }
+  .db-warn-summary:focus-visible { outline:2px solid var(--sage); outline-offset:-2px; }
+  .db-warn-ico { width:21px; height:21px; border-radius:50%; background:var(--clay); color:#fff;
+                 flex-shrink:0; display:flex; align-items:center; justify-content:center;
+                 font-size:12px; font-weight:700; }
+  .db-warn-txt { flex:1; font-size:12.5px; font-weight:600; color:var(--charcoal); line-height:1.35; }
+  .db-warn-txt small { display:block; font-weight:400; color:var(--mid); font-size:11px; }
+  .db-warn-chev { color:var(--clay); font-size:15px; flex-shrink:0; transition:transform .18s ease; }
+  .db-warn-body { display:none; padding:0 13px 11px; border-left:4px solid var(--clay); background:#fff8ec; }
+  .db-warn-body.on { display:block; }
+  .db-warn-body .block-warning { margin-bottom:10px !important; }
+  .db-warn-body .block-warning-row { flex-wrap:wrap; gap:8px; }
+  .db-warnings.on .db-warn-chev { transform:rotate(90deg); }
+
+  /* ── Expandable table rows ──
+     One DOM: the desktop <table> markup is restyled here, never replaced.
+     Row builders supply data-label on every <td> plus m-badge on the single
+     cell that belongs on the collapsed summary line. */
+  .db-content thead { position:absolute; left:-9999px; }   /* kept for screen readers */
+  .db-content table, .db-content tbody { display:block; }
+  .db-content table { background:none; border:none; }
+  .db-content tr { display:flex; flex-wrap:wrap; align-items:center; background:#fff;
+                   border:1px solid var(--border); border-bottom:none; padding:11px 13px; }
+  .db-content tr:first-child { border-radius:4px 4px 0 0; }
+  .db-content tr:last-child { border-bottom:1px solid var(--border); border-radius:0 0 4px 4px; }
+  .db-content tr:hover td { background:none; }
+  /* Same specificity as .db-content tr but later in source, so the amber
+     missing-health-form highlight survives the card restyle. Without this the
+     parqPulse flash fades to plain white and nothing marks the affected rows. */
+  .db-content tr.parq-missing-highlight { background:#fff8ec; }
+  /* Explicit flex order keeps name / status / chevron together on the summary
+     line once the detail cells wrap in below them. */
+  .db-content td { display:none; border:none; padding:0; font-size:13px; order:3; }
+  .db-content td:first-child { display:block; flex:1; min-width:0; font-weight:600; font-size:14.5px; order:0; }
+  .db-content td.m-badge { display:block; flex-shrink:0; order:1; }
+  .db-content td:last-child { order:4; }
+  .db-content tr::after { content:"\25B8"; color:var(--light); font-size:11px; margin-left:9px;
+                          flex-shrink:0; order:2; transition:transform .18s ease; }
+  .db-content tr.m-open::after { transform:rotate(90deg); }
+  .db-content tr.m-open td { display:flex; justify-content:space-between; gap:12px; flex-basis:100%;
+                             padding:7px 0; border-bottom:1px solid var(--border);
+                             font-size:12.5px; font-weight:400; }
+  .db-content tr.m-open td::before { content:attr(data-label); color:var(--mid); flex-shrink:0; }
+  /* flex:1 (basis 0) not flex-basis:auto — auto lets the sub-line's natural
+     width push the status pill onto its own line instead of truncating. */
+  .db-content tr.m-open td:first-child { display:block; flex:1; border-bottom:none;
+                                         padding:0; font-weight:600; font-size:14.5px; }
+  .db-content tr.m-open td:first-child::before { content:none; }
+  .db-content tr.m-open td.m-badge { display:block; flex-basis:auto; border-bottom:none; padding:0; }
+  .db-content tr.m-open td.m-badge::before { content:none; }
+  .db-content td:last-child { flex-basis:100%; }
+  .db-content tr.m-open td:last-child { display:flex; flex-wrap:wrap; gap:8px;
+                                        border-bottom:none; padding-top:10px; }
+  .db-content tr.m-open td:last-child::before { content:none; }
+  .db-content tr.m-open td:empty { display:none; }
+  .db-content .act { flex:1; min-width:calc(50% - 4px); padding:10px 6px; margin-right:0; }
+  .m-sub { display:block; font-weight:400; font-size:12px; color:var(--mid); margin-top:2px;
+           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* Green / orange highlight on the Classes page detail rows. Negative margins
+     alone only shift the box, they don't widen it — the basis has to grow by
+     the same 26px or the tint stops short of the card's right edge. */
+  .db-content tr.m-open td.m-ok { background:#eaf5ee; margin:0 -13px; padding:7px 13px;
+                                  flex-basis:calc(100% + 26px);
+                                  border-left:3px solid var(--green); border-bottom:none; }
+  .db-content tr.m-open td.m-ok, .db-content tr.m-open td.m-ok::before { color:var(--green); font-weight:600; }
+  .db-content tr.m-open td.m-warn { background:#fff3e8; margin:0 -13px; padding:7px 13px;
+                                    flex-basis:calc(100% + 26px);
+                                    border-left:3px solid var(--clay); border-bottom:none; }
+  .db-content tr.m-open td.m-warn, .db-content tr.m-open td.m-warn::before { color:var(--clay); font-weight:600; }
+  /* The coloured label already says Active / Upcoming — the desktop pill inside
+     the cell would just repeat it. */
+  .db-content tr.m-open td.m-ok .blk-badge,
+  .db-content tr.m-open td.m-warn .blk-badge { display:none; }
+
+  /* Rows that must not become expandable cards */
+  .db-content td[colspan] { display:block; flex-basis:100%; text-align:center; }
+  .db-content tr:has(td[colspan])::after { content:none; }
+  .db-content tr.m-plain { display:block; padding:0; background:var(--warm);
+                           border:1px solid var(--border); border-bottom:none; }
+  .db-content tr.m-plain::after { content:none; }
+  .db-content tr.m-plain td { display:block; flex-basis:100%; text-align:left; }
+  .cust-panel-grid { grid-template-columns:1fr !important; }
+  /* Expanding the client row already opens the priority panel, so this button
+     would be a second, competing toggle — tapping it would close the panel the
+     user is looking at. One state, one control. */
+  .cust-perclass-btn { display:none !important; }
+  /* Catch-up visitors read as a plain two-line row, not a card */
+  .db-content table.m-flat tr { flex-wrap:wrap; gap:2px 10px; padding:8px 12px; }
+  .db-content table.m-flat tr::after { content:none; }
+  .db-content table.m-flat td { display:block; font-size:12px; color:var(--mid); }
+  .db-content table.m-flat td:first-child { flex-basis:100%; font-size:13px;
+                                            font-weight:600; color:var(--charcoal); }
+
+  /* ── By Class ── */
+  .class-group-header { padding:11px 13px !important; }
+  .class-group-body.on { padding:11px 12px; }
+  .m-dot { display:inline-block; width:7px; height:7px; border-radius:50%;
+           background:var(--green); flex-shrink:0; margin-left:6px; vertical-align:middle; }
+  .m-dot.warn { background:var(--clay); }
+  .blk-eyebrow { display:flex !important; align-items:center; gap:6px; padding:0 2px 6px;
+                 font-size:10px; letter-spacing:0.12em; text-transform:uppercase;
+                 font-weight:700; color:var(--green); }
+  .blk-eyebrow.up { color:var(--clay); }
+  .blk-eyebrow .m-dot { width:6px; height:6px; margin-left:0; }
+  .blk-badge-inline { display:none !important; }
+  .blk-card { background:#fff !important; border-color:var(--border) !important;
+              box-shadow:0 2px 7px rgba(20,40,40,0.07); }
+  .blk-head { flex-wrap:wrap; gap:2px; background:var(--warm); border-bottom-color:var(--border) !important; }
+  .blk-body { padding:0 !important; }
+  .blk-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:0 !important;
+                 padding:9px 12px; border-top:1px solid var(--border); background:var(--warm); }
+  .blk-actions .act { flex:1 1 auto; min-width:calc(50% - 3px); }
+  .blk-empty { padding:11px 12px; font-size:12px; color:var(--light); }
+  .cu-visitors-lbl { padding:9px 12px 4px !important; margin-top:0 !important;
+                     border-top:1px solid var(--border); background:var(--warm); }
+
+  /* ── More sheet ── */
+  .db-bn-item { padding:7px 0; }
+  .db-more-scrim { display:none; position:fixed; inset:0; background:rgba(12,23,23,0.55); z-index:150; }
+  .db-more-scrim.on { display:block; }
+  .db-more-sheet { display:none; position:fixed; left:0; right:0; bottom:0; z-index:151;
+                   background:var(--charcoal); border-radius:16px 16px 0 0; padding:6px 0 14px;
+                   max-height:88dvh; overflow-y:auto; box-shadow:0 -10px 30px rgba(0,0,0,0.4); }
+  .db-more-sheet.on { display:block; animation:dbMoreUp 0.22s ease; }
+  @keyframes dbMoreUp { from { transform:translateY(26px); opacity:0.3; } to { transform:none; opacity:1; } }
+  .db-more-grab { width:38px; height:4px; border-radius:100px; background:#3d5555; margin:6px auto; }
+  .db-more-head { font-size:10px; letter-spacing:0.12em; text-transform:uppercase;
+                  color:var(--mid); padding:9px 20px 3px; }
+  .db-more-item { display:flex; align-items:center; gap:12px; padding:11px 20px;
+                  color:var(--light); font-size:14px; cursor:pointer; }
+  .db-more-item i { font-size:18px; flex-shrink:0; }
+  .db-more-item.on { background:rgba(58,138,138,0.2); color:#eef5f5;
+                     border-left:3px solid var(--sage); padding-left:17px; }
+  .db-more-item:focus-visible { outline:2px solid var(--sage); outline-offset:-2px; }
+  .db-more-item.db-more-out { color:var(--mid); border-top:1px solid rgba(255,255,255,0.08);
+                              margin-top:6px; padding-top:14px; }
+
+  /* ── Remaining pages and polish ── */
+  .db-report-cols { grid-template-columns:1fr !important; }
+  .db-cap-name { width:112px; min-width:112px; }
+  .db-settings-card { max-width:none; padding:16px 15px; }
+  .db-export-row { flex-wrap:wrap; gap:8px; }
+  .db-export-btn.primary { width:100%; justify-content:center; }
+  .parq-warn { padding:11px 13px; }
+  /* Dashboard modals only — scoped by overlay id so the PUBLIC booking modal
+     (#overlay) keeps its two-column .frow and 92vh cap at every width. A bare
+     .frow / .modal rule here would silently restyle the customer-facing
+     booking form between 700px and 940px. */
+  #add-class-overlay .frow, #add-block-overlay .frow { grid-template-columns:1fr; }
+  #add-class-overlay .modal, #add-block-overlay .modal, #catchup-overlay .modal,
+  #view-overlay .modal, #blockemail-overlay .modal, #rfb-overlay .modal { max-height:88dvh; }
+}
+@media(max-width:940px) and (prefers-reduced-motion:reduce) {
+  .db-more-sheet.on { animation:none; }
+  .db-content tr::after, .db-warn-chev { transition:none; }
 }
 </style>
 </head>
@@ -597,7 +788,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
             <p class="db-section-card-title">Class capacity — current blocks</p>
             <div id="rpt-capacity-rows"></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="db-report-cols" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
             <div class="db-section-card" style="margin-bottom:0">
               <p class="db-section-card-title">Client breakdown</p>
               <div class="db-client-split" id="rpt-client-split">
@@ -712,13 +903,35 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
         </div>
       </div>
 
-      <!-- ── Mobile bottom nav ── -->
+      <!-- ── Mobile bottom nav ──
+           Four direct slots plus More. Reports moved into the More sheet so
+           By class earns a slot; the sheet reaches all ten pages. -->
       <div class="db-bottom-nav">
         <div class="db-bn-item on" id="dbbn-bookings" onclick="switchDashPage('bookings')"><i class="ti ti-list"></i><span>Bookings</span></div>
+        <div class="db-bn-item" id="dbbn-byclass" onclick="switchDashPage('byclass')"><i class="ti ti-layout-list"></i><span>By class</span></div>
         <div class="db-bn-item" id="dbbn-clients" onclick="switchDashPage('clients')"><i class="ti ti-users"></i><span>Clients</span></div>
         <div class="db-bn-item" id="dbbn-classes" onclick="switchDashPage('classes')"><i class="ti ti-calendar"></i><span>Classes</span></div>
-        <div class="db-bn-item" id="dbbn-reports" onclick="switchDashPage('reports')"><i class="ti ti-chart-bar"></i><span>Reports</span></div>
-        <div class="db-bn-item db-bn-more" onclick="switchDashPage('settings')"><i class="ti ti-dots"></i><span>More</span></div>
+        <div class="db-bn-item db-bn-more" id="dbbn-more" onclick="toggleDashMore()"><i class="ti ti-dots"></i><span>More</span></div>
+      </div>
+
+      <!-- ── More sheet — every dashboard page, reachable on a phone ── -->
+      <div class="db-more-scrim" id="db-more-scrim" onclick="toggleDashMore(false)"></div>
+      <div class="db-more-sheet" id="db-more-sheet" role="dialog" aria-modal="true" aria-label="All dashboard pages">
+        <div class="db-more-grab"></div>
+        <div class="db-more-head">Bookings</div>
+        <div role="button" tabindex="0" class="db-more-item on" id="dbmore-bookings" onclick="dashMoreGo('bookings')"><i class="ti ti-list"></i> All bookings</div>
+        <div role="button" tabindex="0" class="db-more-item" id="dbmore-byclass" onclick="dashMoreGo('byclass')"><i class="ti ti-layout-list"></i> By class</div>
+        <div role="button" tabindex="0" class="db-more-item" id="dbmore-history" onclick="dashMoreGo('history')"><i class="ti ti-history"></i> Booking history</div>
+        <div role="button" tabindex="0" class="db-more-item" id="dbmore-clients" onclick="dashMoreGo('clients')"><i class="ti ti-users"></i> Clients</div>
+        <div role="button" tabindex="0" class="db-more-item" id="dbmore-cancellations" onclick="dashMoreGo('cancellations')"><i class="ti ti-circle-x"></i> Cancellations</div>
+        <div role="button" tabindex="0" class="db-more-item" id="dbmore-catchup" onclick="dashMoreGo('catchup')"><i class="ti ti-repeat"></i> Catch-up swaps</div>
+        <div class="db-more-head">Studio</div>
+        <div role="button" tabindex="0" class="db-more-item" id="dbmore-classes" onclick="dashMoreGo('classes')"><i class="ti ti-calendar"></i> Classes</div>
+        <div role="button" tabindex="0" class="db-more-item" id="dbmore-reports" onclick="dashMoreGo('reports')"><i class="ti ti-chart-bar"></i> Reports</div>
+        <div class="db-more-head">Account</div>
+        <div role="button" tabindex="0" class="db-more-item" id="dbmore-settings" onclick="dashMoreGo('settings')"><i class="ti ti-settings"></i> Settings</div>
+        <div role="button" tabindex="0" class="db-more-item" id="dbmore-backup" onclick="dashMoreGo('backup')"><i class="ti ti-download"></i> Backup &amp; export</div>
+        <div role="button" tabindex="0" class="db-more-item db-more-out" onclick="toggleDashMore(false);signOut()"><i class="ti ti-logout"></i> Sign out</div>
       </div>
 
     </div><!-- /db-main -->
@@ -1233,7 +1446,7 @@ function show(pg) {
   document.getElementById("pg-"+pg).className="page on";
   var nb=document.getElementById("nb-"+pg); if(nb) nb.className="nav-btn on";
   document.getElementById("nb-signout").style.display=(pg==="dashboard")?"inline":"none";
-  if(pg==="dashboard") renderDashboard();
+  if(pg==="dashboard"){ renderDashboard(); syncDashLayoutHeight(); }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -2368,7 +2581,12 @@ function renderBlockWarnings(){
       pendingRefundCount=pending?pending.length:0;
     }catch(e){ pendingRefundCount=0; }
 
-    if(hidden.length===0 && expiring.length===0 && overCapEntries.length===0 && pendingRefundCount===0){ el.style.display="none"; el.innerHTML=""; return; }
+    if(hidden.length===0 && expiring.length===0 && overCapEntries.length===0 && pendingRefundCount===0){
+      el.style.display="none"; el.innerHTML="";
+      var emptyWrap=el.closest(".db-warnings");
+      if(emptyWrap) emptyWrap.classList.remove("on");
+      return;
+    }
 
     var html="";
 
@@ -2437,9 +2655,41 @@ function renderBlockWarnings(){
       html+='</div>';
     }
 
-    el.innerHTML=html;
+    // The summary header is emitted on every render and hidden by CSS above
+    // 940px, so desktop output is visually unchanged and a rotate/resize can
+    // never strand the wrong markup. The body keeps its previous collapsed
+    // state so a re-render doesn't slam an open banner shut.
+    var total=hidden.length+expiring.length+overCapEntries.length+pendingRefundCount;
+    var wasOpen=document.getElementById("dbwarn-body");
+    wasOpen=!!(wasOpen&&wasOpen.classList.contains("on"));
+    var summary='<div class="db-warn-summary" id="dbwarn-summary" role="button" tabindex="0"'
+      +' aria-controls="dbwarn-body" aria-expanded="'+(wasOpen?"true":"false")+'"'
+      +' onclick="toggleWarnBanner()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleWarnBanner();}">'
+      +'<div class="db-warn-ico">!</div>'
+      +'<div class="db-warn-txt">'+total+' thing'+(total===1?"":"s")+' need'+(total===1?"s":"")+' attention'
+      +'<small id="dbwarn-hint">'+(wasOpen?"Tap to close":"Tap to see them")+'</small></div>'
+      +'<div class="db-warn-chev">&#9654;</div></div>';
+
+    el.innerHTML=summary+'<div class="db-warn-body'+(wasOpen?" on":"")+'" id="dbwarn-body">'+html+'</div>';
     el.style.display="block";
+    var wrap=el.closest(".db-warnings");
+    if(wrap) wrap.classList.toggle("on",wasOpen);
   })();
+}
+
+// Mobile only in effect — the summary header that calls this is hidden above
+// 940px, so the body is never collapsed on desktop.
+function toggleWarnBanner(){
+  var body=document.getElementById("dbwarn-body");
+  if(!body) return;
+  var open=!body.classList.contains("on");
+  body.classList.toggle("on",open);
+  var wrap=body.closest(".db-warnings");
+  if(wrap) wrap.classList.toggle("on",open);
+  var sum=document.getElementById("dbwarn-summary");
+  if(sum) sum.setAttribute("aria-expanded",String(open));
+  var hint=document.getElementById("dbwarn-hint");
+  if(hint) hint.textContent=open?"Tap to close":"Tap to see them";
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
@@ -2543,8 +2793,15 @@ function renderDashboard(){
         var rowAttrs=b.parqMissing?' data-parq-missing="true"':'';
         var searchVal=(b.client+' '+b.cls+' '+(b.email||'')).toLowerCase();
         rowAttrs+=' data-search="'+searchVal.replace(/"/g,'&quot;')+'"';
-        var rowHtml="<tr"+rowAttrs+"><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.cls)+"</td><td style=\"font-size:12px\">"+sanitise(b.when)+"</td><td style=\"font-size:12px\">"+blockCell+"</td><td>&pound;"+sanitise(String(b.paid))+"</td>";
-        rowHtml+="<td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
+        // data-label + m-badge + m-sub drive the mobile expandable-row layout
+        // (#103). They are inert above 940px — see the base rules in <style>.
+        var rowHtml="<tr"+rowAttrs+"><td>"+sanitise(b.client)
+          +"<span class=\"m-sub\">"+sanitise(b.cls)+" &middot; "+sanitise(b.when)+"</span></td>"
+          +"<td data-label=\"Class\">"+sanitise(b.cls)+"</td>"
+          +"<td data-label=\"When\" style=\"font-size:12px\">"+sanitise(b.when)+"</td>"
+          +"<td data-label=\"Block\" style=\"font-size:12px\">"+blockCell+"</td>"
+          +"<td data-label=\"Paid\">&pound;"+sanitise(String(b.paid))+"</td>";
+        rowHtml+="<td class=\"m-badge\"><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
         if(b.blockPast){
           // History rows are view-only: the block has ended, so Confirm / Remove
           // from Block / Del Customer no longer make sense here.
@@ -2580,10 +2837,17 @@ function renderDashboard(){
         var nextBlk=activeBlk?getNextBlock(c.id,activeBlk.id):null;
         var activeCell=activeBlk?('<span class="blk-badge blk-badge-active">Active</span><br><span style="font-size:12px">'+sanitise(activeBlk.dates[0])+" &ndash; "+sanitise(activeBlk.dates[activeBlk.dates.length-1])+" ("+activeBlk.booked+"/"+activeBlk.cap+")</span>"):'<span style="color:var(--light)">None</span>';
         var nextCell=nextBlk?('<span class="blk-badge blk-badge-upcoming">Upcoming</span><br><span style="font-size:12px">'+sanitise(nextBlk.dates[0])+" &ndash; "+sanitise(nextBlk.dates[nextBlk.dates.length-1])+"</span>"):'<span style="color:var(--light)">None</span>';
+        // Mobile status dots: green when a block is running, orange when there
+        // is nothing behind it. Both can show at once. Hidden above 940px.
+        var dots=(activeBlk?'<span class="m-dot" title="Active block"></span>':'')
+          +(nextBlk?'':'<span class="m-dot warn" title="No upcoming block"></span>');
         chtml+="<tr>";
-        chtml+="<td><strong>"+sanitise(c.name)+"</strong></td><td>"+sanitise(c.loc)+"</td><td>"+sanitise(c.day)+" "+sanitise(c.time)+"</td>";
-        chtml+="<td>"+activeCell+"</td>";
-        chtml+="<td>"+nextCell+"</td>";
+        chtml+="<td><strong>"+sanitise(c.name)+"</strong>"+dots
+          +"<span class=\"m-sub\">"+sanitise(c.day)+" "+sanitise(c.time)+" &middot; "+sanitise(c.loc)+"</span></td>"
+          +"<td data-label=\"Location\">"+sanitise(c.loc)+"</td>"
+          +"<td data-label=\"Day and time\">"+sanitise(c.day)+" "+sanitise(c.time)+"</td>";
+        chtml+="<td data-label=\"Active block\""+(activeBlk?' class="m-ok"':'')+">"+activeCell+"</td>";
+        chtml+="<td data-label=\"Upcoming block\""+(nextBlk?'':' class="m-warn"')+">"+nextCell+"</td>";
         chtml+="<td><button class='act' onclick='openEditClassModal("+c.id+")'>Edit</button><button class='act act-confirm' onclick='openAddBlockModal("+c.id+")'>+ Block</button><button class='act act-delete' onclick='deleteClass("+c.id+")'>Delete</button></td></tr>";
       }
       document.getElementById("ctbody").innerHTML=chtml;
@@ -2622,18 +2886,110 @@ function switchDashPage(page){
     var nav=document.getElementById("dbnav-"+p);
     if(nav) nav.classList.toggle("on",p===page);
   });
-  // Mobile bottom nav
-  var mobileMap={bookings:"bookings",byclass:"bookings",history:"bookings",cancellations:"bookings",catchup:"bookings",clients:"clients",classes:"classes",reports:"reports"};
-  var mobileActive=mobileMap[page]||null;
-  ["bookings","clients","classes","reports"].forEach(function(k){
+  // Mobile bottom nav — four direct slots; anything else lights up "More".
+  var directSlots=["bookings","byclass","clients","classes"];
+  directSlots.forEach(function(k){
     var bn=document.getElementById("dbbn-"+k);
-    if(bn) bn.classList.toggle("on",k===mobileActive);
+    if(bn) bn.classList.toggle("on",k===page);
+  });
+  var moreBn=document.getElementById("dbbn-more");
+  if(moreBn) moreBn.classList.toggle("on",directSlots.indexOf(page)<0);
+  pages.forEach(function(p){
+    var mi=document.getElementById("dbmore-"+p);
+    if(mi) mi.classList.toggle("on",p===page);
   });
   if(page==="clients") renderCustomersTab();
   if(page==="cancellations") renderCancellationsTab();
   if(page==="reports") renderReportsPage();
   if(page==="catchup") renderCatchUpSwapsPage();
 }
+
+// ─── Mobile dashboard behaviour (#103) ────────────────────────────────────────
+// All of this is inert above 940px: the More sheet and its trigger are
+// display:none there, and the row-toggle handler bails on viewport width.
+
+// Measures how much chrome sits above the dashboard and publishes it as
+// --db-top, so .db-layout can claim exactly the rest of the viewport. Without
+// this the bottom nav sits below the fold whenever the chrome is taller than
+// the hardcoded guess (e.g. with the TEST MODE banner, or a wrapped nav).
+function syncDashLayoutHeight(){
+  var el=document.querySelector(".db-layout");
+  if(!el||!el.offsetParent) return;   // dashboard page not on screen — nothing to measure
+  var top=el.getBoundingClientRect().top+window.scrollY;
+  if(top>=0) el.style.setProperty("--db-top",Math.round(top)+"px");
+}
+window.addEventListener("resize",syncDashLayoutHeight);
+window.addEventListener("orientationchange",syncDashLayoutHeight);
+window.addEventListener("load",syncDashLayoutHeight);
+
+var dashMoreReturnFocus=null;
+
+function toggleDashMore(force){
+  var sheet=document.getElementById("db-more-sheet");
+  var scrim=document.getElementById("db-more-scrim");
+  if(!sheet||!scrim) return;
+  var open=(force===undefined)?!sheet.classList.contains("on"):!!force;
+  var wasOpen=sheet.classList.contains("on");
+  sheet.classList.toggle("on",open);
+  scrim.classList.toggle("on",open);
+  // The sheet declares aria-modal, which tells assistive tech everything
+  // outside it is inert — so focus has to move inside on open, or a keyboard
+  // /screen-reader user is stranded on a node their AT has just hidden.
+  if(open&&!wasOpen){
+    dashMoreReturnFocus=document.activeElement;
+    var first=sheet.querySelector(".db-more-item");
+    if(first) first.focus();
+  } else if(!open&&wasOpen){
+    if(dashMoreReturnFocus&&dashMoreReturnFocus.focus) dashMoreReturnFocus.focus();
+    dashMoreReturnFocus=null;
+  }
+}
+
+function dashMoreGo(page){
+  toggleDashMore(false);
+  switchDashPage(page);
+}
+
+document.addEventListener("keydown",function(e){
+  var sheet=document.getElementById("db-more-sheet");
+  if(!sheet||!sheet.classList.contains("on")) return;
+  if(e.key==="Escape"){ toggleDashMore(false); return; }
+  // The sheet's items are <div>s, so Enter/Space have to be wired by hand.
+  if(e.key==="Enter"||e.key===" "){
+    var item=e.target&&e.target.closest?e.target.closest(".db-more-item"):null;
+    if(item&&sheet.contains(item)){ e.preventDefault(); item.click(); }
+  }
+});
+
+// Delegated row expander. Rows stay a single <table> DOM at every width, so
+// filterBookingsTable() and the index-based viewBooking(i) handlers keep
+// working exactly as they do on desktop.
+// matchMedia, not window.innerWidth: innerWidth includes a classic scrollbar
+// but the media query does not, so at ~950px the two disagree — the CSS would
+// render collapsed cards while the toggle refused to run, leaving the actions
+// cell permanently unreachable.
+function isDashMobile(){ return window.matchMedia("(max-width:940px)").matches; }
+
+document.addEventListener("click",function(e){
+  if(!isDashMobile()) return;
+  if(!e.target||!e.target.closest) return;
+  if(e.target.closest("button,a,input,select,textarea,label")) return;
+  var tr=e.target.closest("tr");
+  if(!tr||!tr.closest(".db-content")) return;
+  if(tr.classList.contains("m-plain")) return;      // clients per-class panel
+  if(tr.querySelector("td[colspan]")) return;       // loading / empty states
+  if(tr.closest("table.m-flat")) return;            // catch-up visitor rows
+  var opened=tr.classList.toggle("m-open");
+  // Clients page: the per-class priority cards live in a separate panel row,
+  // and the "Per-class" button that opens it is itself in the actions cell —
+  // which is detail, so on a phone it only appears once the row is open.
+  // Reveal the panel with the row so priority is one tap, as the mockup shows.
+  var custId=tr.getAttribute("data-cust-id");
+  if(custId){
+    var panel=document.getElementById("cust-panel-"+custId);
+    if(panel) panel.style.display=opened?"":"none";
+  }
+});
 
 // ─── Search / filter helpers ──────────────────────────────────────────────────
 
@@ -2825,19 +3181,22 @@ function renderCustomersTab(){
         });
         var searchStr=(cu.first_name+' '+cu.last_name+' '+cu.email+' '+(cu.phone||'')).toLowerCase();
         html+='<tr id="cust-row-'+cu.id+'" data-search="'+searchStr.replace(/"/g,'&quot;')+'" data-cust-id="'+cu.id+'">';
-        html+='<td><strong>'+sanitise(cu.first_name)+' '+sanitise(cu.last_name)+'</strong></td>';
-        html+='<td>'+sanitise(cu.email)+'</td>';
-        html+='<td>'+sanitise(cu.phone||'—')+'</td>';
-        html+='<td>'+sanitise(cu.customer_type||'—')+'</td>';
-        html+='<td>'+overallBadge+'</td>';
+        html+='<td><strong>'+sanitise(cu.first_name)+' '+sanitise(cu.last_name)+'</strong>'
+          +'<span class="m-sub">'+sanitise(cu.email)+'</span></td>';
+        html+='<td data-label="Email">'+sanitise(cu.email)+'</td>';
+        html+='<td data-label="Phone">'+sanitise(cu.phone||'—')+'</td>';
+        html+='<td data-label="Type">'+sanitise(cu.customer_type||'—')+'</td>';
+        html+='<td class="m-badge">'+overallBadge+'</td>';
         var detailBtn=relevantClasses.length>0
-          ?'<button class="act" style="font-size:11px;" onclick="toggleCustPriorityPanel('+cu.id+')">Per-class &#8964;</button>'
+          ?'<button class="act cust-perclass-btn" style="font-size:11px;" onclick="toggleCustPriorityPanel('+cu.id+')">Per-class &#8964;</button>'
           :'—';
         html+='<td>'+detailBtn+'</td>';
         html+='</tr>';
         if(relevantClasses.length>0){
-          html+='<tr id="cust-panel-'+cu.id+'" style="display:none;"><td colspan="6" style="padding:0 14px 14px;background:var(--warm);">';
-          html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-top:10px;">';
+          // m-plain keeps the mobile card styling off this row — it is a panel
+          // toggled by toggleCustPriorityPanel(), not an expandable record.
+          html+='<tr id="cust-panel-'+cu.id+'" class="m-plain" style="display:none;"><td colspan="6" style="padding:0 14px 14px;background:var(--warm);">';
+          html+='<div class="cust-panel-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding-top:10px;">';
           relevantClasses.forEach(function(cl){
           var isManual=manualMap[cu.id+"_"+cl.id]||false;
           var isAuto=autoMap[cu.id+"_"+cl.id]||false;
@@ -2993,33 +3352,43 @@ function renderClassesView(){
           var blkBg=blkStatus==="active"?"#f0f9f5":"#fff9f0";
           var blkBorder=blkStatus==="active"?"#b8d8c8":"#f0d8a8";
           var badgeHtml=blkStatus==="active"
-            ?"<span style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:#e8f5ee;color:var(--green);font-weight:500;margin-left:8px\">Active</span>"
-            :"<span style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:#fef3e8;color:var(--clay);font-weight:500;margin-left:8px\">Upcoming</span>";
+            ?"<span class=\"blk-badge-inline\" style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:#e8f5ee;color:var(--green);font-weight:500;margin-left:8px\">Active</span>"
+            :"<span class=\"blk-badge-inline\" style=\"display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;background:#fef3e8;color:var(--clay);font-weight:500;margin-left:8px\">Upcoming</span>";
+          // Mobile carries the status as an uppercase eyebrow above the card
+          // instead of the inline pill; each is hidden at the other's width.
+          var eyebrowHtml=blkStatus==="active"
+            ?"<div class=\"blk-eyebrow\"><span class=\"m-dot\"></span>Active block</div>"
+            :"<div class=\"blk-eyebrow up\"><span class=\"m-dot warn\"></span>Upcoming block</div>";
           var blkBookings=bookings.filter(function(b){ return b.blockId===blk.id; });
-          html+="<div style=\"margin-bottom:10px;border:1px solid "+blkBorder+";border-radius:4px;background:"+blkBg+";overflow:hidden;\">";
-          html+="<div style=\"display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid "+blkBorder+";\">";
+          html+="<div style=\"margin-bottom:10px\">"+eyebrowHtml;
+          html+="<div class=\"blk-card\" style=\"border:1px solid "+blkBorder+";border-radius:4px;background:"+blkBg+";overflow:hidden;\">";
+          html+="<div class=\"blk-head\" style=\"display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid "+blkBorder+";\">";
           html+="<div style=\"font-size:13px;font-weight:600\">"+sanitise((blk.dates||[])[0]||blk.start_date)+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||blk.end_date)+badgeHtml+"</div>";
           html+="<div style=\"font-size:12px;color:var(--mid)\">"+blk.booked+"/"+blk.cap+" booked &bull; &pound;"+blk.price+"/session &bull; "+blk.weeks+" weeks</div></div>";
-          html+="<div style=\"padding:10px 14px;\">";
+          html+="<div class=\"blk-body\" style=\"padding:10px 14px;\">";
           if(blkBookings.length>0){
             html+="<table style=\"margin-bottom:0\"><thead><tr><th>Client</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
             blkBookings.forEach(function(b){
               var idx=bookings.indexOf(b);
               var confirmBtn=b.status==="reserved"?"<button class=\"act act-confirm\" onclick=\"confirmBookingAdmin("+idx+")\">Confirm</button>":"";
-              html+="<tr><td>"+sanitise(b.client)+"</td><td>"+sanitise(b.email)+"</td><td><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
+              html+="<tr><td>"+sanitise(b.client)+"<span class=\"m-sub\">"+sanitise(b.email)+"</span></td>"
+                +"<td data-label=\"Email\">"+sanitise(b.email)+"</td>"
+                +"<td class=\"m-badge\"><span class=\"pill p-"+sanitise(b.status)+"\">"+sanitise(b.status)+"</span></td>";
               html+="<td><button class=\"act\" onclick=\"viewBooking("+idx+")\">View</button>"+confirmBtn+"<button class=\"act act-delete\" onclick=\"openRfbModal("+idx+")\">Remove from Block</button></td></tr>";
             });
             html+="</tbody></table>";
           } else {
-            html+="<div style=\"font-size:12px;color:var(--light)\">No bookings for this block yet.</div>";
+            html+="<div class=\"blk-empty\" style=\"font-size:12px;color:var(--light)\">No bookings for this block yet.</div>";
           }
           // Catch-up visitors for this block
           var cuToday=new Date(); cuToday.setHours(0,0,0,0);
           var blkSwaps=catchUpSwaps.filter(function(s){ return s.target_block_id===blk.id; });
           var futureSwaps=blkSwaps.filter(function(s){ return new Date(s.class_date+"T00:00:00")>=cuToday; });
           if(futureSwaps.length>0){
-            html+="<div style=\"margin-top:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--mid)\">Catch-Up Visitors</div>";
-            html+="<table style=\"margin-top:4px;margin-bottom:0\"><thead><tr><th>Visitor</th><th>Date</th><th>Their regular class</th></tr></thead><tbody>";
+            html+="<div class=\"cu-visitors-lbl\" style=\"margin-top:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--mid)\">Catch-Up Visitors</div>";
+            // m-flat: two-line plain rows on mobile, not expandable cards —
+            // there is nothing to hide and no action to take.
+            html+="<table class=\"m-flat\" style=\"margin-top:4px;margin-bottom:0\"><thead><tr><th>Visitor</th><th>Date</th><th>Their regular class</th></tr></thead><tbody>";
             futureSwaps.forEach(function(s){
               var dl=new Date(s.class_date+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
               html+="<tr><td>"+sanitise(s.customer_name)+"</td><td style=\"white-space:nowrap\">"+dl+"</td><td>"+sanitise(s.source_class_name)+"</td></tr>";
@@ -3027,8 +3396,10 @@ function renderClassesView(){
             html+="</tbody></table>";
           }
           var emailBlockBtn=blkBookings.length>0?"<button class='act' onclick='openBlockEmailModal("+blk.id+")'>Email Block</button>":"";
-          html+="<div style='margin-top:8px'><button class='act' onclick='openEditBlockModal("+blk.id+")'>Edit Block</button>"+emailBlockBtn+"<button class='act act-delete' onclick='deleteBlock("+blk.id+")'>Delete Block</button></div>";
-          html+="</div></div>";
+          // Stays inside blk-body so desktop spacing is unchanged; the mobile
+          // query zeroes blk-body's padding and restyles this as a footer strip.
+          html+="<div class='blk-actions' style='margin-top:8px'><button class='act' onclick='openEditBlockModal("+blk.id+")'>Edit Block</button>"+emailBlockBtn+"<button class='act act-delete' onclick='deleteBlock("+blk.id+")'>Delete Block</button></div>";
+          html+="</div></div></div>";
         });
       }
       html+="</div></div>";
@@ -3121,7 +3492,12 @@ function renderCatchUpSwapsList(){
     upcoming.forEach(function(s){
       var dl=new Date(s.class_date+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
       var notesCell=s.notes?sanitise(s.notes):"<span style=\"color:var(--light)\">&mdash;</span>";
-      html+="<tr><td>"+sanitise(s.customer_name)+"</td><td>"+sanitise(s.target_class_name)+"</td><td style=\"white-space:nowrap\">"+dl+"</td><td>"+sanitise(s.source_class_name)+"</td><td>"+notesCell+"</td>";
+      html+="<tr><td>"+sanitise(s.customer_name)
+        +"<span class=\"m-sub\">"+sanitise(s.target_class_name)+" &middot; "+dl+"</span></td>"
+        +"<td data-label=\"Visiting\">"+sanitise(s.target_class_name)+"</td>"
+        +"<td data-label=\"Date\" style=\"white-space:nowrap\">"+dl+"</td>"
+        +"<td data-label=\"Their regular class\">"+sanitise(s.source_class_name)+"</td>"
+        +"<td data-label=\"Notes\">"+notesCell+"</td>";
       html+="<td><button class=\"act act-delete\" onclick=\"deleteCatchUpSwap("+s.id+")\">Remove</button></td></tr>";
     });
     html+="</tbody></table>";
@@ -3926,13 +4302,15 @@ function renderCancellationsTab(){
           ?"<button class=\"act act-confirm\" onclick=\"markCancellationRefunded("+r.id+")\">Mark Refunded</button>"
           :"";
         var cancelSearch=(r.first_name+' '+r.last_name+' '+(r.email||'')+' '+(r.class_name||'')+' '+(r.venue||'')).toLowerCase();
+        // No m-sub on the name cell here: it already carries a small email
+        // line, and the refund pill is the one status this page is scanned for.
         html+="<tr data-search=\""+cancelSearch.replace(/"/g,'&quot;')+"\">"
           +"<td><strong>"+sanitise(r.first_name+" "+r.last_name)+"</strong><br><span style=\"font-size:11px;color:var(--light)\">"+sanitise(r.email)+"</span></td>"
-          +"<td>"+sanitise(r.class_name||"—")+"<br><span style=\"font-size:11px;color:var(--light)\">"+sanitise(r.venue||"")+"</span></td>"
-          +"<td style=\"font-size:12px\">"+sanitise(blockDates)+"</td>"
-          +"<td style=\"text-align:center\">"+sanitise(String(r.sessions_attended))+" of "+sanitise(String(r.sessions_attended+(r.sessions_remaining||0)))+"</td>"
-          +"<td>"+refundDisplay+"</td>"
-          +"<td style=\"font-size:12px;color:var(--mid)\">"+sanitise(cancelledDate)+"</td>"
+          +"<td data-label=\"Class and venue\">"+sanitise(r.class_name||"—")+"<br><span style=\"font-size:11px;color:var(--light)\">"+sanitise(r.venue||"")+"</span></td>"
+          +"<td data-label=\"Block dates\" style=\"font-size:12px\">"+sanitise(blockDates)+"</td>"
+          +"<td data-label=\"Sessions attended\" style=\"text-align:center\">"+sanitise(String(r.sessions_attended))+" of "+sanitise(String(r.sessions_attended+(r.sessions_remaining||0)))+"</td>"
+          +"<td class=\"m-badge\">"+refundDisplay+"</td>"
+          +"<td data-label=\"Removed on\" style=\"font-size:12px;color:var(--mid)\">"+sanitise(cancelledDate)+"</td>"
           +"<td>"+actionBtn+"</td>"
           +"</tr>";
       });
