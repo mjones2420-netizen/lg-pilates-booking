@@ -495,7 +495,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
   .db-content tr.m-open td:empty { display:none; }
   .db-content .act { flex:1; min-width:calc(50% - 4px); padding:10px 6px; margin-right:0; }
   .m-sub { display:block; font-weight:400; font-size:12px; color:var(--mid); margin-top:2px;
-           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+           white-space:normal; overflow:visible; text-overflow:clip; }
 
   /* Green / orange highlight on the Classes page detail rows. Negative margins
      alone only shift the box, they don't widen it — the basis has to grow by
@@ -534,7 +534,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 
   /* ── By Class ── */
   .class-group-header { padding:11px 13px !important; }
-  .class-group-body.on { padding:11px 12px; }
+  .class-group-body { padding:16px 16px 16px; }
   .m-dot { display:inline-block; width:7px; height:7px; border-radius:50%;
            background:var(--green); flex-shrink:0; margin-left:6px; vertical-align:middle; }
   .m-dot.warn { background:var(--clay); }
@@ -2847,7 +2847,7 @@ function renderDashboard(){
           +"<td data-label=\"Location\">"+sanitise(c.loc)+"</td>"
           +"<td data-label=\"Day and time\">"+sanitise(c.day)+" "+sanitise(c.time)+"</td>";
         chtml+="<td data-label=\"Active block\""+(activeBlk?' class="m-ok"':'')+">"+activeCell+"</td>";
-        chtml+="<td data-label=\"Upcoming block\""+(nextBlk?'':' class="m-warn"')+">"+nextCell+"</td>";
+        chtml+="<td data-label=\"Upcoming block\" class=\"m-warn\">"+nextCell+"</td>";
         chtml+="<td><button class='act' onclick='openEditClassModal("+c.id+")'>Edit</button><button class='act act-confirm' onclick='openAddBlockModal("+c.id+")'>+ Block</button><button class='act act-delete' onclick='deleteClass("+c.id+")'>Delete</button></td></tr>";
       }
       document.getElementById("ctbody").innerHTML=chtml;
