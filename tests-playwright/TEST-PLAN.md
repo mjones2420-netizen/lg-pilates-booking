@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 6 Aug 2026
-**Total tests:** 266
+**Last updated:** 7 Aug 2026
+**Total tests:** 272
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -365,7 +365,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 |---|---|
 | `rp-01-revenue-mtd.spec.js` | RP-01 — a confirmed booking this month makes Revenue MTD greater than £0 |
 
-## Mobile Dashboard (MB) — 14 tests
+## Mobile Dashboard (MB) — 20 tests
 
 | Spec file | Test |
 |---|---|
@@ -383,6 +383,12 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `mb-07-desktop-unchanged.spec.js` | MB-07a — desktop chrome: sidebar in, mobile nav and More sheet out |
 | `mb-07-desktop-unchanged.spec.js` | MB-07b — tables render as real tables, mobile-only markup hidden |
 | `mb-07-desktop-unchanged.spec.js` | MB-07c — Classes dots and By Class eyebrow labels are hidden on desktop |
+| `mb-08-safe-area-insets.spec.js` | MB-08a — viewport-fit=cover is set, without which every inset reports 0 |
+| `mb-08-safe-area-insets.spec.js` | MB-08b — with no inset, padding is unchanged from the pre-inset values |
+| `mb-08-safe-area-insets.spec.js` | MB-08c — a forced inset grows the bottom nav and keeps its labels on screen |
+| `mb-08-safe-area-insets.spec.js` | MB-08d — the TEST MODE banner owns the top inset, so nav does not double it |
+| `mb-09-class-status-dots.spec.js` | MB-09a — green tracks the active block, orange tracks the upcoming block |
+| `mb-09-class-status-dots.spec.js` | MB-09b — the dot colours match the badges the row expands to reveal |
 
 ---
 

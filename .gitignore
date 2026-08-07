@@ -8,3 +8,7 @@ context_old.txt
 
 # review-before-tests gate marker (transient, local)
 .claude/.review-marker
+
+# tool-generated dev-server launch config, local only. Wraps the same
+# python3 -m http.server 8000 command already documented in CLAUDE.md.
+.claude/launch.json

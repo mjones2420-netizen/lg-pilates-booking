@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- viewport-fit=cover is required for env(safe-area-inset-*) to report anything
+     other than 0. It lets the page paint edge to edge, so every element that
+     anchors to a screen edge must add the matching inset back as padding —
+     nav (top), .db-bottom-nav / .db-more-sheet / .toast (bottom), .overlay (all). -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>LG Pilates - Book a Class</title>
 <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&family=Open+Sans:wght@300;400;500&family=Barlow:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet">
@@ -21,10 +25,24 @@
   --border: #cde0e0;
   --green: #3a8a6a;
   --red: #c04040;
+  /* Status-bar inset, factored out so the TEST MODE banner can zero it in one
+     place rather than every nav rule re-deciding. 0 without viewport-fit=cover. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  /* Bottom inset — clears iOS Safari's floating URL bar and the home
+     indicator. Both are overlays, so dvh alone does not avoid them.
+     Factored out so tests can force a non-zero value; env() itself cannot
+     be simulated in a desktop browser. */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
+/* The fixed TEST MODE banner already covers the notch and pads body past it,
+   so the nav must not claim the same inset a second time underneath it. Scoped
+   to nav deliberately — overlays and modals still need the real inset. */
+body.has-test-banner nav { --safe-top: 0px; }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { width:100%; margin:0; padding:0; font-family:'Open Sans',sans-serif; background:var(--warm); color:var(--charcoal); min-height:100vh; overflow-x:hidden; }
-nav { display:flex; align-items:center; justify-content:space-between; padding:20px 40px; border-bottom:1px solid var(--border); background:var(--warm); position:sticky; top:0; z-index:100; }
+/* Top padding carries the status-bar inset so the sticky nav's own background
+   fills the notch area instead of the logo sliding under the clock. */
+nav { display:flex; align-items:center; justify-content:space-between; padding:calc(20px + var(--safe-top)) 40px 20px; border-bottom:1px solid var(--border); background:var(--warm); position:sticky; top:0; z-index:100; }
 .logo { font-family:'Raleway',sans-serif; font-size:28px; letter-spacing:0.06em; font-weight:600; }
 .logo span { color:var(--sage); font-style:italic; }
 .nav-links { display:flex; gap:28px; align-items:center; }
@@ -125,7 +143,7 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .next-blk-body { display:none; padding:14px 22px; border-top:0.5px solid #eef5f5; background:#e8f0f0; }
 .next-blk-body.on { display:block; }
 .book-btn:disabled { background:#f0b0b0; color:#7a1a1a; cursor:not-allowed; }
-.overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:200; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:20px; }
+.overlay { display:none; position:fixed; inset:0; background:rgba(44,44,42,0.55); z-index:200; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom)); }
 .overlay.on { display:flex; animation:fadeup 0.2s ease; }
 .modal { background:var(--warm); border-radius:6px; width:100%; max-width:500px; max-height:92vh; overflow-y:auto; }
 #form-view { display:block; }
@@ -305,7 +323,7 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:2
 .blk-badge-active { background:#e8f0e7; color:var(--green); }
 .blk-badge-upcoming { background:#fef3e8; color:var(--clay); }
 /* mobile bottom nav */
-.db-bottom-nav { display:none !important; background:var(--charcoal); padding:6px 0 2px; flex-shrink:0; }
+.db-bottom-nav { display:none !important; background:var(--charcoal); padding:6px 0 calc(2px + var(--safe-bottom)); flex-shrink:0; }
 @media(max-width:940px){ .db-bottom-nav { display:flex !important; } }
 .db-bn-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 0; }
 .db-bn-item i { font-size:20px; color:var(--mid); }
@@ -360,7 +378,7 @@ tr:hover td { background:var(--cream); }
 .or { display:flex; align-items:center; gap:10px; margin:16px 0; }
 .or hr { flex:1; border:none; border-top:1px solid var(--border); }
 .or span { font-size:12px; color:var(--light); }
-.toast { position:fixed; bottom:28px; right:28px; background:var(--charcoal); color:white; padding:12px 22px; border-radius:3px; font-size:13px; z-index:999; transform:translateY(60px); opacity:0; transition:all 0.3s; }
+.toast { position:fixed; bottom:calc(28px + var(--safe-bottom)); right:28px; background:var(--charcoal); color:white; padding:12px 22px; border-radius:3px; font-size:13px; z-index:999; transform:translateY(60px); opacity:0; transition:all 0.3s; }
 .toast.on { transform:translateY(0); opacity:1; }
 .block-warning { background:#fff8ec; border:1px solid #f0d080; border-left:4px solid var(--clay); border-radius:4px; padding:16px 18px; margin-bottom:28px; }
 .block-warning-title { font-size:13px; font-weight:600; color:var(--clay); margin-bottom:10px; display:flex; align-items:center; gap:7px; }
@@ -403,13 +421,16 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 .m-sub, .m-dot, .db-warn-summary, .db-more-scrim, .db-more-sheet { display:none; }
 .blk-eyebrow { display:none; }
 @media(max-width:700px) {
-  nav { padding:14px 18px; }
+  /* Shorthand must re-state the inset the base rule adds, or it resets it. */
+  nav { padding:calc(14px + var(--safe-top)) 18px 14px; }
   .hero { padding:40px 18px 28px; }
   .filters { padding:0 18px 28px; } .filter-prompt { padding:14px 18px; font-size:14px; } .filter-loc-row { gap:8px; } .fb-all, .loc-pill { padding:12px 20px; font-size:15px; } .fb { padding:10px 16px; font-size:14px; }
   .grid { padding:0 18px 40px; grid-template-columns:1fr; }
   .acc-wrap { padding:36px 18px; }
   .hero h1 { font-size:38px; }
-  .overlay { padding:10px; }
+  /* Keep the safe-area insets the base rule adds — a bare `padding:10px`
+     shorthand here would reset them and drop modals under the notch. */
+  .overlay { padding:calc(10px + var(--safe-top)) 10px calc(10px + var(--safe-bottom)); }
 }
 /* ── Dashboard mobile layout (#103) ──────────────────────────────────────────
    Gated at 940px rather than 700px so iPhone landscape (844-932px wide) gets
@@ -560,7 +581,8 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
   .db-more-scrim { display:none; position:fixed; inset:0; background:rgba(12,23,23,0.55); z-index:150; }
   .db-more-scrim.on { display:block; }
   .db-more-sheet { display:none; position:fixed; left:0; right:0; bottom:0; z-index:151;
-                   background:var(--charcoal); border-radius:16px 16px 0 0; padding:6px 0 14px;
+                   background:var(--charcoal); border-radius:16px 16px 0 0;
+                   padding:6px 0 calc(14px + var(--safe-bottom));
                    max-height:88dvh; overflow-y:auto; box-shadow:0 -10px 30px rgba(0,0,0,0.4); }
   .db-more-sheet.on { display:block; animation:dbMoreUp 0.22s ease; }
   @keyframes dbMoreUp { from { transform:translateY(26px); opacity:0.3; } to { transform:none; opacity:1; } }
@@ -1405,9 +1427,12 @@ if (IS_TEST_ENV) {
     banner.id = 'test-mode-banner';
     banner.className = 'on';
     banner.textContent = '⚠️ TEST MODE — connected to lg-pilates-test (isolated test data)';
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#c04040;color:#fff;text-align:center;padding:8px 12px;font:500 13px "Open Sans",sans-serif;letter-spacing:0.03em;';
+    // The banner owns the status-bar inset while it is on screen (it covers the
+    // sticky nav's own inset padding), so body is pushed down by both.
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#c04040;color:#fff;text-align:center;padding:calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;font:500 13px "Open Sans",sans-serif;letter-spacing:0.03em;';
     document.body.appendChild(banner);
-    document.body.style.paddingTop = '36px';
+    document.body.classList.add('has-test-banner');
+    document.body.style.paddingTop = 'calc(36px + env(safe-area-inset-top, 0px))';
   });
 }
 
@@ -2837,10 +2862,13 @@ function renderDashboard(){
         var nextBlk=activeBlk?getNextBlock(c.id,activeBlk.id):null;
         var activeCell=activeBlk?('<span class="blk-badge blk-badge-active">Active</span><br><span style="font-size:12px">'+sanitise(activeBlk.dates[0])+" &ndash; "+sanitise(activeBlk.dates[activeBlk.dates.length-1])+" ("+activeBlk.booked+"/"+activeBlk.cap+")</span>"):'<span style="color:var(--light)">None</span>';
         var nextCell=nextBlk?('<span class="blk-badge blk-badge-upcoming">Upcoming</span><br><span style="font-size:12px">'+sanitise(nextBlk.dates[0])+" &ndash; "+sanitise(nextBlk.dates[nextBlk.dates.length-1])+"</span>"):'<span style="color:var(--light)">None</span>';
-        // Mobile status dots: green when a block is running, orange when there
-        // is nothing behind it. Both can show at once. Hidden above 940px.
+        // Mobile status dots mirror the badge colours used everywhere else:
+        // green = a block is running now, orange = one is booked in behind it.
+        // No dot means that slot is empty. Both can show at once. Hidden above
+        // 940px. Classes missing a next block are surfaced by the warnings
+        // banner (renderBlockWarnings' "expiring" list), not by a dot here.
         var dots=(activeBlk?'<span class="m-dot" title="Active block"></span>':'')
-          +(nextBlk?'':'<span class="m-dot warn" title="No upcoming block"></span>');
+          +(nextBlk?'<span class="m-dot warn" title="Upcoming block"></span>':'');
         chtml+="<tr>";
         chtml+="<td><strong>"+sanitise(c.name)+"</strong>"+dots
           +"<span class=\"m-sub\">"+sanitise(c.day)+" "+sanitise(c.time)+" &middot; "+sanitise(c.loc)+"</span></td>"
@@ -4662,7 +4690,9 @@ function showValidationToast(errors){
   if(existing) existing.remove();
   var t=document.createElement("div");
   t.id="validation-toast";
-  t.style.cssText="position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a2e2e;color:white;padding:16px 22px;border-radius:4px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:340px;width:90%;animation:fadeup 0.2s ease";
+  // top offset carries the status-bar inset — viewport-fit=cover lets the page
+  // paint under the notch, and this toast anchors to the top edge.
+  t.style.cssText="position:fixed;top:calc(24px + var(--safe-top));left:50%;transform:translateX(-50%);background:#1a2e2e;color:white;padding:16px 22px;border-radius:4px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:340px;width:90%;animation:fadeup 0.2s ease";
   var title=document.createElement("div");
   title.style.cssText="font-weight:600;margin-bottom:8px;font-size:14px";
   title.textContent="⚠ Please fix the following:";
