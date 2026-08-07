@@ -21,6 +21,19 @@ Mark is the non-developer owner. Claude Code is the technical collaborator.
 
 ---
 
+## RELEASE — ONE PLAN, IT LIVES HERE
+
+`RELEASE-PLAN.md` at this repo's root is the **single source of truth for the whole release** —
+the new website AND the booking system. Tracked by issue #70 → phase issues #63–#69.
+
+The website repo (`~/Claude Code/Pilates Website`) has no deploy ticket of its own: its #22 was
+folded into Phase 1 (#64) and closed on 07 Aug 2026, because the two had drifted apart and
+disagreed on the Netlify environment variables. **Never open a parallel deploy/release ticket in
+either repo** — update RELEASE-PLAN.md and the phase issue instead. Ordinary website content or
+feature work still belongs on the website repo's own board.
+
+---
+
 ## SUPABASE PROJECTS
 
 | | Project ID | URL |
