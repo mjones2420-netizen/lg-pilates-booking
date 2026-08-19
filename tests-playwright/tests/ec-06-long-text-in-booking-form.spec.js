@@ -39,7 +39,7 @@ const {
   agreeAndReserve
 } = require('./helpers/booking-flow');
 const { loginAsAdmin } = require('./helpers/admin-auth');
-const { deleteCustomerCascade } = require('./helpers/admin-db');
+const { deleteCustomerCascade, getCustomerByEmail } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -101,12 +101,11 @@ test.describe('EC-06 — Long text in booking form is handled gracefully', () =>
     await expect(page.locator('#overlay.on')).toBeHidden({ timeout: 3000 });
 
     // Verify the customer was created with the truncated name.
-    const { data: lookup, error: lookupErr } = await sb.rpc('lookup_customer', { p_email: email });
-    expect(lookupErr).toBeNull();
-    expect(lookup && lookup.length, 'customer must exist post-booking').toBe(1);
-    createdCustomerId = lookup[0].id;
-    expect(lookup[0].first_name).toBe(EXPECTED_NAME);
-    expect(lookup[0].first_name.length).toBe(50);
+    const lookup = await getCustomerByEmail(email);
+    expect(lookup, 'customer must exist post-booking').toBeTruthy();
+    createdCustomerId = lookup.id;
+    expect(lookup.first_name).toBe(EXPECTED_NAME);
+    expect(lookup.first_name.length).toBe(50);
 
     // Admin layout check — log in and confirm the row renders in the
     // Bookings table. The Bookings table renders client name (first +

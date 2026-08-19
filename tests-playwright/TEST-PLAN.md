@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 7 Aug 2026
-**Total tests:** 272
+**Last updated:** 19 Aug 2026
+**Total tests:** 273
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -28,15 +28,14 @@ npx playwright show-report   # video, trace and screenshots after a run
 
 ---
 
-## Smoke — 14 tests
+## Smoke — 13 tests
 
 | Spec file | Test |
 |---|---|
 | `smoke-01-anon-reads.spec.js` | anon can SELECT from classes and sees the 4 seed classes |
 | `smoke-01-anon-reads.spec.js` | anon can SELECT from blocks and sees 11 seed blocks |
 | `smoke-01-anon-reads.spec.js` | anon can SELECT from settings and sees bank details (but NOT admin_email) |
-| `smoke-02-anon-rpcs.spec.js` | lookup_customer returns a known seed customer |
-| `smoke-02-anon-rpcs.spec.js` | lookup_customer returns empty for unknown email |
+| `smoke-02-anon-rpcs.spec.js` | lookup_customer is no longer anon-callable directly (#35 follow-up) |
 | `smoke-02-anon-rpcs.spec.js` | check_priority_access returns TRUE for manual priority grant |
 | `smoke-02-anon-rpcs.spec.js` | has_active_booking_on_block returns FALSE for a non-existent booking |
 | `smoke-03-rls-enforcement.spec.js` | anon cannot SELECT from bookings |
@@ -256,7 +255,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 30 tests
+## Security (SEC) — 32 tests
 
 | Spec file | Test |
 |---|---|
@@ -290,6 +289,8 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-14-case-insensitive-email.spec.js` | lookup_customer matches a mixed-case query against a lower-case row |
 | `sec-14-case-insensitive-email.spec.js` | upsert_customer with a mixed-case email matches the existing row (no duplicate) |
 | `sec-14-case-insensitive-email.spec.js` | check_priority_access grants a mixed-case email its manual priority |
+| `sec-15-lookup-rate-limit.spec.js` | returns the customer id for a known email, empty array for an unknown one |
+| `sec-15-lookup-rate-limit.spec.js` | same IP is throttled after the limit; isTest bypasses it |
 
 ## Stripe (ST) — 28 tests
 

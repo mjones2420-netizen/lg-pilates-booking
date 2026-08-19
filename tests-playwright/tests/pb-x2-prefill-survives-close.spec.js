@@ -16,7 +16,7 @@ const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const { sb } = require('./helpers/supabase');
-const { deleteBookingsForCustomerOnBlock } = require('./helpers/admin-db');
+const { deleteBookingsForCustomerOnBlock, getCustomerByEmail } = require('./helpers/admin-db');
 
 const ELIGIBLE_EMAIL = 'returning-one@test.example';
 
@@ -36,8 +36,8 @@ test.describe('PB-X2 — Email pre-fill survives close/reopen', () => {
     // the priority gate flow can run end-to-end. PB-10 already proves the
     // booking path; PB-X2's job is asserting pre-fill behaviour, so removing
     // PB-10's booking here is safe.
-    const { data: lookup } = await sb.rpc('lookup_customer', { p_email: ELIGIBLE_EMAIL });
-    const customerId = lookup && lookup.length ? lookup[0].id : null;
+    const lookup = await getCustomerByEmail(ELIGIBLE_EMAIL);
+    const customerId = lookup ? lookup.id : null;
     if (customerId) {
       const { data: alreadyBooked } = await sb.rpc('has_active_booking_on_block', {
         p_customer_id: customerId,

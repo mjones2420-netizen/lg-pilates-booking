@@ -48,7 +48,8 @@ const {
 } = require('./helpers/admin-auth');
 const {
   grantManualPriority,
-  hasManualPriority
+  hasManualPriority,
+  getCustomerByEmail
 } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
@@ -62,9 +63,9 @@ test.describe('PB-07 — Admin removes Manual priority via per-class panel', () 
   let classId;
 
   test.beforeEach(async ({ page }) => {
-    const { data: cust } = await sb.rpc('lookup_customer', { p_email: TARGET_EMAIL });
-    expect(cust && cust.length, `fixture: ${TARGET_EMAIL} must exist`).toBe(1);
-    customerId = cust[0].id;
+    const cust = await getCustomerByEmail(TARGET_EMAIL);
+    expect(cust, `fixture: ${TARGET_EMAIL} must exist`).toBeTruthy();
+    customerId = cust.id;
 
     const { data: cls } = await sb.from('classes').select('id, day').eq('day', TARGET_DAY);
     expect(cls && cls.length, `fixture: a ${TARGET_DAY} class must exist`).toBe(1);

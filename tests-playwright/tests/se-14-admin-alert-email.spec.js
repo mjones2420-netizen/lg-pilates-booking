@@ -7,7 +7,7 @@
 const { test, expect } = require('@playwright/test');
 const { APP_PATH_EMAIL } = require('./helpers/app-url');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
-const { deleteCustomerCascade, deleteBookingsForCustomerOnBlock } = require('./helpers/admin-db');
+const { deleteCustomerCascade, deleteBookingsForCustomerOnBlock, getCustomerByEmail } = require('./helpers/admin-db');
 const { sb } = require('./helpers/supabase');
 
 // SE-14 uses APP_PATH_EMAIL (no ?noemail=1) so the email call is not suppressed.
@@ -93,8 +93,8 @@ test.describe('SE-14 — New booking admin alert email', () => {
     await expect(page.locator('#success-view')).toHaveClass(/on/, { timeout: 15000 });
 
     // Capture the customer id for cleanup (lookup by email)
-    const { data: custRows } = await sb.rpc('lookup_customer', { p_email: TEST_EMAIL });
-    if (custRows && custRows.length > 0) createdCustomerIds.push(custRows[0].id);
+    const custRow = await getCustomerByEmail(TEST_EMAIL);
+    if (custRow) createdCustomerIds.push(custRow.id);
 
     // Wait for the admin alert payload
     const adminPayload = await Promise.race([
@@ -166,9 +166,9 @@ test.describe('SE-14 — New booking admin alert email', () => {
 
     // returning-one@test.example is a fixture customer — clean up only their booking on fri-upcoming
     const retBlock = await getBlockByRole('fri-upcoming');
-    const { data: retCust } = await sb.rpc('lookup_customer', { p_email: 'returning-one@test.example' });
-    if (retCust && retCust.length > 0) {
-      await deleteBookingsForCustomerOnBlock(retCust[0].id, retBlock.id);
+    const retCust = await getCustomerByEmail('returning-one@test.example');
+    if (retCust) {
+      await deleteBookingsForCustomerOnBlock(retCust.id, retBlock.id);
     }
 
     const adminPayload = await Promise.race([

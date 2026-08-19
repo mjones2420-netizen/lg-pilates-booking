@@ -38,7 +38,7 @@ const {
   agreeAndReserve,
   uniqueTestEmail
 } = require('./helpers/booking-flow');
-const { deleteCustomerCascade, getParqByCustomerId, getCustomerById, resetPaymentMode } = require('./helpers/admin-db');
+const { deleteCustomerCascade, getParqByCustomerId, getCustomerById, getCustomerByEmail, resetPaymentMode } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -91,14 +91,13 @@ test.describe('CB-01 — New client happy path', () => {
     await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 5000 });
     await expect(page.getByText(/Spot Reserved/i)).toBeVisible();
 
-    const { data: customer } = await sb.rpc('lookup_customer', { p_email: email });
+    const customer = await getCustomerByEmail(email);
     expect(customer).toBeTruthy();
-    expect(customer.length).toBe(1);
-    expect(customer[0].first_name).toBe(firstName);
+    expect(customer.first_name).toBe(firstName);
     // customer_type no longer returned by lookup_customer (#47) — read via pg.
-    const custRow = await getCustomerById(customer[0].id);
+    const custRow = await getCustomerById(customer.id);
     expect(custRow.customer_type).toBe('new');
-    createdCustomerIds.push(customer[0].id);
+    createdCustomerIds.push(customer.id);
   });
 
   test('CB-21 — step indicator shows 4 pips for new client', async ({ page }) => {
@@ -195,9 +194,9 @@ test.describe('CB-01 — New client happy path', () => {
     await agreeAndReserve(page);
     await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 5000 });
 
-    const { data: customer } = await sb.rpc('lookup_customer', { p_email: email });
-    expect(customer && customer.length).toBe(1);
-    createdCustomerIds.push(customer[0].id);
+    const customer = await getCustomerByEmail(email);
+    expect(customer).toBeTruthy();
+    createdCustomerIds.push(customer.id);
   });
 
   test('CB-07 — capacity bar updates after booking', async ({ page }) => {
@@ -235,9 +234,9 @@ test.describe('CB-01 — New client happy path', () => {
 
     expect(afterCount).toBe(beforeCount + 1);
 
-    const { data: customer } = await sb.rpc('lookup_customer', { p_email: email });
-    expect(customer && customer.length).toBe(1);
-    createdCustomerIds.push(customer[0].id);
+    const customer = await getCustomerByEmail(email);
+    expect(customer).toBeTruthy();
+    createdCustomerIds.push(customer.id);
   });
 
   test('CB-33 — PAR-Q record created for new client booking', async ({ page }) => {
@@ -258,17 +257,16 @@ test.describe('CB-01 — New client happy path', () => {
     await agreeAndReserve(page);
     await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 5000 });
 
-    const { data: customer } = await sb.rpc('lookup_customer', { p_email: email });
+    const customer = await getCustomerByEmail(email);
     expect(customer).toBeTruthy();
-    expect(customer.length).toBe(1);
     // customer_type no longer returned by lookup_customer (#47) — read via pg.
-    const custRow = await getCustomerById(customer[0].id);
+    const custRow = await getCustomerById(customer.id);
     expect(custRow.customer_type).toBe('new');
-    createdCustomerIds.push(customer[0].id);
+    createdCustomerIds.push(customer.id);
 
-    const parq = await getParqByCustomerId(customer[0].id);
+    const parq = await getParqByCustomerId(customer.id);
     expect(parq, 'parq row should exist for this customer').not.toBeNull();
-    expect(parq.customer_id).toBe(customer[0].id);
+    expect(parq.customer_id).toBe(customer.id);
     expect(parq.booking_id).toBeTruthy();
     expect(parq.print_name).toBe('Daria Daterson');
     expect(parq.sign_date).toBeTruthy();

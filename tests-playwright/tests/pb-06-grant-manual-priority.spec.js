@@ -22,8 +22,9 @@
 //   The customer_class_priority table is admin-only — anon has no grants on
 //   it (by design). All fixture reads/writes for this table go via the
 //   admin-db helper, which opens a direct Postgres connection using
-//   TEST_SUPABASE_DB_URL. The shared `sb` client is still used for
-//   anon-allowed RPCs (lookup_customer) and reads on `classes`.
+//   TEST_SUPABASE_DB_URL — also used for the customer lookup now that
+//   lookup_customer itself is no longer anon-callable (#35 follow-up). The
+//   shared `sb` client is still used for reads on `classes`.
 //
 // Collision check (Session 17 batch):
 //   - PB-07 uses returning-one + Wed (separate customer+class).
@@ -46,7 +47,8 @@ const {
 } = require('./helpers/admin-auth');
 const {
   removeManualPriority,
-  hasManualPriority
+  hasManualPriority,
+  getCustomerByEmail
 } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
@@ -60,10 +62,11 @@ test.describe('PB-06 — Admin grants Manual priority via per-class panel', () =
   let classId;
 
   test.beforeEach(async ({ page }) => {
-    // Customer lookup goes via the anon RPC (allowed).
-    const { data: cust } = await sb.rpc('lookup_customer', { p_email: TARGET_EMAIL });
-    expect(cust && cust.length, `fixture: ${TARGET_EMAIL} must exist`).toBe(1);
-    customerId = cust[0].id;
+    // Customer lookup goes via the pg helper (lookup_customer itself is no
+    // longer anon-callable — #35 follow-up).
+    const cust = await getCustomerByEmail(TARGET_EMAIL);
+    expect(cust, `fixture: ${TARGET_EMAIL} must exist`).toBeTruthy();
+    customerId = cust.id;
 
     // Classes is anon-readable.
     const { data: cls } = await sb.from('classes').select('id, day').eq('day', TARGET_DAY);

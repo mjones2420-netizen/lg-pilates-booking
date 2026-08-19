@@ -66,7 +66,8 @@ const {
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const {
   getPool,
-  deleteCustomerCascade
+  deleteCustomerCascade,
+  getCustomerByEmail
 } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
@@ -201,9 +202,9 @@ test.describe('EC-07 — Overbooking prevented when class fills during booking',
 
     // Look up the test customer (upsert_customer ran BEFORE book_if_available,
     // so the customer row was created — afterEach will clean it up).
-    const { data: testCust } = await sb.rpc('lookup_customer', { p_email: testEmail });
-    if (testCust && testCust.length > 0) {
-      testCustomerId = testCust[0].id;
+    const testCust = await getCustomerByEmail(testEmail);
+    if (testCust) {
+      testCustomerId = testCust.id;
       // Verify NO booking row was created for this customer on fri-upcoming.
       const { rows: testBookings } = await getPool().query(
         `SELECT id FROM bookings WHERE customer_id = $1 AND block_id = $2`,

@@ -36,7 +36,7 @@ const {
   agreeAndReserve
 } = require('./helpers/booking-flow');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
-const { deleteBookingsForCustomerOnBlock, resetPaymentMode } = require('./helpers/admin-db');
+const { deleteBookingsForCustomerOnBlock, resetPaymentMode, getCustomerByEmail } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 const RETURNING_EMAIL = 'returning-one@test.example';
@@ -70,9 +70,9 @@ test.describe('CB-32 — Returning client NOT on this block — welcome-back flo
 
   test('returning client not yet on this block sees welcome-back message and proceeds to payment', async ({ page }) => {
     const friUpcoming = await getBlockByRole('fri-upcoming');
-    const { data: lookupCust } = await sb.rpc('lookup_customer', { p_email: RETURNING_EMAIL });
-    expect(lookupCust && lookupCust.length, `fixture: ${RETURNING_EMAIL} must exist`).toBe(1);
-    const customerId = lookupCust[0].id;
+    const lookupCust = await getCustomerByEmail(RETURNING_EMAIL);
+    expect(lookupCust, `fixture: ${RETURNING_EMAIL} must exist`).toBeTruthy();
+    const customerId = lookupCust.id;
 
     // Set tracking BEFORE the UI flow runs so afterEach cleans up even if
     // assertions fail.

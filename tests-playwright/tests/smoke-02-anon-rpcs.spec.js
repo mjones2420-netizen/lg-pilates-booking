@@ -1,7 +1,12 @@
 // tests/smoke-02-anon-rpcs.spec.js
 //
-// Smoke test: prove the anon role can call the 5 public-facing RPCs and that they
-// return the expected results against our seeded fixtures.
+// Smoke test: prove the anon-callable RPCs return the expected results
+// against our seeded fixtures.
+//
+// #35 follow-up: lookup_customer's anon EXECUTE grant was revoked (migration
+// 27) — it's now only reachable via the lookup-customer-throttled Edge
+// Function (see sec-15-lookup-rate-limit.spec.js for that path's coverage).
+// This file now proves the OLD direct door stays shut.
 //
 // Session 10: switched from hardcoded block IDs and fragile date-window
 // heuristics to role-based lookup via getBlockByRole(). Block IDs are
@@ -23,33 +28,14 @@ const { getBlockByRole } = require('./helpers/fixture-lookup');
 
 test.describe('Smoke 02 — anon RPCs', () => {
 
-  test('lookup_customer returns a known seed customer', async () => {
+  test('lookup_customer is no longer anon-callable directly (#35 follow-up)', async () => {
     const { data, error } = await sb.rpc('lookup_customer', {
       p_email: 'returning-one@test.example'
     });
 
-    expect(error).toBeNull();
-    expect(data).not.toBeNull();
-    expect(data.length).toBe(1);
-    expect(data[0].first_name).toBe('Returning');
-
-    // #47 (migration 22): lookup_customer must return ONLY id + first_name.
-    // The booking flow uses existence + id (and could greet by first name);
-    // last_name/phone/customer_type must NOT leak to the anon caller. Assert
-    // the exact key set so a future column re-add is caught here.
-    expect(Object.keys(data[0]).sort()).toEqual(['first_name', 'id']);
-    expect(data[0].last_name).toBeUndefined();
-    expect(data[0].phone).toBeUndefined();
-    expect(data[0].customer_type).toBeUndefined();
-  });
-
-  test('lookup_customer returns empty for unknown email', async () => {
-    const { data, error } = await sb.rpc('lookup_customer', {
-      p_email: 'nobody@test.example'
-    });
-
-    expect(error).toBeNull();
-    expect(data).toEqual([]);
+    expect(data).toBeNull();
+    expect(error).toBeTruthy();
+    expect(error.message).toMatch(/permission denied/i);
   });
 
   test('check_priority_access returns TRUE for manual priority grant', async () => {

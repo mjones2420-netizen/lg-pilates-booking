@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 7 Aug 2026 (session 83 — stuck Pages deploy recovered, iOS safe-area insets + Classes dot semantics fixed, 272 tests)
+Last updated: 19 Aug 2026 (session 84 — #35 lookup_customer rate limit shipped, 273 tests)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -127,7 +127,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **272 tests, all passing** — no `--retries=2` needed (#101 fixed session 78). Session 82 added MB-01..MB-07 (mobile dashboard, #103); session 83 added MB-08 (safe-area insets) + MB-09 (Classes dots).
+Current test count: **273 tests, all passing** — no `--retries=2` needed (#101 fixed session 78). Session 82 added MB-01..MB-07 (mobile dashboard, #103); session 83 added MB-08 (safe-area insets) + MB-09 (Classes dots); session 84 added SEC-15, removed 1 (smoke-02's two lookup_customer tests collapsed to one — see below).
 
 ---
 
@@ -426,7 +426,17 @@ horizontal-scroll tables. Same DOM, same `switchDashPage(name)` — CSS-only swa
 - **`.claude/launch.json` gitignored, not committed.** It appeared 3 Aug (session 78) as a tool side effect of starting the dev server, was never in git history, and nothing needs it — the `python3 -m http.server 8000` command it wraps is already in this file. Matches how the repo treats other Claude-generated local files (`settings.local.json`, `scheduled_tasks.lock` are both ignored). `.claude/settings.json` stays committed because it was deliberately authored to enforce the review-before-tests gate.
 - **Not verified by me: the actual iPhone.** Chromium cannot produce a real `env()` value, so the fix is proven by forcing the variables to iPhone dimensions (59px top / 34px bottom). Mark confirms on his phone. If Safari's bar still overlaps, the fallback is a fixed floor on `--safe-bottom` — the plumbing is already in place, one line.
 
-**Immediate next**: Mark to confirm the safe-area fix on a real iPhone (test site, dashboard bottom nav + the public booking pages — `viewport-fit=cover` is site-wide). Then [#35](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/35) (lookup_customer email-enumeration hardening, NICE TO HAVE) is top of the Todo column.
+**Session 84 (2026-08-19):** #35 (lookup_customer email-enumeration hardening) fixed and closed. Migration 27 + new Edge Function `lookup-customer-throttled`, deployed test then prod. index.html + 24 test specs updated.
+- **The fix**: a per-IP throttle (20 attempts / 15 min, atomic UPSERT — same "claim before acting" pattern as the #45 one-shot email stamps) now sits in front of `lookup_customer`. The browser's two lookup call sites (`goStep2`, `confirmBooking`) go through a new `lookupCustomerThrottled()` helper → the new Edge Function → the RPC, instead of calling `lookup_customer` directly.
+- **Two real bugs caught before shipping, both by review (not by me first)**:
+  1. My own first draft let the caller-supplied `isTest` flag alone bypass the entire throttle — since this endpoint is unauthenticated, anyone could just send `isTest:true` and defeat the fix. Fixed with a second gate: the bypass only fires when a `TEST_BYPASS_ENABLED` secret is ALSO set server-side, and that secret is only ever set on the TEST project — production has no such secret, so a spoofed `isTest:true` against prod is ignored.
+  2. Code review caught that `lookup_customer`'s direct anon EXECUTE grant was never revoked — the new Edge Function was a second front door, but the original door stayed unlocked, so the fix did nothing against a direct RPC call. Closed by revoking anon EXECUTE on `lookup_customer` itself (grant now service_role only) — this was the bigger-than-planned part of the session, see below.
+- **Scope decision (Mark's call, Option A over Option B)**: revoking the direct grant meant ~24 existing test files that used `lookup_customer` as a generic "does this customer exist" utility (unrelated to what they were testing) would break. Rewrote them to use the existing `getCustomerByEmail` pg helper instead — mechanical, no behaviour change. Rejected the alternative (build the throttle directly into `lookup_customer` itself, no Edge Function, zero test files touched) because proving it actually throttles would have needed a database-wide setting toggle with unreliable propagation timing to pooled connections — a new source of exactly the kind of test flakiness #101 spent a whole session killing. `smoke-02` and `sec-14-case-insensitive-email` — the two specs that were deliberately testing the *anon-facing* lookup path — were rewritten to hit the new Edge Function (or, for smoke-02, to assert the direct RPC now returns permission-denied) rather than the old direct RPC.
+- **Session-start drift check skipped** (conversation didn't open with the usual ritual) — cost real time mid-session: a full-suite run threw 36 unrelated failures that turned out to be pure fixture date drift (blocks marked `upcoming` in the test DB with start dates up to 12 days in the past). `npm run seed` cleared it; confirmed via a clean 272/273 rerun (one isolated pre-existing timing flake, unrelated, passed in isolation) that none of it was caused by this session's changes.
+- New spec: **SEC-15** (2 tests — functional correctness + the real burst-to-429 proof, isTest bypass proven separately). **smoke-02** dropped from 3 tests to 2 (its two `lookup_customer` positive-result tests collapsed into one permission-denied assertion, since that behaviour moved to SEC-15's coverage). Net **272→273**.
+- Code review: 5 findings, all addressed (2 real security bugs above, 1 plausible/accepted-limitation note on X-Forwarded-For spoofability — documented, not fixed, matches the free-tier trade-off Mark already signed off on for this NICE-TO-HAVE issue — plus 2 process nits). Security review: self-conducted (small diff), found + fixed the isTest bypass before code review even ran. **#35 CLOSED + Done on the board.**
+
+**Immediate next**: Mark to confirm the iOS safe-area fix (session 83) on a real iPhone. Otherwise check the [project board](https://github.com/users/mjones2420-netizen/projects/1) for current priority — #35 is now done.
 
 **Full backlog**: `gh issue list` or https://github.com/mjones2420-netizen/lg-pilates-booking/issues
 

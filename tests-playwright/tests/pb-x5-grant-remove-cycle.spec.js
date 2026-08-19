@@ -32,7 +32,7 @@ const {
   openClientsTab,
   expandPerClassPanel, classPriorityButton
 } = require('./helpers/admin-auth');
-const { removeManualPriority } = require('./helpers/admin-db');
+const { removeManualPriority, getCustomerByEmail } = require('./helpers/admin-db');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 
 const ELIGIBLE_EMAIL = 'returning-two@test.example';
@@ -44,8 +44,8 @@ test.describe('PB-X5 — Manual priority grant/remove cycle via admin panel', ()
 
   test.beforeEach(async ({ page }) => {
     // Resolve returning-two's customer id once for cleanup use
-    const { data: lookup } = await sb.rpc('lookup_customer', { p_email: ELIGIBLE_EMAIL });
-    returningTwoId = (lookup && lookup.length) ? lookup[0].id : null;
+    const lookup = await getCustomerByEmail(ELIGIBLE_EMAIL);
+    returningTwoId = lookup ? lookup.id : null;
     expect(returningTwoId).toBeTruthy();
 
     await page.goto(APP_PATH);

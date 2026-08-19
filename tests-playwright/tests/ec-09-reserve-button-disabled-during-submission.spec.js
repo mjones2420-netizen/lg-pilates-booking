@@ -48,7 +48,7 @@ const {
   uniqueTestEmail
 } = require('./helpers/booking-flow');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
-const { deleteCustomerCascade } = require('./helpers/admin-db');
+const { deleteCustomerCascade, getCustomerByEmail } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -125,9 +125,9 @@ test.describe('EC-09 — Reserve button disabled during submission', () => {
     await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 10000 });
 
     // Look up customer ID for cleanup.
-    const { data: custData } = await sb.rpc('lookup_customer', { p_email: testEmail });
-    if (custData && custData.length > 0) {
-      createdCustomerId = custData[0].id;
+    const custData = await getCustomerByEmail(testEmail);
+    if (custData) {
+      createdCustomerId = custData.id;
     }
   });
 });

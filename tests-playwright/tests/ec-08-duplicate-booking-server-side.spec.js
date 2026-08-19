@@ -75,7 +75,7 @@ const {
   uniqueTestEmail
 } = require('./helpers/booking-flow');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
-const { getPool, deleteCustomerCascade } = require('./helpers/admin-db');
+const { getPool, deleteCustomerCascade, getCustomerByEmail } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -121,11 +121,9 @@ test.describe('EC-08 — Duplicate booking same block: server-side rejection', (
     await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 10000 });
 
     // Look up customer ID for cleanup + duplicate test.
-    const { data: custData, error: lookupErr } = await sb.rpc('lookup_customer', { p_email: testEmail });
-    expect(lookupErr).toBeNull();
+    const custData = await getCustomerByEmail(testEmail);
     expect(custData).toBeTruthy();
-    expect(custData.length).toBeGreaterThan(0);
-    createdCustomerId = custData[0].id;
+    createdCustomerId = custData.id;
 
     // Verify exactly one booking exists for this customer on fri-upcoming.
     const { rows: preRows } = await getPool().query(

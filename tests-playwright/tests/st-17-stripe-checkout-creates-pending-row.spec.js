@@ -36,7 +36,8 @@ const {
   resetPaymentMode,
   getPendingBookingByEmail,
   deletePendingBookingByEmail,
-  countBookingsForCustomerOnBlock
+  countBookingsForCustomerOnBlock,
+  getCustomerByEmail
 } = require('./helpers/admin-db');
 
 const TEST_EMAIL = 'returning-one@test.example';
@@ -56,10 +57,9 @@ test.describe('ST-17 — Stripe checkout creates pending_bookings row, no real b
   test('Proceed to Payment creates a pending_bookings row and redirects to Stripe, with no bookings row added', async ({ page }) => {
     // Look up returning-one's customer id and the target block, so we can
     // confirm no bookings row appears for this (customer, block) pair.
-    const lookupRes = await sb.rpc('lookup_customer', { p_email: TEST_EMAIL });
-    expect(lookupRes.error).toBeNull();
-    expect(lookupRes.data && lookupRes.data.length).toBeGreaterThan(0);
-    const customerId = lookupRes.data[0].id;
+    const lookupRes = await getCustomerByEmail(TEST_EMAIL);
+    expect(lookupRes).toBeTruthy();
+    const customerId = lookupRes.id;
 
     const blk = await getBlockByRole('fri-upcoming');
 

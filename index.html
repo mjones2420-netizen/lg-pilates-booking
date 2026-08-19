@@ -1889,7 +1889,8 @@ function goStep2(){
   btn.textContent="Checking..."; btn.disabled=true;
   (async function(){
     try{
-      var lookupRes=await sb.rpc("lookup_customer", {p_email: em});
+      var lookupRes=await lookupCustomerThrottled(em);
+      if(lookupRes.error) throw lookupRes.error;
       var isReturning=lookupRes.data&&lookupRes.data.length>0;
       window._customerIsReturning=isReturning;
       var msgEl=document.getElementById("customer-check-msg");
@@ -2383,6 +2384,23 @@ async function sendTypedEmail(type, bookingId){
   }catch(emailErr){ console.warn("Typed email error (non-fatal):",type,emailErr); return false; }
 }
 
+// Public, pre-login customer lookup. Routed through an Edge Function
+// (not sb.rpc directly) so a per-IP throttle sits in front of it (#35) —
+// stops someone mass-guessing emails to find out who's a customer. Returns
+// the same {data,error} shape sb.rpc gave callers, so call sites are unchanged.
+async function lookupCustomerThrottled(email){
+  try{
+    var res=await fetch(SUPABASE_URL+"/functions/v1/lookup-customer-throttled",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPABASE_KEY},
+      body:JSON.stringify({email:email,isTest:IS_TEST_ENV})
+    });
+    var body=await res.json();
+    if(!res.ok){ return {data:null, error:new Error(body.error||"Lookup failed")}; }
+    return {data:body.data, error:null};
+  }catch(lookupErr){ return {data:null, error:lookupErr}; }
+}
+
 function confirmBooking(){
   if(document.getElementById("b-website").value.trim()!=="") return;
   var c=selected, blk=selectedBlock;
@@ -2423,7 +2441,7 @@ function confirmBooking(){
   (async function(){
     try{
       // Step 1: Upsert customer
-      var lookupRes=await sb.rpc("lookup_customer", {p_email: em});
+      var lookupRes=await lookupCustomerThrottled(em);
       if(lookupRes.error) throw new Error("Customer lookup failed: "+lookupRes.error.message);
       var existing=lookupRes.data;
       var customerType=(existing&&existing.length>0)?"returning":"new";

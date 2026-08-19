@@ -41,7 +41,8 @@ const {
   getPendingBookingById,
   deletePendingBookingById,
   countBookingsForCustomerOnBlock,
-  deleteCustomerCascade
+  deleteCustomerCascade,
+  getCustomerByEmail
 } = require('./helpers/admin-db');
 const { buildCheckoutCompletedEvent, postToStripeWebhook } = require('./helpers/stripe-webhook');
 
@@ -57,9 +58,9 @@ test.describe('ST-29 — Webhook failure (#6b): client email is fire-and-forget,
     if (pendingId) {
       await deletePendingBookingById(pendingId);
     }
-    const lookupRes = await sb.rpc('lookup_customer', { p_email: TEST_EMAIL });
-    if (!lookupRes.error && lookupRes.data && lookupRes.data.length > 0) {
-      await deleteCustomerCascade(lookupRes.data[0].id);
+    const lookupRes = await getCustomerByEmail(TEST_EMAIL);
+    if (lookupRes) {
+      await deleteCustomerCascade(lookupRes.id);
     }
   });
 
@@ -94,10 +95,9 @@ test.describe('ST-29 — Webhook failure (#6b): client email is fire-and-forget,
     expect(pendingAfter.email).toBe(TEST_EMAIL);
 
     // upsert_customer ran before the failure, but no bookings row was created
-    const lookupRes = await sb.rpc('lookup_customer', { p_email: TEST_EMAIL });
-    expect(lookupRes.error).toBeNull();
-    expect(lookupRes.data.length).toBeGreaterThan(0);
-    const customerId = lookupRes.data[0].id;
+    const lookupRes = await getCustomerByEmail(TEST_EMAIL);
+    expect(lookupRes).toBeTruthy();
+    const customerId = lookupRes.id;
 
     const bookingCount = await countBookingsForCustomerOnBlock(customerId, blk.id);
     expect(bookingCount).toBe(0);

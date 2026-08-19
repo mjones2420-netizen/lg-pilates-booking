@@ -42,7 +42,8 @@ const {
   setBlockBookedCount,
   resyncBlockBookedCount,
   countBookingsForCustomerOnBlock,
-  deleteCustomerCascade
+  deleteCustomerCascade,
+  getCustomerByEmail
 } = require('./helpers/admin-db');
 const { buildCheckoutCompletedEvent, postToStripeWebhook } = require('./helpers/stripe-webhook');
 
@@ -61,9 +62,9 @@ test.describe('ST-23 — Webhook failure (CLASS_FULL) retains pending row, no bo
     if (pendingId) {
       await deletePendingBookingById(pendingId);
     }
-    const lookupRes = await sb.rpc('lookup_customer', { p_email: TEST_EMAIL });
-    if (!lookupRes.error && lookupRes.data && lookupRes.data.length > 0) {
-      await deleteCustomerCascade(lookupRes.data[0].id);
+    const lookupRes = await getCustomerByEmail(TEST_EMAIL);
+    if (lookupRes) {
+      await deleteCustomerCascade(lookupRes.id);
     }
   });
 
@@ -101,10 +102,9 @@ test.describe('ST-23 — Webhook failure (CLASS_FULL) retains pending row, no bo
     expect(Number(pendingAfter.amount_pence)).toBe(6000);
 
     // No bookings row was created for this customer on this block
-    const lookupRes = await sb.rpc('lookup_customer', { p_email: TEST_EMAIL });
-    expect(lookupRes.error).toBeNull();
-    expect(lookupRes.data.length).toBeGreaterThan(0); // upsert_customer ran before the failure
-    const customerId = lookupRes.data[0].id;
+    const lookupRes = await getCustomerByEmail(TEST_EMAIL);
+    expect(lookupRes).toBeTruthy(); // upsert_customer ran before the failure
+    const customerId = lookupRes.id;
 
     const bookingCount = await countBookingsForCustomerOnBlock(customerId, blk.id);
     expect(bookingCount).toBe(0);

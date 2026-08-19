@@ -18,6 +18,11 @@
 // the public booking page uses. Requires migration 25 applied to the test
 // project.
 //
+// #35 follow-up: lookup_customer's anon EXECUTE grant was revoked (migration
+// 27) — the public path is now the lookup-customer-throttled Edge Function,
+// so that one test calls it directly (isTest:true bypasses the rate limit,
+// same pattern as sec-15-lookup-rate-limit.spec.js) instead of sb.rpc.
+//
 // Cleanup (afterEach): remove the manual-priority grant, then delete the
 // per-run customer by email.
 
@@ -30,9 +35,10 @@ const {
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 
 const SUPABASE_URL = process.env.TEST_SUPABASE_URL;
+const ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY;
 
 test.describe('SEC-14 — case-insensitive email matching (#78)', () => {
-  test.skip(!SUPABASE_URL, 'TEST_SUPABASE_URL not set');
+  test.skip(!SUPABASE_URL || !ANON_KEY, 'TEST_SUPABASE_URL / TEST_SUPABASE_ANON_KEY not set');
 
   // Stored lower-case; queried upper-case. Different case, same person.
   const storedEmail  = 'sec14-mixed@test.example';
@@ -61,8 +67,13 @@ test.describe('SEC-14 — case-insensitive email matching (#78)', () => {
   test('lookup_customer matches a mixed-case query against a lower-case row', async () => {
     const id = await createCustomer();
 
-    const { data, error } = await sb.rpc('lookup_customer', { p_email: queryEmail });
-    expect(error, 'lookup_customer should not error').toBeNull();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/lookup-customer-throttled`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.TEST_SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ email: queryEmail, isTest: true }),
+    });
+    expect(res.status, 'lookup-customer-throttled should not error').toBe(200);
+    const { data } = await res.json();
     // Returns the existing customer, not an empty result (which the front end
     // reads as "brand-new customer").
     expect(Array.isArray(data) ? data.length : 0, 'mixed-case lookup must find the row').toBe(1);

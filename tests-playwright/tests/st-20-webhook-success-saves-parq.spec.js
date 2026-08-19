@@ -32,7 +32,8 @@ const {
   deletePendingBookingById,
   deleteCustomerCascade,
   getBookingById,
-  getParqByCustomerId
+  getParqByCustomerId,
+  getCustomerByEmail
 } = require('./helpers/admin-db');
 const { buildCheckoutCompletedEvent, postToStripeWebhook } = require('./helpers/stripe-webhook');
 
@@ -113,9 +114,8 @@ test.describe('ST-20 — Webhook success saves PAR-Q for new client', () => {
     createdCustomerId = booking.customer_id;
 
     // customers row upserted as 'new'
-    const lookupRes = await sb.rpc('lookup_customer', { p_email: TEST_EMAIL });
-    expect(lookupRes.error).toBeNull();
-    expect(lookupRes.data.length).toBeGreaterThan(0);
+    const lookupRes = await getCustomerByEmail(TEST_EMAIL);
+    expect(lookupRes).toBeTruthy();
 
     // parq row linked to the new booking, with all fields mapped correctly
     const parq = await getParqByCustomerId(createdCustomerId);

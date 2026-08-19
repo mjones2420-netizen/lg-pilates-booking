@@ -18,7 +18,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH_EMAIL } = require('./helpers/app-url');
-const { deleteCustomerCascade } = require('./helpers/admin-db');
+const { deleteCustomerCascade, getCustomerByEmail } = require('./helpers/admin-db');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const { sb } = require('./helpers/supabase');
 
@@ -100,10 +100,9 @@ test.describe('SE-12 — Booking reserved email fires on reserve', () => {
     expect(capturedPayload.subject).toBeUndefined();
 
     // Capture customer ID for cleanup
-    const lookup = await sb.rpc('lookup_customer', { p_email: EMAIL });
-    expect(lookup.error).toBeNull();
-    expect(lookup.data).not.toBeNull();
-    createdCustomerId = lookup.data[0].id;
+    const lookup = await getCustomerByEmail(EMAIL);
+    expect(lookup).not.toBeNull();
+    createdCustomerId = lookup.id;
   });
 
 });

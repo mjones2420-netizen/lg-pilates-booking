@@ -33,7 +33,8 @@ const {
   getPendingBookingById,
   deletePendingBookingById,
   deleteCustomerCascade,
-  getBookingById
+  getBookingById,
+  getCustomerByEmail
 } = require('./helpers/admin-db');
 const { buildCheckoutCompletedEvent, postToStripeWebhook } = require('./helpers/stripe-webhook');
 
@@ -94,9 +95,8 @@ test.describe('ST-19 — Webhook success creates confirmed booking with Stripe I
     createdCustomerId = booking.customer_id;
 
     // customers row upserted correctly for the pending row's email
-    const lookupRes = await sb.rpc('lookup_customer', { p_email: TEST_EMAIL });
-    expect(lookupRes.error).toBeNull();
-    expect(lookupRes.data.length).toBeGreaterThan(0);
-    expect(Number(lookupRes.data[0].id)).toBe(Number(createdCustomerId));
+    const lookupRes = await getCustomerByEmail(TEST_EMAIL);
+    expect(lookupRes).toBeTruthy();
+    expect(Number(lookupRes.id)).toBe(Number(createdCustomerId));
   });
 });

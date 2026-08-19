@@ -20,7 +20,7 @@ const { APP_PATH } = require('./helpers/app-url');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const { sb } = require('./helpers/supabase');
 const { openBookingModal } = require('./helpers/booking-flow');
-const { deleteBookingsForCustomerOnBlock, resetPaymentMode } = require('./helpers/admin-db');
+const { deleteBookingsForCustomerOnBlock, resetPaymentMode, getCustomerByEmail } = require('./helpers/admin-db');
 
 const RETURNING_EMAIL = 'returning-two@test.example';
 
@@ -51,12 +51,9 @@ test.describe('CB-34 — Book Now works after completing a booking', () => {
     expect(friUpcoming, 'fixture: fri-upcoming block must exist').toBeTruthy();
 
     // Look up the returning customer so afterEach can clean up
-    const { data: customer, error: lookupErr } = await sb.rpc('lookup_customer', {
-      p_email: RETURNING_EMAIL
-    });
-    expect(lookupErr, 'lookup_customer RPC must not error').toBeFalsy();
-    expect(customer && customer.length, `fixture: ${RETURNING_EMAIL} must exist`).toBe(1);
-    const customerId = customer[0].id;
+    const customer = await getCustomerByEmail(RETURNING_EMAIL);
+    expect(customer, `fixture: ${RETURNING_EMAIL} must exist`).toBeTruthy();
+    const customerId = customer.id;
 
     createdBooking = { customerId, blockId: friUpcoming.id };
 

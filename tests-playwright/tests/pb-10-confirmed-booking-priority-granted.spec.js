@@ -49,7 +49,7 @@ const {
   fillStep1,
   agreeAndReserve
 } = require('./helpers/booking-flow');
-const { deleteBookingsForCustomerOnBlock } = require('./helpers/admin-db');
+const { deleteBookingsForCustomerOnBlock, getCustomerByEmail } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 const PRIORITY_EMAIL = 'returning-one@test.example';
@@ -89,9 +89,9 @@ test.describe('PB-10 — Confirmed booking on previous block: priority granted',
     expect(daysUntil).toBeLessThanOrEqual(14);
 
     // Look up the fixture customer.
-    const { data: customer } = await sb.rpc('lookup_customer', { p_email: PRIORITY_EMAIL });
-    expect(customer && customer.length, `fixture: ${PRIORITY_EMAIL} must exist`).toBe(1);
-    const customerId = customer[0].id;
+    const customer = await getCustomerByEmail(PRIORITY_EMAIL);
+    expect(customer, `fixture: ${PRIORITY_EMAIL} must exist`).toBeTruthy();
+    const customerId = customer.id;
 
     // Set tracking BEFORE the UI flow runs so afterEach cleans up even if
     // assertions fail.

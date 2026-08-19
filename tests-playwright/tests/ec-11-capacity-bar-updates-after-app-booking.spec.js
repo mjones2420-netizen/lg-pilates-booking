@@ -43,7 +43,7 @@ const {
   uniqueTestEmail
 } = require('./helpers/booking-flow');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
-const { getPool, deleteCustomerCascade } = require('./helpers/admin-db');
+const { getPool, deleteCustomerCascade, getCustomerByEmail } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -102,10 +102,9 @@ test.describe('EC-11 — Capacity bar updates automatically when booking made vi
     await expect(page.locator('#success-view.on')).toBeVisible({ timeout: 10000 });
 
     // Capture customer ID for cleanup.
-    const { data: custData } = await sb.rpc('lookup_customer', { p_email: testEmail });
+    const custData = await getCustomerByEmail(testEmail);
     expect(custData).toBeTruthy();
-    expect(custData.length).toBeGreaterThan(0);
-    createdCustomerId = custData[0].id;
+    createdCustomerId = custData.id;
 
     // Step 4 — verify DB state: trigger should have bumped booked by 1.
     const { rows: postRows } = await getPool().query(

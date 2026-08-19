@@ -7,10 +7,12 @@
 //
 // DB verification approach (matches CB-01):
 //   - We can't SELECT directly from `customers` or `bookings` as anon —
-//     RLS blocks it. Instead we use the SECURITY DEFINER RPCs that are
-//     explicitly granted to anon: lookup_customer and
-//     has_active_booking_on_block. These are the same channels the live
-//     app uses to read customer/booking state.
+//     RLS blocks it. lookup_customer is no longer anon-callable either
+//     (#35 follow-up — it's now reached only via the throttled Edge
+//     Function), so customer lookups go via the getCustomerByEmail pg
+//     helper. has_active_booking_on_block is still the SECURITY DEFINER
+//     RPC granted to anon, and is the same channel the live app uses to
+//     read booking state.
 //   - We don't directly verify the booking row content; the success view
 //     plus has_active_booking_on_block returning true after Reserve is
 //     sufficient evidence that the row was created.
@@ -33,7 +35,7 @@ const { APP_PATH } = require('./helpers/app-url');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const { sb } = require('./helpers/supabase');
 const { openBookingModal } = require('./helpers/booking-flow');
-const { deleteBookingsForCustomerOnBlock, resetPaymentMode } = require('./helpers/admin-db');
+const { deleteBookingsForCustomerOnBlock, resetPaymentMode, getCustomerByEmail } = require('./helpers/admin-db');
 
 const RETURNING_EMAIL = 'returning-two@test.example';
 
@@ -63,13 +65,11 @@ test.describe('CB-13: T&Cs — Returning client completes booking after agreeing
     const friUpcoming = await getBlockByRole('fri-upcoming');
     expect(friUpcoming, 'fixture: fri-upcoming block must exist').toBeTruthy();
 
-    // Look up the customer via the RPC the live app uses.
-    const { data: customer, error: lookupErr } = await sb.rpc('lookup_customer', {
-      p_email: RETURNING_EMAIL
-    });
-    expect(lookupErr, 'lookup_customer RPC must not error').toBeFalsy();
-    expect(customer && customer.length, `fixture: ${RETURNING_EMAIL} must exist`).toBe(1);
-    const customerId = customer[0].id;
+    // Look up the customer via the pg helper (lookup_customer itself is no
+    // longer anon-callable — #35 follow-up).
+    const customer = await getCustomerByEmail(RETURNING_EMAIL);
+    expect(customer, `fixture: ${RETURNING_EMAIL} must exist`).toBeTruthy();
+    const customerId = customer.id;
 
     // Set tracking BEFORE the UI flow runs so afterEach cleans up even if
     // assertions fail. If a previous run somehow left state behind, the
