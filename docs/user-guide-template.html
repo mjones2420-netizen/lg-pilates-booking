@@ -1,0 +1,210 @@
+<!--
+  User guide PDF template — shared with the LG Pilates website project.
+
+  Purpose: produce a plain-English, non-technical PDF explainer for Mark
+  (e.g. "how does X feature work, what can I change myself in admin").
+  First used for the website's email-notifications guide, 2026-08-21.
+
+  How to use:
+    1. Copy this file, fill in the content sections below (cover title/sub,
+       numbered <h2> sections, .step blocks for walkthroughs, .callout for
+       asides, .callout.warn for cautions, a table for quick reference).
+    2. Convert to PDF with headless Chrome (no extra tools needed):
+         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+           --headless --disable-gpu --no-pdf-header-footer \
+           --print-to-pdf="Guide Name.pdf" --print-to-pdf-no-header \
+           "file:///absolute/path/to/filled-in.html"
+    3. Send the resulting PDF to Mark via SendUserFile.
+
+  Style notes:
+    - Cover page + numbered sections, short paragraphs, no jargon.
+    - Palette below is the pilates site's Dusty Mauve accent (#6B4254 /
+      #2A2128) — swap to whatever the booking system's own accent colour
+      is if one exists, to keep guides visually distinct per project.
+    - Keep tone consistent with Mark's stated preference: plain English,
+      short steps, explicit "what you can change yourself vs what needs a
+      developer" framing.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Guide Title Here</title>
+<style>
+  @page { size: A4; margin: 22mm 20mm 20mm 20mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #2A2128;
+    line-height: 1.55;
+    font-size: 11.5pt;
+    margin: 0;
+  }
+  .cover {
+    padding-top: 30mm;
+    page-break-after: always;
+  }
+  .cover .eyebrow {
+    font-size: 10.5pt;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6B4254;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .cover h1 {
+    font-size: 30pt;
+    margin: 0 0 14px 0;
+    color: #2A2128;
+    line-height: 1.15;
+  }
+  .cover .sub {
+    font-size: 13pt;
+    color: #4a4048;
+    max-width: 30em;
+  }
+  .cover .meta {
+    margin-top: 60px;
+    font-size: 10pt;
+    color: #7a7078;
+    border-top: 1px solid #e3d9dd;
+    padding-top: 14px;
+  }
+  h2 {
+    font-size: 16pt;
+    color: #2A2128;
+    border-bottom: 2px solid #6B4254;
+    padding-bottom: 6px;
+    margin-top: 34px;
+    margin-bottom: 12px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 12.5pt;
+    color: #6B4254;
+    margin-top: 20px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+  p { margin: 8px 0; }
+  ul, ol { margin: 8px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .callout {
+    background: #f7f0f3;
+    border-left: 4px solid #6B4254;
+    padding: 10px 14px;
+    margin: 14px 0;
+    border-radius: 4px;
+    font-size: 10.8pt;
+  }
+  .callout.warn {
+    background: #fbf3ea;
+    border-left-color: #b8752e;
+  }
+  .callout strong.label {
+    display: block;
+    text-transform: uppercase;
+    font-size: 9pt;
+    letter-spacing: 0.08em;
+    color: #6B4254;
+    margin-bottom: 4px;
+  }
+  .callout.warn strong.label { color: #b8752e; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px 0;
+    font-size: 10.3pt;
+  }
+  th, td {
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 1px solid #e3d9dd;
+    vertical-align: top;
+  }
+  th {
+    background: #f7f0f3;
+    color: #2A2128;
+    font-weight: 600;
+    font-size: 9.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  code {
+    background: #f0e8ec;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 9.8pt;
+    color: #6B4254;
+  }
+  .step {
+    display: flex;
+    gap: 12px;
+    margin: 10px 0;
+  }
+  .step .num {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #6B4254;
+    color: #fff;
+    font-size: 10.5pt;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step .txt { flex: 1; padding-top: 1px; }
+  .footer-note {
+    margin-top: 40px;
+    padding-top: 12px;
+    border-top: 1px solid #e3d9dd;
+    font-size: 9pt;
+    color: #9a8f96;
+  }
+  .section { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="eyebrow">Project Name</div>
+  <h1>Guide Title<br>Goes Here</h1>
+  <p class="sub">One-sentence summary of what this guide covers and who it's for.</p>
+  <div class="meta">Prepared DD Month YYYY · project/site name</div>
+</div>
+
+<h2>1. Section heading</h2>
+<p>Plain paragraph text.</p>
+<ul>
+  <li>Bullet point</li>
+  <li>Bullet point</li>
+</ul>
+
+<h3>Sub-heading (optional)</h3>
+
+<div class="step"><div class="num">1</div><div class="txt">First step in a walkthrough.</div></div>
+<div class="step"><div class="num">2</div><div class="txt">Second step.</div></div>
+
+<div class="callout">
+  <strong class="label">Note</strong>
+  Neutral aside or extra context, not a warning.
+</div>
+
+<div class="callout warn">
+  <strong class="label">Caution</strong>
+  Something the reader should be careful about.
+</div>
+
+<h2>2. Quick reference</h2>
+<table>
+  <tr><th>Question</th><th>Answer</th></tr>
+  <tr><td>Example question?</td><td>Example answer.</td></tr>
+</table>
+
+<div class="footer-note">Project Name — Guide Title. Reflects the setup as of DD Month YYYY.</div>
+
+</body>
+</html>
