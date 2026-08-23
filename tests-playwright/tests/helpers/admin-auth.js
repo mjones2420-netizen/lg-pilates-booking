@@ -45,8 +45,11 @@ async function loginAsAdmin(page) {
     );
   }
 
-  // Click the Dashboard nav button — routes to either login or dashboard.
-  await page.locator('#nb-dashboard').click();
+  // Click the Dashboard entry link in the public footer — routes to either
+  // login or dashboard. (The old #nb-dashboard nav button only becomes
+  // visible once #pg-dashboard/#pg-dash-login is already active — it's not
+  // the entry point from the fresh schedule page anymore.)
+  await page.locator('#pub-dashboard-link').click();
 
   // Wait for either the login page or the dashboard to be visible.
   // showDashboard() runs an async getSession() before deciding, so a small

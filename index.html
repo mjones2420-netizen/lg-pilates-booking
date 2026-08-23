@@ -64,7 +64,7 @@ body.has-test-banner nav { --safe-top: 0px; }
   --pub-font-display: 'Marcellus', Georgia, serif;
   --pub-font-body: 'Karla', sans-serif;
 }
-#pg-schedule, #overlay, #stripe-success-overlay, #stripe-failed-overlay {
+#pg-schedule, #overlay, #stripe-success-overlay, #stripe-failed-overlay, .site-footer-public {
   --sage: var(--pub-sage);
   --sage-dk: var(--pub-sage-dk);
   --sage-lt: var(--pub-sage-lt);
@@ -82,8 +82,6 @@ body.has-test-banner nav { --safe-top: 0px; }
 body:has(#pg-schedule.on) nav {
   --sage: var(--pub-sage); --charcoal: var(--pub-charcoal); --mid: var(--pub-mid); --border: var(--pub-border);
 }
-body:has(#pg-schedule.on) nav .logo { font-family: var(--pub-font-display); }
-body:has(#pg-schedule.on) nav .nav-btn { font-family: var(--pub-font-body); }
 
 /* Headings/prices → display face; body copy and controls → body face.
    Font-family isn't driven by a variable anywhere else in this file, so these
@@ -118,10 +116,36 @@ html, body { width:100%; margin:0; padding:0; font-family:'Open Sans',sans-serif
 /* Top padding carries the status-bar inset so the sticky nav's own background
    fills the notch area instead of the logo sliding under the clock. */
 nav { display:flex; align-items:center; justify-content:space-between; padding:calc(20px + var(--safe-top)) 40px 20px; border-bottom:1px solid var(--border); background:var(--warm); position:sticky; top:0; z-index:100; }
-.logo { font-family:'Raleway',sans-serif; font-size:28px; letter-spacing:0.06em; font-weight:600; }
+.logo { font-family:'Raleway',sans-serif; font-size:28px; letter-spacing:0.06em; font-weight:600; text-decoration:none; color:inherit; }
 .logo span { color:var(--sage); font-style:italic; }
 .nav-links { display:flex; gap:28px; align-items:center; }
 .nav-btn { background:none; border:none; font-family:'Open Sans',sans-serif; font-size:16px; color:var(--mid); cursor:pointer; letter-spacing:0.04em; padding:0; transition:color 0.2s; }
+/* Public nav variant (matches the website's header exactly) vs the admin
+   variant above — both always exist in the DOM (JS keeps using getElementById
+   for nb-schedule/nb-dashboard regardless of which is visible), only display
+   is toggled, scoped to whichever page is on. */
+.logo-public { display:none; font-family: var(--pub-font-display); font-size:26px; letter-spacing:normal; font-weight:400; }
+.logo-public em { font-style:normal; color:var(--sage); }
+.nav-links-public { display:none; align-items:center; gap:34px; }
+.nav-links-public a { font-family: var(--pub-font-body); font-size:12px; letter-spacing:0.14em; text-transform:uppercase; font-weight:600; color:var(--charcoal); text-decoration:none; padding:4px 0; opacity:0.75; transition:opacity 0.2s; }
+.nav-links-public a:hover { opacity:1; }
+.hamburger { display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:8px; }
+.hamburger span { display:block; width:24px; height:1.5px; background:var(--charcoal); }
+.mobile-nav-public { display:none; flex-direction:column; gap:18px; padding:24px 40px 32px; background:var(--warm); border-top:1px solid var(--border); }
+.mobile-nav-public.open { display:flex; }
+.mobile-nav-public a { font-family: var(--pub-font-body); font-size:13px; letter-spacing:0.12em; text-transform:uppercase; font-weight:600; color:var(--charcoal); text-decoration:none; }
+body:has(#pg-schedule.on) .logo-admin, body:has(#pg-schedule.on) .nav-links-admin { display:none; }
+body:has(#pg-schedule.on) .logo-public { display:block; }
+body:has(#pg-schedule.on) .nav-links-public { display:flex; }
+@media (max-width:900px) {
+  body:has(#pg-schedule.on) .nav-links-public { display:none; }
+  body:has(#pg-schedule.on) .hamburger { display:flex; }
+}
+.site-footer-public { display:none; }
+body:has(#pg-schedule.on) .site-footer-public { display:flex; }
+.site-footer-public { justify-content:center; padding:24px 40px calc(24px + var(--safe-bottom)); border-top:1px solid var(--border); background:var(--warm); }
+.site-footer-public button { background:none; border:none; cursor:pointer; font-family: var(--pub-font-body); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; font-weight:600; color:var(--light); transition:color 0.2s; }
+.site-footer-public button:hover { color:var(--sage); }
 .nav-btn:hover, .nav-btn.on { color:var(--charcoal); }
 .nav-btn.cta { background:var(--charcoal); color:white; padding:9px 20px; border-radius:2px; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; }
 .nav-btn.cta:hover { background:var(--sage-dk); }
@@ -697,13 +721,41 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 <body>
 
 <nav>
-  <div class="logo">LG <span>Pilates</span></div>
-  <div class="nav-links">
+  <div class="logo logo-admin">LG <span>Pilates</span></div>
+  <a href="https://new-lg-website.netlify.app/" class="logo logo-public">LG <em>Pilates</em></a>
+  <div class="nav-links nav-links-admin">
     <button class="nav-btn on" id="nb-schedule" onclick="show('schedule')">Schedule</button>
     <button class="nav-btn" id="nb-dashboard" onclick="showDashboard()">Dashboard</button>
     <button class="nav-btn" id="nb-signout" style="display:none;color:var(--light);font-size:13px" onclick="signOut()">Sign Out</button>
   </div>
+  <div class="nav-links-public" role="navigation" aria-label="Primary">
+    <a href="https://new-lg-website.netlify.app/">Home</a>
+    <a href="https://new-lg-website.netlify.app/schedule">Schedule</a>
+    <a href="https://new-lg-website.netlify.app/locations">Locations</a>
+    <a href="https://new-lg-website.netlify.app/#contact">Contact</a>
+  </div>
+  <button type="button" class="hamburger" id="pub-hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="pub-mobile-nav">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+<div class="mobile-nav-public" id="pub-mobile-nav" hidden>
+  <a href="https://new-lg-website.netlify.app/">Home</a>
+  <a href="https://new-lg-website.netlify.app/schedule">Schedule</a>
+  <a href="https://new-lg-website.netlify.app/locations">Locations</a>
+  <a href="https://new-lg-website.netlify.app/#contact">Contact</a>
+</div>
+<script>
+(function(){
+  var hamburger=document.getElementById("pub-hamburger");
+  var mobileNav=document.getElementById("pub-mobile-nav");
+  hamburger.addEventListener("click", function(){
+    var open=mobileNav.classList.toggle("open");
+    mobileNav.hidden=!open;
+    hamburger.setAttribute("aria-expanded", String(open));
+    hamburger.setAttribute("aria-label", open?"Close menu":"Open menu");
+  });
+})();
+</script>
 
 <div class="page on" id="pg-schedule">
   <div class="hero">
@@ -725,6 +777,10 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
     </div>
   </div>
   <div class="grid" id="grid"></div>
+</div>
+
+<div class="site-footer-public">
+  <button type="button" id="pub-dashboard-link" onclick="showDashboard()">Dashboard</button>
 </div>
 
 <div class="page" id="pg-dashboard">
@@ -1546,6 +1602,12 @@ function show(pg) {
   document.getElementById("pg-"+pg).className="page on";
   var nb=document.getElementById("nb-"+pg); if(nb) nb.className="nav-btn on";
   document.getElementById("nb-signout").style.display=(pg==="dashboard")?"inline":"none";
+  if(pg!=="schedule"){
+    var pubNav=document.getElementById("pub-mobile-nav");
+    pubNav.classList.remove("open"); pubNav.hidden=true;
+    var hb=document.getElementById("pub-hamburger");
+    hb.setAttribute("aria-expanded","false"); hb.setAttribute("aria-label","Open menu");
+  }
   if(pg==="dashboard"){ renderDashboard(); syncDashLayoutHeight(); }
 }
 

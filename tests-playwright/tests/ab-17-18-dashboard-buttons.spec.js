@@ -52,7 +52,7 @@ test.describe('AB-17/AB-18 — Dashboard button layout and sign-in reset', () =>
     await signOutAdmin(page);
 
     // Navigate back to dashboard login WITHOUT a page reload
-    await page.locator('#nb-dashboard').click();
+    await page.locator('#pub-dashboard-link').click();
     await expect(page.locator('#pg-dash-login.on')).toBeVisible({ timeout: 5000 });
 
     // Button starts as "Sign In"

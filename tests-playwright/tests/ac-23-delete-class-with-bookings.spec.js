@@ -111,7 +111,6 @@ test.describe('AC-23 — Delete class with bookings + PAR-Qs completes cleanly',
 
     // Class no longer on public schedule
     await signOutAdmin(page);
-    await page.locator('#nb-schedule').click();
     await expect(page.locator('.card', { hasText: 'AC23 Test Class' })).toHaveCount(0);
 
     // #56: orphan-check — booking and parq cascaded away with the class,

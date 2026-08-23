@@ -80,7 +80,7 @@ test.describe('AC-08 — Class hidden when it has no blocks', () => {
     await expect(page.locator('.card').filter({ hasText: className })).toBeVisible({ timeout: 5000 });
 
     // Go to dashboard and delete the block
-    await page.locator('#nb-dashboard').click();
+    await page.locator('#pub-dashboard-link').click();
     await expect(page.locator('#pg-dashboard.on')).toBeVisible();
     await page.locator('#dbnav-byclass').click();
     await expect(page.locator('#dbnav-byclass.on')).toBeVisible();
