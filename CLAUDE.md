@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 21 Aug 2026 (session 85 — release work: old site archived, new website live on private Netlify preview, 273 tests unchanged)
+Last updated: 23 Aug 2026 (session 87 — supabase MCP token load-order fix, no product code changed)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -51,6 +51,13 @@ Test admin: `admin@lg-pilates-test.local` — password in `tests-playwright/.env
 ---
 
 ## SESSION START — RUN EVERY SESSION
+
+**0. Verify supabase MCP tools loaded** — before relying on them for anything (drift checks, queries,
+migrations), confirm `supabase-test`/`supabase-prod` tools actually registered this session (e.g. via
+ToolSearch for "supabase"). If none load, the session's shell env is missing `SUPABASE_ACCESS_TOKEN`
+(lives in `~/.zshenv` + `~/.zshrc` since session 86/#102) — tell Mark immediately rather than silently
+skipping the drift checks below. Fix is restarting the session, not editing config, unless the token
+itself has actually changed.
 
 **A. Confirm index.html is present** — check line count (~4,100+ lines after catch-up swaps).
 
@@ -443,6 +450,15 @@ horizontal-scroll tables. Same DOM, same `switchDashPage(name)` — CSS-only swa
 - **New artifact**: published a "LG Pilates Launch Roadmap" — a visual status view of every RELEASE-PLAN.md step (done/now/later), kept in sync as steps complete. URL + update instructions in memory ([[project-website-release]], [[feedback-release-roadmap-artifact]]). Mark asked for this to be treated as a standing habit — update it whenever a release step's status changes, same as the GitHub issue/board update.
 
 **Immediate next**: Mark's own next moves — decide whether to commit the archive PDF, keep an eye on the Netlify preview for a couple of weeks per the Phase 1 gate, then give the go-ahead for the Phase 1c DNS cutover when ready. No booking-system backlog work was touched this session — check the [project board](https://github.com/users/mjones2420-netizen/projects/1) for that priority order when development resumes.
+
+**Session 86 (2026-08-23, earlier session, not previously logged here):** #102 (pre-go-live secret hardening) closed. Supabase access token rotated, moved from `~/.claude/settings.json` plaintext into `~/.zshrc`; prod-write tools (`execute_sql`/`apply_migration`/`list_edge_functions`) removed from the local auto-allow list so prod actions always prompt. Verified working at the time. Repo-privacy item split out to new issue #104.
+
+**Session 87 (2026-08-23):** Fixed a gap left by session 86 — no product code changed.
+- **Bug found**: this session started with zero supabase MCP tools loaded (`ToolSearch` for "supabase" returned nothing) — the session-start drift checks (steps B/C) couldn't run at all, silently.
+- **Root cause**: session 86 put the token export only in `~/.zshrc`, which zsh loads for interactive shells only. Whatever launched this session's shell didn't trigger that path, so `SUPABASE_ACCESS_TOKEN` was never set — MCP servers failed to authenticate on startup and registered no tools, with no visible error.
+- **Fix**: added the same export line to `~/.zshenv` (read by every zsh shell, interactive or not — belt and braces alongside the existing `.zshrc` line). No token change, no settings.json change — same security posture as #102, just no longer dependent on shell startup type. File permissions locked 600.
+- **Process fix**: added a new step 0 to this file's SESSION START section — verify supabase MCP tools actually loaded before relying on them for drift checks, and flag immediately rather than silently skipping if they haven't.
+- **Not yet verified**: this session's own shell env was already fixed at launch, so the fix takes effect on the *next* new session, not this one. First session after this should confirm tools load and re-run the B/C drift checks that got skipped today.
 
 **Full backlog**: `gh issue list` or https://github.com/mjones2420-netizen/lg-pilates-booking/issues
 
