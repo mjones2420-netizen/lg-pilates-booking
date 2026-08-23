@@ -135,6 +135,43 @@ function buildPaymentFailedClientEmailHtml(opts: {
     + `</table></td></tr></table></body></html>`;
 }
 
+// Client-facing refund confirmation email for a refund synced back from Stripe
+// (T1-09c, #29) — i.e. issued directly in the Stripe dashboard rather than via
+// the in-app "Mark Refunded" flow (#28, which sends its own copy from
+// index.html's buildRefundClientEmailHtml). Deliberately a separate, simpler
+// copy here rather than a shared template: the two call sites build from
+// different data shapes (a live cancellations row with block dates vs. this
+// webhook's charge event) and the wording is static enough that the drift
+// risk (#39) is low relative to the cost of a shared server-side template.
+function buildRefundConfirmedClientEmailHtml(opts: {
+  firstName: string; className: string; venue: string; loc: string; refundAmount: number;
+}): string {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">`
+    + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">`
+    + `<tr><td align="center">`
+    + `<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">`
+    + `<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">`
+    + `<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>`
+    + `<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>`
+    + `</td></tr>`
+    + `<tr><td style="background:#f0faf4;border-left:4px solid #3a8a6a;padding:18px 32px;">`
+    + `<div style="font-size:15px;font-weight:600;color:#1a5c3a;">Refund of &pound;${Number(opts.refundAmount).toFixed(2)} has been processed</div>`
+    + `<div style="font-size:13px;color:#2a6a48;line-height:1.6;margin-top:4px;">Please allow 3&ndash;5 working days for the refund to appear in your account.</div>`
+    + `</td></tr>`
+    + `<tr><td style="padding:24px 32px;">`
+    + `<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi ${esc(opts.firstName)},</p>`
+    + `<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Booking details</div>`
+    + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;">`
+    + `<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${esc(opts.className)}</td></tr>`
+    + `<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">${esc(opts.venue)}${opts.loc ? ", " + esc(opts.loc) : ""}</td></tr>`
+    + `</table>`
+    + `</td></tr>`
+    + `<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">`
+    + `<div style="font-size:11px;color:#8aabab;line-height:1.6;">If you have any questions, please reply to this email or contact Louise at <a href="mailto:bookings@lg-pilates.co.uk" style="color:#3a8a8a;text-decoration:none;">bookings@lg-pilates.co.uk</a><br>LG Pilates &middot; Baildon &amp; Guiseley</div>`
+    + `</td></tr>`
+    + `</table></td></tr></table></body></html>`;
+}
+
 // Internal server-to-server call to the send-email function. Authenticates with
 // the service-role key (NOT the public anon key) so send-email trusts it as an
 // internal caller after the #33 open-relay hardening.
@@ -172,6 +209,130 @@ async function sendTypedEmail(supabaseUrl: string, authKey: string, type: string
   }
 }
 
+// T1-09c (#29): syncs refunds issued directly in the Stripe dashboard (i.e.
+// NOT via the in-app "Mark Refunded" flow, #28) back into cancellations +
+// bookings so the report stays accurate regardless of where the refund
+// originated. Matched by stripe_payment_intent_id — the same key #28 already
+// stores. Idempotent: a retried delivery, or a charge.refunded event arriving
+// after #28 already flipped the flag in-app, both find refunded=true and no-op.
+async function handleChargeRefunded(event: any, corsHeaders: Record<string, string>): Promise<Response> {
+  const charge = event.data?.object;
+  const paymentIntentId = charge?.payment_intent;
+  const amountRefundedPence = typeof charge?.amount_refunded === "number" ? charge.amount_refunded : 0;
+
+  if (!paymentIntentId) {
+    return new Response(JSON.stringify({ received: true }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+  // charge.refunded events carry no metadata we set (Stripe Checkout metadata
+  // lives on the session only — it's never copied to the PaymentIntent/Charge,
+  // see stripe-checkout), so is_test can't travel with the event like it does
+  // for checkout.session.completed. TEST_BYPASS_ENABLED is a secret that only
+  // exists on the TEST project (#35's throttle bypass), so it doubles here as
+  // a safe, project-scoped test/live signal with no new secret required.
+  const isTest = Deno.env.get("TEST_BYPASS_ENABLED") === "true";
+
+  try {
+    const { data: cancellation } = await adminClient
+      .from("cancellations")
+      .select("*")
+      .eq("stripe_payment_intent_id", paymentIntentId)
+      .order("cancelled_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!cancellation) {
+      console.warn("charge.refunded: no matching cancellation for payment_intent", paymentIntentId);
+      return new Response(JSON.stringify({ received: true }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (cancellation.refunded) {
+      return new Response(JSON.stringify({ received: true, already_synced: true }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const storedRefundPence = Math.round((Number(cancellation.refund_amount) || 0) * 100);
+    if (amountRefundedPence < storedRefundPence) {
+      // Partial refund — don't guess at the right state, leave for manual review.
+      console.warn("charge.refunded: partial refund, skipping auto-sync", paymentIntentId, amountRefundedPence, storedRefundPence);
+      return new Response(JSON.stringify({ received: true, warning: "partial_refund_not_synced" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const nowIso = new Date().toISOString();
+
+    // Sync bookings first — idempotent (re-setting the same value is harmless),
+    // so if this fails we can safely 500 and let Stripe retry from scratch
+    // without having claimed the cancellation row yet.
+    const { error: bookingUpdErr } = await adminClient
+      .from("bookings")
+      .update({ refund_status: "refunded" })
+      .eq("stripe_payment_intent_id", paymentIntentId);
+    if (bookingUpdErr) throw new Error(`bookings refund_status update failed: ${bookingUpdErr.message}`);
+
+    // Atomic claim: only flips refunded if it's STILL false at write time —
+    // the WHERE guard is what actually prevents a duplicate Stripe delivery
+    // (at-least-once) from double-sending the confirmation email, unlike the
+    // plain read-then-write above; mirrors the claim-before-act pattern #45
+    // already uses for one-shot email sends. If we lose the race, someone
+    // else's request already claimed and emailed — no-op here.
+    const { data: claimed, error: claimErr } = await adminClient
+      .from("cancellations")
+      .update({ refunded: true, refunded_at: nowIso })
+      .eq("id", cancellation.id)
+      .eq("refunded", false)
+      .select("id");
+    if (claimErr) throw new Error(`cancellations refunded claim failed: ${claimErr.message}`);
+
+    if (!claimed || claimed.length === 0) {
+      return new Response(JSON.stringify({ received: true, already_synced: true }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Client confirmation — a dashboard-issued refund wouldn't otherwise notify
+    // the customer (the in-app flow, #28, sends its own copy). Non-fatal: the
+    // DB state is already correct even if this fails.
+    if (cancellation.email) {
+      try {
+        const { data: cls } = await adminClient.from("classes").select("*").eq("id", cancellation.class_id).single();
+        const clientHtml = buildRefundConfirmedClientEmailHtml({
+          firstName: cancellation.first_name,
+          className: cancellation.class_name || (cls && cls.name) || "",
+          venue: cancellation.venue || (cls && cls.venue) || "",
+          loc: (cls && cls.loc) || "",
+          refundAmount: cancellation.refund_amount || 0,
+        });
+        await sendEmail(supabaseUrl, supabaseServiceKey, cancellation.email,
+          "Your LG Pilates refund has been processed", clientHtml, isTest);
+      } catch (e) {
+        console.warn("Failed to send refund-confirmed client email (non-fatal):", e);
+      }
+    }
+
+    return new Response(JSON.stringify({ received: true, cancellation_id: cancellation.id }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  } catch (err) {
+    console.error("stripe-webhook charge.refunded error:", err);
+    // Return 500 so Stripe retries the webhook
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -205,7 +366,12 @@ serve(async (req) => {
     });
   }
 
-  // Only act on successful checkout completion
+  // T1-09c (#29): dashboard-issued refunds sync back separately.
+  if (event.type === "charge.refunded") {
+    return await handleChargeRefunded(event, corsHeaders);
+  }
+
+  // Only act on successful checkout completion (plus charge.refunded above)
   if (event.type !== "checkout.session.completed") {
     return new Response(JSON.stringify({ received: true }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },

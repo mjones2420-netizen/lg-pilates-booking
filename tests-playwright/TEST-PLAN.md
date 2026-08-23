@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 19 Aug 2026
-**Total tests:** 273
+**Last updated:** 23 Aug 2026
+**Total tests:** 276
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -325,7 +325,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `st-28-post-payment-outcome-screen.spec.js` | no booking for the session → amber "could not secure your place" screen |
 | `st-29-webhook-failure-client-email-nonfatal.spec.js` | CLASS_FULL after payment still returns booking_failed_after_payment, pending retained, no booking |
 
-## Refund Sync (RF) — 6 tests
+## Refund Sync (RF) — 9 tests
 
 | Spec file | Test |
 |---|---|
@@ -335,6 +335,9 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-02b — refund equals the stored overridden amount, not the full price |
 | `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-03 — bank-transfer cancellation keeps the manual flow (no Stripe call) |
 | `rf-02-03-04-mark-refunded-stripe.spec.js` | RF-04 — Stripe failure leaves the row unrefunded and surfaces an error |
+| `rf-05-webhook-refund-sync.spec.js` | RF-05a — matching cancellation and booking both sync on charge.refunded |
+| `rf-05-webhook-refund-sync.spec.js` | RF-05b — resending the same event after sync is idempotent |
+| `rf-05-webhook-refund-sync.spec.js` | RF-05c — no matching cancellation is a safe no-op |
 
 ## Catch-Up Swaps (CU) — 10 tests
 

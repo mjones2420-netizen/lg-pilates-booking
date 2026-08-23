@@ -98,9 +98,34 @@ async function postToStripeWebhook(eventPayload, { rawBodyOverride = null, signa
   return { status: res.status, json };
 }
 
+/**
+ * Builds a minimal but valid charge.refunded event payload (T1-09c, #29).
+ * `paymentIntentId` is required — must match a cancellations row's
+ * stripe_payment_intent_id for the webhook to find anything to sync.
+ * `amountRefundedPence` defaults to a large value so the "partial refund,
+ * skip" guard doesn't accidentally trip in tests that don't care about it.
+ */
+function buildChargeRefundedEvent({
+  paymentIntentId,
+  amountRefundedPence = 999999,
+  chargeId = `ch_test_${Date.now()}`
+}) {
+  return {
+    type: 'charge.refunded',
+    data: {
+      object: {
+        id: chargeId,
+        payment_intent: paymentIntentId,
+        amount_refunded: amountRefundedPence
+      }
+    }
+  };
+}
+
 module.exports = {
   WEBHOOK_URL,
   signPayload,
   buildCheckoutCompletedEvent,
+  buildChargeRefundedEvent,
   postToStripeWebhook
 };
