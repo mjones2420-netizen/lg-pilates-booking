@@ -419,6 +419,22 @@ test.describe('CU — Catch-Up Swaps', () => {
     await page.reload();
     await loginAsAdmin(page);
 
+    // The CLASS picker is built synchronously inside openRecordSwapModal()
+    // from the `blocks` global, and nothing rebuilds it afterwards. If the
+    // login fetch hasn't landed by the time the modal opens, the picker holds
+    // only its placeholder and the mon-full option asserted below is simply
+    // absent ("element(s) not found") — the CU-08 CI flake. #79 added the
+    // swaps guard further down, but that only covers the DATE picker; this
+    // fetch was left unguarded, which is why the flake survived on the slower
+    // CI runner. `blocks` starts as [], so presence of the row is the only
+    // meaningful ready signal. This is a ready-state wait, not a weaker
+    // assertion — the FULL/disabled checks below are unchanged.
+    await page.waitForFunction(
+      (blockId) => Array.isArray(window.blocks) && window.blocks.some((b) => b.id === blockId),
+      monFull.id,
+      { timeout: 10000 }
+    );
+
     await goToCatchUpPage(page);
     await openRecordSwapModal(page);
 
