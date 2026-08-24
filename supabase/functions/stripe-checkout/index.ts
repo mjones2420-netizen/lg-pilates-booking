@@ -51,6 +51,7 @@ serve(async (req) => {
       first_name, last_name, email, phone,
       customer_type, class_name,
       parq_data, success_url, cancel_url, is_test,
+      offer_token,
     } = await req.json();
 
     if (!class_id || !block_id || !first_name || !last_name || !email ||
@@ -110,6 +111,56 @@ serve(async (req) => {
       });
     }
 
+    // Waitlist offer (#73): if the booking is coming from a personal offer
+    // link, validate the hold HERE, before Stripe is ever contacted. The real
+    // gate is book_if_available in the webhook, but that runs AFTER the card is
+    // charged — a doomed booking discovered there means taking money and then
+    // refunding it. Checking first turns that into a clean 400.
+    let verifiedOfferToken: string | null = null;
+    if (offer_token) {
+      const invalidOffer = () => new Response(JSON.stringify({ error: "Offer no longer valid" }), {
+        status: 400,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+
+      // Postgres raises on a malformed uuid rather than returning no rows, so
+      // check the shape first — a junk token is a 400, not a 500.
+      const isUuid = typeof offer_token === "string" &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(offer_token);
+      if (!isUuid) return invalidOffer();
+
+      const { data: hold, error: holdErr } = await adminClient
+        .from("waitlist")
+        .select("id, customer_id")
+        .eq("offer_token", offer_token)
+        .eq("block_id", block_id)
+        .eq("status", "offered")
+        .maybeSingle();
+
+      if (holdErr) {
+        console.error("waitlist hold lookup failed:", holdErr);
+        return new Response(JSON.stringify({ error: "Could not verify offer" }), {
+          status: 500,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        });
+      }
+      if (!hold) return invalidOffer();
+
+      // The hold belongs to one person. book_if_available enforces this again
+      // by customer_id (WL_TOKEN_MISMATCH); matching on email here is the
+      // pre-payment equivalent, since at this point the booking's customer row
+      // may not have been created yet.
+      const { data: holdCustomer } = await adminClient
+        .from("customers")
+        .select("email")
+        .eq("id", hold.customer_id)
+        .single();
+      if ((holdCustomer?.email || "").toLowerCase() !== String(email).toLowerCase()) {
+        return invalidOffer();
+      }
+      verifiedOfferToken = offer_token;
+    }
+
     // Insert pending_bookings row — holds booking intent until Stripe webhook confirms
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
     const { data: pendingRow, error: pendingErr } = await adminClient
@@ -120,6 +171,7 @@ serve(async (req) => {
         customer_type, amount_pence: verifiedAmountPence,
         parq_data: parq_data || null,
         expires_at: expiresAt,
+        offer_token: verifiedOfferToken,
       })
       .select("id")
       .single();

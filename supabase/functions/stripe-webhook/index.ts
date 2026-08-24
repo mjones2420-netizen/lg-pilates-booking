@@ -68,6 +68,18 @@ function esc(s: unknown): string {
 // via the typed calls below (confirmed_booking / card_payment_alert), #53.
 // Only the payment-failed alert — which has no counterpart anywhere else —
 // remains built inline here.
+// Plain-English cause for the admin alert. The waitlist cases (#73) should be
+// rare — stripe-checkout validates the hold before charging — but a hold can
+// still be released or taken during the seconds the customer is on Stripe.
+function failureReasonText(reason: string): string {
+  switch (reason) {
+    case "ALREADY_BOOKED":    return "they already have a booking on this block";
+    case "WL_BAD_TOKEN":      return "their waiting-list offer was released or already used";
+    case "WL_TOKEN_MISMATCH": return "their waiting-list offer belongs to a different person";
+    default:                  return "the class is now full";
+  }
+}
+
 function buildPaymentFailedAdminEmailHtml(opts: {
   firstName: string; lastName: string; email: string; phone: string;
   className: string; venue: string; loc: string; day: string; time: string; endTime: string;
@@ -83,7 +95,7 @@ function buildPaymentFailedAdminEmailHtml(opts: {
     + `</td></tr>`
     + `<tr><td style="background:#fdeaea;border-left:4px solid #c04040;padding:18px 32px;">`
     + `<div style="font-size:15px;font-weight:600;color:#8a2a2a;margin-bottom:6px;">Action needed: payment taken, booking not placed</div>`
-    + `<div style="font-size:13px;color:#7a2a2a;line-height:1.6;">${esc(opts.firstName)} ${esc(opts.lastName)} paid for a class but their booking could not be created (${opts.reason === "ALREADY_BOOKED" ? "they already have a booking on this block" : "the class is now full"}). This needs manual follow-up &mdash; likely a refund and a message to the client.</div>`
+    + `<div style="font-size:13px;color:#7a2a2a;line-height:1.6;">${esc(opts.firstName)} ${esc(opts.lastName)} paid for a class but their booking could not be created (${failureReasonText(opts.reason)}). This needs manual follow-up &mdash; likely a refund and a message to the client.</div>`
     + `</td></tr>`
     + `<tr><td style="padding:24px 32px;">`
     + `<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Details</div>`
@@ -111,8 +123,18 @@ function buildPaymentFailedAdminEmailHtml(opts: {
 // open-relay path (#33); the name is esc()'d (#39). Single copy, no counterpart
 // elsewhere — like buildPaymentFailedAdminEmailHtml it is built inline here.
 function buildPaymentFailedClientEmailHtml(opts: {
-  firstName: string; className: string; day: string; time: string;
+  firstName: string; className: string; day: string; time: string; reason: string;
 }): string {
+  // Why it failed, in the customer's terms. Telling someone whose waiting-list
+  // offer was released that the class "filled up while you were paying" is
+  // simply untrue, and they are reading it next to a charge on their card.
+  const cause = opts.reason === "WL_BAD_TOKEN"
+    ? `the space we were holding for you from the waiting list had already been taken`
+    : opts.reason === "WL_TOKEN_MISMATCH"
+    ? `the booking link you used was issued to a different person`
+    : opts.reason === "ALREADY_BOOKED"
+    ? `you already have a booking on this block`
+    : `${esc(opts.className)} (${esc(opts.day)}, ${esc(opts.time)}) filled up in the moments while you were paying`;
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">`
     + `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">`
     + `<tr><td align="center">`
@@ -123,7 +145,7 @@ function buildPaymentFailedClientEmailHtml(opts: {
     + `</td></tr>`
     + `<tr><td style="background:#fbf1e3;border-left:4px solid #c9821f;padding:18px 32px;">`
     + `<div style="font-size:15px;font-weight:600;color:#8a5a12;margin-bottom:6px;">Payment received &mdash; but we couldn&rsquo;t secure your place</div>`
-    + `<div style="font-size:13px;color:#7a5a2a;line-height:1.6;">Hi ${esc(opts.firstName)}, your payment went through, but ${esc(opts.className)} (${esc(opts.day)}, ${esc(opts.time)}) filled up in the moments while you were paying, so we couldn&rsquo;t hold your spot.</div>`
+    + `<div style="font-size:13px;color:#7a5a2a;line-height:1.6;">Hi ${esc(opts.firstName)}, your payment went through, but ${cause}, so we couldn&rsquo;t hold your spot.</div>`
     + `</td></tr>`
     + `<tr><td style="padding:24px 32px;">`
     + `<p style="font-size:14px;color:#4a6060;line-height:1.7;margin:0 0 14px;">Louise has been notified automatically and will be in touch to arrange a <strong>full refund</strong> or offer you an alternative class. <strong>You don&rsquo;t need to do anything.</strong></p>`
@@ -427,13 +449,20 @@ serve(async (req) => {
       p_class_id: pending.class_id,
       p_customer_id: customerId,
       p_amount_due: amountDue,
+      // Waitlist offer (#73). Null for an ordinary booking, in which case the
+      // RPC applies the reservation rule; non-null lets this person through the
+      // "full" gate, having been personally offered the space.
+      p_offer_token: pending.offer_token || null,
     });
 
     if (bookErr) {
-      // CLASS_FULL or ALREADY_BOOKED — payment succeeded but booking couldn't be placed.
-      // Leave the pending row for manual review by Louise/Mark, and alert the admin by email.
+      // Payment succeeded but the booking couldn't be placed. Leave the pending
+      // row for manual review by Louise/Mark, and alert the admin by email.
       const msg = bookErr.message || "";
-      const reason = msg.indexOf("ALREADY_BOOKED") > -1 ? "ALREADY_BOOKED" : "CLASS_FULL";
+      const reason = msg.indexOf("ALREADY_BOOKED") > -1 ? "ALREADY_BOOKED"
+        : msg.indexOf("WL_TOKEN_MISMATCH") > -1 ? "WL_TOKEN_MISMATCH"
+        : msg.indexOf("WL_BAD_TOKEN") > -1 ? "WL_BAD_TOKEN"
+        : "CLASS_FULL";
       console.error("book_if_available failed after payment:", msg, "pending_id:", pendingId);
 
       try {
@@ -451,6 +480,7 @@ serve(async (req) => {
               className: cls.name,
               day: cls.day,
               time: cls.time,
+              reason: reason,
             });
             await sendEmail(supabaseUrl, supabaseServiceKey, pending.email,
               "About your LG Pilates payment", clientHtml, isTest);
