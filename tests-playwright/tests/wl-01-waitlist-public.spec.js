@@ -9,6 +9,7 @@
 //   WL-05  A valid ?offer= link prefills the booking form and locks the email
 //   WL-06  A junk ?offer= link says so and leaves the page usable
 //   WL-07  The token books past a full block, and consumes the hold
+//   WL-13  A live offer survives an accidental close + refresh, and dies when released
 //
 // Isolation
 //   Every test runs against a class + block created by this file and deleted
@@ -360,5 +361,43 @@ test.describe('WL — waiting list, public site', () => {
     // The hold is consumed only after the booking exists, so it must be gone.
     expect(await getWaitlistRow(blockId, email)).toBeNull();
     expect(await getBlockWaitCount(blockId)).toBe(0);
+  });
+
+  // ── WL-13 ────────────────────────────────────────────────────────────────
+  test('WL-13 — a live offer survives closing the box and refreshing', async ({ page }) => {
+    const email = uniqueEmail('resume');
+    createdEmails.push(email);
+
+    await seedQueuedJoinerThenFreeASeat(page, {
+      email, firstName: 'Priya', lastName: 'Shah', phone: '07700900222'
+    });
+    const row = await getWaitlistRow(blockId, email);
+    const token = await offerWaitlistRowDirect(row.id);
+
+    await page.goto(`${APP_PATH}&offer=${token}`);
+    await expect(page.locator('#wl-reserved-banner')).toBeVisible({ timeout: 15000 });
+
+    // A stray tap outside the box — easy to do on a phone.
+    await page.locator('#overlay .mclose').click();
+    expect(await page.evaluate(() => offerState)).toBeNull();
+
+    // Reloading WITHOUT the token in the address bar must still resume the
+    // offer: it is stashed per-tab so a held seat cannot be lost to a
+    // mis-tap. Without this the customer meets a full block and a
+    // "you're already on the waiting list" refusal, with no way back.
+    await page.goto(APP_PATH);
+    expect(page.url(), 'the token must never be put back in the address bar').not.toContain('offer=');
+    await expect(page.locator('#wl-reserved-banner')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#b-email')).toHaveValue(email);
+    expect(await page.evaluate(() => offerState && offerState.token)).toBe(token);
+
+    // Released by Louise: the stash must not keep resurrecting a dead hold.
+    await getPool().query(
+      `UPDATE waitlist SET status='waiting', offer_token=NULL, offered_at=NULL WHERE id=$1`,
+      [row.id]
+    );
+    await page.goto(APP_PATH);
+    await expect(page.locator('#wl-reserved-banner')).toBeHidden({ timeout: 15000 });
+    expect(await page.evaluate(() => offerState)).toBeNull();
   });
 });

@@ -479,6 +479,35 @@ tr:hover td { background:var(--cream); }
 .act-refund { border-color:#c04040; color:#c04040; }
 .act-refund:hover { background:#c04040; color:white; }
 .act:hover { border-color:var(--charcoal); color:var(--charcoal); }
+/* ── Waiting lists (#75) ──────────────────────────────────────────────────
+   Amber is the hold signal established by #74: not sage ("go, book it") and
+   not red ("stop, full"). Reused here so the admin page and the public card
+   speak the same colour language. */
+.db-topbar-sub { font-size:12px; color:var(--mid); margin:2px 0 0; }
+.p-waiting { background:var(--cream); color:var(--mid); }
+.p-offered { background:var(--amber-bg); color:var(--amber-dk); font-weight:600; }
+.act-offer { border-color:var(--amber); color:var(--amber-dk); font-weight:600; }
+.act-offer:hover:not([disabled]) { background:var(--amber); color:white; border-color:var(--amber); }
+.act[disabled] { opacity:0.42; cursor:not-allowed; border-color:var(--border); color:var(--light); font-weight:400; }
+.act[disabled]:hover { border-color:var(--border); color:var(--light); background:none; }
+.wl-why { display:block; font-size:11px; color:var(--light); margin-top:5px; max-width:230px; line-height:1.5; }
+.class-group-badge.amber { background:var(--amber-bg); border-color:#e8d6bd; color:var(--amber-dk); font-weight:600; }
+.class-group-badge.full { background:#fdecec; border-color:#f3d2d2; color:var(--red); font-weight:600; }
+.class-group-badge.free { background:#e8f0e7; border-color:#cfe2cc; color:var(--green); font-weight:600; }
+.wl-badges { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; flex-shrink:0; }
+/* Not a toggle on this page — the lists are always open — so it must not
+   offer the pointer + hover tint that the By Class accordion uses. */
+.wl-head { cursor:default; }
+.wl-head:hover { background:white; }
+/* NOT .wl-pos — that name is already the public 52px queue-position number
+   from #74, and its font-size would leak in here. */
+.wl-num { font-variant-numeric:tabular-nums; color:var(--light); font-weight:400; margin-right:7px; }
+/* Deliberately NOT .m-sub: that one is display:none above 940px because it
+   duplicates other columns. These sub-lines carry the only copy of the email,
+   phone and hold age, so they show at every width. */
+.wl-sub { display:block; font-weight:400; font-size:12px; color:var(--mid); margin-top:2px;
+          white-space:normal; }
+.wl-stale { color:var(--amber-dk); font-weight:600; }
 .acc-wrap { max-width:600px; margin:0 auto; padding:50px 40px; }
 .av { width:72px; height:72px; background:var(--sage-lt); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Raleway',sans-serif; font-size:28px; color:var(--sage-dk); margin-bottom:18px; }
 .acc-name { font-family:'Raleway',sans-serif; font-size:32px; font-weight:300; }
@@ -644,6 +673,17 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
   .db-content .act { flex:1; min-width:calc(50% - 4px); padding:10px 6px; margin-right:0; }
   .m-sub { display:block; font-weight:400; font-size:12px; color:var(--mid); margin-top:2px;
            white-space:normal; overflow:visible; text-overflow:clip; }
+
+  /* Waiting lists (#75). The status cell is a summary badge on a collapsed
+     card, so its detail line ("Email sent · held 2 days") waits until the row
+     is opened; the client and joined sub-lines stay put. */
+  .db-content td.m-badge .wl-sub { display:none; }
+  .db-content tr.m-open td.m-badge .wl-sub { display:block; text-align:right; }
+  /* Sits in the action cell, which is a flex row here — without its own line
+     it would be squeezed between the buttons. */
+  .wl-why { flex-basis:100%; max-width:none; margin-top:2px; }
+  .wl-badges { justify-content:flex-start; margin-top:8px; }
+  .db-content .class-group-header { flex-wrap:wrap; }
 
   /* Green / orange highlight on the Classes page detail rows. Negative margins
      alone only shift the box, they don't widen it — the basis has to grow by
@@ -828,6 +868,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
         <div class="db-nav-item" id="dbnav-clients" onclick="switchDashPage('clients')"><i class="ti ti-users" aria-hidden="true"></i> Clients</div>
         <div class="db-nav-item" id="dbnav-cancellations" onclick="switchDashPage('cancellations')"><i class="ti ti-circle-x" aria-hidden="true"></i> Cancellations</div>
         <div class="db-nav-item" id="dbnav-catchup" onclick="switchDashPage('catchup')"><i class="ti ti-repeat" aria-hidden="true"></i> Catch-up swaps</div>
+        <div class="db-nav-item" id="dbnav-waitlist" onclick="switchDashPage('waitlist')"><i class="ti ti-hourglass" aria-hidden="true"></i> Waiting lists</div>
         <div class="db-nav-section" style="margin-top:6px">Studio</div>
         <div class="db-nav-item" id="dbnav-classes" onclick="switchDashPage('classes')"><i class="ti ti-calendar" aria-hidden="true"></i> Classes</div>
         <div class="db-nav-item" id="dbnav-reports" onclick="switchDashPage('reports')"><i class="ti ti-chart-bar" aria-hidden="true"></i> Reports</div>
@@ -939,6 +980,19 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
         </div>
         <div class="db-content">
           <div id="catchup-list"><div style="color:var(--light);padding:20px;font-size:13px">Loading&hellip;</div></div>
+        </div>
+      </div>
+
+      <!-- ── Waiting lists (#75) ── -->
+      <div id="dbpage-waitlist" class="db-page">
+        <div class="db-topbar">
+          <div>
+            <p class="db-topbar-title">Waiting lists</p>
+            <p id="waitlist-subtitle" class="db-topbar-sub">Loading&hellip;</p>
+          </div>
+        </div>
+        <div class="db-content">
+          <div id="waitlist-list"><div style="color:var(--light);padding:20px;font-size:13px">Loading&hellip;</div></div>
         </div>
       </div>
 
@@ -1106,6 +1160,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
         <div role="button" tabindex="0" class="db-more-item" id="dbmore-clients" onclick="dashMoreGo('clients')"><i class="ti ti-users"></i> Clients</div>
         <div role="button" tabindex="0" class="db-more-item" id="dbmore-cancellations" onclick="dashMoreGo('cancellations')"><i class="ti ti-circle-x"></i> Cancellations</div>
         <div role="button" tabindex="0" class="db-more-item" id="dbmore-catchup" onclick="dashMoreGo('catchup')"><i class="ti ti-repeat"></i> Catch-up swaps</div>
+        <div role="button" tabindex="0" class="db-more-item" id="dbmore-waitlist" onclick="dashMoreGo('waitlist')"><i class="ti ti-hourglass"></i> Waiting lists</div>
         <div class="db-more-head">Studio</div>
         <div role="button" tabindex="0" class="db-more-item" id="dbmore-classes" onclick="dashMoreGo('classes')"><i class="ti ti-calendar"></i> Classes</div>
         <div role="button" tabindex="0" class="db-more-item" id="dbmore-reports" onclick="dashMoreGo('reports')"><i class="ti ti-chart-bar"></i> Reports</div>
@@ -1604,6 +1659,7 @@ var blocks  = [];   // all blocks loaded from DB
 var bookings = [];
 var catchUpSwaps = [];   // catch-up swap visitors — loaded in renderDashboard
 var dashCustomerMap = null;   // id -> customers row, built in renderDashboard
+var waitlistRows = [];        // waiting-list rows for the admin page (#75)
 var appSettings = {};      // bank details + admin email, loaded at startup
 var PAYMENT_MODE = "bank_transfer"; // "bank_transfer" | "stripe" — loaded from settings on init
 var selected = null;       // selected class
@@ -2057,6 +2113,34 @@ function closeModal(){
 // token confirmBooking() must present to book past a full block.
 var offerState = null;
 
+// Strips ?offer= from the address bar without a reload. Kept module-level so
+// both the link handler and a completed booking can call it.
+function dropOfferToken(){
+  // Removes ONLY the offer param. Rebuilding the URL from scratch used to
+  // discard everything else, which would eat Stripe's ?payment=/session_id=
+  // on any load that carried both and lose the payment-outcome screen.
+  var params=new URLSearchParams(window.location.search);
+  params.delete("offer");
+  var qs=params.toString();
+  window.history.replaceState({},"",window.location.pathname+(qs?"?"+qs:""));
+}
+
+// Holds a live offer token for the life of this tab, so the customer can close
+// the booking box or refresh without losing a seat that is already theirs.
+// Deliberately sessionStorage and not the URL — see handleOfferLink. Wrapped
+// because storage throws outright in a locked-down browser, and a booking must
+// never fail for want of a convenience.
+var OFFER_STASH_KEY="lgp_offer_token";
+function stashOfferToken(token){
+  try{ window.sessionStorage.setItem(OFFER_STASH_KEY,token); }catch(e){}
+}
+function readStashedOfferToken(){
+  try{ return window.sessionStorage.getItem(OFFER_STASH_KEY)||null; }catch(e){ return null; }
+}
+function clearStashedOfferToken(){
+  try{ window.sessionStorage.removeItem(OFFER_STASH_KEY); }catch(e){}
+}
+
 function clearOfferState(){
   offerState = null;
   var banner=document.getElementById("wl-reserved-banner");
@@ -2088,19 +2172,34 @@ function closeWaitlistModal(){
   unlockBodyScroll();
 }
 
-// Sibling of sendSystemEmail: same public, server-templated, one-shot path,
-// keyed on a waitlist row instead of a booking. Non-fatal by design — a failed
-// alert to Louise must never make the visitor think their join did not work.
+// Sibling of sendSystemEmail: same server-templated, one-shot path, keyed on a
+// waitlist row instead of a booking. Non-fatal by design — a failed alert to
+// Louise must never make the visitor think their join did not work.
+//
+// Serves both waitlist types, which sit on opposite sides of the auth line:
+// `waitlist_joined_alert` is public (an anonymous visitor triggers it), while
+// `waitlist_offer` is trusted — it carries a working booking token, so the
+// function rejects the anon key on that path. The session lookup resolves it
+// without the caller having to know: the public join has no session and falls
+// back to the anon key exactly as before, the admin page has one and sends it.
 async function sendWaitlistEmail(type, waitlistId){
-  if(IS_NO_EMAIL) return;
+  if(IS_NO_EMAIL) return true;
   try{
+    var{data:sess}=await sb.auth.getSession();
+    var jwt=(sess&&sess.session&&sess.session.access_token)||SUPABASE_KEY;
     var res=await fetch(SUPABASE_URL+"/functions/v1/send-email",{
       method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPABASE_KEY},
-      body:JSON.stringify({type:type,waitlist_id:waitlistId,isTest:IS_TEST_ENV})
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+jwt},
+      // app_url so the emailed link points at the host Louise is actually on
+      // — it survives the move to book.lg-pilates.co.uk without a redeploy.
+      // The function validates it against its own origin allowlist and keeps
+      // only origin + path, so this cannot smuggle a foreign link into an
+      // email from our domain; anything unrecognised falls back to the default.
+      body:JSON.stringify({type:type,waitlist_id:waitlistId,app_url:window.location.origin+window.location.pathname,isTest:IS_TEST_ENV})
     });
-    if(!res.ok){ console.warn("Waitlist email failed (non-fatal):",type,res.status,await res.text()); }
-  }catch(emailErr){ console.warn("Waitlist email error (non-fatal):",type,emailErr); }
+    if(!res.ok){ console.warn("Waitlist email failed (non-fatal):",type,res.status,await res.text()); return false; }
+    return true;
+  }catch(emailErr){ console.warn("Waitlist email error (non-fatal):",type,emailErr); return false; }
 }
 
 function submitWaitlist(){
@@ -2207,34 +2306,58 @@ async function refreshBlockCounts(){
 // prefilled; anything else says so politely and leaves the page usable.
 async function handleOfferLink(){
   var params=new URLSearchParams(window.location.search);
-  var token=params.get("offer");
+  // Falls back to the stash so a refresh mid-booking resumes the offer rather
+  // than dead-ending on "you are already on the waiting list".
+  // A Stripe return owns this page load: the payment-outcome screen must not
+  // have a booking modal opened over it. A successful payment also consumes
+  // the hold via the webhook, so the stash is spent — drop it rather than let
+  // the next plain load re-check a dead token and cry "link no longer valid"
+  // at someone who has just paid. A cancelled or failed return keeps it, so
+  // the offer is still there when they try again.
+  if(params.has("payment")){
+    if(params.get("payment")==="success") clearStashedOfferToken();
+    return;
+  }
+  var token=params.get("offer")||readStashedOfferToken();
   if(!token) return;
+  // get_offer_details takes a uuid, so a link an email client wrapped or
+  // truncated fails as a CAST error — which lands in the catch below and says
+  // "we couldn't check, please refresh", forever, on every refresh. A token
+  // that isn't a uuid can never be valid, so say so once and clear it.
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token)){
+    dropOfferToken(); clearStashedOfferToken();
+    showToast("That booking link is not complete. Please use the full link from your email, or contact Louise.");
+    return;
+  }
   // The token is a bearer credential for one held space, so it is stripped
   // from the address bar rather than left for history or a copied link to
   // carry. It is stripped only once we KNOW the answer, though: clearing it
   // before the lookup meant a momentary network failure destroyed the link
   // and left the customer with no way to retry but to find the email again.
-  function dropToken(){
-    var cleanUrl=window.location.pathname+(IS_TEST_ENV?"?env=test":"");
-    window.history.replaceState({},"",cleanUrl);
-  }
+  function dropToken(){ dropOfferToken(); }
   try{
     var res=await sb.rpc("get_offer_details",{ p_token: token });
     if(res.error) throw new Error(res.error.message||"");
     var row=(res.data&&res.data.length>0)?res.data[0]:null;
     if(!row){
-      dropToken();
+      dropToken(); clearStashedOfferToken();
       showToast("That booking link is no longer valid. Please contact Louise.");
       return;
     }
     var c=classes.find(function(x){ return x.id===row.class_id; });
     var blk=blocks.find(function(b){ return b.id===row.block_id; });
     if(!c||!blk){
-      dropToken();
+      dropToken(); clearStashedOfferToken();
       showToast("That booking link is no longer valid. Please contact Louise.");
       return;
     }
     dropToken();
+    // Stashed so a stray backdrop tap or a refresh does not destroy a live
+    // offer. sessionStorage, NOT the address bar: the token is a bearer
+    // credential for a held seat, so it must stay out of history, out of a
+    // copied URL and out of a screenshot (WL-05 pins that). Per-tab, cleared
+    // when the tab closes, and consumed once the booking is made.
+    stashOfferToken(token);
     openModal(c.id, blk.id);
     // openModal() resets the form and clears any previous offer, so the offer
     // state is applied after it, never before.
@@ -2969,6 +3092,11 @@ function confirmBooking(){
         });
         var pendingData=await pendingFetch.json();
         if(pendingData.url){
+          // The stash is deliberately KEPT. The hold is not consumed until the
+          // webhook confirms payment, so a customer who abandons or fails
+          // checkout must return to a live offer — clearing it here would
+          // strand them on a block that reads FULL with their own seat still
+          // held. The success return clears it instead (handleOfferLink).
           window.location.href=pendingData.url;
         } else {
           showToast("Payment could not be started. Please try again.");
@@ -3014,6 +3142,8 @@ function confirmBooking(){
         throw new Error("Booking failed: "+msg);
       }
       var savedBookingId=bookRes.data;
+      // The hold is spent — the link must not reopen a dead offer on refresh.
+      if(offerState){ dropOfferToken(); clearStashedOfferToken(); }
 
       // Refetch booked AND wait from the DB to avoid drift — both triggers have
       // just run. wait matters as much as booked here: on the offer path
@@ -3425,7 +3555,7 @@ function scrollToFirstMissingParq(){
 }
 
 function switchDashPage(page){
-  var pages=["bookings","byclass","history","clients","cancellations","catchup","classes","reports","settings","backup"];
+  var pages=["bookings","byclass","history","clients","cancellations","catchup","waitlist","classes","reports","settings","backup"];
   pages.forEach(function(p){
     var el=document.getElementById("dbpage-"+p);
     if(el) el.classList.toggle("on",p===page);
@@ -3448,6 +3578,7 @@ function switchDashPage(page){
   if(page==="cancellations") renderCancellationsTab();
   if(page==="reports") renderReportsPage();
   if(page==="catchup") renderCatchUpSwapsPage();
+  if(page==="waitlist") renderWaitlistPage();
 }
 
 // ─── Mobile dashboard behaviour (#103) ────────────────────────────────────────
@@ -4241,6 +4372,377 @@ async function deleteCatchUpSwap(id){
     console.error("Delete swap error:",err);
     showToast("Error removing swap. Please try again.");
   }
+}
+
+/* ═══ Waiting lists — admin page (#75) ═══════════════════════════════════════
+   Louise works a queue from here: see who is waiting for each full block,
+   offer the next person a space (which holds a seat and emails them a personal
+   booking link), release a hold that has gone quiet, or take someone off.
+
+   The DB is the gate, not this page. offer_waitlist_space re-checks capacity
+   under the block row lock and raises WL_NO_SPACE, so a disabled button here
+   is a courtesy that explains WHY — never the thing keeping the seat safe.
+   Same reasoning as the catch-up pickers (#59).                              */
+
+var WL_ADMIN_MSGS={
+  NOT_ADMIN:"You need to be signed in as an admin to do that.",
+  WL_NOT_FOUND:"That waiting-list entry has already gone. Refreshing the page.",
+  WL_ALREADY_OFFERED:"They have already been offered a space.",
+  WL_NO_SPACE:"There is no free seat on that block right now. Release a hold first.",
+  WL_NOT_OFFERED:"There is no hold to release on that entry."
+};
+
+function waitlistAdminError(msg){
+  var code=Object.keys(WL_ADMIN_MSGS).find(function(c){ return (msg||"").indexOf(c)>-1; });
+  return code?WL_ADMIN_MSGS[code]:null;
+}
+
+// "Yesterday" / "4 days ago" — how long a hold has been sitting is the whole
+// point of the page, so it is spelled out rather than left as a bare date.
+function wlDaysAgo(iso){
+  if(!iso) return "";
+  var then=new Date(iso); if(isNaN(then)) return "";
+  var a=new Date(); a.setHours(0,0,0,0);
+  var b=new Date(then); b.setHours(0,0,0,0);
+  var days=Math.round((a-b)/86400000);
+  if(days<=0) return "Today";
+  if(days===1) return "Yesterday";
+  return days+" days ago";
+}
+
+function wlShortDate(iso){
+  if(!iso) return "";
+  var d=new Date(iso); if(isNaN(d)) return "";
+  return d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+}
+
+// Mirrors buildOfferLink in the send-email function: this page's own origin +
+// path, ?offer=TOKEN, plus env=test so a link copied during a test run stays
+// on the test project. Kept in step with the emailed link deliberately — the
+// two must open the same booking.
+function wlOfferLink(token){
+  var url=window.location.origin+window.location.pathname+"?offer="+encodeURIComponent(token);
+  if(IS_TEST_ENV) url+="&env=test";
+  return url;
+}
+
+async function reloadWaitlist(){
+  // Seat counts come from the DB, not the login-time cache: an offer decision
+  // made against a stale `booked` would offer a seat that no longer exists.
+  await refreshBlockCounts();
+  var{data,error}=await sb.from("waitlist")
+    .select("id,block_id,customer_id,status,offer_token,offered_at,offer_email_sent_at,created_at,customers(first_name,last_name,email,phone)")
+    // id as the tiebreak: two people joining in the same instant must still
+    // have a stable, repeatable queue order.
+    .order("created_at",{ascending:true}).order("id",{ascending:true});
+  if(error) throw error;
+  waitlistRows=(data||[]).map(function(r){
+    var c=r.customers||{};
+    return {
+      id:r.id, blockId:r.block_id, customerId:r.customer_id, status:r.status,
+      offerToken:r.offer_token,
+      offeredAt:r.offered_at, offerEmailSentAt:r.offer_email_sent_at, joinedAt:r.created_at,
+      name:((c.first_name||"")+" "+(c.last_name||"")).trim()||"(name missing)",
+      email:c.email||"", phone:c.phone||""
+    };
+  });
+}
+
+function renderWaitlistList(){
+  var el=document.getElementById("waitlist-list");
+  if(!el) return;
+  var sub=document.getElementById("waitlist-subtitle");
+
+  // Group by block, current/upcoming only. Rows on an ended block are counted
+  // and mentioned but not listed — the block is over, the list is moot, and
+  // it matches how Booking history keeps ended blocks out of the way (#74).
+  var groups={}, orderedBlockIds=[], endedCount=0;
+  waitlistRows.forEach(function(r){
+    var blk=blocks.find(function(b){ return b.id===r.blockId; });
+    // No matching block in the loaded set. The FK cascades on delete, so this
+    // should be unreachable — count it with the ended ones rather than
+    // vanishing a row the DB still holds.
+    if(!blk){ endedCount++; return; }
+    if(isBlockPast(blk)){ endedCount++; return; }
+    if(!groups[r.blockId]){ groups[r.blockId]={block:blk,rows:[]}; orderedBlockIds.push(r.blockId); }
+    groups[r.blockId].rows.push(r);
+  });
+
+  // Blocks in the order Louise thinks about them — soonest to start first —
+  // not in the order the first person happened to join.
+  orderedBlockIds.sort(function(a,b){
+    var ba=groups[a].block, bb=groups[b].block;
+    if(ba.start_date!==bb.start_date) return (ba.start_date||"")<(bb.start_date||"")?-1:1;
+    var ca=classes.find(function(c){ return c.id===ba.class_id; })||{};
+    var cb=classes.find(function(c){ return c.id===bb.class_id; })||{};
+    return (ca.name||"").localeCompare(cb.name||"");
+  });
+
+  var totalPeople=orderedBlockIds.reduce(function(n,id){ return n+groups[id].rows.length; },0);
+  if(sub){
+    sub.textContent = totalPeople===0
+      ? "Nobody is waiting"
+      : orderedBlockIds.length+" block"+(orderedBlockIds.length===1?"":"s")+" with people waiting · "
+        +totalPeople+" "+(totalPeople===1?"person":"people")+" in total";
+  }
+
+  var html="";
+  html+="<div style=\"margin-bottom:14px;font-size:13px;color:var(--mid);line-height:1.7;background:var(--cream);padding:14px 18px;border-radius:4px;border-left:3px solid var(--amber)\">";
+  html+="When a block is full, clients can join its waiting list. Offering someone a space emails them a personal booking link and holds a seat for them &mdash; the seat stays hidden from everyone else until they book it or you release it.";
+  html+="</div>";
+
+  if(orderedBlockIds.length===0){
+    html+="<div style=\"color:var(--light);font-size:13px;padding:8px 0\">No one is on a waiting list at the moment. Lists appear here on their own as soon as a full block gets its first joiner.</div>";
+  }
+
+  orderedBlockIds.forEach(function(blockId){
+    var g=groups[blockId], blk=g.block;
+    var cls=classes.find(function(c){ return c.id===blk.class_id; })||{};
+    var offered=g.rows.filter(function(r){ return r.status==="offered"; }).length;
+    var waiting=g.rows.length-offered;
+    // Mirrors offer_waitlist_space's own check: a held seat is already spoken for.
+    var freeSeats=Math.max(0,(blk.cap||0)-(blk.booked||0)-offered);
+    var startTxt=blk.start_date?new Date(blk.start_date+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"";
+
+    html+="<div class=\"class-group\">";
+    html+="<div class=\"class-group-header wl-head\">";
+    html+="<div><div class=\"class-group-title\">"+sanitise(cls.name||"Class")+"</div>";
+    html+="<div class=\"class-group-meta\">"+sanitise(cls.day||"")+(cls.time?" "+sanitise(cls.time):"")
+         +(cls.loc?" · "+sanitise(cls.loc):"")+(startTxt?" · block starts "+startTxt:"")+"</div></div>";
+    html+="<div class=\"wl-badges\">";
+    html+=freeSeats>0
+      ? "<span class=\"class-group-badge free\">"+freeSeats+" seat"+(freeSeats===1?"":"s")+" free</span>"
+      : "<span class=\"class-group-badge full\">No seat free</span>";
+    html+="<span class=\"class-group-badge\">"+(blk.booked||0)+" / "+(blk.cap||0)+" booked</span>";
+    html+="<span class=\"class-group-badge amber\">"
+         +(offered>0?offered+" held · ":"")+waiting+" waiting</span>";
+    html+="</div></div>";
+
+    // Four columns, not five: the queue position rides inside the client cell
+    // rather than owning one. Below 940px the FIRST cell is the one that stays
+    // visible on the collapsed card (#103), and that has to be the name.
+    html+="<table><thead><tr><th>Client</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+
+    var shownReason=false;
+    g.rows.forEach(function(r,i){
+      var isOffered=r.status==="offered";
+      html+="<tr>";
+      html+="<td><span class=\"wl-num\">"+(i+1)+".</span>"+sanitise(r.name)
+           +"<span class=\"wl-sub\">"+sanitise(r.email)+(r.phone?" · "+sanitise(r.phone):"")+"</span></td>";
+      html+="<td data-label=\"Joined\" style=\"white-space:nowrap\">"+wlShortDate(r.joinedAt)
+           +"<span class=\"wl-sub\">"+wlDaysAgo(r.joinedAt)+"</span></td>";
+
+      if(isOffered){
+        // Past 24h with no booking is exactly when Louise needs to notice, so
+        // the age of the hold is called out rather than left to arithmetic.
+        var heldMs=r.offeredAt?(Date.now()-new Date(r.offeredAt).getTime()):0;
+        var heldDays=Math.round(heldMs/86400000);
+        var stale=r.offeredAt&&heldMs>86400000;
+        html+="<td class=\"m-badge\" data-label=\"Status\"><span class=\"pill p-offered\">Offered "+wlShortDate(r.offeredAt)+"</span>"
+             +"<span class=\"wl-sub"+(stale?" wl-stale":"")+"\">"
+             +(r.offerEmailSentAt?"Email sent · ":"Email not sent · ")
+             +(stale?("held "+heldDays+" day"+(heldDays===1?"":"s")):wlDaysAgo(r.offeredAt))
+             +"</span></td>";
+        // Buttons are direct children of the cell on purpose: below 940px the
+        // last cell becomes the flex action row, and a wrapper div would be
+        // its only flex child.
+        html+="<td>"
+             +"<button class=\"act\" onclick=\"copyWaitlistOfferLink("+r.id+")\">Copy link</button>"
+             +"<button class=\"act\" onclick=\"releaseWaitlistHold("+r.id+")\">Release hold</button>"
+             +"<button class=\"act act-delete\" onclick=\"removeWaitlistEntry("+r.id+")\">Remove</button>"
+             +"</td>";
+      } else {
+        html+="<td class=\"m-badge\" data-label=\"Status\"><span class=\"pill p-waiting\">Waiting</span></td>";
+        html+="<td>"
+             +"<button class=\"act act-offer\" onclick=\"offerWaitlistSpace("+r.id+")\""+(freeSeats<=0?" disabled":"")+">Offer space</button>"
+             +"<button class=\"act act-delete\" onclick=\"removeWaitlistEntry("+r.id+")\">Remove</button>";
+        // Explain the greyed-out button once per block, not on every row.
+        if(freeSeats<=0&&!shownReason){
+          shownReason=true;
+          html+="<span class=\"wl-why\">"+(offered>0
+            ? "No free seat &mdash; a hold is using it. Release the hold first."
+            : "No free seat &mdash; the block is full and nobody has cancelled.")+"</span>";
+        }
+        html+="</td>";
+      }
+      html+="</tr>";
+    });
+    html+="</tbody></table></div>";
+  });
+
+  if(endedCount>0){
+    html+="<div style=\"font-size:12px;color:var(--light);margin-top:16px;padding-top:12px;border-top:1px solid var(--border)\">"
+         +endedCount+" waiting-list entr"+(endedCount===1?"y":"ies")+" on blocks that have ended (hidden)</div>";
+  }
+  el.innerHTML=html;
+}
+
+function renderWaitlistPage(){
+  var el=document.getElementById("waitlist-list");
+  if(!el) return;
+  el.innerHTML="<div style=\"color:var(--light);padding:20px;font-size:13px\">Loading&hellip;</div>";
+  (async function(){
+    try{
+      await reloadWaitlist();
+      renderWaitlistList();
+    }catch(err){
+      console.error("Waiting lists page error:",err);
+      var sub=document.getElementById("waitlist-subtitle");
+      if(sub) sub.textContent="Could not load";
+      el.innerHTML="<div style=\"color:var(--red);padding:20px\">Error loading waiting lists. Please refresh.</div>";
+    }
+  })();
+}
+
+// Holds the seat, then emails the link. One action, as agreed — no draft step.
+async function offerWaitlistSpace(waitlistId){
+  var row=waitlistRows.find(function(r){ return r.id===waitlistId; });
+  var who=row?row.name:"this client";
+  if(!confirm("Offer a space to "+who+"?\n\nThis holds a seat for them and emails them a booking link straight away."))
+    return;
+  try{
+    var{error}=await sb.rpc("offer_waitlist_space",{p_waitlist_id:waitlistId});
+    if(error) throw error;
+    // Non-fatal by design: the hold is already recorded, so a bounced email
+    // must not undo it. But Louise has to KNOW it bounced — otherwise she
+    // waits for a reply to a message that was never delivered while the seat
+    // sits held. Copy link is the fallback the toast points her at.
+    var emailed=await sendWaitlistEmail("waitlist_offer",waitlistId);
+    showToast(IS_NO_EMAIL||emailed
+      ? "Space offered and email sent."
+      : "Space offered, but the email did not send — use Copy link to send it yourself.");
+  }catch(err){
+    console.error("Offer space error:",err);
+    var friendly=waitlistAdminError(err.message||"");
+    showToast(friendly||"Error offering the space. Please try again.");
+  }
+  // Outside the try on purpose: the seat is held and the email has gone, so a
+  // failed refresh is a stale table, not a failed offer. Reporting it as
+  // "error offering the space" would leave the row reading Waiting for
+  // someone who already has the booking link in their inbox.
+  await refreshWaitlistView();
+}
+
+// Reloads the page data, and says so plainly if it could not.
+async function refreshWaitlistView(){
+  try{
+    await reloadWaitlist();
+    renderWaitlistList();
+  }catch(err){
+    console.error("Waiting list refresh error:",err);
+    showToast("Could not refresh the list — please reload the page to see the latest.");
+  }
+}
+
+// NOT async, and no await before the clipboard write. Safari only grants
+// clipboard access while the click that triggered it is still "live", and an
+// await in between forfeits that — so re-reading the token from the DB first
+// (the obvious implementation) fails on Safari every time, in exactly the
+// situation Copy link exists for. The token is loaded with the rest of the
+// row instead, and its freshness is re-checked AFTER the copy.
+function copyWaitlistOfferLink(waitlistId){
+  var row=waitlistRows.find(function(r){ return r.id===waitlistId; });
+  if(!row||row.status!=="offered"||!row.offerToken){
+    showToast("That hold is no longer active. Refreshing the list.");
+    refreshWaitlistView();
+    return;
+  }
+  var link=wlOfferLink(row.offerToken);
+  var copied=null;
+  try{ copied=navigator.clipboard&&navigator.clipboard.writeText(link); }catch(e){ copied=null; }
+
+  Promise.resolve(copied)
+    .then(function(){
+      if(copied){ showToast("Booking link copied."); return true; }
+      showLinkFallback(link); return false;
+    })
+    .catch(function(err){
+      console.error("Copy offer link error:",err);
+      showLinkFallback(link); return false;
+    })
+    // Confirm the token is still the live one. A released-and-re-offered hold
+    // gets a new token, so a copy made against a stale row must be called out
+    // rather than pasted into an email as a dead link. Skipped when the copy
+    // itself failed — that has already been reported, and a second toast on
+    // one click just overwrites the first.
+    .then(function(cleanCopy){
+      if(!cleanCopy) return null;
+      return sb.from("waitlist").select("offer_token,status").eq("id",waitlistId).maybeSingle()
+        .then(function(res){
+          var d=res&&res.data;
+          if(!d||d.status!=="offered"||d.offer_token!==row.offerToken){
+            showToast("That link has changed since the page loaded — refreshing, please copy it again.");
+            refreshWaitlistView();
+          }
+        });
+    })
+    .catch(function(){ /* the freshness check is a courtesy, never fatal */ });
+}
+
+// Clipboard access can be refused outright (an insecure origin, a locked-down
+// browser, a gesture that has already expired). The old execCommand route
+// still works in that case and needs no permission. Deliberately NOT a
+// window.prompt: a modal dialog blocks the page — and freezes an automated
+// browser session outright — for something that must never be more than a
+// fallback.
+function showLinkFallback(link){
+  var ok=false;
+  try{
+    var ta=document.createElement("textarea");
+    ta.value=link;
+    ta.setAttribute("readonly","");
+    ta.style.cssText="position:fixed;top:-1000px;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    ok=document.execCommand("copy");
+    document.body.removeChild(ta);
+  }catch(e){ ok=false; }
+  showToast(ok
+    ? "Booking link copied."
+    : "Could not copy automatically — the link is in the browser console.");
+  if(!ok) console.log("Waiting-list booking link:",link);
+}
+
+async function releaseWaitlistHold(waitlistId){
+  var row=waitlistRows.find(function(r){ return r.id===waitlistId; });
+  var who=row?row.name:"this client";
+  if(!confirm("Release the hold for "+who+"?\n\nThe link already emailed to them will stop working, and they go back into the queue."))
+    return;
+  try{
+    var{error}=await sb.rpc("release_waitlist_hold",{p_waitlist_id:waitlistId});
+    if(error) throw error;
+    showToast("Hold released.");
+  }catch(err){
+    console.error("Release hold error:",err);
+    var friendly=waitlistAdminError(err.message||"");
+    showToast(friendly||"Error releasing the hold. Please try again.");
+  }
+  await refreshWaitlistView();
+}
+
+async function removeWaitlistEntry(waitlistId){
+  var row=waitlistRows.find(function(r){ return r.id===waitlistId; });
+  var blk=row?blocks.find(function(b){ return b.id===row.blockId; }):null;
+  var cls=blk?(classes.find(function(c){ return c.id===blk.class_id; })||{}):{};
+  var who=row?row.name:"this client";
+  var where=cls.name?(" from the "+cls.name+" waiting list"):" from the waiting list";
+  var extra=(row&&row.status==="offered")
+    ? "\n\nThey are currently holding a seat. Removing them frees it up again."
+    : "";
+  if(!confirm("Remove "+who+where+"?"+extra)) return;
+  try{
+    // .select() AND a row count: an RLS refusal comes back as 200 with an
+    // empty array, not an error, so checking `error` alone would show
+    // "Removed" over a row that is still there (#51's failure shape).
+    var{data,error}=await sb.from("waitlist").delete().eq("id",waitlistId).select();
+    if(error) throw error;
+    if(!data||data.length===0) throw new Error("Delete affected no rows");
+    showToast("Removed from the waiting list.");
+  }catch(err){
+    console.error("Remove waitlist entry error:",err);
+    showToast("Error removing them. Please try again.");
+  }
+  await refreshWaitlistView();
 }
 
 // ─── Add/Edit Class ───────────────────────────────────────────────────────────

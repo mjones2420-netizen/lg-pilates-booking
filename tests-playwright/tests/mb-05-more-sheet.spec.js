@@ -9,7 +9,7 @@
 //
 //   Given: the dashboard on a phone
 //   When:  "More" is tapped
-//   Then:  a sheet lists all ten pages; choosing one navigates there and
+//   Then:  a sheet lists every dashboard page; choosing one navigates there and
 //          closes the sheet; the scrim and Escape also close it.
 //
 // Mechanism:
@@ -28,10 +28,10 @@ const PHONE = { width: 390, height: 844 };
 
 const ALL_PAGES = [
   'bookings', 'byclass', 'history', 'clients', 'cancellations',
-  'catchup', 'classes', 'reports', 'settings', 'backup'
+  'catchup', 'waitlist', 'classes', 'reports', 'settings', 'backup'
 ];
 
-test.describe('MB-05 — More sheet reaches all ten pages', () => {
+test.describe('MB-05 — More sheet reaches every dashboard page', () => {
   test.skip(!APP_URL, 'TEST_APP_URL not set — MB specs require the app to be served.');
   test.use({ viewport: PHONE });
 
@@ -45,7 +45,7 @@ test.describe('MB-05 — More sheet reaches all ten pages', () => {
     await expect(page.locator('#btbody tr').first()).not.toContainText('Loading...', { timeout: 15000 });
   });
 
-  test('MB-05a — More lists all ten pages and navigating closes the sheet', async ({ page }) => {
+  test('MB-05a — More lists every dashboard page and navigating closes the sheet', async ({ page }) => {
     const sheet = page.locator('#db-more-sheet');
     const scrim = page.locator('#db-more-scrim');
 

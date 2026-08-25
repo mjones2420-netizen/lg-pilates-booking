@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 24 Aug 2026
-**Total tests:** 283
+**Last updated:** 25 Aug 2026
+**Total tests:** 290
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -379,7 +379,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `mb-04-expandable-rows.spec.js` | MB-04a — detail cells hide until the row is tapped |
 | `mb-04-expandable-rows.spec.js` | MB-04b — tapping an action button does not collapse the row |
 | `mb-04-expandable-rows.spec.js` | MB-04c — search still filters while rows are collapsed |
-| `mb-05-more-sheet.spec.js` | MB-05a — More lists all ten pages and navigating closes the sheet |
+| `mb-05-more-sheet.spec.js` | MB-05a — More lists every dashboard page and navigating closes the sheet |
 | `mb-05-more-sheet.spec.js` | MB-05b — the four direct slots switch pages and take the highlight |
 | `mb-05-more-sheet.spec.js` | MB-05c — scrim tap and Escape close the sheet |
 | `mb-06-byclass-and-clients.spec.js` | MB-06a — block card, its bookings and its footer buttons are all reachable |
@@ -394,7 +394,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `mb-09-class-status-dots.spec.js` | MB-09a — green tracks the active block, orange tracks the upcoming block |
 | `mb-09-class-status-dots.spec.js` | MB-09b — the dot colours match the badges the row expands to reveal |
 
-## Waiting List (WL) — 7 tests
+## Waiting List (WL) — 14 tests
 
 | Spec file | Test |
 |---|---|
@@ -405,6 +405,13 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `wl-01-waitlist-public.spec.js` | WL-05 — a valid offer link prefills the booking form and locks the email |
 | `wl-01-waitlist-public.spec.js` | WL-06 — a junk offer link says so and leaves the page usable |
 | `wl-01-waitlist-public.spec.js` | WL-07 — the offer token books past a full block and consumes the hold |
+| `wl-01-waitlist-public.spec.js` | WL-13 — a live offer survives closing the box and refreshing |
+| `wl-08-waitlist-admin.spec.js` | WL-08 — queues are grouped by block, in join order, with live counts |
+| `wl-08-waitlist-admin.spec.js` | WL-09 — Offer space mints a hold, and the DB refuses a second one |
+| `wl-08-waitlist-admin.spec.js` | WL-10 — Release hold returns them to the queue and kills the token |
+| `wl-08-waitlist-admin.spec.js` | WL-14 — Copy link puts the live booking link on the clipboard |
+| `wl-08-waitlist-admin.spec.js` | WL-11 — Remove deletes the entry and drops the block wait count |
+| `wl-08-waitlist-admin.spec.js` | WL-12 — entries on an ended block are counted but not listed |
 
 ---
 

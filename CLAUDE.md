@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 24 Aug 2026 (session 94 — waitlist public site #74 built, TEST only, NOT committed)
+Last updated: 25 Aug 2026 (session 95 — waitlist admin page #75 built; #74+#75 committed, NOT pushed)
 
 > Full detail lives in context.txt at the repo root. Read it when you need
 > schema specifics, full test fixture detail, session learnings, or the
@@ -134,7 +134,7 @@ npm run test-plan          # regenerate TEST-PLAN.md from the live suite (run af
 
 In Claude Code: start the HTTP server in the background, then run `npm test` from `tests-playwright/`.
 
-Current test count: **283 tests, all passing** (session 94 added WL-01..07) — no `--retries=2` needed (#101 fixed session 78). Session 82 added MB-01..MB-07 (mobile dashboard, #103); session 83 added MB-08 (safe-area insets) + MB-09 (Classes dots); session 84 added SEC-15, removed 1 (smoke-02's two lookup_customer tests collapsed to one — see below); session 90 added RF-05 (dashboard-issued Stripe refund sync, #29). Session 92 touched no test *count* (helper/selector fixes only).
+Current test count: **290 tests, all passing** (session 94 added WL-01..07; session 95 added WL-08..14) — no `--retries=2` needed (#101 fixed session 78). Session 82 added MB-01..MB-07 (mobile dashboard, #103); session 83 added MB-08 (safe-area insets) + MB-09 (Classes dots); session 84 added SEC-15, removed 1 (smoke-02's two lookup_customer tests collapsed to one — see below); session 90 added RF-05 (dashboard-issued Stripe refund sync, #29). Session 92 touched no test *count* (helper/selector fixes only).
 
 ---
 
@@ -450,6 +450,18 @@ horizontal-scroll tables. Same DOM, same `switchDashPage(name)` — CSS-only swa
 - **`generate-test-plan.js` gained a `['Waiting List (WL)', 'wl']` group** — it hard-errors on an ungrouped prefix.
 - **Process note:** the review-before-tests hook is `PreToolUse`, so `touch .claude/.review-marker && npx playwright test` in ONE Bash call is still blocked — the hook evaluates before the touch runs. Touch in a separate call.
 - **[#107](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/107) filed** (sub-issue of #71): Mark's hands-on walkthrough, to be run by him **on PRODUCTION as a real customer** once #74 + #75 are live there — dummy class filled with dummy data, real offer email in his inbox, then torn down. Playwright stays on test. Standing preference recorded in memory.
+
+**Session 95 (2026-08-25):** [#75](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/75) waitlist admin page built. **#74 committed as `fa1dd7e`, #75 on top — NEITHER PUSHED, prod untouched.** 290/290 green.
+
+- **Mark's call: hold both commits local until the prod rollout is ready.** Correct order remains **migration 28 -> prod, redeploy `lookup-customer-throttled` -> prod, then push.**
+- **Session 93/94's "pushing index.html breaks public booking outright" note was WRONG and is corrected.** `index.html` only adds `p_offer_token` when an offer link is live, so a normal booking still sends the 4-arg `book_if_available` and resolves fine against prod. The real cost of an early push is narrower: prod's old `lookup-customer-throttled` returns no `needsHealthForm` and the client fails closed, so EVERY client is re-asked the health form and `customer_type` sticks at 'new'; and a full prod block would show a Join button that errors.
+- **Built**: `#dbnav-waitlist` / `#dbpage-waitlist`, one panel per block (soonest-starting first) with free-seat / booked / held+waiting badges, rows in join order (id as tiebreak), and Offer space / Copy link / Release hold / Remove. `WL_ADMIN_MSGS` mirrors `CU_MSGS`. Ended blocks are counted in a footer line, never listed (mirrors #74's Booking history posture).
+- **`sendWaitlistEmail` was sending the anon key** — `waitlist_offer` is a TRUSTED type (it carries a working booking token), so every offer email would have 401'd. Now sends the admin JWT when a session exists; the public join path has none and is byte-identical to before. Also passes a validated `app_url` so the emailed link survives the move to book.lg-pilates.co.uk.
+- **`.wl-pos` collision** — #74 already owns that name for the public 52px queue number, so the admin queue numbers rendered enormous. Renamed `.wl-num`. Found by screenshotting the real browser, invisible to a static mockup (the session 82 lesson, again).
+- **The offer-token posture was re-litigated and settled with sessionStorage.** Session 94 deliberately stripped `?offer=` on load (WL-05 pins it) so a bearer credential never sits in history. Code review then found that this made an accidental modal close destroy a live offer. First fix simply overrode session 94's decision; replaced with a per-tab stash — still stripped from the URL, but recoverable across a mis-tap or refresh. Cleared on a dead hold, on booking, and on a SUCCESSFUL Stripe return only — **kept across the redirect on purpose**, since the hold is not consumed until the webhook and an abandoned checkout must come back to a live offer.
+- **Three code-review rounds, 16 findings, all fixed** (plus a security review: no findings). The ones worth remembering: a success toast that claimed an email was sent when it had not (and would not, on prod, until `waitlist_offer` is deployed); `navigator.clipboard.writeText` after an `await` is refused by Safari, so Copy link now copies from already-loaded data and re-checks freshness afterwards; a malformed token gave "couldn't check, refresh" forever instead of "not valid"; `dropOfferToken` rebuilt the URL from scratch and would have eaten Stripe's `?payment=` outcome screen; and a failed table refresh reported a successful offer as an error.
+- **Do not use `window.prompt` as a clipboard fallback** — it blocks the page and freezes an automated browser session. Falls back to `execCommand('copy')`, then the console.
+- New specs **WL-08..WL-14** (admin page, offer recovery, Copy link) — 283 -> 290. `mb-05`'s `ALL_PAGES` updated for the new page; TEST-PLAN regenerated.
 
 **Next likely work — see the [project board](https://github.com/users/mjones2420-netizen/projects/1) for the live priority order (top to bottom = priority; this file is a snapshot, the board is truth).** Board order as of session 78: fix/harden-now items → payments/go-live prep → Waitlist (#71-76) → Release (#63-70) → Future Features (#80-100) → older T1/T2/T3 misc backlog (deliberately last). New issues always get added at the **bottom** of Todo, never inserted mid-priority.
 
