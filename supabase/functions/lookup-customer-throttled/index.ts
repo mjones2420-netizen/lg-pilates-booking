@@ -93,7 +93,47 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ data: data ?? [] }), {
+    // needsHealthForm: must this person still be asked the PAR-Q?
+    //
+    // The booking form used to infer "we already have your health details"
+    // from "does a customer row exist", which held only because a row was
+    // created at the moment of booking. join_waitlist (#72) creates one when
+    // someone joins a queue, so that inference silently skips the PAR-Q for a
+    // genuine first-timer, and keeps skipping it on every later booking.
+    //
+    // Neither available signal is sufficient alone:
+    //   customer_type   — flips to 'returning' only on a SECOND booking, so a
+    //                     real client who has booked once still reads 'new'.
+    //   a parq row      — plenty of legitimate 'returning' clients have none
+    //                     (added by hand, or booked before the form existed).
+    // Either one is enough to skip; only someone with neither gets asked.
+    //
+    // Answered here rather than by a new public RPC so it stays behind the
+    // throttle above, and returned as a bare boolean rather than the raw
+    // customer_type so nothing #47 trimmed from lookup_customer comes back.
+    let needsHealthForm = true;
+    const customerId = Array.isArray(data) && data.length > 0 ? data[0].id : null;
+    if (customerId != null) {
+      const [custRes, parqRes] = await Promise.all([
+        adminClient.from("customers").select("customer_type").eq("id", customerId).maybeSingle(),
+        adminClient.from("parq").select("id").eq("customer_id", customerId).limit(1),
+      ]);
+
+      if (custRes.error || parqRes.error) {
+        // Fail closed: an unknown answer must mean "ask the health questions",
+        // never "skip them".
+        console.error("needsHealthForm lookup error:", custRes.error ?? parqRes.error);
+      } else {
+        const type = custRes.data?.customer_type ?? null;
+        // 'vip' is a valid customer_type (migration 01) and means an
+        // established client, so it skips alongside 'returning'.
+        const knownClient = type === "returning" || type === "vip";
+        const hasParq = Array.isArray(parqRes.data) && parqRes.data.length > 0;
+        needsHealthForm = !knownClient && !hasParq;
+      }
+    }
+
+    return new Response(JSON.stringify({ data: data ?? [], needsHealthForm }), {
       status: 200,
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
     });

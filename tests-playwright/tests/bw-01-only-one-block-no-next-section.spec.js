@@ -46,13 +46,13 @@ test.describe('BW-01 — Class with only one visible block has no next-block sec
     await expect(card, 'expected a Wednesday class card').toBeVisible({ timeout: 10000 });
 
     // The card should have exactly one book button reading "Book Current Block".
-    // (We tolerate "Current Block Full" / "Booking Closed" as future variants,
+    // (We tolerate "Join Waiting List" / "Booking Closed" as future variants,
     // but assert NOT "Book Next Block" since that would mean a next-block
     // section was rendered.)
     const bookButtons = card.locator('button.book-btn');
     await expect(bookButtons).toHaveCount(1);
     const buttonText = (await bookButtons.first().textContent()).trim();
-    expect(buttonText).toMatch(/Book Current Block|Current Block Full|Booking Closed/);
+    expect(buttonText).toMatch(/Book Current Block|Join Waiting List|Booking Closed/);
     expect(buttonText).not.toContain('Next Block');
 
     // The collapsible next-block toggle must NOT exist on this card.

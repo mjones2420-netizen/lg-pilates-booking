@@ -25,6 +25,13 @@
   --border: #cde0e0;
   --green: #3a8a6a;
   --red: #c04040;
+  /* Waiting list (#74). A third signal was needed: not --sage ("go, book it")
+     and not --red ("stop, full"). Burnt amber reads as "hold" against both the
+     admin teal and the public mauve, so it is defined once here rather than
+     per-palette. Used only by waiting-list UI — nothing existing changes. */
+  --amber: #A9661F;
+  --amber-dk: #8A5217;
+  --amber-bg: #F7EFE3;
   /* Status-bar inset, factored out so the TEST MODE banner can zero it in one
      place rather than every nav rule re-deciding. 0 without viewport-fit=cover. */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -64,7 +71,7 @@ body.has-test-banner nav { --safe-top: 0px; }
   --pub-font-display: 'Marcellus', Georgia, serif;
   --pub-font-body: 'Karla', sans-serif;
 }
-#pg-schedule, #overlay, #stripe-success-overlay, #stripe-failed-overlay, .site-footer-public {
+#pg-schedule, #overlay, #wl-overlay, #stripe-success-overlay, #stripe-failed-overlay, .site-footer-public {
   --sage: var(--pub-sage);
   --sage-dk: var(--pub-sage-dk);
   --sage-lt: var(--pub-sage-lt);
@@ -98,7 +105,9 @@ body:has(#pg-schedule.on) nav {
 #overlay .mtitle,
 #overlay .msum-price,
 #overlay .bank-val,
-#overlay .stitle {
+#overlay .stitle,
+#wl-overlay .mtitle,
+#wl-overlay .stitle {
   font-family: var(--pub-font-display);
 }
 #pg-schedule .fb,
@@ -107,6 +116,8 @@ body:has(#pg-schedule.on) nav {
 #overlay .step-btn,
 #overlay .step-btn-back,
 #overlay .confirm-btn,
+#wl-overlay .finp,
+#wl-overlay .step-btn,
 #stripe-success-overlay .confirm-btn,
 #stripe-failed-overlay .confirm-btn {
   font-family: var(--pub-font-body);
@@ -231,6 +242,20 @@ body:has(#pg-schedule.on) .site-footer-public { display:flex; }
 .card-spaces-dot { width:10px; height:10px; border-radius:50%; background:#3a8a6a; display:inline-block; flex-shrink:0; }
 .card-spaces-dot.warn { background:var(--clay); }
 .card-spaces-dot.full { background:#c04040; }
+/* ── Waiting list (#74) ─────────────────────────────────────────────────── */
+.card-spaces-dot.wait { background:var(--amber); }
+.book-btn.wait { background:var(--amber); }
+.book-btn.wait:hover { background:var(--amber-dk); }
+.wl-note { font-size:15px; color:var(--mid); background:var(--amber-bg); border-radius:3px; padding:11px 14px; margin-bottom:18px; line-height:1.6; border-left:3px solid var(--amber); }
+.wl-reserved { background:var(--amber-bg); border-left:3px solid var(--amber); border-radius:3px; padding:12px 15px; margin-bottom:18px; }
+.wl-reserved b { display:block; font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:var(--amber-dk); margin-bottom:4px; }
+.wl-reserved span { font-size:14.5px; color:var(--mid); line-height:1.6; }
+.wl-pos { font-family:'Barlow',sans-serif; font-size:52px; font-weight:800; color:var(--amber); line-height:1; margin-bottom:6px; }
+.wl-pos-lbl { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); margin-bottom:22px; }
+#wl-overlay .sicon { background:var(--amber-bg); }
+#wl-overlay .step-btn { background:var(--amber); }
+#wl-overlay .step-btn:hover { background:var(--amber-dk); }
+#wl-overlay .step-btn:disabled { background:var(--amber); opacity:0.5; cursor:not-allowed; }
 .card-block-section { background:#fff; padding:14px 22px; border-bottom:0.5px solid var(--cream); margin:0; border:none; border-radius:0; }
 .card-block-lbl { font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); margin-bottom:4px; }
 .card-block-range { font-size:13px; font-weight:600; color:var(--charcoal); margin-bottom:8px; }
@@ -270,6 +295,9 @@ body:has(#pg-schedule.on) .site-footer-public { display:flex; }
 .flbl { font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mid); margin-bottom:6px; display:block; }
 .finp { width:100%; padding:11px 14px; border:1px solid var(--border); border-radius:3px; background:white; font-family:'Open Sans',sans-serif; font-size:15px; color:var(--charcoal); outline:none; transition:border-color 0.2s; margin-bottom:12px; }
 .finp:focus { border-color:var(--sage); }
+/* Locked email on an offered waiting-list space (#74) — the hold is bound to
+   that address server-side, so editing it here could only mislead. */
+.finp[readonly] { background:var(--cream); color:var(--mid); cursor:not-allowed; }
 .frow { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
 .frow .finp { margin-bottom:0; }
 .timegrp { display:flex; align-items:center; gap:6px; }
@@ -1130,6 +1158,12 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
           <div class="msum-price" id="m-price">£10</div>
         </div>
 
+        <!-- Shown only when the modal was opened from a waiting-list offer link (#74) -->
+        <div class="wl-reserved" id="wl-reserved-banner" style="display:none">
+          <b>&#11088; This space is reserved for you</b>
+          <span>Louise has held a place on this block for you from the waiting list. Complete the booking below to take it.</span>
+        </div>
+
         <!-- STEP 1: Your Details -->
         <div id="step-1">
           <div class="step-label">Step 1 of 4 &mdash; Your Details</div>
@@ -1338,6 +1372,55 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
   </div>
 </div>
 
+
+<!-- WAITING LIST JOIN MODAL (#74) -->
+<div class="overlay" id="wl-overlay">
+  <div class="modal" style="max-width:460px">
+    <div id="wl-form-view">
+      <div class="mhead">
+        <div class="mhead-top">
+          <div>
+            <div class="mtitle">Join the waiting list</div>
+            <div class="msub" id="wl-sub">Details</div>
+          </div>
+          <button class="mclose" onclick="closeWaitlistModal()">x</button>
+        </div>
+      </div>
+      <div class="mbody">
+        <div class="wl-note">This block is full. Add your details and Louise will be in touch if a space frees up &mdash; you'll be told where you are in the queue.</div>
+        <div class="frow">
+          <div>
+            <label class="flbl">First Name <span class="req">*</span></label>
+            <input type="text" class="finp" id="wl-firstname" placeholder="First name" maxlength="50">
+            <div class="field-err" id="wl-err-firstname">Please enter your first name.</div>
+          </div>
+          <div>
+            <label class="flbl">Last Name <span class="req">*</span></label>
+            <input type="text" class="finp" id="wl-lastname" placeholder="Last name" maxlength="50">
+            <div class="field-err" id="wl-err-lastname">Please enter your last name.</div>
+          </div>
+        </div>
+        <label class="flbl">Email Address <span class="req">*</span></label>
+        <input type="text" class="finp" id="wl-email" placeholder="your@email.com" maxlength="100">
+        <div class="field-err" id="wl-err-email">Please enter a valid email address.</div>
+        <label class="flbl">Phone Number <span class="req">*</span></label>
+        <input type="text" class="finp" id="wl-phone" placeholder="+44 7700 000000" maxlength="20">
+        <div class="field-err" id="wl-err-phone">Please enter your phone number.</div>
+        <input type="text" class="hp-field" id="wl-website" name="website" tabindex="-1" autocomplete="off">
+        <button class="step-btn" id="wl-submit-btn" onclick="submitWaitlist()">Join the waiting list</button>
+      </div>
+    </div>
+    <div class="success" id="wl-success-view">
+      <div class="sicon">&#9203;</div>
+      <div class="stitle">You're on the list</div>
+      <div class="wl-pos" id="wl-pos">#1</div>
+      <div class="wl-pos-lbl">Your place in the queue</div>
+      <div class="ssub" id="wl-ssub"></div>
+      <div class="sdetail" id="wl-sdetail"></div>
+      <button class="confirm-btn" onclick="closeWaitlistModal()" style="margin-top:22px">Back to Schedule</button>
+    </div>
+  </div>
+</div>
 
 
 <!-- DASHBOARD LOGIN -->
@@ -1723,14 +1806,21 @@ function renderGrid() {
   filtered.forEach(function(c){
     var blk = getActiveBlock(c.id);
     var nextBlk = getNextBlock(c.id, blk.id);
-    var full = blk.booked >= blk.cap;
+    var waiting = blk.wait||0;
+    // Waiting-list reservation rule (#74). A space that frees up belongs to the
+    // person at the front of the queue, not to whoever happens to refresh the
+    // page — so the public sees spaces only once everyone waiting has been
+    // served. This mirrors the arithmetic book_if_available enforces in the DB;
+    // without it the card would advertise a space the database refuses, and in
+    // Stripe mode the customer is charged before the webhook finds out.
+    var spacesLeft = Math.max(0, blk.cap - blk.booked - waiting);
+    var full = spacesLeft <= 0;
     var pct = Math.min(100, Math.round(blk.booked/blk.cap*100));
     var warn = pct>=80?" warn":"";
 
     html+='<div class="card">';
 
     // Header: time + class name + day
-    var spacesLeft = blk.cap - blk.booked;
     var dotCls = full ? 'full' : (blk.booked/blk.cap >= 0.8 ? 'warn' : '');
     var spacesText = full ? 'Block full' : spacesLeft+' space'+(spacesLeft===1?'':'s')+' left';
     html+='<div class="card-when">';
@@ -1744,6 +1834,7 @@ function renderGrid() {
     html+='<div class="card-meta-row">';
     html+='<div class="card-spaces-row"><i class="ti ti-map-pin" style="font-size:17px;color:var(--sage);flex-shrink:0;" aria-hidden="true"></i> '+sanitise(c.venue)+'</div>';
     html+='<div class="card-spaces-row"><span class="card-spaces-dot'+( dotCls?' '+dotCls:'')+'"></span> '+spacesText+(full?' <span class="badge b-full">Full</span>':'')+'</div>';
+    if(waiting>0){ html+='<div class="card-spaces-row"><span class="card-spaces-dot wait"></span> '+waiting+' '+(waiting===1?'person':'people')+' on the waiting list</div>'; }
     html+='</div>';
 
     // Current block dates
@@ -1771,16 +1862,31 @@ function renderGrid() {
     html+='<div class="card-price-row">';
     html+='<div><div class="card-price-val">&pound;'+pr.totalPrice+'</div><div class="card-price-lbl">'+blk.weeks+'-week block</div></div>';
     html+='<span class="cap-txt" style="display:none;">'+blk.booked+' of '+blk.cap+' spots taken</span>';
-    if(pr.sessionsRemaining<1&&!full){
+    if(pr.sessionsRemaining<1){
+      // No sessions left to attend, so there is nothing to book and nothing to
+      // wait for. Previously a block in this state that was also full showed
+      // "Current Block Full"; it now reads as closed, which is what it is.
       html+='<button class="book-btn" disabled>Booking Closed</button>';
+    } else if(full){
+      // No booking-window guard here, unlike the next-block panel below. That
+      // guard exists because a next block is unbookable purely BECAUSE of the
+      // window, so queueing for it is premature. The primary card has no
+      // window logic at all — whatever getActiveBlock() returns is offered for
+      // booking immediately — so if this block is bookable when it has space,
+      // it is queueable when it does not. Adding a guard only here would make
+      // the card refuse a queue for a block it would happily sell.
+      html+='<button class="book-btn wait" onclick="openWaitlistModal('+c.id+','+blk.id+')">Join Waiting List</button>';
     } else {
-      html+='<button class="book-btn"'+(full?' disabled':'')+' onclick="openModal('+c.id+','+blk.id+')">'+(full?'Current Block Full':'Book Current Block')+'</button>';
+      html+='<button class="book-btn" onclick="openModal('+c.id+','+blk.id+')">Book Current Block</button>';
     }
     html+='</div>';
 
     // Next block — collapsible
     if(nextBlk){
-      var nextFull=nextBlk.booked>=nextBlk.cap;
+      var nextWaiting=nextBlk.wait||0;
+      // Same reservation rule as the current block above (#74).
+      var nextSpaces=Math.max(0, nextBlk.cap-nextBlk.booked-nextWaiting);
+      var nextFull=nextSpaces<=0;
       var nextpills=(nextBlk.dates||[]).map(function(d){ return '<span class="date-pill">'+sanitise(d)+'</span>'; }).join("");
       var today=new Date(); today.setHours(0,0,0,0);
       var nextStart=new Date(nextBlk.start_date+"T00:00:00");
@@ -1797,9 +1903,18 @@ function renderGrid() {
       html+='<div class="card-block-lbl" style="margin-bottom:6px;">Next Block</div>';
       html+='<div class="block-dates-pills" style="margin-bottom:12px;">'+nextpills+'</div>';
       if(nextFull){
-        html+='<div style="display:flex;align-items:center;justify-content:space-between;">';
+        if(nextWaiting>0){ html+='<div class="card-spaces-row" style="margin-bottom:12px;"><span class="card-spaces-dot wait"></span> '+nextWaiting+' '+(nextWaiting===1?'person':'people')+' on the waiting list</div>'; }
+        html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;">';
         html+='<div><div class="card-price-val" style="font-size:22px;">&pound;'+(nextBlk.price*nextBlk.weeks)+'</div><div class="card-price-lbl">'+nextBlk.weeks+'-week block</div></div>';
-        html+='<button class="book-btn" disabled>Next Block Full</button>';
+        // A block that is not open to book yet must not collect a queue: there
+        // is nothing to be waiting for, and it would fill with people who could
+        // simply book on the day it opens. Those two windows keep the old
+        // disabled button; only an open-and-full block offers the list.
+        if(tooEarly||inPriorityWindow){
+          html+='<button class="book-btn" disabled>Next Block Full</button>';
+        } else {
+          html+='<button class="book-btn wait" onclick="openWaitlistModal('+c.id+','+nextBlk.id+')">Join Waiting List</button>';
+        }
         html+='</div>';
       } else if(tooEarly){
         var priorityOpenDate=new Date(nextStart); priorityOpenDate.setDate(priorityOpenDate.getDate()-14);
@@ -1916,11 +2031,226 @@ function openModal(classId, blockId) {
   if(abView) abView.style.display="none";
   var pipsWrap=document.getElementById("step-progress");
   if(pipsWrap) pipsWrap.style.opacity="1";
+  // A normal open is never an offer booking. handleOfferLink() calls openModal()
+  // first and sets the offer state afterwards, so clearing here is safe (#74).
+  clearOfferState();
 }
 
 function closeModal(){
   document.getElementById("overlay").className="overlay";
+  // A half-finished offer booking must not leak into the next normal open —
+  // openModal() clears this too, this is the belt to that pair of braces (#74).
+  clearOfferState();
   unlockBodyScroll();
+}
+
+/* ── Waiting list (#74) ──────────────────────────────────────────────────────
+   Three entry points, all public:
+     openWaitlistModal()  a full block's amber button
+     submitWaitlist()     join_waitlist RPC + the alert to Louise
+     handleOfferLink()    ?offer=TOKEN landing, run once at page load
+   The DB is the gate throughout. Nothing here decides whether a join or a
+   booking is allowed; it only turns the RPC's coded errors into plain English.
+*/
+
+// Set only while the booking modal is being driven by an offer link. Holds the
+// token confirmBooking() must present to book past a full block.
+var offerState = null;
+
+function clearOfferState(){
+  offerState = null;
+  var banner=document.getElementById("wl-reserved-banner");
+  if(banner) banner.style.display="none";
+  var emailEl=document.getElementById("b-email");
+  if(emailEl) emailEl.readOnly=false;
+}
+
+var wlSelected=null, wlSelectedBlock=null;
+
+function openWaitlistModal(classId, blockId){
+  var c=classes.find(function(x){ return x.id===classId; });
+  var blk=blocks.find(function(b){ return b.id===blockId; });
+  if(!c||!blk) return;
+  wlSelected=c; wlSelectedBlock=blk;
+  document.getElementById("wl-sub").textContent=c.name+" \u2014 "+c.day+" "+c.time+" \u2022 "+c.venue+", "+c.loc;
+  ["wl-firstname","wl-lastname","wl-email","wl-phone","wl-website"].forEach(function(id){ document.getElementById(id).value=""; });
+  document.querySelectorAll("#wl-overlay .field-err").forEach(function(e){ e.className="field-err"; });
+  var btn=document.getElementById("wl-submit-btn");
+  btn.disabled=false; btn.textContent="Join the waiting list";
+  document.getElementById("wl-form-view").style.display="block";
+  document.getElementById("wl-success-view").className="success";
+  document.getElementById("wl-overlay").className="overlay on";
+  lockBodyScroll();
+}
+
+function closeWaitlistModal(){
+  document.getElementById("wl-overlay").className="overlay";
+  unlockBodyScroll();
+}
+
+// Sibling of sendSystemEmail: same public, server-templated, one-shot path,
+// keyed on a waitlist row instead of a booking. Non-fatal by design — a failed
+// alert to Louise must never make the visitor think their join did not work.
+async function sendWaitlistEmail(type, waitlistId){
+  if(IS_NO_EMAIL) return;
+  try{
+    var res=await fetch(SUPABASE_URL+"/functions/v1/send-email",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPABASE_KEY},
+      body:JSON.stringify({type:type,waitlist_id:waitlistId,isTest:IS_TEST_ENV})
+    });
+    if(!res.ok){ console.warn("Waitlist email failed (non-fatal):",type,res.status,await res.text()); }
+  }catch(emailErr){ console.warn("Waitlist email error (non-fatal):",type,emailErr); }
+}
+
+function submitWaitlist(){
+  if(document.getElementById("wl-website").value.trim()!=="") return;
+  var c=wlSelected, blk=wlSelectedBlock;
+  if(!c||!blk) return;
+  var fn=document.getElementById("wl-firstname").value.trim();
+  var ln=document.getElementById("wl-lastname").value.trim();
+  var em=document.getElementById("wl-email").value.trim();
+  var ph=document.getElementById("wl-phone").value.trim();
+
+  var ok=true;
+  function mark(id,bad){ document.getElementById(id).className="field-err"+(bad?" on":""); if(bad) ok=false; }
+  // Same rules as goStep2's. A looser check here would let someone join with a
+  // phone number the booking form later rejects — hitting them with a
+  // validation error at the exact moment they are told a space is theirs — and
+  // that number is also written onto the customer row by upsert_customer.
+  var wlPhDigits=ph.replace(/[\s\-\+\(\)]/g,"");
+  mark("wl-err-firstname",!fn);
+  mark("wl-err-lastname",!ln);
+  mark("wl-err-email",!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em));
+  mark("wl-err-phone",!(wlPhDigits.length>=11&&/^\d+$/.test(wlPhDigits)));
+  if(!ok) return;
+
+  var btn=document.getElementById("wl-submit-btn");
+  btn.disabled=true; btn.textContent="Joining\u2026";
+
+  (async function(){
+    try{
+      var res=await sb.rpc("join_waitlist",{
+        p_block_id: blk.id, p_first_name: fn, p_last_name: ln, p_email: em, p_phone: ph
+      });
+      if(res.error){
+        var msg=res.error.message||"";
+        var friendly=waitlistErrorMessage(msg);
+        if(friendly){
+          showToast(friendly);
+          // WL_NOT_FULL means a space opened while the form was on screen, so
+          // the card is now out of date — redraw it before the visitor looks.
+          if(msg.indexOf("WL_NOT_FULL")>-1){ await refreshBlockCounts(); renderGrid(); }
+          closeWaitlistModal();
+          return;
+        }
+        throw new Error("Waitlist join failed: "+msg);
+      }
+      var row=(res.data&&res.data.length>0)?res.data[0]:null;
+      if(!row) throw new Error("Waitlist join returned no row");
+
+      await sendWaitlistEmail("waitlist_joined_alert", row.waitlist_id);
+      await refreshBlockCounts();
+      renderGrid();
+
+      var pos=row.queue_position;
+      document.getElementById("wl-pos").textContent="#"+pos;
+      document.getElementById("wl-ssub").innerHTML="We've let Louise know. If a space frees up she'll email you at <b>"+sanitise(em)+"</b> with a link to book it.";
+      var html="";
+      html+="<div class=\"srow\"><span>Name</span><span>"+sanitise(fn)+" "+sanitise(ln)+"</span></div>";
+      html+="<div class=\"srow\"><span>Class</span><span>"+sanitise(c.name)+"</span></div>";
+      html+="<div class=\"srow\"><span>When</span><span>"+sanitise(c.day)+" "+sanitise(c.time)+"</span></div>";
+      html+="<div class=\"srow\"><span>Venue</span><span>"+sanitise(c.venue)+", "+sanitise(c.loc)+"</span></div>";
+      html+="<div class=\"srow\"><span>Block</span><span>"+sanitise((blk.dates||[])[0]||"")+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||"")+"</span></div>";
+      document.getElementById("wl-sdetail").innerHTML=html;
+      document.getElementById("wl-form-view").style.display="none";
+      document.getElementById("wl-success-view").className="success on";
+    }catch(err){
+      console.error("Waitlist error:",err);
+      showToast("Something went wrong. Please try again.");
+      btn.disabled=false; btn.textContent="Join the waiting list";
+    }
+  })();
+}
+
+// Coded errors raised by join_waitlist / book_if_available. Returns null for
+// anything unrecognised so a genuine fault still surfaces as an error rather
+// than being swallowed by a reassuring message.
+function waitlistErrorMessage(msg){
+  if(msg.indexOf("WL_DUPLICATE")>-1)        return "You're already on the waiting list for this block.";
+  if(msg.indexOf("WL_NOT_FULL")>-1)         return "Good news \u2014 a space has just opened up. Close this and book it.";
+  if(msg.indexOf("WL_ALREADY_BOOKED")>-1)   return "You've already got a place on this block.";
+  if(msg.indexOf("WL_LIST_FULL")>-1)        return "The waiting list for this block is full. Please email Louise directly.";
+  if(msg.indexOf("WL_BLOCK_NOT_FOUND")>-1)  return "That block is no longer available.";
+  if(msg.indexOf("WL_MISSING_FIELDS")>-1)   return "Please fill in your name, email and phone number.";
+  if(msg.indexOf("WL_BAD_TOKEN")>-1)        return "That reserved space is no longer available.";
+  if(msg.indexOf("WL_TOKEN_MISMATCH")>-1)   return "That reserved space belongs to a different email address.";
+  return null;
+}
+
+// blocks.booked and blocks.wait are both trigger-maintained, and the local
+// copies are only refreshed at page load — so re-read them before any redraw
+// that is meant to show the visitor the result of what they just did.
+async function refreshBlockCounts(){
+  try{
+    var {data:fresh}=await sb.from("blocks").select("id,booked,wait");
+    if(!fresh) return;
+    var byId={}; fresh.forEach(function(r){ byId[r.id]=r; });
+    blocks.forEach(function(b){
+      var r=byId[b.id];
+      if(r){ b.booked=r.booked||0; b.wait=r.wait||0; }
+    });
+  }catch(e){ /* non-fatal — the next full page load resyncs */ }
+}
+
+// Runs once at page load. A valid ?offer= token opens the normal booking modal
+// prefilled; anything else says so politely and leaves the page usable.
+async function handleOfferLink(){
+  var params=new URLSearchParams(window.location.search);
+  var token=params.get("offer");
+  if(!token) return;
+  // The token is a bearer credential for one held space, so it is stripped
+  // from the address bar rather than left for history or a copied link to
+  // carry. It is stripped only once we KNOW the answer, though: clearing it
+  // before the lookup meant a momentary network failure destroyed the link
+  // and left the customer with no way to retry but to find the email again.
+  function dropToken(){
+    var cleanUrl=window.location.pathname+(IS_TEST_ENV?"?env=test":"");
+    window.history.replaceState({},"",cleanUrl);
+  }
+  try{
+    var res=await sb.rpc("get_offer_details",{ p_token: token });
+    if(res.error) throw new Error(res.error.message||"");
+    var row=(res.data&&res.data.length>0)?res.data[0]:null;
+    if(!row){
+      dropToken();
+      showToast("That booking link is no longer valid. Please contact Louise.");
+      return;
+    }
+    var c=classes.find(function(x){ return x.id===row.class_id; });
+    var blk=blocks.find(function(b){ return b.id===row.block_id; });
+    if(!c||!blk){
+      dropToken();
+      showToast("That booking link is no longer valid. Please contact Louise.");
+      return;
+    }
+    dropToken();
+    openModal(c.id, blk.id);
+    // openModal() resets the form and clears any previous offer, so the offer
+    // state is applied after it, never before.
+    offerState={ token:token, waitlistId:row.waitlist_id, blockId:row.block_id, email:row.email };
+    document.getElementById("b-firstname").value=row.first_name||"";
+    document.getElementById("b-lastname").value=row.last_name||"";
+    document.getElementById("b-email").value=row.email||"";
+    document.getElementById("b-phone").value=row.phone||"";
+    document.getElementById("b-email").readOnly=true;
+    document.getElementById("wl-reserved-banner").style.display="block";
+  }catch(err){
+    // Could not CHECK the link, which is not the same as the link being dead —
+    // so say so, and leave the token in place so a refresh retries.
+    console.error("Offer link error:",err);
+    showToast("We couldn't check that booking link just now. Please refresh to try again.");
+  }
 }
 function closeViewModal(){
   document.getElementById("view-overlay").className="overlay";
@@ -1928,6 +2258,7 @@ function closeViewModal(){
 }
 
 document.getElementById("overlay").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+document.getElementById("wl-overlay").addEventListener("click",function(e){ if(e.target===this) closeWaitlistModal(); });
 document.getElementById("view-overlay").addEventListener("click",function(e){ if(e.target===this) closeViewModal(); });
 document.getElementById("add-class-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddClassModal(); });
 document.getElementById("add-block-overlay").addEventListener("click",function(e){ if(e.target===this) closeAddBlockModal(); });
@@ -2029,7 +2360,14 @@ function goStep2(){
       var lookupRes=await lookupCustomerThrottled(em);
       if(lookupRes.error) throw lookupRes.error;
       var isReturning=lookupRes.data&&lookupRes.data.length>0;
-      window._customerIsReturning=isReturning;
+      // Whether to skip the PAR-Q is decided server-side from customer_type,
+      // not from whether a customer row exists. Those meant the same thing
+      // only while a row was created at the moment of booking; join_waitlist
+      // (#72) creates one when someone joins a queue, so the old test would
+      // skip health screening for a genuine first-timer — and keep skipping it
+      // on every booking they ever made afterwards.
+      var skipHealthForm=lookupRes.needsHealthForm===false;
+      window._customerIsReturning=skipHealthForm;
       var msgEl=document.getElementById("customer-check-msg");
       if(isReturning){
         // Item 17b: before showing returning-client flow, check if this customer is already
@@ -2047,6 +2385,8 @@ function goStep2(){
           setTimeout(function(){ showAlreadyBookedView(); }, 1200);
           return;
         }
+      }
+      if(skipHealthForm){
         msgEl.style.display="block"; msgEl.style.background="#e8f0e7"; msgEl.style.color="var(--green)";
         msgEl.textContent="\u2713 Welcome back! As a returning customer you can skip the health form.";
         setTimeout(function(){ goStep3(); }, 2500);
@@ -2533,9 +2873,10 @@ async function lookupCustomerThrottled(email){
       body:JSON.stringify({email:email,isTest:IS_TEST_ENV})
     });
     var body=await res.json();
-    if(!res.ok){ return {data:null, error:new Error(body.error||"Lookup failed")}; }
-    return {data:body.data, error:null};
-  }catch(lookupErr){ return {data:null, error:lookupErr}; }
+    if(!res.ok){ return {data:null, needsHealthForm:true, error:new Error(body.error||"Lookup failed")}; }
+    // Absent (an older deployed function) means "ask" — never "skip".
+    return {data:body.data, needsHealthForm:body.needsHealthForm!==false, error:null};
+  }catch(lookupErr){ return {data:null, needsHealthForm:true, error:lookupErr}; }
 }
 
 function confirmBooking(){
@@ -2581,7 +2922,12 @@ function confirmBooking(){
       var lookupRes=await lookupCustomerThrottled(em);
       if(lookupRes.error) throw new Error("Customer lookup failed: "+lookupRes.error.message);
       var existing=lookupRes.data;
-      var customerType=(existing&&existing.length>0)?"returning":"new";
+      // Mirrors goStep2: "a customer row exists" is NOT "has booked before"
+      // now that join_waitlist (#72) creates a row when someone joins a queue.
+      // Sending 'returning' for a genuine first-timer would flip their record
+      // on their very first booking and permanently disarm the dashboard's
+      // missing-PAR-Q warning, which only fires on customer_type = 'new'.
+      var customerType=(lookupRes.needsHealthForm===false)?"returning":"new";
       var upsertRes=await sb.rpc("upsert_customer", {
         p_first_name: fn, p_last_name: ln, p_email: em, p_phone: ph, p_customer_type: customerType
       });
@@ -2615,6 +2961,9 @@ function confirmBooking(){
             parq_data:pendingParq,
             success_url:window.location.origin+window.location.pathname+"?payment=success&session_id={CHECKOUT_SESSION_ID}",
             cancel_url:window.location.origin+window.location.pathname+"?payment=cancelled",
+            // stripe-checkout validates the hold BEFORE contacting Stripe, so a
+            // dead token fails without anyone being charged (#74).
+            offer_token:(offerState && offerState.blockId===blk.id)?offerState.token:null,
             is_test:IS_TEST_ENV
           })
         });
@@ -2629,14 +2978,28 @@ function confirmBooking(){
       }
 
       // Step 2 (bank transfer mode): Atomic capacity check + booking insert
-      var bookRes=await sb.rpc("book_if_available", {
+      // p_offer_token is null for every normal booking. When present the DB
+      // checks the hold belongs to this person and this block, then books past
+      // the full-block gate. Only sent when the token was issued for THIS block,
+      // so a stale offer can never be attached to a different one (#74).
+      var bookArgs={
         p_block_id: blk.id,
         p_class_id: c.id,
         p_customer_id: customerId,
         p_amount_due: calcProrata(blk).totalPrice
-      });
+      };
+      if(offerState && offerState.blockId===blk.id) bookArgs.p_offer_token=offerState.token;
+      var bookRes=await sb.rpc("book_if_available", bookArgs);
       if(bookRes.error){
         var msg=bookRes.error.message||"";
+        var wlMsg=waitlistErrorMessage(msg);
+        if(wlMsg){
+          showToast(wlMsg);
+          await refreshBlockCounts();
+          renderGrid();
+          closeModal();
+          return;
+        }
         if(msg.indexOf("CLASS_FULL")>-1){
           showToast("Sorry — this class just became full. Please try another block.");
           renderGrid();
@@ -2652,11 +3015,11 @@ function confirmBooking(){
       }
       var savedBookingId=bookRes.data;
 
-      // Refetch booked count from DB to avoid drift (trg_sync_block_booked_count has just run)
-      try{
-        var {data:blkRef}=await sb.from("blocks").select("booked").eq("id",blk.id).single();
-        if(blkRef && typeof blkRef.booked==="number") blk.booked=blkRef.booked;
-      }catch(e){ /* non-fatal — local UI will resync on next grid render */ }
+      // Refetch booked AND wait from the DB to avoid drift — both triggers have
+      // just run. wait matters as much as booked here: on the offer path
+      // book_if_available also deletes the waitlist row, so a booked-only
+      // refetch left the card claiming one more person waiting than there are.
+      await refreshBlockCounts();
 
       // Step 3: Save PAR-Q — failure here does not affect the booking
       if(isNew&&parqData&&savedBookingId){
@@ -5020,6 +5383,10 @@ async function showStripeOutcome(sessionId){
 
   buildFilters();
   renderGrid();
+
+  // Waiting-list offer link (#74) — needs classes and blocks already loaded,
+  // since it opens the booking modal for one of them.
+  await handleOfferLink();
 
   // Handle Stripe redirect back to app after payment
   (function handleStripeRedirect(){

@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 23 Aug 2026
-**Total tests:** 276
+**Last updated:** 24 Aug 2026
+**Total tests:** 283
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -393,6 +393,18 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `mb-08-safe-area-insets.spec.js` | MB-08d — the TEST MODE banner owns the top inset, so nav does not double it |
 | `mb-09-class-status-dots.spec.js` | MB-09a — green tracks the active block, orange tracks the upcoming block |
 | `mb-09-class-status-dots.spec.js` | MB-09b — the dot colours match the badges the row expands to reveal |
+
+## Waiting List (WL) — 7 tests
+
+| Spec file | Test |
+|---|---|
+| `wl-01-waitlist-public.spec.js` | WL-01 — a full block offers the waiting list, a block with spaces does not |
+| `wl-01-waitlist-public.spec.js` | WL-02 — joining writes the row, bumps blocks.wait and shows the queue position |
+| `wl-01-waitlist-public.spec.js` | WL-03 — joining twice with the same email is refused in plain English |
+| `wl-01-waitlist-public.spec.js` | WL-04 — a freed seat stays hidden from the public while anyone is waiting |
+| `wl-01-waitlist-public.spec.js` | WL-05 — a valid offer link prefills the booking form and locks the email |
+| `wl-01-waitlist-public.spec.js` | WL-06 — a junk offer link says so and leaves the page usable |
+| `wl-01-waitlist-public.spec.js` | WL-07 — the offer token books past a full block and consumes the hold |
 
 ---
 

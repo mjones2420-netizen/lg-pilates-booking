@@ -6,13 +6,19 @@
 //   Given: A block where booked >= cap
 //   When:  The user visits the public booking page
 //   Then:  - The class card shows a "Full" badge
-//          - The book button is disabled and shows "Current Block Full"
+//          - The book button does NOT offer to book the block
 //
 // Mechanism (front-end):
-//   renderGrid() in index.html (line ~957) calculates `full = blk.booked >= blk.cap`
-//   and renders:
-//     - <span class="badge b-full">Full</span> next to the venue (line 981)
-//     - <button class="book-btn" disabled>Current Block Full</button> (line 1019)
+//   renderGrid() in index.html calculates
+//     spacesLeft = max(0, cap - booked - wait);  full = spacesLeft <= 0
+//   and renders <span class="badge b-full">Full</span> next to the venue.
+//
+// UPDATED for the waiting list (#74). This spec used to assert a DISABLED
+// button reading "Current Block Full" — that dead end is exactly what the
+// waiting list replaces. A full block now offers "Join Waiting List", which is
+// deliberately enabled. What EC-01 still guards is the thing it was always
+// really about: a full block must never offer a way to BOOK it. WL-01 covers
+// the join button's own appearance and wiring.
 //
 // Target block: fri-upcoming is the only block on the Friday class so it's
 // always the one getActiveBlock() picks. Setting its booked count equal to
@@ -83,10 +89,14 @@ test.describe('EC-01 — Booking a full class is prevented', () => {
     await expect(fullBadge).toBeVisible();
     await expect(fullBadge).toHaveText('Full');
 
-    // The primary book button must be disabled and labelled "Current Block Full".
+    // The primary button must not be a booking route into a full block.
     const primaryButton = card.locator('button.book-btn').first();
     await expect(primaryButton).toBeVisible();
-    await expect(primaryButton).toBeDisabled();
-    await expect(primaryButton).toHaveText('Current Block Full');
+    await expect(primaryButton).toHaveText('Join Waiting List');
+    await expect(primaryButton).not.toHaveText('Book Current Block');
+
+    // And there is genuinely no other way in from this card: nothing on it
+    // opens the booking modal for the full block.
+    await expect(card.locator('button.book-btn[onclick^="openModal"]')).toHaveCount(0);
   });
 });

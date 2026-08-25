@@ -425,6 +425,47 @@ async function countCatchUpSwaps(customerId, sourceBlockId) {
   return rows[0].count;
 }
 
+/* ── Waiting list (#74) ──────────────────────────────────────────────────────
+   blocks.wait is maintained by trg_sync_block_wait_count, which fires AFTER
+   INSERT OR DELETE on waitlist — so unlike blocks.booked, direct writes here
+   DO keep the column correct and need no manual resync. */
+
+/** Deletes every waitlist row for one block. Safe to call when there are none. */
+async function clearWaitlistForBlock(blockId) {
+  await getPool().query(`DELETE FROM waitlist WHERE block_id = $1`, [blockId]);
+}
+
+/** Returns the waitlist row for an email on a block, or null. */
+async function getWaitlistRow(blockId, email) {
+  const { rows } = await getPool().query(
+    `SELECT w.id, w.block_id, w.customer_id, w.status, w.offer_token, w.offered_at
+       FROM waitlist w JOIN customers c ON c.id = w.customer_id
+      WHERE w.block_id = $1 AND LOWER(c.email) = LOWER($2)`,
+    [blockId, email]
+  );
+  return rows[0] || null;
+}
+
+/** Puts a waitlist row into the offered state and returns its fresh token.
+ *  Mints the hold directly rather than via offer_waitlist_space, so a public
+ *  spec can exercise an offer link before the admin page (#75) exists. */
+async function offerWaitlistRowDirect(waitlistId) {
+  const { rows } = await getPool().query(
+    `UPDATE waitlist
+        SET status = 'offered', offer_token = gen_random_uuid(), offered_at = NOW()
+      WHERE id = $1
+      RETURNING offer_token`,
+    [waitlistId]
+  );
+  return rows[0] ? rows[0].offer_token : null;
+}
+
+/** Reads blocks.wait — the trigger-maintained display counter. */
+async function getBlockWaitCount(blockId) {
+  const { rows } = await getPool().query(`SELECT wait FROM blocks WHERE id = $1`, [blockId]);
+  return rows[0] ? rows[0].wait : null;
+}
+
 module.exports = {
   getPool,
   closePool,
@@ -452,5 +493,9 @@ module.exports = {
   getCustomerById,
   insertCatchUpSwap,
   clearCatchUpSwaps,
-  countCatchUpSwaps
+  countCatchUpSwaps,
+  clearWaitlistForBlock,
+  getWaitlistRow,
+  offerWaitlistRowDirect,
+  getBlockWaitCount
 };

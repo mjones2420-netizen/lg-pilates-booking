@@ -75,7 +75,7 @@ test.describe('BW-06 — Block with start_date <= today is the current block', (
     const primaryButton = card.locator('button.book-btn').first();
     await expect(primaryButton).toBeVisible();
     const primaryText = (await primaryButton.textContent()).trim();
-    expect(primaryText).toMatch(/Book Current Block|Current Block Full|Booking Closed/);
+    expect(primaryText).toMatch(/Book Current Block|Join Waiting List|Booking Closed/);
     expect(primaryText).not.toContain('Next Block');
 
     // The next-block toggle should exist — proving mon-upcoming is being

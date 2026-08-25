@@ -36,6 +36,7 @@ const GROUPS = [
   ['Pricing / Prorata (PR)', 'pr'],
   ['Reports (RP)', 'rp'],
   ['Mobile Dashboard (MB)', 'mb'],
+  ['Waiting List (WL)', 'wl'],
 ];
 
 function getRows() {
