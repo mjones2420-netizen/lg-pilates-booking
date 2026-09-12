@@ -1,7 +1,7 @@
 # LG Pilates — Release Plan
 ### New website + phased booking-system rollout
 
-Last updated: 07 Aug 2026 · Written with Claude Code (session 62, revised session 84)
+Last updated: 12 Sep 2026 · Written with Claude Code (session 62, revised sessions 84/96)
 
 > **This is the single source of truth for the whole release — both the website and the booking system.**
 > Tracked by [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → phase issues #63–#69.
@@ -31,9 +31,9 @@ New website (customers email Louise, same as today) → private pilot of the boo
 | # | Who | Step |
 |---|-----|------|
 | 1 | MARK | ✅ **DONE (session 66).** Disable public signups on BOTH Supabase projects ([#43](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/43) — critical). Verified via `GET /auth/v1/settings`: `disable_signup: true` on prod and test. |
-| 2 | MARK + CLAUDE | Rotate the exposed Supabase access token and move it out of plaintext — tracked as [#102](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/102). Not a blocker for Phase 1; **must be done before Phase 3 (Stripe live)**. |
-| 3 | CLAUDE | Save a copy of the current lg-pilates.co.uk pages (especially the "how to book" wording) so nothing is lost when the old site goes. |
-| 4 | MARK | Confirm you have logins for: Netlify (create free account if none), GoDaddy, Microsoft 365 admin. |
+| 2 | MARK + CLAUDE | ⚠️ **PARTIAL (sessions 86–89).** Token rotated and prod-write auto-allow removed ([#102](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/102) closed). Token ended up back in `~/.claude/settings.json` (as an env var, not raw config) after two failed attempts to move it to shell files — desktop-app sessions don't run zsh. Not a blocker for Phase 1; **revisit before Phase 3 (Stripe live)**. |
+| 3 | CLAUDE | ✅ **DONE (session 85).** Old site archived to `docs/archive/`. |
+| 4 | MARK | ✅ **DONE.** Netlify, GoDaddy, and M365 logins confirmed (session 85). |
 
 **GATE:** ✅ **MET.** Step 1 is done on both projects, which was the only hard gate. Steps 3–4 are quick housekeeping — do them alongside Phase 1.
 
@@ -76,10 +76,9 @@ The Astro website replaces lg-pilates.co.uk. Customers book exactly as they do t
 
 | # | Who | Step |
 |---|-----|------|
-| 12 | MARK | Netlify → Domain settings → add custom domain `lg-pilates.co.uk` (and `www.lg-pilates.co.uk`). |
-| 13 | MARK | GoDaddy → DNS for lg-pilates.co.uk → change the `@` **A record** to `75.2.60.5`, and change `www` to a **CNAME** pointing at `your-site-name.netlify.app`. **Change nothing else** — the MX and TXT records are your email. |
-| 14 | MARK | Wait for the change to spread (minutes to 48 hours). Then check: `https://lg-pilates.co.uk` and `https://www.lg-pilates.co.uk` both load the new site with a padlock (Netlify issues the SSL certificate automatically). **Send yourself a test email to and from the lg-pilates.co.uk address** to confirm mail is untouched. |
-| 14a | MARK | Confirm `book.lg-pilates.co.uk` still resolves to the booking system after the apex cutover (it's a separate record and shouldn't move, but check). |
+| 12 | MARK | ✅ **DONE (session 96, 12 Sep 2026).** Custom domains `lg-pilates.co.uk` and `www.lg-pilates.co.uk` added in Netlify. |
+| 13 | MARK | ✅ **DONE (session 96).** GoDaddy DNS: `@` A record → `75.2.60.5`, `www` CNAME → `new-lg-website.netlify.app`. Email records untouched. |
+| 14 | MARK + CLAUDE | ✅ **DONE (session 96).** Both domains serving the new site with HTTPS. Email tested and working. `robots.txt` flipped to `Allow: /`. Sanity CORS origin added for `lg-pilates.co.uk`. |
 
 **GATE:** new site stable and Louise happy with it for 2–4 weeks. **Keep paying for GoDaddy hosting during this period** — it's your rollback.
 
