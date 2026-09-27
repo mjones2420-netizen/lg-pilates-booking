@@ -442,3 +442,4 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - Security review noted (pre-existing) `record_catch_up_swap` has no `is_admin()` check — safe while only admins log in; Mark chose to defer, noted on [#81](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/81).
 - BLW-05/06 failed once in a full run, passed isolated, in a prefix run and on the next full run — added to the flake list. CU-04 (already listed) flaked on the last run.
 - **Mark feedback:** replies too long, and questions got buried by moving on. Now: 2–5 lines, one question, then stop. Also: never call booking-system changes "website" changes (memory).
+- **Left for next session:** [#107](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/107) walkthrough — Claude writes the script, Mark runs it on prod (ticket updated with today's additions). Then close #71.
