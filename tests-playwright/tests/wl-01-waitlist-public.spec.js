@@ -10,6 +10,7 @@
 //   WL-06  A junk ?offer= link says so and leaves the page usable
 //   WL-07  The token books past a full block, and consumes the hold
 //   WL-13  A live offer survives an accidental close + refresh, and dies when released
+//   WL-15  A throttled join (#106) shows the plain-English "too many attempts" message
 //
 // Isolation
 //   Every test runs against a class + block created by this file and deleted
@@ -70,18 +71,27 @@ function wlCard(page) {
  *  Fails loudly on an RPC error: a silent no-op here would show up later as a
  *  confusing assertion failure somewhere else entirely.
  */
-async function seedQueuedJoinerThenFreeASeat(page, { email, firstName, lastName, phone }) {
+async function seedQueuedJoinerThenFreeASeat({ email, firstName, lastName, phone }) {
   await setBlockBookedCount(blockId, CAP);
-  await page.goto(APP_PATH);
-  const err = await page.evaluate(async ({ blockId, email, firstName, lastName, phone }) => {
-    const res = await sb.rpc('join_waitlist', {
-      p_block_id: blockId, p_first_name: firstName, p_last_name: lastName,
-      p_email: email, p_phone: phone
-    });
-    return res.error ? (res.error.message || 'unknown') : null;
-  }, { blockId, email, firstName, lastName, phone });
+  const err = await joinWaitlistDirect({ email, firstName, lastName, phone });
   expect(err, 'seeding the queue via join_waitlist should succeed').toBeNull();
   await setBlockBookedCount(blockId, CAP - 1);
+}
+
+/** Calls join_waitlist over pg. Anon can no longer reach the RPC (#106 — the
+ *  throttled Edge Function is the only public door), and seeding through that
+ *  function would spend its per-IP budget; pg keeps the refusal logic under
+ *  test the DB's own. Returns the error message, or null on success. */
+async function joinWaitlistDirect({ email, firstName, lastName, phone }) {
+  try {
+    await getPool().query(
+      'SELECT * FROM join_waitlist($1, $2, $3, $4, $5)',
+      [blockId, firstName, lastName, email, phone]
+    );
+    return null;
+  } catch (e) {
+    return e.message || 'unknown';
+  }
 }
 
 test.describe('WL — waiting list, public site', () => {
@@ -207,14 +217,9 @@ test.describe('WL — waiting list, public site', () => {
 
     // Seed the first join through the RPC so the refusal under test is the
     // DB's own UNIQUE(block_id, customer_id), not a UI guard.
-    await page.goto(APP_PATH);
-    const seedErr = await page.evaluate(async ({ blockId, email }) => {
-      const res = await sb.rpc('join_waitlist', {
-        p_block_id: blockId, p_first_name: 'Sarah', p_last_name: 'Hughes',
-        p_email: email, p_phone: '07700900123'
-      });
-      return res.error ? (res.error.message || 'unknown') : null;
-    }, { blockId, email });
+    const seedErr = await joinWaitlistDirect({
+      email, firstName: 'Sarah', lastName: 'Hughes', phone: '07700900123'
+    });
     expect(seedErr, 'the first join should succeed').toBeNull();
 
     await page.goto(APP_PATH);
@@ -239,7 +244,7 @@ test.describe('WL — waiting list, public site', () => {
     createdEmails.push(email);
 
     // One seat physically free, one person already queueing for it.
-    await seedQueuedJoinerThenFreeASeat(page, {
+    await seedQueuedJoinerThenFreeASeat({
       email, firstName: 'Queue', lastName: 'Holder', phone: '07700900123'
     });
 
@@ -263,7 +268,7 @@ test.describe('WL — waiting list, public site', () => {
     const email = uniqueEmail('offer');
     createdEmails.push(email);
 
-    await seedQueuedJoinerThenFreeASeat(page, {
+    await seedQueuedJoinerThenFreeASeat({
       email, firstName: 'Olivia', lastName: 'Reed', phone: '07700900999'
     });
 
@@ -312,7 +317,7 @@ test.describe('WL — waiting list, public site', () => {
     createdEmails.push(email);
 
     await resetPaymentMode();          // bank transfer — no Stripe redirect
-    await seedQueuedJoinerThenFreeASeat(page, {
+    await seedQueuedJoinerThenFreeASeat({
       email, firstName: 'Nadia', lastName: 'Frost', phone: '07700900321'
     });
 
@@ -368,7 +373,7 @@ test.describe('WL — waiting list, public site', () => {
     const email = uniqueEmail('resume');
     createdEmails.push(email);
 
-    await seedQueuedJoinerThenFreeASeat(page, {
+    await seedQueuedJoinerThenFreeASeat({
       email, firstName: 'Priya', lastName: 'Shah', phone: '07700900222'
     });
     const row = await getWaitlistRow(blockId, email);
@@ -399,5 +404,37 @@ test.describe('WL — waiting list, public site', () => {
     await page.goto(APP_PATH);
     await expect(page.locator('#wl-reserved-banner')).toBeHidden({ timeout: 15000 });
     expect(await page.evaluate(() => offerState)).toBeNull();
+  });
+
+  // ── WL-15 ────────────────────────────────────────────────────────────────
+  test('WL-15 — a throttled join shows "too many attempts" in plain English', async ({ page }) => {
+    await setBlockBookedCount(blockId, CAP);
+
+    // The real throttle is proven server-side by SEC-16; this pins the browser's
+    // half — that a 429 WL_RATE_LIMITED becomes the friendly message rather
+    // than the generic "Something went wrong". Mocked so the suite's shared IP
+    // budget is never spent.
+    await page.route('**/functions/v1/join-waitlist-throttled', route =>
+      route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'WL_RATE_LIMITED' }),
+      })
+    );
+
+    await page.goto(APP_PATH);
+    await wlCard(page).locator('button.book-btn').first().click();
+    await page.locator('#wl-firstname').fill('Sarah');
+    await page.locator('#wl-lastname').fill('Hughes');
+    await page.locator('#wl-email').fill(uniqueEmail('throttled'));
+    await page.locator('#wl-phone').fill('07700900123');
+    await page.locator('#wl-submit-btn').click();
+
+    await expect(page.locator('#toastEl.on')).toContainText(
+      'Too many attempts. Please try again later, or email Louise directly.',
+      { timeout: 15000 }
+    );
+    expect(await getBlockWaitCount(blockId), 'nothing was queued').toBe(0);
   });
 });

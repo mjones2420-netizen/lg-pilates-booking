@@ -2103,7 +2103,7 @@ function closeModal(){
 /* ── Waiting list (#74) ──────────────────────────────────────────────────────
    Three entry points, all public:
      openWaitlistModal()  a full block's amber button
-     submitWaitlist()     join_waitlist RPC + the alert to Louise
+     submitWaitlist()     join-waitlist-throttled + the alert to Louise
      handleOfferLink()    ?offer=TOKEN landing, run once at page load
    The DB is the gate throughout. Nothing here decides whether a join or a
    booking is allowed; it only turns the RPC's coded errors into plain English.
@@ -2229,8 +2229,8 @@ function submitWaitlist(){
 
   (async function(){
     try{
-      var res=await sb.rpc("join_waitlist",{
-        p_block_id: blk.id, p_first_name: fn, p_last_name: ln, p_email: em, p_phone: ph
+      var res=await joinWaitlistThrottled({
+        blockId: blk.id, firstName: fn, lastName: ln, email: em, phone: ph
       });
       if(res.error){
         var msg=res.error.message||"";
@@ -2282,9 +2282,35 @@ function waitlistErrorMessage(msg){
   if(msg.indexOf("WL_LIST_FULL")>-1)        return "The waiting list for this block is full. Please email Louise directly.";
   if(msg.indexOf("WL_BLOCK_NOT_FOUND")>-1)  return "That block is no longer available.";
   if(msg.indexOf("WL_MISSING_FIELDS")>-1)   return "Please fill in your name, email and phone number.";
+  if(msg.indexOf("WL_INVALID_FIELDS")>-1)   return "Please check your email address and phone number.";
   if(msg.indexOf("WL_BAD_TOKEN")>-1)        return "That reserved space is no longer available.";
   if(msg.indexOf("WL_TOKEN_MISMATCH")>-1)   return "That reserved space belongs to a different email address.";
+  if(msg.indexOf("WL_RATE_LIMITED")>-1)     return "Too many attempts. Please try again later, or email Louise directly.";
   return null;
+}
+
+// POSTs to one of the public throttled Edge Functions (#35, #106) with the
+// test-mode flag attached. Resolves {ok, body}; network or parse failures throw,
+// so each caller decides what a failure means for it.
+async function callEdgeFunction(name, payload){
+  var res=await fetch(SUPABASE_URL+"/functions/v1/"+name,{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPABASE_KEY},
+    body:JSON.stringify(Object.assign({},payload,{isTest:IS_TEST_ENV}))
+  });
+  return {ok:res.ok, body:await res.json()};
+}
+
+// Public waiting-list join. Routed through an Edge Function (not sb.rpc
+// directly) so a per-IP throttle sits in front of it (#106) — every queued row
+// takes a seat off public sale, so an unthrottled loop of fake joins could
+// lock a class out. Returns the same {data,error} shape sb.rpc gave the caller.
+async function joinWaitlistThrottled(fields){
+  try{
+    var r=await callEdgeFunction("join-waitlist-throttled",fields);
+    if(!r.ok){ return {data:null, error:new Error(r.body.error||"Join failed")}; }
+    return {data:r.body.data, error:null};
+  }catch(joinErr){ return {data:null, error:joinErr}; }
 }
 
 // blocks.booked and blocks.wait are both trigger-maintained, and the local
@@ -2990,13 +3016,9 @@ async function sendTypedEmail(type, bookingId){
 // the same {data,error} shape sb.rpc gave callers, so call sites are unchanged.
 async function lookupCustomerThrottled(email){
   try{
-    var res=await fetch(SUPABASE_URL+"/functions/v1/lookup-customer-throttled",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPABASE_KEY},
-      body:JSON.stringify({email:email,isTest:IS_TEST_ENV})
-    });
-    var body=await res.json();
-    if(!res.ok){ return {data:null, needsHealthForm:true, error:new Error(body.error||"Lookup failed")}; }
+    var r=await callEdgeFunction("lookup-customer-throttled",{email:email});
+    var body=r.body;
+    if(!r.ok){ return {data:null, needsHealthForm:true, error:new Error(body.error||"Lookup failed")}; }
     // Absent (an older deployed function) means "ask" — never "skip".
     return {data:body.data, needsHealthForm:body.needsHealthForm!==false, error:null};
   }catch(lookupErr){ return {data:null, needsHealthForm:true, error:lookupErr}; }

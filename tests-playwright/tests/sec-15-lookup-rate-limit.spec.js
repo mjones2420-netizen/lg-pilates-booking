@@ -5,7 +5,8 @@
 // out which addresses belong to real customers (it only returns id+first_name
 // since #47, but "exists or not" is itself the leak). This puts a new Edge
 // Function in front of it that throttles by IP (migration 27 +
-// check_lookup_rate_limit), same "atomic claim" pattern as the #45 one-shot
+// check_lookup_rate_limit; since #106 the shared check_rate_limit, bucket
+// 'lookup' — migration 29), same "atomic claim" pattern as the #45 one-shot
 // email stamps.
 //
 // The suite itself always passes isTest:true (matches index.html), which
@@ -14,8 +15,9 @@
 // specs can't accidentally trip the limit. This spec proves the real,
 // non-bypassed path by calling the function directly with isTest left off.
 //
-// Requires migration 27 + the lookup-customer-throttled function deployed to
-// the test project.
+// Requires migration 29 (shared rate_limits / check_rate_limit — migration 30
+// retired migration 27's table) + the lookup-customer-throttled function
+// deployed to the test project.
 //
 // Cleanup (afterEach): deleteCustomerCascade removes the per-run customer;
 // the rate-limit rows this spec creates are deleted directly (the table has
@@ -35,10 +37,16 @@ test.describe('SEC-15 — lookup-customer-throttled rate limit (#35)', () => {
 
   const email = 'sec15-lookup@test.example';
 
+  // Cleared on entry as well as exit: an aborted run skips afterEach and would
+  // otherwise leave this IP part-way through its budget for the next run.
+  test.beforeEach(async () => {
+    await getPool().query("DELETE FROM rate_limits WHERE bucket = 'lookup'");
+  });
+
   test.afterEach(async () => {
     const cust = await getCustomerByEmail(email);
     if (cust) await deleteCustomerCascade(cust.id);
-    await getPool().query('DELETE FROM lookup_rate_limits');
+    await getPool().query("DELETE FROM rate_limits WHERE bucket = 'lookup'");
   });
 
   function callLookup(lookupEmail, isTest) {

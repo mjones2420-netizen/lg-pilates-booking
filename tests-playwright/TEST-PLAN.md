@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 25 Aug 2026
-**Total tests:** 290
+**Last updated:** 27 Sept 2026
+**Total tests:** 296
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -255,7 +255,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 32 tests
+## Security (SEC) — 37 tests
 
 | Spec file | Test |
 |---|---|
@@ -291,6 +291,11 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-14-case-insensitive-email.spec.js` | check_priority_access grants a mixed-case email its manual priority |
 | `sec-15-lookup-rate-limit.spec.js` | returns the customer id for a known email, empty array for an unknown one |
 | `sec-15-lookup-rate-limit.spec.js` | same IP is throttled after the limit; isTest bypasses it |
+| `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16a — anon can no longer call join_waitlist directly |
+| `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16b — the function joins a full block and passes WL_* refusals through |
+| `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16c — same IP is throttled after the limit; isTest bypasses it |
+| `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16d — a caller-supplied X-Forwarded-For does not buy a fresh budget |
+| `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16e — the function applies the browser field rules itself |
 
 ## Stripe (ST) — 28 tests
 
@@ -394,7 +399,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `mb-09-class-status-dots.spec.js` | MB-09a — green tracks the active block, orange tracks the upcoming block |
 | `mb-09-class-status-dots.spec.js` | MB-09b — the dot colours match the badges the row expands to reveal |
 
-## Waiting List (WL) — 14 tests
+## Waiting List (WL) — 15 tests
 
 | Spec file | Test |
 |---|---|
@@ -406,6 +411,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `wl-01-waitlist-public.spec.js` | WL-06 — a junk offer link says so and leaves the page usable |
 | `wl-01-waitlist-public.spec.js` | WL-07 — the offer token books past a full block and consumes the hold |
 | `wl-01-waitlist-public.spec.js` | WL-13 — a live offer survives closing the box and refreshing |
+| `wl-01-waitlist-public.spec.js` | WL-15 — a throttled join shows "too many attempts" in plain English |
 | `wl-08-waitlist-admin.spec.js` | WL-08 — queues are grouped by block, in join order, with live counts |
 | `wl-08-waitlist-admin.spec.js` | WL-09 — Offer space mints a hold, and the DB refuses a second one |
 | `wl-08-waitlist-admin.spec.js` | WL-10 — Release hold returns them to the queue and kills the token |
