@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 27 Sep 2026 (session 98 — CLAUDE.md slimmed; session history moved to SESSION-LOG.md)
+Last updated: 27 Sep 2026 (session 99 — #106 waitlist join throttle live on prod)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -148,8 +148,8 @@ No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, 
 | `TEST-PLAN.md` | Generated Playwright coverage tracker — never hand-edit |
 | `PAYMENT-MODE-SPEC.md` | Stripe integration spec |
 | `EMAIL-NOTIFICATIONS-SPEC.md` | Email spec |
-| `supabase/functions/` | Edge Function source (stripe-checkout, stripe-webhook, stripe-refund, send-email, lookup-customer-throttled) |
-| `tests-playwright/migrations/` | SQL migrations (latest: 28_waitlist) |
+| `supabase/functions/` | Edge Function source (stripe-checkout, stripe-webhook, stripe-refund, send-email, lookup-customer-throttled, join-waitlist-throttled; shared code in `_shared/throttle.ts`) |
+| `tests-playwright/migrations/` | SQL migrations (latest: 30_close_old_doors) |
 | `tests-playwright/tests/helpers/` | Shared test helpers |
 | `.claude/commands/deploy.md` | Deploy pipeline (local only, gitignored) |
 | `docs/user-guides/` | User-guide PDF series (#105) |
@@ -176,9 +176,9 @@ Tables: `classes`, `blocks`, `bookings`, `customers`, `parq`, `settings`, `cance
 Admin gate: `is_admin()` (checks `admin_users`) — RLS policies use it, not bare `authenticated`.
 
 Key SECURITY DEFINER functions:
-- Public (anon): `upsert_customer`, `book_if_available` (5-arg, `p_offer_token`), `check_priority_access`, `has_active_booking_on_block`, `insert_parq`, `join_waitlist`, `get_offer_details`, `booking_confirmed_for_session`
+- Public (anon): `upsert_customer`, `book_if_available` (5-arg, `p_offer_token`), `check_priority_access`, `has_active_booking_on_block`, `insert_parq`, `get_offer_details`, `booking_confirmed_for_session`
 - Admin only: `record_catch_up_swap`, `offer_waitlist_space`, `release_waitlist_hold`, `admin_delete_block/class/customer`, `admin_remove_from_block`
-- Service role only: `lookup_customer` (browser goes via the `lookup-customer-throttled` Edge Function)
+- Service role only: `lookup_customer` and `join_waitlist` (browser goes via the `lookup-customer-throttled` / `join-waitlist-throttled` Edge Functions), `check_rate_limit` (shared per-IP limiter, `rate_limits` table keyed by bucket + IP; IPv6 counted per /64)
 
 Stripe columns on `bookings`: `stripe_payment_intent_id`, `stripe_checkout_session_id` (nullable).
 `settings.payment_mode`: `'bank_transfer'` (default) or `'stripe'`. Anon can read only the public settings keys (not `admin_email`).
@@ -224,13 +224,13 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 
 ## CURRENT STATE (snapshot — the board is the truth for priorities)
 
-- **Tests**: 290, all passing (as of session 95).
+- **Tests**: 296, all passing (as of session 99).
 - **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71–75, session 95).
-- **Prod Edge Function versions**: send-email v15, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v2, stripe-refund v5.
+- **Prod Edge Function versions**: send-email v15, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v1, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).
 - **New website LIVE at lg-pilates.co.uk** (DNS cutover 12 Sep 2026). Phase 1 gate period (2–4 weeks) before Phase 1.5.
 - **Open risks / follow-ups**:
-  - [#106](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/106) — anon `join_waitlist` has no throttle; **live exposure** (fake joins can take a class off public sale). Fix = throttled Edge Function + revoke anon EXECUTE.
+  - [#110](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/110) — accepted limitation of the #106 throttle: one IP can still fill a class waiting list in ~an hour (10 joins/hr vs list cap = class size). Revisit before Phase 2b.
   - [#107](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/107) — Mark's hands-on waitlist walkthrough on prod.
   - Booking-system header links still point at `new-lg-website.netlify.app` (9 occurrences in index.html) — now the website is live, swap to `lg-pilates.co.uk`.
   - Louise to confirm: catch-up swaps ignore waitlist holds (one-line change if she disagrees).
@@ -265,7 +265,9 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 **Deploying**
 - **Rollout order: migration → test, deploy functions → test, `npm test`, commit/push, then prod in the same order** (migration → functions → push). Functions need their columns; the suite needs the deployed functions.
 - **A git push does NOT redeploy Edge Functions.** Deploy explicitly: `supabase functions deploy <fn> --project-ref <ref> --use-api`. The CLI is **linked to PROD** — always pass `--project-ref ngzfhamjuviwfwuncrjo` for test.
-- **Preserve each project's `verify_jwt`**: PROD stripe-checkout + lookup-customer-throttled = `true`; send-email + stripe-webhook = `false` on both (pass `--no-verify-jwt`); TEST stripe-checkout = `false`. Webhook uses HMAC, not JWT — intentional.
+- **Preserve each project's `verify_jwt`**: PROD stripe-checkout + lookup-customer-throttled + join-waitlist-throttled = `true`; send-email + stripe-webhook = `false` on both (pass `--no-verify-jwt`); TEST stripe-checkout = `false`. Webhook uses HMAC, not JWT — intentional.
+- Functions importing `_shared/` deploy fine with the CLI (it uploads the shared file). Via MCP `deploy_edge_function`, pass files as `<fn>/index.ts` + `_shared/throttle.ts` with entrypoint `<fn>/index.ts`.
+- If `supabase` exits 137 instantly (even `--version`), the binary is being killed by macOS — `brew reinstall supabase` fixes it (session 99).
 - Edge Function test/prod parity is NOT checked by `schema-check` — verify manually (`supabase functions download` + diff).
 - `TEST_BYPASS_ENABLED` secret exists on TEST only — it's what makes caller-supplied `isTest` safe. Never set it on prod.
 - **CI green ≠ site deployed.** Confirm GitHub Pages by hashing the live page against `git show <sha>:index.html`. Stuck build: `POST /repos/{owner}/{repo}/pages/builds`.
