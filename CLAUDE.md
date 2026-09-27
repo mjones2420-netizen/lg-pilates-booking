@@ -133,7 +133,7 @@ npm run test-plan          # regenerate TEST-PLAN.md
 ```
 
 In Claude Code: check port 8000 first (reuse, don't stack), start the server in the background, then `npm test`.
-No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, CU-08, EC-09, cb-18, cb-30, CB-28, SEC-08 (transient 502).
+No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, CU-08, EC-09, cb-18, cb-30, CB-28, BLW-05, BLW-06, SEC-08 (transient 502).
 
 ---
 
@@ -149,7 +149,7 @@ No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, 
 | `PAYMENT-MODE-SPEC.md` | Stripe integration spec |
 | `EMAIL-NOTIFICATIONS-SPEC.md` | Email spec |
 | `supabase/functions/` | Edge Function source (stripe-checkout, stripe-webhook, stripe-refund, send-email, lookup-customer-throttled, join-waitlist-throttled; shared code in `_shared/throttle.ts`) |
-| `tests-playwright/migrations/` | SQL migrations (latest: 30_close_old_doors) |
+| `tests-playwright/migrations/` | SQL migrations (latest: 31_catch_up_respects_holds) |
 | `tests-playwright/tests/helpers/` | Shared test helpers |
 | `.claude/commands/deploy.md` | Deploy pipeline (local only, gitignored) |
 | `docs/user-guides/` | User-guide PDF series (#105) |
@@ -224,7 +224,7 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 
 ## CURRENT STATE (snapshot — the board is the truth for priorities)
 
-- **Tests**: 299, all passing (as of session 99).
+- **Tests**: 304, all passing (as of session 99).
 - **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71–75, session 95).
 - **Prod Edge Function versions**: send-email v15, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v1, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).
@@ -233,7 +233,7 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
   - [#110](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/110) — accepted limitation of the #106 throttle: one IP can still fill a class waiting list in ~an hour (10 joins/hr vs list cap = class size). Revisit before Phase 2b.
   - [#107](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/107) — Mark's hands-on waitlist walkthrough on prod.
   - Booking-system header links still point at `new-lg-website.netlify.app` (9 occurrences in index.html) — now the website is live, swap to `lg-pilates.co.uk`.
-  - Louise to confirm: catch-up swaps ignore waitlist holds (one-line change if she disagrees).
+  - Before customer logins (#81): `record_catch_up_swap` has no `is_admin()` check — note on #81.
 
 ---
 

@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 27 Sept 2026
-**Total tests:** 299
+**Total tests:** 304
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -344,7 +344,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `rf-05-webhook-refund-sync.spec.js` | RF-05b — resending the same event after sync is idempotent |
 | `rf-05-webhook-refund-sync.spec.js` | RF-05c — no matching cancellation is a safe no-op |
 
-## Catch-Up Swaps (CU) — 10 tests
+## Catch-Up Swaps (CU) — 15 tests
 
 | Spec file | Test |
 |---|---|
@@ -358,6 +358,11 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `cu-01-catchup-swaps.spec.js` | CU-08 — Class and week pickers show spaces left, mark full options FULL and disable them |
 | `cu-01-catchup-swaps.spec.js` | CU-09 — Two saves into the last space: first succeeds, second is rejected by the DB |
 | `cu-01-catchup-swaps.spec.js` | CU-10 — Modal uses plain labels and auto-selects the usual class for a single-block customer |
+| `cu-11-catchup-respects-holds.spec.js` | CU-11 — the DB refuses a catch-up into a held seat, and allows it once the hold is released |
+| `cu-11-catchup-respects-holds.spec.js` | CU-12 — the class picker shows a held seat as FULL |
+| `cu-11-catchup-respects-holds.spec.js` | CU-14 — the week picker counts held seats alongside that week's catch-ups |
+| `cu-11-catchup-respects-holds.spec.js` | CU-15 — a save that races a new hold is refused with the CU_HELD message |
+| `cu-11-catchup-respects-holds.spec.js` | CU-13 — a hold offered onto a date a catch-up already occupies triggers the over-capacity warning |
 
 ## Pricing / Prorata (PR) — 4 tests
 

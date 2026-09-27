@@ -1660,6 +1660,7 @@ var bookings = [];
 var catchUpSwaps = [];   // catch-up swap visitors — loaded in renderDashboard
 var dashCustomerMap = null;   // id -> customers row, built in renderDashboard
 var waitlistRows = [];        // waiting-list rows for the admin page (#75)
+var heldByBlock = {};         // live waitlist holds (status 'offered') per block id — taken seats for catch-ups (migration 31)
 var appSettings = {};      // bank details + admin email, loaded at startup
 var PAYMENT_MODE = "bank_transfer"; // "bank_transfer" | "stripe" — loaded from settings on init
 var selected = null;       // selected class
@@ -3254,7 +3255,10 @@ function renderBlockWarnings(){
     return relevant.length===1;
   });
 
-  // ADVISORY: catch-up swaps that push a block's future attendance over cap
+  // ADVISORY: catch-up swaps that push a block's future attendance over cap.
+  // Held waitlist seats count as attendance: a hold may be offered onto a
+  // date a catch-up already occupies (allowed on purpose — session 99), and
+  // this is what tells Louise to move the catch-up.
   var cuToday=new Date(); cuToday.setHours(0,0,0,0);
   var overCapByBlock={};
   blocks.forEach(function(blk){
@@ -3263,7 +3267,7 @@ function renderBlockWarnings(){
       var dt=new Date(s.class_date+"T00:00:00");
       if(dt>=cuToday){ dateGroups[s.class_date]=(dateGroups[s.class_date]||0)+1; }
     });
-    var overDates=Object.keys(dateGroups).filter(function(d){ return (blk.booked+dateGroups[d])>blk.cap; });
+    var overDates=Object.keys(dateGroups).filter(function(d){ return (blk.booked+cuHeldOnBlock(blk.id)+dateGroups[d])>blk.cap; });
     if(overDates.length>0){ overCapByBlock[blk.id]={blk:blk,dates:overDates}; }
   });
   var overCapEntries=Object.keys(overCapByBlock).map(function(k){ return overCapByBlock[k]; });
@@ -3523,6 +3527,13 @@ function renderDashboard(){
         var{data:swapsData}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
         catchUpSwaps=mapSwapRows(swapsData,customerMap);
       }catch(swapErr){ console.error("Catch-up swaps load error:",swapErr); catchUpSwaps=[]; }
+      // Live waitlist holds — a held seat is taken for catch-ups and counts
+      // toward the over-capacity warning below.
+      try{
+        var{data:holdRows,error:holdErr}=await sb.from("waitlist").select("block_id").eq("status","offered");
+        if(holdErr) throw holdErr;
+        setHeldByBlock(holdRows);
+      }catch(holdLoadErr){ console.error("Waitlist holds load error:",holdLoadErr); heldByBlock={}; }
 
       // Classes table — each class shows its active and upcoming block
       var chtml="";
@@ -4155,6 +4166,19 @@ function cuSwapsOnDate(blockId,isoDate){
   return catchUpSwaps.filter(function(s){ return s.target_block_id===blockId&&s.class_date===isoDate; }).length;
 }
 
+// Rebuilds heldByBlock from rows carrying block_id (already filtered to
+// status 'offered').
+function setHeldByBlock(rows){
+  heldByBlock={};
+  (rows||[]).forEach(function(r){ heldByBlock[r.block_id]=(heldByBlock[r.block_id]||0)+1; });
+}
+
+// Seats held for waiting-list offers on a block. Louise's rule (migration 31):
+// a held seat can't take a catch-up visitor, even for one week.
+function cuHeldOnBlock(blockId){
+  return heldByBlock[blockId]||0;
+}
+
 // "— 3 spaces" / "— FULL" suffix for the modal dropdowns
 function cuSpacesLabel(spaces){
   return spaces<=0?" — FULL":" — "+spaces+" space"+(spaces===1?"":"s");
@@ -4164,6 +4188,7 @@ function cuSpacesLabel(spaces){
 // browser pre-checks and the record_catch_up_swap RPC error mapping.
 var CU_MSGS={
   CU_FULL:"That week is already at capacity — no space for a catch-up swap.",
+  CU_HELD:"The free space in that class is being held for someone on the waiting list. Release the hold on the Waiting lists page to use it for a catch-up.",
   CU_LIMIT:"This customer has already used 2 catch-up swaps for that block.",
   CU_SAME_BLOCK:"The class they are joining must be different from their usual class."
 };
@@ -4238,13 +4263,13 @@ function openCatchUpModal(){
   custOpts.forEach(function(c){ cuCust.innerHTML+="<option value=\""+c.id+"\">"+sanitise(c.name)+"</option>"; });
   document.getElementById("cu-source-block").innerHTML="<option value=\"\">Select customer first</option>";
   // Target block dropdown — active/upcoming blocks, with spaces left / FULL.
-  // Block-level spaces = cap - booked (per-week swaps refine this in the
+  // Block-level spaces = cap - booked - held (per-week swaps refine this in the
   // date dropdown); a block with no base spaces can never take a swap, so
   // its option is disabled.
   var tgtSel=document.getElementById("cu-target-block");
   tgtSel.innerHTML="<option value=\"\">Select a class&hellip;</option>";
   blocks.filter(function(b){ return b.status==="active"||b.status==="upcoming"; }).forEach(function(blk){
-    var spaces=blk.cap-blk.booked;
+    var spaces=blk.cap-blk.booked-cuHeldOnBlock(blk.id);
     tgtSel.innerHTML+="<option value=\""+blk.id+"\""+(spaces<=0?" disabled":"")+">"+sanitise(cuBlockLabel(blk)+cuSpacesLabel(spaces))+"</option>";
   });
   document.getElementById("cu-date").innerHTML="<option value=\"\">Select class first</option>";
@@ -4301,12 +4326,12 @@ function onCuTargetBlockChange(){
     sessionDates.push(iso);
   }
   var futureDates=sessionDates.filter(function(d){ return new Date(d+"T00:00:00")>=today; });
-  // Per-week spaces = cap - booked - swaps already landing that week;
+  // Per-week spaces = cap - booked - held - swaps already landing that week;
   // full weeks show FULL and are disabled.
   dateSel.innerHTML=futureDates.length
     ?futureDates.map(function(d){
         var lbl=new Date(d+"T00:00:00").toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
-        var spaces=blk.cap-blk.booked-cuSwapsOnDate(blk.id,d);
+        var spaces=blk.cap-blk.booked-cuHeldOnBlock(blk.id)-cuSwapsOnDate(blk.id,d);
         return "<option value=\""+sanitise(d)+"\""+(spaces<=0?" disabled":"")+">"+lbl+cuSpacesLabel(spaces)+"</option>";
       }).join("")
     :"<option value=\"\">No upcoming sessions</option>";
@@ -4458,6 +4483,10 @@ async function reloadWaitlist(){
     // have a stable, repeatable queue order.
     .order("created_at",{ascending:true}).order("id",{ascending:true});
   if(error) throw error;
+  setHeldByBlock((data||[]).filter(function(r){ return r.status==="offered"; }));
+  // An offer can push a date a catch-up already occupies over capacity, so
+  // the dashboard warning must see the new hold without a page reload.
+  renderBlockWarnings();
   waitlistRows=(data||[]).map(function(r){
     var c=r.customers||{};
     return {
