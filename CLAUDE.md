@@ -133,7 +133,7 @@ npm run test-plan          # regenerate TEST-PLAN.md
 ```
 
 In Claude Code: check port 8000 first (reuse, don't stack), start the server in the background, then `npm test`.
-No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, CU-08, EC-09, cb-18, cb-30, SEC-08 (transient 502).
+No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, CU-08, EC-09, cb-18, cb-30, CB-28, SEC-08 (transient 502).
 
 ---
 
@@ -224,7 +224,7 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 
 ## CURRENT STATE (snapshot — the board is the truth for priorities)
 
-- **Tests**: 296, all passing (as of session 99).
+- **Tests**: 299, all passing (as of session 99).
 - **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71–75, session 95).
 - **Prod Edge Function versions**: send-email v15, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v1, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).

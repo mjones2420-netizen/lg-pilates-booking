@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 27 Sept 2026
-**Total tests:** 296
+**Total tests:** 299
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -399,7 +399,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `mb-09-class-status-dots.spec.js` | MB-09a — green tracks the active block, orange tracks the upcoming block |
 | `mb-09-class-status-dots.spec.js` | MB-09b — the dot colours match the badges the row expands to reveal |
 
-## Waiting List (WL) — 15 tests
+## Waiting List (WL) — 18 tests
 
 | Spec file | Test |
 |---|---|
@@ -418,6 +418,9 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `wl-08-waitlist-admin.spec.js` | WL-14 — Copy link puts the live booking link on the clipboard |
 | `wl-08-waitlist-admin.spec.js` | WL-11 — Remove deletes the entry and drops the block wait count |
 | `wl-08-waitlist-admin.spec.js` | WL-12 — entries on an ended block are counted but not listed |
+| `wl-16-waitlist-guards.spec.js` | WL-16 — an offer link used by a different customer is refused, and the hold survives |
+| `wl-16-waitlist-guards.spec.js` | WL-17 — the join alert to Louise is sent once per waitlist entry |
+| `wl-16-waitlist-guards.spec.js` | WL-18 — the offer email is sent once per offer; release + re-offer allows a fresh one |
 
 ---
 
