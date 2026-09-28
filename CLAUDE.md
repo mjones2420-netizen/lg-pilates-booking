@@ -152,7 +152,7 @@ No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, 
 | `tests-playwright/migrations/` | SQL migrations (latest: 31_catch_up_respects_holds) |
 | `tests-playwright/tests/helpers/` | Shared test helpers |
 | `.claude/commands/deploy.md` | Deploy pipeline (local only, gitignored) |
-| `docs/user-guides/` | User-guide PDF series (#105) |
+| `docs/user-guides/` | Old user-guide PDF (#105, closed); training now = Training Hub artifact (#114) |
 
 ---
 

@@ -457,3 +457,14 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - New project skill **`.claude/skills/backlog-ticket/SKILL.md`** (`7e696d1`): ticket title/summary format, board option ids + gh commands, sub-issue API, backlog review mode. Mark asked that all new tickets follow this format (memory `feedback-ticket-format`).
 - Commits: `a542218` (docs), `7e696d1` (skill), plus this wrap-up. No product code, no prod writes.
 - **Next session:** #107 walkthrough script (High, ready to run) — or #111 keep-alive fix first (small, High, protects prod from pausing).
+
+## Session 101 (2026-09-28)
+
+**Training approach rethink.** No product code changed, no database touched.
+- Mark's problem: the system is too big to remember, so training Louise (or himself) is hard. Reviewed #105 (15 feature-by-feature PDFs, 1 done in ~5 weeks). Verdict: PDFs are organised by feature not task, can't be practised, go stale with every UI change, and are too slow to be ready before Phase 2a/2b.
+- **Key finding:** the live booking link plus `?env=test` (`IS_TEST_ENV`, index.html ~1680) is already a safe practice sandbox. It's the real UI against the test DB, with a red TEST MODE banner, no real emails and Stripe test cards.
+- **Decision:** replace the PDFs with a scenario-based **Training Hub**: ~20 short lessons (client journey / everyday admin / each new term / occasional / reference), each with a "Try it" link to the practice site and per-person progress ticks. Hosting: private claude.ai artifact (Mark's choice). Plan file: `~/.claude/plans/we-have-issue-number-structured-balloon.md`.
+- **#105 closed** (not planned, superseded). **New [#114](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/114)** in High Priority, with the lesson outline and build order. The finished Class Booking PDF gets reused as lessons.
+- Nothing built yet. Research only (dashboard page markup, artifact db/user capability API).
+- **Mark feedback:** approving a plan in plan mode is NOT a go-ahead to build. Claude Code has no "approve but don't build" option, so either pick "keep planning" and say "approved, park it", or say so in chat. Saved as memory `feedback-plan-approval-not-go`.
+- **Next session:** #114 step 1 (hub skeleton + Part 2 everyday admin) when Mark says go. Otherwise #107 walkthrough or the #111 keep-alive fix, both High.
