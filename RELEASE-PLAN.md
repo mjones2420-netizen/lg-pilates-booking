@@ -1,7 +1,7 @@
 # LG Pilates — Release Plan
 ### New website + phased booking-system rollout
 
-Last updated: 12 Sep 2026 · Written with Claude Code (session 62, revised sessions 84/96)
+Last updated: 28 Sep 2026 · Written with Claude Code (session 62, revised sessions 84/96/100)
 
 > **This is the single source of truth for the whole release — both the website and the booking system.**
 > Tracked by [#70](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/70) → phase issues #63–#69.
@@ -31,11 +31,11 @@ New website (customers email Louise, same as today) → private pilot of the boo
 | # | Who | Step |
 |---|-----|------|
 | 1 | MARK | ✅ **DONE (session 66).** Disable public signups on BOTH Supabase projects ([#43](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/43) — critical). Verified via `GET /auth/v1/settings`: `disable_signup: true` on prod and test. |
-| 2 | MARK + CLAUDE | ⚠️ **PARTIAL (sessions 86–89).** Token rotated and prod-write auto-allow removed ([#102](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/102) closed). Token ended up back in `~/.claude/settings.json` (as an env var, not raw config) after two failed attempts to move it to shell files — desktop-app sessions don't run zsh. Not a blocker for Phase 1; **revisit before Phase 3 (Stripe live)**. |
+| 2 | MARK + CLAUDE | ✅ **DONE — remainder dropped (28 Sep 2026).** Token rotated and prod-write auto-allow removed ([#102](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/102) closed, sessions 86–89). Moving the token into the macOS Keychain was **dropped as overkill**: the token has to be loaded into the process anyway, so a Keychain adds little. Verified instead: FileVault on, `~/.claude/settings.json` not in git or cloud-synced, file tightened to owner-only (`chmod 600`). Routine: rotate the token yearly. Not a Phase 3 gate. |
 | 3 | CLAUDE | ✅ **DONE (session 85).** Old site archived to `docs/archive/`. |
 | 4 | MARK | ✅ **DONE.** Netlify, GoDaddy, and M365 logins confirmed (session 85). |
 
-**GATE:** ✅ **MET.** Step 1 is done on both projects, which was the only hard gate. Steps 3–4 are quick housekeeping — do them alongside Phase 1.
+**GATE:** ✅ **MET.** **Phase 0 COMPLETE** — [#63](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/63) closed 28 Sep 2026.
 
 ---
 
@@ -80,7 +80,7 @@ The Astro website replaces lg-pilates.co.uk. Customers book exactly as they do t
 | 13 | MARK | ✅ **DONE (session 96).** GoDaddy DNS: `@` A record → `75.2.60.5`, `www` CNAME → `new-lg-website.netlify.app`. Email records untouched. |
 | 14 | MARK + CLAUDE | ✅ **DONE (session 96).** Both domains serving the new site with HTTPS. Email tested and working. `robots.txt` flipped to `Allow: /`. Sanity CORS origin added for `lg-pilates.co.uk`. |
 
-**GATE:** new site stable and Louise happy with it for 2–4 weeks. **Keep paying for GoDaddy hosting during this period** — it's your rollback.
+**GATE:** ✅ **MET (28 Sep 2026).** Site live since 12 Sep; Mark confirmed stable and happy after 16 days. **Phase 1 COMPLETE** — [#64](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/64) closed. **Keep paying for GoDaddy hosting until Phase 4** — it's still the rollback.
 
 > **ROLLBACK (Phase 1):** GoDaddy DNS → set the `@` A record back to `160.153.0.161` and `www` back to pointing at `@`. The old website returns within the hour. Email is never affected either way.
 
@@ -88,7 +88,9 @@ The Astro website replaces lg-pilates.co.uk. Customers book exactly as they do t
 
 ## Phase 1.5 — Booking system onto Netlify, still hidden (do during the Phase-1 quiet period)
 
-Moves the booking system from GitHub Pages to its final home at `book.lg-pilates.co.uk`, so it's tested on its real address before any customer sees it.
+Moves the booking system from GitHub Pages to its final home at `book.lg-pilates.co.uk`, so it's tested on its real address before any customer sees it. **Now unblocked** (Phase 1 closed 28 Sep 2026).
+
+> ⚠️ **DECIDE FIRST — Netlify credits ([#65 comment](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/65#issuecomment-5867302315)).** Free plan = 300 credits per cycle (resets on the 7th), shared by every site on the account; each production deploy = 15 credits; **at zero, every site on the account goes offline — the website included.** Booking-system sessions push 3–5 times, so ~20 pushes/month would use the whole allowance alone. Options: deploy only on a deliberate release step (free) · skip builds for docs/test-only changes (free, partial) · Netlify Personal plan (~$9/month, verify) · host the booking system on a provider without a credit cap (e.g. Cloudflare Pages).
 
 | # | Who | Step |
 |---|-----|------|
@@ -96,6 +98,8 @@ Moves the booking system from GitHub Pages to its final home at `book.lg-pilates
 | 16 | MARK | GoDaddy DNS → add a **CNAME** record: `book` → the booking site's `.netlify.app` address. Add `book.lg-pilates.co.uk` as the custom domain in Netlify. |
 | 17 | CLAUDE | Verify the deployed Supabase Edge Functions (test AND prod) really allow `book.lg-pilates.co.uk` — the repo copies do, but deployed versions must be spot-checked (lesson from #33/#42). Then smoke-test a booking flow on the new address. |
 | 18 | — | Reminder: hidden = unlinked + no Google, **not** password-protected. Don't share the URL publicly. |
+| 19a | CLAUDE | Add browser security headers (CSP etc.) to the booking site — GitHub Pages can't, Netlify can ([#99](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/99)). CSP must allow Stripe + Supabase; full suite + manual Stripe test after. |
+| 19b | CLAUDE | Swap the 9 header links from `new-lg-website.netlify.app` to `lg-pilates.co.uk` ([#113](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/113)). |
 | 19 | CLAUDE | Update `DASHBOARD_URL` in `send-email` (test + prod) from the GitHub Pages address to `book.lg-pilates.co.uk`, then redeploy. Fixes the admin alert email's "View in dashboard" link ([#77](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/77)). |
 
 > **ROLLBACK (Phase 1.5):** nothing customer-facing changed — delete the `book` DNS record if needed and the old GitHub Pages address still works.
@@ -115,6 +119,8 @@ Louise hand-picks a small group to book through the system for real. Everyone el
 | 22 | LOUISE | Pick a handful of trusted regulars and send them the `book.lg-pilates.co.uk` link directly (email/WhatsApp). Ask them to book their next block through it and say what's confusing. |
 | 23 | LOUISE | Process their bookings normally and collect feedback for 1–2 booking cycles. Claude fixes anything the pilot surfaces. |
 
+**Strongly recommended before the pilot** (High on the board, not formal gates yet — Mark's call): keep-alive ping fixed + uptime alerts ([#111](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/111)) · automatic backups ([#96](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/96)) · PAR-Q data-protection rules ([#90](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/90) — before real health data is collected) · error alerts ([#95](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/95), Medium).
+
 **GATE:** pilot customers booked and paid successfully, feedback dealt with, Louise comfortable running the dashboard day-to-day.
 
 > **ROLLBACK (Phase 2a):** message the pilot group to go back to emailing Louise. Honour any bookings already made. Nothing public changed — no deploy, no DNS, nothing to undo.
@@ -129,6 +135,8 @@ Louise hand-picks a small group to book through the system for real. Everyone el
 | 25 | CLAUDE | Review the "How to Book" page copy so it reads correctly now that the buttons go to the booking system (the block-enquiry form can stay as a fallback — Mark's call at the time). |
 | 26 | CLAUDE | Remove the `noindex` tag from the booking site so Google can find it. |
 
+**Before starting 2b:** waiting-list fake-join fix ([#110](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/110)) · second full security audit ([#23](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/23)).
+
 **GATE:** bookings flowing smoothly from the general public for an agreed period (suggest one full block cycle).
 
 > **ROLLBACK (Phase 2b):** clear `siteSettings.bookingUrl` in Sanity and publish — every Book button reverts to the internal email-Louise page instantly. No deploy, no DNS, no database change. Re-hide the booking site if you want it invisible again. Honour existing bookings.
@@ -137,7 +145,7 @@ Louise hand-picks a small group to book through the system for real. Everyone el
 
 ## Phase 3 — Stripe card payments on
 
-**GATE before starting:** you and Louise are happy with the bank-transfer experience · the Stripe account is activated for live payments · secret hardening done ([#102](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/102) — Phase 0 step 2; do it before live card money moves).
+**GATE before starting:** you and Louise are happy with the bank-transfer experience · the Stripe account is activated for live payments. (The old Phase 0 step 2 Keychain item was dropped 28 Sep 2026 — no longer a gate.)
 
 | # | Who | Step |
 |---|-----|------|
@@ -151,6 +159,8 @@ Louise hand-picks a small group to book through the system for real. Everyone el
 ---
 
 ## Phase 4 — Cancel GoDaddy hosting (only after Phase 1 has been stable 30+ days)
+
+Earliest: **~12 Oct 2026** (website live 12 Sep + 30 days). Independent of the booking-system phases.
 
 | # | Who | Step |
 |---|-----|------|

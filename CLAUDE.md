@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 27 Sep 2026 (session 99 — #106 waitlist join throttle live on prod)
+Last updated: 28 Sep 2026 (session 100 — full backlog review; board re-ranked into High/Medium/Low)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -107,7 +107,7 @@ If drift detected, remind Mark to run: `cd tests-playwright && npm run seed`
 3. **No git push until `npm test` is green** — including any new specs.
 4. **New/changed functionality gets new Playwright specs in the same session.**
 5. **TEST-PLAN.md is generated — never hand-edit it.** After adding or removing any test, run `cd tests-playwright && npm run test-plan` in the same session. New spec prefix? Add a group to `generate-test-plan.js` (it hard-errors on ungrouped prefixes). Long-form history: TEST-PLAN-HISTORY.md.
-6. **GitHub Issues** is the backlog. **The project board ("Booking System Backlog", project #1) is the priority order** — top to bottom, not issue number. **New issues go at the bottom of Todo** unless Mark re-ranks. Finished work: close the issue AND set it Done on the board (both). BACKLOG.md is historical only.
+6. **GitHub Issues** is the backlog. **The project board ("Booking System Backlog", project #1) is the priority order** — columns **High / Medium / Low Priority** (set in the session-100 review), then top to bottom within a column. **New issues go in Todo** for Mark to rank (suggest a column + a plain-English title). Every ranked ticket starts with a "Plain-English summary" block — keep that pattern for new tickets. Finished work: close the issue AND set it Done on the board (both). BACKLOG.md is historical only.
 7. **SQL: confirm and explain before running anything against Supabase.** Production writes always need Mark's explicit OK.
 8. **Never update documentation until tests are green** (hard rule).
 9. **Order for any product-code change: code review → security review (if payments/auth/DB/Edge Functions) → tests → commit/push.** Not gated on a trigger word. A PreToolUse hook blocks test runs until `touch .claude/.review-marker` — run the touch in a **separate** Bash call (same-call touch is still blocked).
@@ -228,11 +228,14 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 - **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71–75, session 95).
 - **Prod Edge Function versions**: send-email v15, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v1, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).
-- **New website LIVE at lg-pilates.co.uk** (DNS cutover 12 Sep 2026). Phase 1 gate period (2–4 weeks) before Phase 1.5.
+- **New website LIVE at lg-pilates.co.uk** (DNS cutover 12 Sep 2026). **Release Phases 0 and 1 COMPLETE** (#63, #64 closed 28 Sep). **Next: Phase 1.5** (#65) — decide the Netlify-credit question first (see RELEASE-PLAN.md).
 - **Open risks / follow-ups**:
+  - [#111](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/111) — `keep-alive.yml` has FAILED every run since 22 Aug (401: it calls `lookup_customer`, now service-role only). Prod most likely stayed awake because the nightly pg_cron clean-up counted as activity (strong evidence, not proof). Fix + add a failure alert (#98 uptime monitor is its sub-ticket).
+  - Free-plan Supabase = **no usable backups** (#96) and no leaked-password check (#21). Supabase Pro (~$25/mo) would cover backups, pausing and leak-check — weigh at #96.
+  - [#112](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/112) — RP-01 failed 3/3 in one CI run (27 Sep); repeat flake. Also: `ubuntu-latest` → Ubuntu 26 from 19 Oct 2026.
   - [#110](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/110) — accepted limitation of the #106 throttle: one IP can still fill a class waiting list in ~an hour (10 joins/hr vs list cap = class size). Revisit before Phase 2b.
   - [#107](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/107) — Mark's hands-on waitlist walkthrough on prod.
-  - Booking-system header links still point at `new-lg-website.netlify.app` (9 occurrences in index.html) — now the website is live, swap to `lg-pilates.co.uk`.
+  - [#113](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/113) — booking-system header links still point at `new-lg-website.netlify.app` (9 in index.html); swap to `lg-pilates.co.uk` before the pilot.
   - Before customer logins (#81): `record_catch_up_swap` has no `is_admin()` check — note on #81.
 
 ---

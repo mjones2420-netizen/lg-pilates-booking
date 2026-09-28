@@ -443,3 +443,13 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - BLW-05/06 failed once in a full run, passed isolated, in a prefix run and on the next full run — added to the flake list. CU-04 (already listed) flaked on the last run.
 - **Mark feedback:** replies too long, and questions got buried by moving on. Now: 2–5 lines, one question, then stop. Also: never call booking-system changes "website" changes (memory).
 - **Left for next session:** [#107](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/107) walkthrough — Claude writes the script, Mark runs it on prod (ticket updated with today's additions). Then close #71.
+
+## Session 100 (2026-09-28)
+
+**Full backlog review.** No product code changed; prod read-only only.
+- Mark added **High / Medium / Low Priority** columns to the board; all 44 Todo tickets walked one at a time. Each got a plain-English title + a "Plain-English summary" block at the top of its body (the 20 improvement ideas #81-#100 carry the detail from `IMPROVEMENT-RECOMMENDATIONS.pdf`, repo root). Final: High 17, Medium 10, Low 14, Todo 0.
+- **Closed:** #109 (already done), #64 (Phase 1 gate met — Mark happy after 16 days), #63 (Phase 0 — Keychain step dropped as overkill; `~/.claude/settings.json` chmod 600; FileVault on; yearly token rotation), #85 + #94 (not needed), #80 (redundant parent list).
+- **Sub-tickets attached:** #30→#68, #91→#90, #98→#111, #99→#65, #100→#18, #110→#71 (so #71 stays open until #107 AND #110 are done).
+- **New:** #111 (High) keep-alive failing since 22 Aug — 401 on `lookup_customer` (service-role only since the #35 lockdown). Read-only prod check: `cleanup-expired-pending-bookings` pg_cron succeeded every night 20 Aug-28 Sep; edge_logs showed no visitor/bot traffic in 24h → the cron job is almost certainly what kept prod from pausing through 18- and 15-day gaps. Ticket requires a failure alert. #112 (Medium) RP-01 repeat flake + Actions Node 20 / Ubuntu 26 (19 Oct) housekeeping. #113 (Medium) 9 header links still on `new-lg-website.netlify.app`.
+- **Findings recorded:** Netlify free plan (300 credits, 15/deploy, zero = ALL sites offline) makes Phase 1.5 a decision point (comment on #65). Free-plan Supabase has no usable backups (#96) and leaked-password protection is Pro-only (#21 rewritten to free strength rules). Supabase Pro (~$25/mo) would cover backups + pausing + leak check.
+- Docs: RELEASE-PLAN.md (Phases 0/1 done, Netlify credit decision, #99/#113 in Phase 1.5, recommended pre-pilot items, 2b prerequisites, Phase 4 earliest ~12 Oct), CLAUDE.md snapshot + board rule, Launch Roadmap artifact.
