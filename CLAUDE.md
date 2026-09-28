@@ -272,6 +272,7 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - Functions importing `_shared/` deploy fine with the CLI (it uploads the shared file). Via MCP `deploy_edge_function`, pass files as `<fn>/index.ts` + `_shared/throttle.ts` with entrypoint `<fn>/index.ts`.
 - If `supabase` exits 137 instantly (even `--version`), the binary is being killed by macOS — `brew reinstall supabase` fixes it (session 99).
 - Edge Function test/prod parity is NOT checked by `schema-check` — verify manually (`supabase functions download` + diff).
+- **Revoking/locking a function from anon? Check `.github/workflows/keep-alive.yml` first** — it pings via an anon RPC. Locking `lookup_customer` (Aug) silently broke it for 5 weeks (#111); scheduled-workflow failures go unnoticed.
 - `TEST_BYPASS_ENABLED` secret exists on TEST only — it's what makes caller-supplied `isTest` safe. Never set it on prod.
 - **CI green ≠ site deployed.** Confirm GitHub Pages by hashing the live page against `git show <sha>:index.html`. Stuck build: `POST /repos/{owner}/{repo}/pages/builds`.
 - Code review reads diffs, it doesn't run the app — always run the full suite for shared-chrome changes (nav, layout).
