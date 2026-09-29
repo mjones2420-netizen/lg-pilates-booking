@@ -468,3 +468,22 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - Nothing built yet. Research only (dashboard page markup, artifact db/user capability API).
 - **Mark feedback:** approving a plan in plan mode is NOT a go-ahead to build. Claude Code has no "approve but don't build" option, so either pick "keep planning" and say "approved, park it", or say so in chat. Saved as memory `feedback-plan-approval-not-go`.
 - **Next session:** #114 step 1 (hub skeleton + Part 2 everyday admin) when Mark says go. Otherwise #107 walkthrough or the #111 keep-alive fix, both High.
+
+## Session 102 (2026-09-29)
+
+**Training Hub built (#114 steps 1–3).** No product code changed, no database written, prod untouched.
+- **Hub live (private):** https://claude.ai/artifact/AbrNrnppYs6PXa7WujzRfk — Start page + 21 lessons (Part 1 client journey ×6, Part 2 everyday admin ×5, Part 3 each new term ×5, Part 4 occasional ×4) + 3 Reference pages (emails table, "a client says…" problem-solver, glossary). Each lesson: situation → steps → screenshots → "Try it" link to `?env=test` on the live Pages URL → watch-outs → Mark as done. Progress ticks via artifact `db` (`progress/<viewerId>`, each viewer writes own, all Contributors read). Ticks **not yet proven** (nobody has ticked).
+- **Every step checked against the code**, not clicked through on the practice site. Mark's fresh-eyes run-through (#114 step 4) is the real test.
+- **Screenshots:** Playwright scripts against localhost:8000 test env, logged in as test admin, read-only (open forms then cancel; `confirm()` auto-dismissed). Where test data lacked a state (no reserved booking, no waitlist, no full class) the scripts altered the page ON SCREEN only (DOM / in-memory `blocks` + `renderGrid()`), never the DB; captions say "example".
+- **Source committed** (`7ee88e2`): `docs/training-hub/` — `template.html` (lessons, `{{img:name}}` placeholders), `build.js` (embeds shots → `training-hub.html`, gitignored), `capture*.js`, `shots/`. Republish to the same URL.
+- **Deploy routine:** Mark said yes to a "Training Hub check" — `.claude/commands/deploy.md` step 3b (local, gitignored): after green tests, check if an index.html change affects a lesson; if so update text + screenshot, rebuild, republish.
+- **New [#115](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/115) (High):** built-in step-by-step "Try it" guide inside the practice copy (`?env=test&tour=2.3`, test-mode only) that highlights what to click and advances on click. Mark's idea to combine reading and doing; specs per tour will also catch lessons going stale. Do after hub content, before Phase 2a.
+- **Findings while writing lessons:**
+  - Settings "Notification email" text says cancellation/refund notices go there — they don't (removed deliberately in session 7). `buildCancelledAdminEmailHtml` / `buildRefundAdminEmailHtml` are dead code. Reports "Active bookings" includes ended blocks; "Revenue MTD" = amount_due of bookings *created* this month incl. unpaid. Lessons 3.4/4.1 explain these; a spawn-task chip was raised to fix the wording (mockup first).
+  - Priority access needs a *confirmed* current-block booking — unconfirmed bank transfers lose priority. Lessons tell Louise to confirm before the priority date.
+  - Test fixtures: some blocks' dates fall on the wrong weekday (Thursday class with Sunday dates). Test-data only.
+  - Deleting a block deletes its bookings (confirm dialog says so) — flagged prominently in lesson 3.1.
+- **Mark feedback:** long silent stretches look like a hang → post one-line progress notes (memory `feedback-progress-updates`). Wants **one action at a time** when there are several follow-ups.
+- **Waiting on Mark before #114 closes (he asked to be reminded):** (1) review the hub + tick a lesson, then verify the tick saved; (2) share with Louise as Contributor + create her practice login in the TEST Supabase dashboard. Recorded in memory `project-user-guides`.
+- Session start checks: supabase MCP loaded; drift checks B/C not run (not requested after offer).
+- **Next session:** ask about #114 actions 1–2. Otherwise #111 keep-alive fix (small, High, protects prod) or #107 walkthrough.

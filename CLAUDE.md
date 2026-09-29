@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 28 Sep 2026 (session 100 — full backlog review; board re-ranked into High/Medium/Low)
+Last updated: 29 Sep 2026 (session 102 — Training Hub built, #114)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -152,7 +152,7 @@ No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, 
 | `tests-playwright/migrations/` | SQL migrations (latest: 31_catch_up_respects_holds) |
 | `tests-playwright/tests/helpers/` | Shared test helpers |
 | `.claude/commands/deploy.md` | Deploy pipeline (local only, gitignored) |
-| `docs/user-guides/` | Old user-guide PDF (#105, closed); training now = Training Hub artifact (#114) |
+| `docs/training-hub/` | Training Hub source (#114): `template.html` lessons, `build.js`, read-only screenshot scripts `capture*.js`. Published to a private artifact (URL in memory / SESSION-LOG session 102) |
 
 ---
 
@@ -276,6 +276,7 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - `TEST_BYPASS_ENABLED` secret exists on TEST only — it's what makes caller-supplied `isTest` safe. Never set it on prod.
 - **CI green ≠ site deployed.** Confirm GitHub Pages by hashing the live page against `git show <sha>:index.html`. Stuck build: `POST /repos/{owner}/{repo}/pages/builds`.
 - Code review reads diffs, it doesn't run the app — always run the full suite for shared-chrome changes (nav, layout).
+- **UI/wording changes to index.html can make a Training Hub lesson stale** — deploy.md step 3b checks and republishes the hub (`docs/training-hub/`).
 
 **Database**
 - Changing a function's params or return type = DROP + CREATE (never overload). **DROP wipes the grants** — re-GRANT/REVOKE explicitly and verify.
