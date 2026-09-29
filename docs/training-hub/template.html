@@ -1,0 +1,1105 @@
+<title>LG Pilates Training Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: handbook — sticky lesson index on the left, one lesson at a time on the right (stacks on phones). */
+:root {
+  --bg: #f4f6f4; --surface: #ffffff; --ink: #1f2a27; --muted: #5a6964; --line: #dbe3df;
+  --sage: #3f6e60; --sage-soft: #e3eee9; --amber: #8a5a14; --amber-soft: #fbf0dc;
+  --red: #b83b3b; --red-soft: #fbe9e9; --done: #2f7a4f;
+  --display: "Raleway", "Helvetica Neue", Arial, sans-serif;
+  --body: "Open Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121816; --surface: #1a2320; --ink: #e6ece9; --muted: #9eb0a9; --line: #2b3733;
+  --sage: #82b8a6; --sage-soft: #1f302a; --amber: #e3b56c; --amber-soft: #2c2417;
+  --red: #ec8a8a; --red-soft: #2e1c1c; --done: #7fcf9f; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121816; --surface: #1a2320; --ink: #e6ece9; --muted: #9eb0a9; --line: #2b3733;
+  --sage: #82b8a6; --sage-soft: #1f302a; --amber: #e3b56c; --amber-soft: #2c2417;
+  --red: #ec8a8a; --red-soft: #2e1c1c; --done: #7fcf9f; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 64px;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+@media (min-width: 900px) { .wrap { grid-template-columns: 290px minmax(0, 1fr); gap: 40px; padding-inline: 24px; } }
+
+/* Index */
+.index { min-width: 0; }
+@media (min-width: 900px) { .index { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow-y: auto; } }
+.brand { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: .01em; margin: 0; }
+.brand span { color: var(--sage); font-style: italic; font-weight: 600; }
+.brand-sub { color: var(--muted); font-size: 13px; margin: 2px 0 16px; }
+details.nav { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+details.nav > summary { list-style: none; cursor: pointer; padding: 12px 14px; font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; }
+details.nav > summary::-webkit-details-marker { display: none; }
+@media (min-width: 900px) { details.nav > summary { display: none; } details.nav { background: none; border: 0; } }
+.nav-body { padding: 4px 8px 12px; display: grid; gap: 14px; }
+@media (min-width: 900px) { .nav-body { padding: 0; } }
+.nav-part h3 { font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px 10px; }
+.nav-part ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.nav-link { width: 100%; text-align: left; background: none; border: 0; font: inherit; font-size: 14px; color: var(--ink);
+  padding: 7px 10px; border-radius: 6px; cursor: pointer; display: grid; grid-template-columns: 20px 1fr; gap: 8px; align-items: start; line-height: 1.4; }
+.nav-link:hover { background: var(--sage-soft); }
+.nav-link[aria-current="true"] { background: var(--sage-soft); color: var(--sage); font-weight: 600; }
+.nav-link:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+.tick { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--line); margin-top: 2px; display: grid; place-items: center; font-size: 10px; color: transparent; }
+.tick.on { background: var(--done); border-color: var(--done); color: var(--surface); }
+.nav-soon { font-size: 13px; color: var(--muted); padding: 4px 10px 0 38px; font-style: italic; }
+.nav-part .nav-soon-list { font-size: 13px; color: var(--muted); padding: 2px 10px 0 38px; margin: 0; list-style: none; opacity: .75; }
+
+/* Main */
+main { min-width: 0; }
+.page { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 22px 18px 28px; }
+@media (min-width: 600px) { .page { padding: 32px 40px 40px; } }
+.eyebrow { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--sage); margin: 0 0 6px; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(24px, 3.6vw, 32px); line-height: 1.2; margin: 0 0 18px; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 17px; margin: 30px 0 10px; }
+p, li { max-width: 68ch; }
+.situation { border-left: 3px solid var(--sage); background: var(--sage-soft); padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 0 0 8px; font-style: italic; }
+ol.steps { padding-left: 0; list-style: none; counter-reset: s; display: grid; gap: 10px; margin: 0; }
+ol.steps > li { counter-increment: s; position: relative; padding-left: 38px; min-height: 26px; }
+ol.steps > li::before { content: counter(s); font-family: var(--display); font-weight: 700; font-size: 13px; width: 26px; height: 26px; border-radius: 50%; background: var(--sage); color: var(--surface); display: grid; place-items: center; position: absolute; left: 0; top: 1px; }
+.ui { font-weight: 600; white-space: nowrap; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: .92em; background: var(--bg); }
+.pill { font-size: 13px; padding: 1px 9px; border-radius: 99px; white-space: nowrap; }
+.pill.res { background: var(--amber-soft); color: var(--amber); }
+.pill.con { background: var(--sage-soft); color: var(--done); }
+figure { margin: 16px 0; }
+figure img { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.status-table { overflow-x: auto; max-width: 100%; }
+.status-table tbody th { text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--ink); white-space: nowrap; padding-right: 16px; }
+table { border-collapse: collapse; font-size: 14px; min-width: 420px; }
+th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.tryit { margin-top: 30px; border: 1.5px dashed var(--sage); border-radius: 8px; padding: 16px 18px; display: grid; gap: 10px; }
+.tryit h2 { margin: 0; }
+.tryit p { margin: 0; }
+.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 14px var(--body); border-radius: 6px; padding: 9px 16px; cursor: pointer; text-decoration: none; border: 1.5px solid var(--sage); }
+.btn.primary { background: var(--sage); color: var(--surface); }
+.btn.ghost { background: none; color: var(--sage); }
+.btn[disabled] { opacity: .5; cursor: default; }
+.watch { margin-top: 26px; background: var(--amber-soft); border-radius: 8px; padding: 14px 18px; }
+.watch h2 { margin: 0 0 6px; color: var(--amber); }
+.watch ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.lesson-foot { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.done-btn.on { background: var(--done); border-color: var(--done); color: var(--surface); }
+.pager { display: flex; gap: 8px; flex-wrap: wrap; }
+.note { font-size: 13px; color: var(--muted); }
+.banner-demo { background: var(--red); color: #fff; font-weight: 600; font-size: 13px; text-align: center; padding: 6px 10px; border-radius: 4px; }
+.cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 8px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; min-width: 0; }
+.card h3 { font-family: var(--display); font-size: 15px; margin: 0 0 4px; }
+.card p { margin: 0; font-size: 14px; color: var(--muted); }
+.team { display: grid; gap: 10px; margin-top: 8px; }
+.person { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.person img { width: 32px; height: 32px; border-radius: 50%; }
+.bar { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+.bar > i { display: block; height: 100%; background: var(--done); }
+.num { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--muted); }
+[hidden] { display: none !important; }
+</style>
+
+<div class="wrap">
+  <aside class="index">
+    <p class="brand">LG <span>Pilates</span> Training Hub</p>
+    <p class="brand-sub">Learn the booking system by doing it</p>
+    <details class="nav" id="nav">
+      <summary>Lessons <span id="nav-count" class="num"></span></summary>
+      <div class="nav-body" id="nav-body"></div>
+    </details>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<!-- ───────────── Lesson content ───────────── -->
+<template id="L-start">
+  <p class="eyebrow">Start here</p>
+  <h1>How this hub works</h1>
+  <p>Each lesson starts with a real situation, like a client emailing to say they can't come. It then walks you through what to do in the booking system, step by step.</p>
+  <div class="cards">
+    <div class="card"><h3>1. Read the steps</h3><p>Each lesson is short, around five minutes, with pictures of the real screens.</p></div>
+    <div class="card"><h3>2. Try it for real</h3><p>The <strong>Try it</strong> button opens a practice copy of the booking system. Nothing you do there affects real clients.</p></div>
+    <div class="card"><h3>3. Tick it off</h3><p>Press <strong>Mark as done</strong> at the bottom of each lesson. Your progress is saved.</p></div>
+  </div>
+
+  <h2>The practice copy</h2>
+  <p>The practice copy looks and works exactly like the real system, with one difference: a red bar across the top.</p>
+  <div class="banner-demo" aria-hidden="true">⚠️ TEST MODE — connected to lg-pilates-test (isolated test data)</div>
+  <p>If you see that red bar, you're safe. Practice bookings are made up, no real emails go out, and card payments use pretend cards. <strong>If the red bar isn't there, stop.</strong> You're on the real system.</p>
+  <ol class="steps">
+    <li>Press any <strong>Try it</strong> button. The practice copy opens in a new tab.</li>
+    <li>Scroll to the very bottom of the page and click <span class="ui">Dashboard</span>.</li>
+    <li>Log in with your <strong>practice login</strong>. Mark will give you this. It's different from the real one, and your real login won't work here.</li>
+  </ol>
+  <div class="watch">
+    <h2>Good to know</h2>
+    <ul>
+      <li>The practice copy is reset every time Mark runs his automated checks. If a practice booking you made has vanished, that's normal.</li>
+      <li>The clients on the practice copy have odd names like "Returning Two" or "SE15 CancelTest". They're test accounts, not real people.</li>
+    </ul>
+  </div>
+
+  <h2>Progress</h2>
+  <div id="team" class="team"><p class="note">Loading progress…</p></div>
+</template>
+
+<template id="L-1.1">
+  <p class="eyebrow">Part 1 · The client's journey · Lesson 1.1</p>
+  <h1>How a client finds and books a class</h1>
+  <p class="situation">Sarah has seen the Monday class on the website and wants to join. What does she see, and what does she have to do?</p>
+  <p>Clients don't book single sessions. They book a <strong>block</strong>, a run of weekly classes such as 6 Mondays in a row. One booking covers every week of the block.</p>
+  <h2>What the client does</h2>
+  <ol class="steps">
+    <li>On the booking page, each class has a card showing the day and time, the venue, how many spaces are left, the dates in the block and the price.</li>
+    <li>She clicks <span class="ui">Book Current Block</span>. The booking form opens.</li>
+    <li><strong>Step 1: her details.</strong> Name, email and phone. The system uses her email to check whether she has booked before.</li>
+    <li><strong>New clients</strong> then fill in the health form and an emergency contact (lesson 1.4). <strong>Returning clients</strong> skip straight to payment.</li>
+    <li><strong>Last step: payment.</strong> She ticks to agree the terms and conditions, then pays by card or gets bank details (lesson 1.3).</li>
+  </ol>
+  <figure>
+    <img src="{{img:p1-card}}" alt="A class card: Mixed Ability, Monday 9:45 to 10:30am, Baildon, 12 spaces left, 6 dates, £60, Book Current Block button" loading="lazy" style="max-width:380px">
+    <figcaption>A class card as a client sees it on their phone.</figcaption>
+  </figure>
+  <figure>
+    <img src="{{img:p1-step1}}" alt="Booking form step 1 of 4: first name, last name, email and phone, with a Continue button" loading="lazy" style="max-width:380px">
+    <figcaption>Step 1 of the booking form. New clients have 4 steps; returning clients have 2.</figcaption>
+  </figure>
+  <h2>Joining partway through a block</h2>
+  <p>If the block has already started, the client only pays for the sessions still to come. Past dates are greyed out on the card, and a note says how many sessions are left. The price is worked out automatically, so you don't need to do anything.</p>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, book yourself onto any class as a <strong>new client</strong>. Use a made-up name and an email you haven't used before, such as <em>yourname1@test.example</em>. Go through every step. Then book a second class with the <strong>same email</strong> and notice the health form is skipped.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>A class only shows a Book button if there's space. A full class shows <span class="ui">Join Waiting List</span> instead (lesson 1.5).</li>
+      <li>If someone is already booked on that block and tries again, the form tells them so and stops.</li>
+      <li>If the last space goes while someone is still filling in the form, they're told the class is full. The system never double-books a seat.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-1.2">
+  <p class="eyebrow">Part 1 · The client's journey · Lesson 1.2</p>
+  <h1>The priority booking window</h1>
+  <p class="situation">Next term's Thursday block is coming up. Your regulars want to be sure of their place before it opens to everyone.</p>
+  <p>Each class card has a <strong>Next Block</strong> section at the bottom. It opens in three stages, counted back from the day the block starts:</p>
+  <div class="status-table">
+    <table>
+      <thead><tr><th>When</th><th>Who can book</th><th>What the card shows</th></tr></thead>
+      <tbody>
+        <tr><td>More than 2 weeks before</td><td>Nobody yet</td><td>🔒 Not open yet, with the key dates</td></tr>
+        <tr><td>2 weeks before</td><td>Priority clients only</td><td>⭐ Priority booking is open, plus a box to enter their email</td></tr>
+        <tr><td>1 week before</td><td>Everyone</td><td>📅 Book Next Block button</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h2>Who has priority?</h2>
+  <ul>
+    <li><strong>Automatically:</strong> anyone with a confirmed booking on the class's current block.</li>
+    <li><strong>By hand:</strong> you can give someone priority for a particular class on the <span class="ui">Clients</span> page. This suits someone who missed a term but is a regular.</li>
+  </ul>
+  <h2>What the client does during the priority window</h2>
+  <ol class="steps">
+    <li>She opens <strong>Next Block</strong> on the class card.</li>
+    <li>She types the email she booked with and clicks <span class="ui">Check My Priority</span>.</li>
+    <li>If she has priority, she sees "Priority confirmed!" and the booking form opens with her email filled in.</li>
+    <li>If not, she's told the date standard booking opens.</li>
+  </ol>
+  <figure>
+    <img src="{{img:p1-priority}}" alt="Class card with Next Block opened: Not open yet, priority booking opens 13 Oct, standard booking opens 20 Oct, block starts 27 Oct" loading="lazy" style="max-width:380px">
+    <figcaption>A next block that isn't open yet. The card shows clients exactly when each stage opens.</figcaption>
+  </figure>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, open <strong>Next Block</strong> on each class card and find which stage each one is in. Then, in the Dashboard, open <strong>Clients</strong> and find where you would give someone priority by hand.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>Priority only counts a <em>confirmed</em> booking. A client who reserved by bank transfer but hasn't been confirmed yet won't have priority. Confirm payments promptly (lesson 2.2).</li>
+      <li>Priority is per class. Being a Monday regular doesn't give priority on Thursdays.</li>
+      <li>The windows are worked out from the block's start date, so they move automatically when you add a new block.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-1.3">
+  <p class="eyebrow">Part 1 · The client's journey · Lesson 1.3</p>
+  <h1>Paying: card or bank transfer</h1>
+  <p class="situation">A client reaches the last step of the booking form. How do they pay, and what happens next?</p>
+  <p>The system takes <strong>one</strong> kind of payment at a time. You choose which in <span class="ui">Settings</span> (Part 4).</p>
+  <div class="status-table">
+    <table>
+      <thead><tr><th></th><th>Bank transfer</th><th>Card</th></tr></thead>
+      <tbody>
+        <tr><td>What the client sees</td><td>Your bank details and a payment reference, and a button to <strong>Reserve my spot</strong></td><td>A button that takes them to a secure card payment page</td></tr>
+        <tr><td>Booking status</td><td><span class="pill res">reserved</span> until you confirm</td><td><span class="pill con">confirmed</span> as soon as they've paid</td></tr>
+        <tr><td>What you do</td><td>Check the bank and click Confirm (lesson 2.2)</td><td>Nothing</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h2>Bank transfer, step by step</h2>
+  <ol class="steps">
+    <li>The client sees your bank details and is asked to pay within 48 hours.</li>
+    <li>The <strong>reference</strong> is their name plus the class day, such as <em>Sam Example Monday</em>. That's what you'll look for on your bank statement.</li>
+    <li>They tick to agree the terms and click <span class="ui">Reserve my spot</span>. Their place is held, but not confirmed.</li>
+    <li>When the money arrives, you click Confirm and they get a confirmation email.</li>
+  </ol>
+  <figure>
+    <img src="{{img:p1-payment-top}}" alt="Payment step: Reserve your space notice, bank details with name, sort code, account number and reference Sam Example Monday" loading="lazy" style="max-width:380px">
+    <figcaption>Bank transfer mode. (The practice copy shows pretend bank details.)</figcaption>
+  </figure>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, book any class. If you see bank details, note the reference, reserve, then Confirm the booking in the Dashboard. If you're sent to a card page instead, use the pretend card <strong>4242 4242 4242 4242</strong>, any future expiry date and any 3 digits.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>Your real bank details must be entered in Settings before real clients book (Part 4).</li>
+      <li>Card payments are still in practice mode on the real system too, until the launch step that switches on real payments.</li>
+      <li>The price shown, the price charged and the amount recorded are always the same figure, including for part-blocks.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-1.4">
+  <p class="eyebrow">Part 1 · The client's journey · Lesson 1.4</p>
+  <h1>The health form (PAR-Q)</h1>
+  <p class="situation">A first-time client is booking. Before they can pay, they're asked about their health.</p>
+  <p>The PAR-Q is a standard health questionnaire. It makes sure new clients are well enough to exercise, and it gives you an emergency contact.</p>
+  <h2>What the client fills in</h2>
+  <ol class="steps">
+    <li><strong>Age.</strong> Clients must be 18 or over, and the form won't continue otherwise.</li>
+    <li><strong>A list of yes/no health questions</strong>, such as heart problems, blood pressure and recent surgery.</li>
+    <li>If they answer <strong>yes</strong> to anything, they must describe it. The form advises them to check with their doctor before joining.</li>
+    <li>They type their name and tick the declaration.</li>
+    <li><strong>Emergency contact:</strong> name, relationship and phone number.</li>
+  </ol>
+  <figure>
+    <img src="{{img:p1-healthform}}" alt="Booking form step 2 of 4, medical questions: age box and yes or no questions about heart, circulation and blood pressure problems" loading="lazy" style="max-width:380px">
+    <figcaption>Step 2 of 4 for new clients.</figcaption>
+  </figure>
+  <h2>Who has to fill it in?</h2>
+  <p>Only <strong>new clients</strong>, once. When someone books again with the same email, the system recognises them and skips the form.</p>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, book as a brand-new client and answer <strong>yes</strong> to one question, to see what the form asks next. Use a made-up email you haven't used before.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>If a new client's booking somehow has no health form, a warning appears at the top of <strong>All bookings</strong>. Click it to find the booking, and ask the client to fill one in before class.</li>
+      <li>Health answers are sensitive personal information. Only look at them when you need to.</li>
+      <li>Joining a waiting list doesn't count as having done the form. They'll still fill it in when they book.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-1.5">
+  <p class="eyebrow">Part 1 · The client's journey · Lesson 1.5</p>
+  <h1>Joining a waiting list, and accepting an offer</h1>
+  <p class="situation">The Monday class is full. A client would still like a place if one comes up.</p>
+  <h2>Joining the list</h2>
+  <ol class="steps">
+    <li>A full class shows <span class="ui">Join Waiting List</span> instead of a Book button. The card also shows how many people are already waiting.</li>
+    <li>The client enters their name, email and phone, and clicks <span class="ui">Join the waiting list</span>.</li>
+    <li>They see <strong>"You're on the list"</strong> and their place in the queue, for example #3.</li>
+  </ol>
+  <figure>
+    <img src="{{img:p1-fullcard}}" alt="Class card showing the class is full, 2 people on the waiting list, and a Join Waiting List button" loading="lazy" style="max-width:380px">
+    <figcaption>A full class. (Made to look full for this picture.)</figcaption>
+  </figure>
+  <figure>
+    <img src="{{img:p1-waitlist-form}}" alt="Join the waiting list form: first name, last name, email and phone" loading="lazy" style="max-width:380px">
+    <figcaption>The waiting-list form.</figcaption>
+  </figure>
+  <h2>When you offer them a space</h2>
+  <ol class="steps">
+    <li>You click Offer space on the Waiting lists page (lesson 2.5).</li>
+    <li>The client gets an email with a <strong>personal booking link</strong>.</li>
+    <li>The link opens the booking form with their details already filled in and a note that a space is being held for them.</li>
+    <li>They finish booking as normal and drop off the waiting list.</li>
+  </ol>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>You need a full class for this. On the practice copy, find a class with a <strong>Join Waiting List</strong> button, if there is one, and join with a made-up name. Then in the Dashboard, open <strong>Waiting lists</strong> and offer yourself the space (lesson 2.5). No email is sent on the practice copy, so use <strong>Copy link</strong> and paste the link into a new tab to see the client's side.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>When a seat frees up and people are waiting, the public <strong>doesn't</strong> see a free space. It's kept for the queue until you offer it or clear the list.</li>
+      <li>The link only works while you're holding the seat for them. If you release the hold, the link stops working.</li>
+      <li>A next block that isn't open yet can't take a waiting list. It shows "Next Block Full" instead.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-1.6">
+  <p class="eyebrow">Part 1 · The client's journey · Lesson 1.6</p>
+  <h1>When a client wants to cancel</h1>
+  <p class="situation">A client has booked but now can't make the block. How do they cancel?</p>
+  <p><strong>Clients can't cancel online yet.</strong> They contact you by email or phone, and you remove them from the block (lesson 2.3). A "manage my booking" link in the confirmation email is planned for later.</p>
+  <h2>The rules clients agree to</h2>
+  <p>Every client ticks to accept the terms and conditions when they book. The ones about cancelling are:</p>
+  <ul>
+    <li>They must give at least <strong>48 hours' notice</strong> to cancel a block. Later cancellations are charged.</li>
+    <li><strong>Missed classes aren't refunded</strong>, and classes can't be carried over to another block.</li>
+    <li>A recorded video is available if they can't make a session in person.</li>
+  </ul>
+  <figure>
+    <img src="{{img:p1-payment}}" alt="Terms and conditions at the payment step, with the agree tick box and the Reserve my spot button" loading="lazy" style="max-width:380px">
+    <figcaption>The terms and conditions every client agrees to before booking.</figcaption>
+  </figure>
+  <p>You can use your judgement. The refund screen lets you change the amount if you've agreed something different with the client.</p>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, make a booking, then play both parts: pretend the client has emailed to cancel, and remove them in the Dashboard (lesson 2.3).</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>If someone is on the waiting list for that class, their freed seat is kept for the queue. Offer it (lesson 2.5).</li>
+      <li>A client who simply stops coming is still booked. Nothing changes until you remove them.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-2.1">
+  <p class="eyebrow">Part 2 · Everyday admin · Lesson 2.1</p>
+  <h1>Who's coming to class this week?</h1>
+  <p class="situation">It's Monday morning. Before the 9:45 class you want to know who's booked in, and whether anyone is visiting from another class.</p>
+  <h2>What you do</h2>
+  <ol class="steps">
+    <li>Open the <span class="ui">Dashboard</span> and choose <span class="ui">By class</span> in the left-hand menu.</li>
+    <li>Classes are grouped by venue. Click a class name, for example <em>Mixed Ability — Monday 9:45am</em>, to open it.</li>
+    <li>Each block is a card. The one marked <span class="pill con">Active</span> is running now; <span class="pill res">Upcoming</span> is next term. The card lists everyone booked, and the top right shows how full it is (for example <em>10/12 booked</em>).</li>
+    <li>If anyone is coming from another class for one week, they're listed underneath under <strong>Catch-Up Visitors</strong>, with the date.</li>
+  </ol>
+  <figure>
+    <img src="{{img:by-class}}" alt="By class page showing the Mixed Ability Monday class opened, with its blocks and the clients booked on each" loading="lazy">
+    <figcaption>By class: open a class to see each block and who's on it.</figcaption>
+  </figure>
+  <p><strong>Looking for one person?</strong> Use <span class="ui">All bookings</span> instead and type their name into the search box.</p>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, open <strong>By class</strong> and find the Mixed Ability Monday class. How many people are booked on its next block?</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>By class only shows blocks that are running now or coming up. Finished blocks move to <strong>Booking history</strong>.</li>
+      <li>Catch-up visitors show under the class they're <em>visiting</em>, not their usual one.</li>
+      <li>A seat being held for someone on the waiting list counts as taken (see lesson 2.5).</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-2.2">
+  <p class="eyebrow">Part 2 · Everyday admin · Lesson 2.2</p>
+  <h1>A bank transfer has arrived: mark it paid</h1>
+  <p class="situation">A client booked last week and chose to pay by bank transfer. Their money has just landed in the business account.</p>
+  <p>Every booking has a status. You only need to know two:</p>
+  <div class="status-table">
+    <table>
+      <thead><tr><th>Status</th><th>What it means</th><th>Who changes it</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill res">reserved</span></td><td>Booked, but not paid yet. The seat is still kept for them.</td><td>You, once the money arrives</td></tr>
+        <tr><td><span class="pill con">confirmed</span></td><td>Booked and paid</td><td>Automatic for card payments; you for bank transfers</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h2>What you do</h2>
+  <ol class="steps">
+    <li>Check your bank statement for the client's name and the amount.</li>
+    <li>In the Dashboard, open <span class="ui">All bookings</span> and type their name into the search box.</li>
+    <li>Find the row showing <span class="pill res">reserved</span>. Check the <strong>Paid</strong> column matches what arrived in the bank.</li>
+    <li>Click <span class="ui">Confirm</span>. The status changes to <span class="pill con">confirmed</span> and the client is automatically emailed to say their booking is confirmed.</li>
+  </ol>
+  <figure>
+    <img src="{{img:reserved-row}}" alt="A booking row with status reserved and a green Confirm button" loading="lazy">
+    <figcaption>A booking waiting for payment. The Confirm button only appears on reserved bookings.</figcaption>
+  </figure>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, book yourself onto any class with a made-up name and choose <strong>bank transfer</strong>. Then log in to the Dashboard, find your booking and Confirm it.</p>
+    <p class="note">If the practice copy only offers card payment, it has been switched to card mode for testing. Use the pretend card <strong>4242 4242 4242 4242</strong>, any future date and any 3 digits. That booking confirms itself, which is exactly what happens with real card payments.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>Card payments confirm themselves. You only ever click Confirm for bank transfers.</li>
+      <li>The amount can be less than a full block if the client joined partway through. The Paid column shows what they owe.</li>
+      <li>There's no "undo" for Confirm. If you confirm the wrong person, tell Mark.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-2.3">
+  <p class="eyebrow">Part 2 · Everyday admin · Lesson 2.3</p>
+  <h1>A client cancels: remove them and sort the refund</h1>
+  <p class="situation">A client emails: "I've hurt my back and can't do the rest of the block. Can I have a refund?" They've been to 2 of the 6 sessions.</p>
+  <p>This is two jobs. First you <strong>remove them from the block</strong>, which frees their seat and works out the refund. Later, once you've sent the money, you <strong>mark the refund as paid</strong>.</p>
+  <h2>Part A: remove them from the block</h2>
+  <ol class="steps">
+    <li>In <span class="ui">All bookings</span>, find the client and click <span class="ui">Remove from Block</span>.</li>
+    <li>Pick how many sessions they've attended. For our client that's <strong>2</strong>. Click <span class="ui">Next</span>.</li>
+    <li>If you picked 0, you'll be asked whether they've paid yet. If they haven't, no refund is owed.</li>
+    <li>Check the refund. It's worked out as the sessions they'll miss × the price per session. If you've agreed something different with the client, type it into <strong>Override amount</strong>.</li>
+    <li>Click <span class="ui">Confirm Removal</span>. Their seat is free straight away.</li>
+  </ol>
+  <figure>
+    <img src="{{img:remove-step2}}" alt="Remove from Block review step: 2 of 6 attended, refund owed £40, override amount box, Confirm Removal button" loading="lazy">
+    <figcaption>The review step. 4 sessions missed × £10 = £40 owed.</figcaption>
+  </figure>
+  <h2>Part B: pay the refund</h2>
+  <ol class="steps">
+    <li>Open <span class="ui">Cancellations</span>. Refunds still owed show in orange with a <span class="ui">Mark Refunded</span> button.</li>
+    <li><strong>If they paid by bank transfer:</strong> send the money from your bank first, then click <span class="ui">Mark Refunded</span>.</li>
+    <li><strong>If they paid by card:</strong> just click <span class="ui">Mark Refunded</span>. The money goes back to their card automatically.</li>
+    <li>Confirm when asked. The client is emailed to say their refund has been processed.</li>
+  </ol>
+  <figure>
+    <img src="{{img:cancellations}}" alt="Cancellations page listing removed clients, refund amounts, and Mark Refunded buttons" loading="lazy">
+    <figcaption>Cancellations: orange amounts are still owed; green ones are done.</figcaption>
+  </figure>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, pick any booking and click <strong>Remove from Block</strong>. Try different numbers of sessions and watch the refund change. You can press <strong>Cancel</strong> before the last step, or go all the way through, because it's only practice data.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li><strong>Don't use "Del Customer" for a cancellation.</strong> It deletes the person and all their bookings for good. Remove from Block is the right button.</li>
+      <li>Emails depend on the refund. If <em>no</em> refund is owed, the client is emailed straight away. If a refund <em>is</em> owed, they're only emailed when you click Mark Refunded.</li>
+      <li>For card refunds, if Mark Refunded shows an error, nothing has been paid and the refund stays orange. Tell Mark.</li>
+      <li>An orange warning at the top of the Dashboard counts refunds still waiting.</li>
+      <li>Is anyone on the waiting list for that class? Their seat is now free, so see lesson 2.5.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-2.4">
+  <p class="eyebrow">Part 2 · Everyday admin · Lesson 2.4</p>
+  <h1>A client wants to swap class for one week</h1>
+  <p class="situation">A Monday regular is away next Monday and asks: "Can I come to Friday's class that week instead?"</p>
+  <p>This is a <strong>catch-up swap</strong>: one client, one week, a different class. Recording it keeps the class numbers right, so you don't over-fill Friday.</p>
+  <h2>What you do</h2>
+  <ol class="steps">
+    <li>Open <span class="ui">Catch-up swaps</span> and click <span class="ui">+ Record swap</span>.</li>
+    <li><strong>Who's coming?</strong> Pick the client.</li>
+    <li><strong>Their usual class</strong> fills itself in. If they're on more than one class, pick the one they're missing.</li>
+    <li><strong>Which class are they joining?</strong> Pick the class they're visiting. Each option shows how many spaces it has, and full classes are greyed out.</li>
+    <li><strong>Which week?</strong> Pick the date. Weeks that are already full are greyed out.</li>
+    <li>Add a note if it helps, then click <span class="ui">Record Swap</span>.</li>
+  </ol>
+  <figure>
+    <img src="{{img:catchup-modal}}" alt="Record Catch-Up Swap form filled in: client, usual Monday class, joining Friday 10:30am, week of Friday 2 October, note" loading="lazy">
+    <figcaption>A Monday client visiting Friday's class for one week.</figcaption>
+  </figure>
+  <p>The swap then shows under <strong>Upcoming swaps</strong>, and on the <strong>By class</strong> page as a catch-up visitor on the class they're visiting.</p>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, record a swap for any client into a different class. Then find them on <strong>By class</strong> under Catch-Up Visitors. Finish by removing the swap with the <strong>Remove</strong> button.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li><strong>No email is sent for swaps.</strong> Let the client know yourself.</li>
+      <li>The guideline is 2 swaps per client per block. A third shows a "Heads up" message. You can still click <span class="ui">Save Anyway</span> if you're happy to.</li>
+      <li>A space held for someone on the waiting list can't be used for a swap. Release the hold first (lesson 2.5).</li>
+      <li>Made a mistake? Click <span class="ui">Remove</span> on the swap and record it again.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-2.5">
+  <p class="eyebrow">Part 2 · Everyday admin · Lesson 2.5</p>
+  <h1>A space has opened: offer it to the waiting list</h1>
+  <p class="situation">The Monday class was full and two people joined its waiting list. Someone has just cancelled (lesson 2.3), so there's now one free seat.</p>
+  <h2>What you do</h2>
+  <ol class="steps">
+    <li>Open <span class="ui">Waiting lists</span>. Each full class shows its queue, with the person who joined first at the top.</li>
+    <li>The class now shows <strong>1 seat free</strong>. Click <span class="ui">Offer space</span> next to the person at number 1.</li>
+    <li>Confirm when asked. The system <strong>holds the seat</strong> for them and emails them a personal booking link straight away.</li>
+    <li>Their row changes to <strong>Offered</strong> with the date. When they book, they drop off the list automatically.</li>
+  </ol>
+  <figure>
+    <img src="{{img:waitlist}}" alt="Waiting lists page: Mixed Ability Monday with 1 seat free and two clients waiting, each with Offer space and Remove buttons" loading="lazy">
+    <figcaption>One seat free, two people waiting. Offer it to number 1 first. (The names are examples.)</figcaption>
+  </figure>
+  <h2>If they don't reply</h2>
+  <ol class="steps">
+    <li>After a day, the row shows how long the seat has been held, for example <em>held 2 days</em>.</li>
+    <li>Click <span class="ui">Release hold</span>. Their link stops working and they go back into the queue.</li>
+    <li>Now offer the seat to the next person.</li>
+  </ol>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, open <strong>Waiting lists</strong>. If nobody is waiting, first follow lesson 1.5 to join a list as a pretend client, then come back and offer yourself the space.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li><span class="ui">Offer space</span> is greyed out when there's no free seat. The page tells you why.</li>
+      <li>A held seat is hidden from everyone else, including catch-up swaps, until they book or you release it.</li>
+      <li>If the offer email doesn't send, you'll see a message saying so. Click <span class="ui">Copy link</span> and send it to them yourself.</li>
+      <li><span class="ui">Remove</span> takes someone off the list completely. If they were holding a seat, it frees it.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-3.1">
+  <p class="eyebrow">Part 3 · Each new term · Lesson 3.1</p>
+  <h1>Set up next term's block</h1>
+  <p class="situation">The Wednesday Beginners block ends on 11 November. The Dashboard is warning you there's no next block, and your regulars will want to rebook.</p>
+  <p>A <strong>class</strong> is the permanent slot, such as <em>Beginner, Wednesday 7pm, Guiseley</em>. A <strong>block</strong> is one run of weeks for that class, with its own dates, price and number of places. Each term you add a new block to each class.</p>
+  <figure>
+    <img src="{{img:p3-warning}}" alt="Dashboard warning: 2 classes have an active block but no next block, with an Add Block button beside each" loading="lazy">
+    <figcaption>This warning appears at the top of the Dashboard. Each class has an <strong>+ Add Block</strong> button right there.</figcaption>
+  </figure>
+  <h2>What you do</h2>
+  <ol class="steps">
+    <li>Click <span class="ui">+ Add Block</span> on the warning, or open <span class="ui">Classes</span> and click <span class="ui">+ Block</span> next to the class.</li>
+    <li><strong>Block start date:</strong> pick the first class date. It must be the class's own day, and a green tick confirms it (for example "✓ Monday confirmed").</li>
+    <li><strong>Block length:</strong> how many weeks, from 2 to 10.</li>
+    <li><strong>Price per session</strong> and <strong>capacity</strong> (the number of places). The block price is the price per session × the number of weeks.</li>
+    <li>Click <span class="ui">Add Block</span>. It appears on the booking page under the class's <strong>Next Block</strong>, following the priority timetable (lesson 3.2).</li>
+  </ol>
+  <figure>
+    <img src="{{img:p3-addblock}}" alt="Add Block form: start date with Monday confirmed, 6 weeks, £10 per session, capacity 12" loading="lazy" style="max-width:500px">
+    <figcaption>A 6-week block at £10 a session, so the block price is £60.</figcaption>
+  </figure>
+  <figure>
+    <img src="{{img:p3-classes}}" alt="Classes page listing each class with its active and upcoming block and Edit, + Block and Delete buttons" loading="lazy">
+    <figcaption>The Classes page shows each class's current and next block at a glance.</figcaption>
+  </figure>
+  <h2>A brand-new class</h2>
+  <p>Click <span class="ui">+ Add new class</span> on the Classes page. Fill in the day, level, start and end times, venue and location, then add its first block.</p>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, add a next block to a class that shows "None" under Upcoming Block. Try picking the wrong weekday first to see the warning.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li><strong>Add the next block at least 3 weeks before it starts.</strong> Priority booking opens 2 weeks before, and regulars like to see the dates first.</li>
+      <li>A block can't overlap another block of the same class, or start on the day the previous one ends.</li>
+      <li><strong>Delete Block also deletes every booking on it.</strong> Never delete a block that has bookings. Use Edit instead.</li>
+      <li>Editing a block's price doesn't change what people who've already booked owe.</li>
+      <li>Deleting a class deletes all its blocks and bookings. It can't be undone.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-3.2">
+  <p class="eyebrow">Part 3 · Each new term · Lesson 3.2</p>
+  <h1>The changeover between terms</h1>
+  <p class="situation">A new block starts on Tuesday 27 October. What happens when, and what do you need to do?</p>
+  <p>Once you've added the block, the booking page runs this timetable on its own. Here it is for a block starting 27 October:</p>
+  <div class="status-table">
+    <table>
+      <thead><tr><th>Date</th><th>What happens</th><th>What you do</th></tr></thead>
+      <tbody>
+        <tr><td>By 6 Oct</td><td>Block added. The card shows "Not open yet" with the dates</td><td>Add the block (lesson 3.1)</td></tr>
+        <tr><td>13 Oct (2 weeks before)</td><td><strong>Priority booking opens</strong> for anyone confirmed on the current block</td><td>Confirm any bank transfers still waiting, so those regulars get priority. Give priority by hand to anyone else who should have it.</td></tr>
+        <tr><td>20 Oct (1 week before)</td><td><strong>Booking opens to everyone</strong></td><td>Nothing</td></tr>
+        <tr><td>27 Oct</td><td>Block starts. It becomes the current block, and the old one moves to Booking history when it ends</td><td>Check who's coming (lesson 2.1)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h2>Giving someone priority by hand</h2>
+  <ol class="steps">
+    <li>Open <span class="ui">Clients</span> and find the person.</li>
+    <li>Use the per-class detail button to give them priority for that class.</li>
+  </ol>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, open <strong>Clients</strong> and find where you'd give someone priority. Then look at the booking page and work out which stage each class's next block is in.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>Reserved but unconfirmed bookings don't earn priority. Clear your bank-transfer confirmations before the priority date.</li>
+      <li>If a next block is full during the priority week, it shows "Next Block Full" and doesn't take a waiting list until booking opens to everyone.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-3.3">
+  <p class="eyebrow">Part 3 · Each new term · Lesson 3.3</p>
+  <h1>Email everyone on a block</h1>
+  <p class="situation">The church hall is double-booked next Monday, so the class is moving to the small hall. Everyone on the Monday block needs to know.</p>
+  <h2>What you do</h2>
+  <ol class="steps">
+    <li>Open <span class="ui">By class</span> and open the class.</li>
+    <li>On the right block, click <span class="ui">Email Block</span>. The form shows how many clients it will go to.</li>
+    <li>Write a subject and your message.</li>
+    <li>Click <span class="ui">Send to … clients</span> and confirm.</li>
+  </ol>
+  <figure>
+    <img src="{{img:p3-blockemail}}" alt="Email this block form: sending to 2 clients, subject and message filled in, Send to 2 clients button" loading="lazy" style="max-width:480px">
+    <figcaption>Each client gets their own copy starting "Hi [first name]".</figcaption>
+  </figure>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, open <strong>By class</strong>, find a block with bookings and write an email. The practice copy doesn't send real emails, so it's safe to press Send.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>Clients can't see each other's email addresses.</li>
+      <li>You get a copy sent to the notification email in Settings, so you have a record.</li>
+      <li>Once sent, it can't be unsent. Read it through first.</li>
+      <li>The button only appears on blocks that have bookings.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-3.4">
+  <p class="eyebrow">Part 3 · Each new term · Lesson 3.4</p>
+  <h1>Reading the Reports page</h1>
+  <p class="situation">It's the end of the month and you want a quick feel for how bookings are going.</p>
+  <figure>
+    <img src="{{img:p3-reports}}" alt="Reports page: active bookings, revenue this month, confirmed rate, pending refunds, and class capacity bars" loading="lazy">
+    <figcaption>The top of the Reports page.</figcaption>
+  </figure>
+  <h2>What each number means</h2>
+  <div class="status-table">
+    <table>
+      <thead><tr><th>Box</th><th>What it actually counts</th></tr></thead>
+      <tbody>
+        <tr><td>Active bookings</td><td>Every booking that hasn't been cancelled, <strong>including finished blocks</strong></td></tr>
+        <tr><td>Revenue MTD</td><td>The value of bookings <strong>made</strong> this month, including ones not yet paid. It's not money in the bank.</td></tr>
+        <tr><td>Confirmed rate</td><td>The share of those bookings that are paid (confirmed)</td></tr>
+        <tr><td>Pending refunds</td><td>Refunds worked out but not yet marked as paid (see Cancellations)</td></tr>
+        <tr><td>Class capacity</td><td>How full each class's current block is</td></tr>
+        <tr><td>Client breakdown</td><td>New vs returning clients, and how many have a health form on file</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, open <strong>Reports</strong>. Compare "Pending refunds" with the orange amounts on the Cancellations page. They should match.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>For your accounts, use your bank statement, not Revenue MTD.</li>
+      <li>A month-by-month chart is planned for later.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-3.5">
+  <p class="eyebrow">Part 3 · Each new term · Lesson 3.5</p>
+  <h1>Finding a past booking</h1>
+  <p class="situation">A client asks, "Did I come to the Friday class back in the spring?"</p>
+  <p>When a block ends, its bookings move from All bookings to <strong>Booking history</strong>. Nothing is deleted.</p>
+  <ol class="steps">
+    <li>Open <span class="ui">Booking history</span>.</li>
+    <li>Type the client's name or the class into the search box.</li>
+    <li>Click <span class="ui">View</span> to see the booking's details.</li>
+  </ol>
+  <figure>
+    <img src="{{img:p3-history}}" alt="Booking history page with a search box and a list of bookings from ended blocks" loading="lazy">
+    <figcaption>Booking history: bookings from ended blocks, view only.</figcaption>
+  </figure>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, open <strong>Booking history</strong> and search for "Returning".</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>Past bookings are view-only. There's no Remove or Confirm on them, because the block has finished.</li>
+      <li>Removed and cancelled clients are on the <strong>Cancellations</strong> page, not here.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-4.1">
+  <p class="eyebrow">Part 4 · Occasional jobs · Lesson 4.1</p>
+  <h1>Settings: bank details and your email</h1>
+  <p class="situation">You've changed bank, or you want booking alerts sent to a different email address.</p>
+  <h2>What you do</h2>
+  <ol class="steps">
+    <li>Open <span class="ui">Settings</span>.</li>
+    <li><strong>Bank details:</strong> the account name, sort code and account number clients see when they pay by bank transfer.</li>
+    <li><strong>Notification email:</strong> where your alerts go (see the email list in Reference).</li>
+    <li>Click <span class="ui">Save Settings</span> under the part you changed.</li>
+  </ol>
+  <figure>
+    <img src="{{img:p4-settings}}" alt="Settings page, bank details section: account name, sort code, account number" loading="lazy">
+    <figcaption>Settings on the practice copy, with pretend bank details.</figcaption>
+  </figure>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, change the account name, save, then start a booking and check the payment step shows your change. Put it back afterwards.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li><strong>Double-check the numbers.</strong> Clients copy them straight into their banking app.</li>
+      <li>The practice copy and the real system have separate settings. Changing one doesn't change the other.</li>
+      <li>The note on the page says cancellation and refund notices go to this address. They don't: you handle those from the Cancellations page instead.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-4.2">
+  <p class="eyebrow">Part 4 · Occasional jobs · Lesson 4.2</p>
+  <h1>Switching between card and bank transfer</h1>
+  <p class="situation">You've decided to start taking card payments, or to go back to bank transfer for a while.</p>
+  <ol class="steps">
+    <li>Open <span class="ui">Settings</span> and scroll to <strong>Payment method</strong>.</li>
+    <li>Choose <strong>Bank transfer</strong> or <strong>Card payments (Stripe)</strong>.</li>
+    <li>Click <span class="ui">Save Settings</span>. It applies from the next booking anyone makes.</li>
+  </ol>
+  <p>See lesson 1.3 for what clients see in each mode.</p>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, switch to card payments, make a booking with the pretend card <strong>4242 4242 4242 4242</strong>, then switch back to bank transfer.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>Switching doesn't change bookings already made. Reserved bank-transfer bookings still need confirming.</li>
+      <li>On the real system, card payments stay in practice mode until the launch step that switches on real card payments. Mark will tell you when.</li>
+      <li>Only one mode can be on at a time.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-4.3">
+  <p class="eyebrow">Part 4 · Occasional jobs · Lesson 4.3</p>
+  <h1>Backups: keep your own copy</h1>
+  <p class="situation">It's the end of a block. You want a copy of all your bookings saved safely, just in case.</p>
+  <p><strong>This matters.</strong> The system doesn't currently make automatic backups. The export on this page is your safety net.</p>
+  <ol class="steps">
+    <li>Open <span class="ui">Backup &amp; export</span>.</li>
+    <li>Click <span class="ui">Export everything (single file)</span>. A spreadsheet file downloads.</li>
+    <li>Save it somewhere safe, such as a private folder in your cloud storage.</li>
+  </ol>
+  <figure>
+    <img src="{{img:p4-backup}}" alt="Backup and export page: export buttons for classes, blocks, clients and bookings, and a full backup button" loading="lazy">
+    <figcaption>You can export one table at a time, or everything in one file.</figcaption>
+  </figure>
+  <p><strong>When to do it:</strong> at the end of every block, and before any big change such as deleting a class.</p>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>On the practice copy, click <strong>Export everything</strong> and open the file to see what's in it.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li><strong>The full backup includes clients' health forms, phone numbers and emails.</strong> Keep it private: never email it or leave it on a shared computer.</li>
+      <li>Delete old backup files you no longer need.</li>
+      <li>Automatic backups are on Mark's list.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-4.4">
+  <p class="eyebrow">Part 4 · Occasional jobs · Lesson 4.4</p>
+  <h1>Using the Dashboard on your phone</h1>
+  <p class="situation">You're at the church hall between classes and a client asks if there's space on Thursday.</p>
+  <p>Everything in the Dashboard works on a phone. The layout is just arranged differently.</p>
+  <ol class="steps">
+    <li>The menu moves to the <strong>bottom of the screen</strong>: Bookings, By class, Clients, Classes, and <strong>More</strong> for every other page.</li>
+    <li>Warnings fold into one orange bar at the top saying how many things need attention. Tap it to see them.</li>
+    <li>Tap a booking to open it and see its buttons.</li>
+  </ol>
+  <div class="cards">
+    <figure style="margin:0"><img src="{{img:p4-phone}}" alt="Dashboard on a phone: attention bar, bookings list and bottom menu" loading="lazy"><figcaption>All bookings on a phone.</figcaption></figure>
+    <figure style="margin:0"><img src="{{img:p4-phone-more}}" alt="The More menu on a phone listing every Dashboard page" loading="lazy"><figcaption>More: every page.</figcaption></figure>
+  </div>
+  <div class="tryit">
+    <h2>Try it</h2>
+    <p>Open the practice copy <strong>on your phone</strong>, log in and find Thursday's class on By class.</p>
+    <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
+  </div>
+  <div class="watch">
+    <h2>Watch out for</h2>
+    <ul>
+      <li>Sign out if you've used someone else's phone or tablet.</li>
+      <li>Check for the red TEST MODE bar so you know whether you're on the practice copy or the real system.</li>
+    </ul>
+  </div>
+</template>
+
+<template id="L-R.1">
+  <p class="eyebrow">Reference</p>
+  <h1>Which emails go out when</h1>
+  <p>The system sends these emails automatically. Anything not listed, you tell the client yourself.</p>
+  <div class="status-table">
+    <table>
+      <thead><tr><th>When this happens</th><th>The client gets</th><th>You get</th></tr></thead>
+      <tbody>
+        <tr><td>Client books, paying by bank transfer</td><td>"Your booking is reserved", with how to pay</td><td>"New booking" alert</td></tr>
+        <tr><td>Client books and pays by card</td><td>"Your booking is confirmed"</td><td>"New booking (card payment)" alert</td></tr>
+        <tr><td>You click <strong>Confirm</strong> on a bank-transfer booking</td><td>"Your booking is confirmed"</td><td>Nothing</td></tr>
+        <tr><td>Client joins a waiting list</td><td>Nothing (they see their place in the queue on screen)</td><td>"Waiting list" alert</td></tr>
+        <tr><td>You click <strong>Offer space</strong></td><td>"A space has come up", with their booking link</td><td>Nothing</td></tr>
+        <tr><td>You remove a client and <strong>no refund</strong> is owed</td><td>"Your booking has been cancelled", straight away</td><td>Nothing</td></tr>
+        <tr><td>You remove a client and a <strong>refund is owed</strong></td><td>Nothing yet</td><td>Nothing</td></tr>
+        <tr><td>You click <strong>Mark Refunded</strong></td><td>"Your refund has been processed"</td><td>Nothing</td></tr>
+        <tr><td>You send an <strong>Email Block</strong> message</td><td>Your message</td><td>A copy</td></tr>
+        <tr><td>Catch-up swap, release hold, remove from waiting list</td><td>Nothing: tell them yourself</td><td>Nothing</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Emails come from bookings@lg-pilates.co.uk. "You get" means the notification email in Settings. The practice copy never sends real emails.</p>
+</template>
+
+<template id="L-R.2">
+  <p class="eyebrow">Reference</p>
+  <h1>"A client says…" problem-solver</h1>
+  <div class="status-table">
+    <table>
+      <thead><tr><th>The client says</th><th>What's probably going on</th><th>What to do</th></tr></thead>
+      <tbody>
+        <tr><td>"I've paid but haven't had a confirmation."</td><td>Bank transfer: it stays reserved until you confirm</td><td>Check the bank, then Confirm (2.2)</td></tr>
+        <tr><td>"I never got an email."</td><td>Probably in their spam folder</td><td>Ask them to check spam for bookings@lg-pilates.co.uk</td></tr>
+        <tr><td>"The class says full."</td><td>No spaces, or spaces are being kept for the waiting list</td><td>Point them to Join Waiting List (1.5)</td></tr>
+        <tr><td>"I can't book the next block yet."</td><td>It's not open yet, or it's in the priority week and they don't have priority</td><td>Check the dates on the card (1.2). If they're a regular, check their booking is confirmed, or give priority by hand (3.2)</td></tr>
+        <tr><td>"It says I'm already booked."</td><td>They are already booked on that block</td><td>Find them in All bookings to reassure them</td></tr>
+        <tr><td>"The booking link you sent doesn't work."</td><td>The hold was released, or they've already booked</td><td>Check Waiting lists. Offer again, or Copy link (2.5)</td></tr>
+        <tr><td>"Can I come on Friday instead this week?"</td><td>A one-week swap</td><td>Record a catch-up swap (2.4)</td></tr>
+        <tr><td>"I need to cancel."</td><td>They can't cancel online</td><td>Remove from Block and sort the refund (2.3). 48 hours' notice applies.</td></tr>
+        <tr><td>"It won't let me book."</td><td>Often the age check (18+) or an 11-digit phone number</td><td>Ask what message they see</td></tr>
+        <tr><td>Anything else, or an error message</td><td>–</td><td>Screenshot it and send it to Mark</td></tr>
+      </tbody>
+    </table>
+  </div>
+</template>
+
+<template id="L-R.3">
+  <p class="eyebrow">Reference</p>
+  <h1>Glossary</h1>
+  <div class="status-table">
+    <table>
+      <tbody>
+        <tr><th>Class</th><td>A permanent weekly slot, such as Beginner, Wednesday 7pm, Guiseley</td></tr>
+        <tr><th>Block</th><td>One run of weeks for a class (usually 6). Clients book a whole block.</td></tr>
+        <tr><th>Current / next block</th><td>The block running now / the one after it</td></tr>
+        <tr><th>Part-block price</th><td>A lower price for someone joining partway through, charging only the sessions left</td></tr>
+        <tr><th>Reserved</th><td>Booked but not paid yet (bank transfer)</td></tr>
+        <tr><th>Confirmed</th><td>Booked and paid</td></tr>
+        <tr><th>Priority booking</th><td>The week, 2 weeks before a block, when only regulars can book</td></tr>
+        <tr><th>Catch-up swap</th><td>A client going to a different class for one week</td></tr>
+        <tr><th>Waiting list</th><td>A queue for a full block</td></tr>
+        <tr><th>Hold</th><td>A seat kept for someone on the waiting list after you offer it</td></tr>
+        <tr><th>PAR-Q</th><td>The health questionnaire new clients fill in</td></tr>
+        <tr><th>Cancellations</th><td>The page listing everyone removed from a block, and any refund owed</td></tr>
+        <tr><th>Practice copy</th><td>The safe copy of the system with the red TEST MODE bar</td></tr>
+      </tbody>
+    </table>
+  </div>
+</template>
+
+<script>
+const PRACTICE_URL = "https://mjones2420-netizen.github.io/lg-pilates-booking/?env=test";
+const PARTS = [
+  { title: "Start here", lessons: [{ id: "start", title: "How this hub works", noTick: true }] },
+  { title: "Part 1 · The client's journey", lessons: [
+    { id: "1.1", title: "Finding and booking a class" },
+    { id: "1.2", title: "The priority booking window" },
+    { id: "1.3", title: "Paying: card or bank transfer" },
+    { id: "1.4", title: "The health form (PAR-Q)" },
+    { id: "1.5", title: "Joining a waiting list" },
+    { id: "1.6", title: "When a client wants to cancel" },
+  ] },
+  { title: "Part 2 · Everyday admin", lessons: [
+    { id: "2.1", title: "Who's coming this week?" },
+    { id: "2.2", title: "Mark a bank transfer paid" },
+    { id: "2.3", title: "A client cancels" },
+    { id: "2.4", title: "Swap class for one week" },
+    { id: "2.5", title: "Offer a waiting-list space" },
+  ] },
+  { title: "Part 3 · Each new term", lessons: [
+    { id: "3.1", title: "Set up next term's block" },
+    { id: "3.2", title: "The changeover between terms" },
+    { id: "3.3", title: "Email everyone on a block" },
+    { id: "3.4", title: "Reading the Reports page" },
+    { id: "3.5", title: "Finding a past booking" },
+  ] },
+  { title: "Part 4 · Occasional jobs", lessons: [
+    { id: "4.1", title: "Bank details and your email" },
+    { id: "4.2", title: "Card or bank transfer" },
+    { id: "4.3", title: "Backups" },
+    { id: "4.4", title: "Using it on your phone" },
+  ] },
+  { title: "Reference", lessons: [
+    { id: "R.1", title: "Which emails go out when", noTick: true },
+    { id: "R.2", title: "“A client says…”", noTick: true },
+    { id: "R.3", title: "Glossary", noTick: true },
+  ] },
+];
+const LESSONS = PARTS.flatMap(p => p.lessons || []);
+const TICKABLE = LESSONS.filter(l => !l.noTick);
+
+let current = "start";
+let myDone = {};           // { lessonId: isoDate }
+let everyone = [];         // [{ id, done }]
+let db = null, me = null, userNs = null, canSave = false;
+let writeChain = Promise.resolve();
+
+try { const saved = localStorage.getItem("hub-lesson"); if (saved && LESSONS.some(l => l.id === saved)) current = saved; } catch (e) {}
+
+function renderNav() {
+  const body = document.getElementById("nav-body");
+  body.textContent = "";
+  PARTS.forEach(p => {
+    const sec = document.createElement("div"); sec.className = "nav-part";
+    const h = document.createElement("h3"); h.textContent = p.title; sec.appendChild(h);
+    if (p.lessons) {
+      const ul = document.createElement("ul");
+      p.lessons.forEach(l => {
+        const li = document.createElement("li");
+        const b = document.createElement("button"); b.className = "nav-link"; b.type = "button";
+        if (l.id === current) b.setAttribute("aria-current", "true");
+        const t = document.createElement("span"); t.className = "tick" + (myDone[l.id] ? " on" : ""); t.textContent = "✓";
+        if (l.noTick) t.style.visibility = "hidden";
+        const s = document.createElement("span"); s.textContent = (l.noTick ? "" : l.id + "  ") + l.title;
+        b.append(t, s);
+        b.addEventListener("click", () => go(l.id));
+        li.appendChild(b); ul.appendChild(li);
+      });
+      sec.appendChild(ul);
+    } else {
+      const soon = document.createElement("div"); soon.className = "nav-soon"; soon.textContent = "Coming soon";
+      const ul = document.createElement("ul"); ul.className = "nav-soon-list";
+      p.soon.forEach(x => { const li = document.createElement("li"); li.textContent = x; ul.appendChild(li); });
+      sec.append(soon, ul);
+    }
+    body.appendChild(sec);
+  });
+  const n = TICKABLE.filter(l => myDone[l.id]).length;
+  document.getElementById("nav-count").textContent = n + " / " + TICKABLE.length + " done";
+}
+
+function renderMain() {
+  const main = document.getElementById("main");
+  main.textContent = "";
+  const page = document.createElement("article"); page.className = "page";
+  page.appendChild(document.getElementById("L-" + current).content.cloneNode(true));
+  page.querySelectorAll("a[data-try]").forEach(a => { a.href = PRACTICE_URL; a.target = "_blank"; a.rel = "noopener"; });
+
+  const lesson = LESSONS.find(l => l.id === current);
+  const idx = LESSONS.indexOf(lesson);
+  const foot = document.createElement("div"); foot.className = "lesson-foot";
+  if (!lesson.noTick) {
+    const wrap = document.createElement("div");
+    const btn = document.createElement("button"); btn.type = "button"; btn.id = "done-btn";
+    const on = !!myDone[current];
+    btn.className = "btn ghost done-btn" + (on ? " on" : "");
+    btn.textContent = on ? "✓ Done" : "Mark as done";
+    btn.disabled = !canSave;
+    btn.addEventListener("click", () => toggleDone(current));
+    wrap.appendChild(btn);
+    if (!canSave) { const n = document.createElement("span"); n.className = "note"; n.style.marginLeft = "10px"; n.textContent = "Progress can't be saved in this view"; wrap.appendChild(n); }
+    foot.appendChild(wrap);
+  } else { foot.appendChild(document.createElement("span")); }
+  const pager = document.createElement("div"); pager.className = "pager";
+  if (idx > 0) { const p = document.createElement("button"); p.type = "button"; p.className = "btn ghost"; p.textContent = "← " + LESSONS[idx - 1].title; p.addEventListener("click", () => go(LESSONS[idx - 1].id)); pager.appendChild(p); }
+  if (idx < LESSONS.length - 1) { const n = document.createElement("button"); n.type = "button"; n.className = "btn primary"; n.textContent = LESSONS[idx + 1].title + " →"; n.addEventListener("click", () => go(LESSONS[idx + 1].id)); pager.appendChild(n); }
+  foot.appendChild(pager);
+  page.appendChild(foot);
+  main.appendChild(page);
+  if (current === "start") renderTeam();
+}
+
+async function renderTeam() {
+  const el = document.getElementById("team");
+  if (!el) return;
+  if (!db) { el.innerHTML = ""; const p = document.createElement("p"); p.className = "note"; p.textContent = "Progress tracking isn't available in this view."; el.appendChild(p); return; }
+  const rows = everyone.filter(r => Object.keys(r.done || {}).length || r.id === me);
+  if (me && !rows.some(r => r.id === me)) rows.unshift({ id: me, done: myDone });
+  if (!rows.length) { el.innerHTML = ""; const p = document.createElement("p"); p.className = "note"; p.textContent = "Nobody has ticked off a lesson yet. Open lesson 1.1 to begin."; el.appendChild(p); return; }
+  const profiles = userNs ? await userNs.profiles(rows.map(r => r.id)) : {};
+  const holder = document.getElementById("team");
+  if (!holder) return;
+  holder.textContent = "";
+  rows.forEach(r => {
+    const done = TICKABLE.filter(l => (r.done || {})[l.id]).length;
+    const pr = profiles[r.id] || {};
+    const row = document.createElement("div"); row.className = "person";
+    const img = document.createElement("img"); img.alt = ""; if (pr.avatarUrl) img.src = pr.avatarUrl;
+    const mid = document.createElement("div"); mid.style.minWidth = "0";
+    const nm = document.createElement("div"); nm.style.fontWeight = "600"; nm.style.fontSize = "14px";
+    nm.textContent = r.id === me ? (pr.name ? pr.name + " (you)" : "You") : (pr.name || "Someone");
+    const bar = document.createElement("div"); bar.className = "bar"; const fill = document.createElement("i"); fill.style.width = (100 * done / TICKABLE.length) + "%"; bar.appendChild(fill);
+    mid.append(nm, bar);
+    const num = document.createElement("div"); num.className = "num"; num.textContent = done + " of " + TICKABLE.length;
+    row.append(img, mid, num);
+    holder.appendChild(row);
+  });
+}
+
+function go(id) {
+  current = id;
+  try { localStorage.setItem("hub-lesson", id); } catch (e) {}
+  renderNav(); renderMain();
+  if (window.matchMedia("(max-width: 899px)").matches) document.getElementById("nav").open = false;
+  window.scrollTo({ top: 0 });
+}
+
+function toggleDone(id) {
+  if (!canSave) return;
+  const next = Object.assign({}, myDone);
+  if (next[id]) delete next[id]; else next[id] = new Date().toISOString().slice(0, 10);
+  myDone = next;
+  renderNav(); renderMain();
+  writeChain = writeChain.then(() => db.doc("progress/" + me).set({ done: next }))
+    .catch(e => {
+      console.error("Save failed", e);
+      if (e && e.code === "invalid_argument") { canSave = false; renderMain(); }
+    });
+}
+
+if (window.matchMedia("(min-width: 900px)").matches) document.getElementById("nav").open = true;
+renderNav(); renderMain();
+
+(async () => {
+  if (!window.claude || !window.claude.use) return;
+  const [dbNs, u] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+  db = dbNs; userNs = u;
+  if (!db || !u) { renderMain(); return; }
+  me = await u.id();
+  const can = await u.can("data.write");
+  canSave = !!me && can !== false;
+  db.collection("progress").onSnapshot(snap => {
+    everyone = snap.docs.map(d => ({ id: d.id, done: (d.data() || {}).done || {} }));
+    const mine = everyone.find(r => r.id === me);
+    const incoming = mine ? mine.done : {};
+    if (JSON.stringify(incoming) !== JSON.stringify(myDone) && !snap.metadata.hasPendingWrites) myDone = incoming;
+    renderNav(); renderMain();
+  }, err => console.error("Progress feed stopped", err));
+  renderMain();
+})();
+</script>
