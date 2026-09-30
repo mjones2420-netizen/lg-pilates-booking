@@ -31,6 +31,8 @@ const VALID_ROLES = Object.freeze([
   // Migration 11 — locked-window class for PB-01.
   'thu-current',
   'thu-locked',
+  // Migration 32 — Training Hub practice full class (current block full).
+  'practice-full',
 ]);
 
 // In-memory cache: populated on first call, reused for rest of test run.
@@ -118,6 +120,11 @@ async function loadFixture() {
     return daysUntil > 14;
   });
   assignSingle(roleMap, 'thu-locked', c4Locked);
+
+  // --- Class 5: Practice – Full Class (Migration 32) ---
+  // Expected: 1 active block, cap 2, both seats booked.
+  const c5 = data.filter(b => b.class_id === 5);
+  assignSingle(roleMap, 'practice-full', c5.filter(b => b.status === 'active'));
 
   // Final sanity check — every valid role must have been assigned.
   for (const role of VALID_ROLES) {

@@ -32,22 +32,25 @@ const PRODUCTION_PROJECT_ID = 'mrlooyixnlxzcfmvnqme';
 // is the base fixture (3 classes, 9 blocks, 7 bookings). Migration 11 adds
 // the Thursday class with active + locked-window blocks for PB-01.
 // Migration 14 must run first to ensure catch_up_swaps table exists before
-// Migration 09 can clear it.
+// Migration 09 can clear it. Migration 32 adds the Training Hub's practice
+// full class (runs after 09, which wipes customers and bookings).
 const MIGRATION_FILES = [
   path.join(__dirname, '..', 'migrations', '14_catch_up_swaps.sql'),
   path.join(__dirname, '..', 'migrations', '09_reseed_with_dynamic_dates.sql'),
   path.join(__dirname, '..', 'migrations', '11_add_locked_window_class.sql'),
   path.join(__dirname, '..', 'migrations', '12_reseed_resets_payment_mode.sql'),
+  path.join(__dirname, '..', 'migrations', '32_practice_full_class.sql'),
 ];
 
 // Expected fixture shape after a successful reseed.
 // Block + class counts include Migration 11 (Thursday class with active +
-// locked-window blocks) on top of Migration 09's 9 blocks across 3 classes.
+// locked-window blocks) and Migration 32 (practice full class: 1 block,
+// 2 customers, 2 bookings) on top of Migration 09's 9 blocks across 3 classes.
 const EXPECTED = {
-  blocks: 11,
-  classes: 4,
-  customers: 3,
-  bookings: 7,
+  blocks: 12,
+  classes: 5,
+  customers: 5,
+  bookings: 9,
   priority_grants: 1,
 };
 

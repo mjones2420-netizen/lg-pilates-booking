@@ -99,6 +99,10 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
 .bar { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 4px; }
 .bar > i { display: block; height: 100%; background: var(--done); }
 .num { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--muted); }
+.reset { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.reset:empty { display: none; }
+.linkbtn { background: none; border: 0; padding: 0; font: 13px var(--body); color: var(--muted); text-decoration: underline; cursor: pointer; }
+.btn.danger { background: var(--red); border-color: var(--red); color: #fff; }
 [hidden] { display: none !important; }
 </style>
 
@@ -144,6 +148,7 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
 
   <h2>Progress</h2>
   <div id="team" class="team"><p class="note">Loading progress…</p></div>
+  <div id="reset" class="reset"></div>
 </template>
 
 <template id="L-1.1">
@@ -332,7 +337,13 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
   </ol>
   <div class="tryit">
     <h2>Try it</h2>
-    <p>You need a full class for this. On the practice copy, find a class with a <strong>Join Waiting List</strong> button, if there is one, and join with a made-up name. Then in the Dashboard, open <strong>Waiting lists</strong> and offer yourself the space (lesson 2.5). No email is sent on the practice copy, so use <strong>Copy link</strong> and paste the link into a new tab to see the client's side.</p>
+    <p>The practice copy always has a full class ready for this: <strong>Practice – Full Class</strong> on Tuesdays.</p>
+    <ol class="steps">
+      <li>On the practice copy, find <strong>Practice – Full Class</strong>, click <span class="ui">Join Waiting List</span> and join with a made-up name.</li>
+      <li>In the Dashboard, open <span class="ui">By Class</span> and click <span class="ui">Remove from Block</span> next to <em>Practice Full-One</em>. That frees a space.</li>
+      <li>Open <span class="ui">Waiting lists</span> and offer the space to your made-up person (lesson 2.5).</li>
+      <li>No email is sent on the practice copy, so click <span class="ui">Copy link</span> and paste the link into a new tab to see the client's side.</li>
+    </ol>
     <div><a class="btn primary" data-try href="#">Open the practice copy ↗</a></div>
   </div>
   <div class="watch">
@@ -340,7 +351,7 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
     <ul>
       <li>When a seat frees up and people are waiting, the public <strong>doesn't</strong> see a free space. It's kept for the queue until you offer it or clear the list.</li>
       <li>The link only works while you're holding the seat for them. If you release the hold, the link stops working.</li>
-      <li>A next block that isn't open yet can't take a waiting list. It shows "Next Block Full" instead.</li>
+      <li>If the next block fills up with early (priority) bookings before it opens to everyone, clients see <strong>Next Block Full</strong> and can't join a waiting list yet. The waiting-list button appears once the block opens to everyone, 7 days before it starts.</li>
     </ul>
   </div>
 </template>
@@ -401,8 +412,8 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
     <h2>Watch out for</h2>
     <ul>
       <li>By class only shows blocks that are running now or coming up. Finished blocks move to <strong>Booking history</strong>.</li>
-      <li>Catch-up visitors show under the class they're <em>visiting</em>, not their usual one.</li>
-      <li>A seat being held for someone on the waiting list counts as taken (see lesson 2.5).</li>
+      <li>Catch-up visitors show under the class they're <em>visiting</em>, not their usual one. On the practice copy you'll see this once you've recorded a swap in lesson 2.4.</li>
+      <li>A seat being held for someone on the waiting list counts as taken (see lesson 2.5). On the practice copy you'll see this once you've offered a space in lesson 1.5.</li>
     </ul>
   </div>
 </template>
@@ -522,7 +533,7 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
     <ul>
       <li><strong>No email is sent for swaps.</strong> Let the client know yourself.</li>
       <li>The guideline is 2 swaps per client per block. A third shows a "Heads up" message. You can still click <span class="ui">Save Anyway</span> if you're happy to.</li>
-      <li>A space held for someone on the waiting list can't be used for a swap. Release the hold first (lesson 2.5).</li>
+      <li>If you're holding a space for someone on the waiting list, you can't use it for a swap: the system counts it as taken. To use it for a swap, first release the hold on the <span class="ui">Waiting lists</span> page (lesson 2.5). The person goes back into the queue.</li>
       <li>Made a mistake? Click <span class="ui">Remove</span> on the swap and record it again.</li>
     </ul>
   </div>
@@ -1059,6 +1070,40 @@ async function renderTeam() {
     row.append(img, mid, num);
     holder.appendChild(row);
   });
+  renderReset();
+}
+
+// "Start again": clears the signed-in viewer's own ticks. Inline confirm (no window.confirm).
+let resetAsk = false;
+function renderReset() {
+  const el = document.getElementById("reset");
+  if (!el) return;
+  el.textContent = "";
+  const n = TICKABLE.filter(l => myDone[l.id]).length;
+  if (!canSave || !n) { resetAsk = false; return; }
+  if (!resetAsk) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "linkbtn"; b.id = "reset-btn";
+    b.textContent = "Start again – clear my ticks";
+    b.addEventListener("click", () => { resetAsk = true; renderReset(); });
+    el.appendChild(b);
+    return;
+  }
+  const q = document.createElement("span"); q.className = "note";
+  q.textContent = "Clear all " + n + " tick" + (n === 1 ? "" : "s") + "? This can't be undone.";
+  const yes = document.createElement("button"); yes.type = "button"; yes.className = "btn danger"; yes.id = "reset-yes"; yes.textContent = "Yes, clear";
+  yes.addEventListener("click", clearAllDone);
+  const no = document.createElement("button"); no.type = "button"; no.className = "btn ghost"; no.textContent = "Cancel";
+  no.addEventListener("click", () => { resetAsk = false; renderReset(); });
+  el.append(q, yes, no);
+}
+
+function clearAllDone() {
+  if (!canSave) return;
+  resetAsk = false;
+  myDone = {};
+  renderNav(); renderMain();
+  writeChain = writeChain.then(() => db.doc("progress/" + me).set({ done: {} }))
+    .catch(e => console.error("Clear failed", e));
 }
 
 function go(id) {
