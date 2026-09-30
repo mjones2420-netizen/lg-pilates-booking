@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 29 Sep 2026 (session 102 — Training Hub built, #114)
+Last updated: 30 Sep 2026 (session 103 — practice full class, #114 closed)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -149,7 +149,7 @@ No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, 
 | `PAYMENT-MODE-SPEC.md` | Stripe integration spec |
 | `EMAIL-NOTIFICATIONS-SPEC.md` | Email spec |
 | `supabase/functions/` | Edge Function source (stripe-checkout, stripe-webhook, stripe-refund, send-email, lookup-customer-throttled, join-waitlist-throttled; shared code in `_shared/throttle.ts`) |
-| `tests-playwright/migrations/` | SQL migrations (latest: 31_catch_up_respects_holds) |
+| `tests-playwright/migrations/` | SQL migrations (latest: 32_practice_full_class — TEST fixture only, never prod) |
 | `tests-playwright/tests/helpers/` | Shared test helpers |
 | `.claude/commands/deploy.md` | Deploy pipeline (local only, gitignored) |
 | `docs/training-hub/` | Training Hub source (#114): `template.html` lessons, `build.js`, read-only screenshot scripts `capture*.js`. Published to a private artifact (URL in memory / SESSION-LOG session 102) |
@@ -204,10 +204,12 @@ Helpers: `supabase.js` (anon client), `admin-db.js` (direct pg, bypasses RLS), `
 - `settings.admin_email = 'mjones970@live.co.uk'` is baseline state — restore it, never delete it
 - Specs that move seat counts / queues build their own class+block and clean up (e.g. WL specs) — don't mutate shared fixture blocks
 - `classes` and catch-up swaps are fetched once at page load — `page.reload()` after inserting them
+- Specs find fixture classes by **day name** ("the Wednesday class") — a new fixture class must use a day no other fixture class uses (Tuesday taken by class 5; never derive the day from today's date)
 - `npm test` automatically reseeds before running
 
-Fixture roles (11 blocks): `mon-past`, `mon-current`, `mon-upcoming`, `mon-full`, `wed-past`,
-`wed-upcoming`, `thu-current`, `thu-locked`, `fri-old-past`, `fri-recent-past`, `fri-upcoming`
+Fixture roles (12 blocks): `mon-past`, `mon-current`, `mon-upcoming`, `mon-full`, `wed-past`,
+`wed-upcoming`, `thu-current`, `thu-locked`, `fri-old-past`, `fri-recent-past`, `fri-upcoming`,
+`practice-full` (class 5 "Practice – Full Class", Tuesdays, current block full — Training Hub lesson 1.5 uses it)
 
 ---
 
@@ -224,7 +226,7 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 
 ## CURRENT STATE (snapshot — the board is the truth for priorities)
 
-- **Tests**: 304, all passing (as of session 99).
+- **Tests**: 305, all passing (as of session 103).
 - **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71–75, session 95).
 - **Prod Edge Function versions**: send-email v15, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v1, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).

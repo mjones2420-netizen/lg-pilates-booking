@@ -487,3 +487,18 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - **Waiting on Mark before #114 closes (he asked to be reminded):** (1) review the hub + tick a lesson, then verify the tick saved; (2) share with Louise as Contributor + create her practice login in the TEST Supabase dashboard. Recorded in memory `project-user-guides`.
 - Session start checks: supabase MCP loaded; drift checks B/C not run (not requested after offer).
 - **Next session:** ask about #114 actions 1–2. Otherwise #111 keep-alive fix (small, High, protects prod) or #107 walkthrough.
+
+## Session 103 (2026-09-30)
+
+**Training Hub finished, #114 closed.** No index.html or Edge Function change, prod untouched. Pushed `b27c405`.
+- **Ticks verified:** Mark ticked all 20 lessons; `progress/<id>` doc saved correctly (ArtifactData list).
+- **Louise won't create a claude.ai account.** Mark chose to let her use his login (accepted: she can see his whole Claude account). Ticks are therefore shared, so added a **"Start again – clear my ticks"** link on the Start page (inline Yes/Cancel confirm, no `window.confirm`; only shows with ≥1 tick; writes `done: {}`). Published without a local preview (Mark's choice) — not yet clicked by anyone.
+- **Practice full class (option B, Mark's choice over "Louise builds her own").** Finding: the practice copy had no reachable full class — `mon-full` is the Monday class's 3rd block and the booking page only shows current + next. New **migration 32** (test fixture only, run by `seed.js` after 09): class id 5 "Practice – Full Class", Tuesdays, one active block cap 2 fully booked by Practice Full-One/Two → card shows Join Waiting List. New fixture role `practice-full`, new spec **WL-19**, smoke-01 counts updated, seed EXPECTED now 12 blocks / 5 classes / 5 customers / 9 bookings.
+  - First run: 5 failures, all mine — 2 count checks, and 3 specs (CU-06, PB-07, SD-06) that find "the Wednesday class" by day name clashed because the class took its day from today (a Wednesday). Fixed by pinning to Tuesday with Tuesday dates. Then **305/305 green**.
+  - Code review caught a standalone re-run gap (practice customers not deleted) — fixed.
+- **Hub copy updated (Mark's queries):** lesson 1.5 Try-it rewritten as 4 steps using the practice full class (join list → remove Practice Full-One in By Class → offer → Copy link); "Next Block Full" note now explains priority bookings filling a block before it opens. Lesson 2.1 watch-outs got "you'll see this once you've done lesson 2.4 / 1.5" pointers; lesson 2.4 hold-vs-swap line reworded. Republished (v6).
+- **#114 closed + Done.** Left with Mark (no ticket): show Louise the hub; her practice login (recommended her own via TEST dashboard, not the shared test admin the suite uses).
+- **Not done / caveats:** nobody has clicked through the new lesson 1.5 steps (esp. Remove from Block on the practice class); lesson 1.5 full-card screenshot is still staged and could now be retaken for real.
+- Bash auto-mode classifier failed repeatedly mid-session (transient); worked around with Read.
+- Session start: supabase MCP loaded; drift checks B/C offered, not run.
+- **Next session:** #111 keep-alive fix (small, High, protects prod) or #107 waitlist walkthrough.
