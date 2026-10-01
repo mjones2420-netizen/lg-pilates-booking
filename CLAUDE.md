@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 30 Sep 2026 (session 103 — practice full class, #114 closed)
+Last updated: 1 Oct 2026 (session 104 — waitlist walkthrough passed on prod, #107 closed)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -152,7 +152,8 @@ No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, 
 | `tests-playwright/migrations/` | SQL migrations (latest: 32_practice_full_class — TEST fixture only, never prod) |
 | `tests-playwright/tests/helpers/` | Shared test helpers |
 | `.claude/commands/deploy.md` | Deploy pipeline (local only, gitignored) |
-| `docs/training-hub/` | Training Hub source (#114): `template.html` lessons, `build.js`, read-only screenshot scripts `capture*.js`. Published to a private artifact (URL in memory / SESSION-LOG session 102) |
+| `docs/training-hub/` | Training Hub source (#114): `template.html` lessons, `build.js`, read-only screenshot scripts `capture*.js` (`capture-emails.js` renders the real email templates offline, #120). Published to a private artifact (URL in memory / SESSION-LOG session 102) |
+| `docs/walkthroughs/waitlist/` | Reusable hands-on waitlist walkthrough on PROD (#107): script, `01-setup` / `02`/`03` cancel / `04-teardown` SQL (Mark pastes), `checklist.html` (published checklist artifact) |
 
 ---
 
@@ -236,7 +237,7 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
   - Free-plan Supabase = **no usable backups** (#96) and no leaked-password check (#21). Supabase Pro (~$25/mo) would cover backups, pausing and leak-check — weigh at #96.
   - [#112](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/112) — RP-01 failed 3/3 in one CI run (27 Sep); repeat flake. Also: `ubuntu-latest` → Ubuntu 26 from 19 Oct 2026.
   - [#110](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/110) — accepted limitation of the #106 throttle: one IP can still fill a class waiting list in ~an hour (10 joins/hr vs list cap = class size). Revisit before Phase 2b.
-  - [#107](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/107) — Mark's hands-on waitlist walkthrough on prod.
+  - #107 waitlist walkthrough PASSED on prod (1 Oct, all 33 steps). Follow-ups: [#116](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/116) customer messages vanish in 3s (High), #117 desktop warnings banner, #118, #119 catch-up clash warning before Offer space, #121 dead admin email code. #71 closes with #110.
   - [#113](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/113) — booking-system header links still point at `new-lg-website.netlify.app` (9 in index.html); swap to `lg-pilates.co.uk` before the pilot.
   - Before customer logins (#81): `record_catch_up_swap` has no `is_admin()` check — note on #81.
 
@@ -281,6 +282,7 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - **UI/wording changes to index.html can make a Training Hub lesson stale** — deploy.md step 3b checks and republishes the hub (`docs/training-hub/`).
 
 **Database**
+- **Claude cannot write to the PROD database** — the Claude Code auto-mode classifier blocks `supabase-prod` writes. Write the SQL, dry-run it on TEST inside a DO block ending in `RAISE EXCEPTION` (rolls back), then Mark pastes it into the Supabase SQL Editor. Make prod SQL all-or-nothing with a safety check that aborts before deleting anything real.
 - Changing a function's params or return type = DROP + CREATE (never overload). **DROP wipes the grants** — re-GRANT/REVOKE explicitly and verify.
 - Verify a hand-applied prod migration by comparing `md5(pg_get_functiondef(oid))` across test and prod.
 - Cascade deletes: delete `waitlist`/`bookings` explicitly before `classes` (FK ordering isn't guaranteed).
@@ -291,6 +293,7 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - Test admin users must be created via the Supabase dashboard, not raw SQL.
 
 **Front end**
+- Opening `docs/training-hub/training-hub.html` (or any artifact source) straight from disk shows mojibake ("â€œ") — the file has no charset meta; the artifact publisher adds it. Preview via a copy prefixed with `<meta charset="utf-8">`.
 - `toISOString()` shifts local midnight in BST — use `getFullYear()`/`getMonth()`/`getDate()`.
 - `blocks.dates[]` are year-less display strings — compute dates from `start_date + i*7 days`.
 - iOS: insets via `--safe-top`/`--safe-bottom` (needs `viewport-fit=cover`). A `padding:` shorthand in a media query resets the inset — restate it.
