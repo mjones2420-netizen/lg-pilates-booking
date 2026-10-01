@@ -1,0 +1,365 @@
+<title>Waiting List Walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f5f6f3; --surface:#ffffff; --ink:#1f2a24; --mid:#4c5a52; --light:#7d8a82; --line:#dfe4de;
+  --sage:#4f7a62; --sage-soft:#e3eee7; --amber:#a86a12; --amber-soft:#fbefd9; --clay:#9a4f3a; --clay-soft:#f6e4dd;
+  --done:#3d7a55; --focus:#2f6f9f;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#141a17; --surface:#1c2420; --ink:#e7ece8; --mid:#b4c0b8; --light:#8a978f; --line:#2e3933;
+    --sage:#8cc0a2; --sage-soft:#22352b; --amber:#e3ac57; --amber-soft:#3a2c17; --clay:#e39a83; --clay-soft:#3b241d;
+    --done:#8cc0a2; --focus:#7fb6e0;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#141a17; --surface:#1c2420; --ink:#e7ece8; --mid:#b4c0b8; --light:#8a978f; --line:#2e3933;
+  --sage:#8cc0a2; --sage-soft:#22352b; --amber:#e3ac57; --amber-soft:#3a2c17; --clay:#e39a83; --clay-soft:#3b241d;
+  --done:#8cc0a2; --focus:#7fb6e0;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:760px;margin:0 auto}
+header{padding-block:32px 8px;display:grid;gap:10px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--sage);font-weight:600}
+h1{font-family:var(--display);font-size:clamp(28px,6vw,40px);line-height:1.1;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-size:21px;margin:0;text-wrap:balance}
+.lede{color:var(--mid);margin:0;max-width:62ch}
+code,.mono{font-family:var(--mono);font-size:.88em}
+
+.progress{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px;border-bottom:1px solid var(--line);display:grid;gap:6px}
+.progress-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--mid)}
+.progress-row b{color:var(--ink);font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--done);transition:width .25s}
+.sync{font-size:12px;color:var(--light)}
+
+.facts{display:grid;gap:12px;margin-block:20px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.fact{display:grid;grid-template-columns:120px 1fr;gap:4px 12px;align-items:start}
+.fact dt{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--light);padding-top:3px}
+.fact dd{margin:0;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0}
+.copy{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 8px;cursor:pointer;word-break:break-all;text-align:left}
+.copy:hover{border-color:var(--sage)}
+.copy.ok{border-color:var(--done);color:var(--done)}
+.who-key{display:flex;flex-wrap:wrap;gap:8px}
+@media (max-width:520px){.fact{grid-template-columns:1fr}}
+
+.part{margin-top:34px;display:grid;gap:12px}
+.part-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.part-count{font-size:13px;color:var(--light);font-variant-numeric:tabular-nums}
+.part-intro{margin:0;color:var(--mid);font-size:14px}
+
+.step{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}
+.step.claude{background:var(--clay-soft);border-color:transparent}
+.step.is-done{opacity:.62}
+.step.is-done .do{text-decoration:line-through;text-decoration-color:var(--light)}
+.tick{grid-row:span 3;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px}
+.tick input{width:22px;height:22px;accent-color:var(--done);cursor:pointer;margin:0}
+.num{font-family:var(--mono);font-size:12px;color:var(--light);font-variant-numeric:tabular-nums}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.chip.cust{background:var(--sage-soft);color:var(--sage)}
+.chip.louise{background:var(--amber-soft);color:var(--amber)}
+.chip.claude{background:var(--surface);color:var(--clay);border:1px solid var(--clay)}
+.chip.inbox{background:var(--bg);color:var(--mid);border:1px solid var(--line)}
+.chip.stop{background:var(--clay);color:var(--surface)}
+.do{margin:0;font-weight:500}
+.expect{margin:0;color:var(--mid);font-size:14px}
+.expect::before{content:"Expect  ";font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--sage)}
+.claude .expect::before{content:"Then  ";color:var(--clay)}
+.tag{font-size:12px;color:var(--light);font-style:italic}
+.q{font-weight:600;color:var(--ink)}
+.note-row{grid-column:2;display:grid;gap:6px;margin-top:4px}
+.note-toggle{justify-self:start;background:none;border:none;color:var(--light);font:inherit;font-size:13px;cursor:pointer;padding:2px 0;text-decoration:underline;text-underline-offset:3px}
+.note-toggle.has{color:var(--amber);font-weight:600}
+textarea{width:100%;min-height:64px;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.untested{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--light);font-weight:600}
+tr:last-child td{border-bottom:none}
+footer{margin-top:28px;color:var(--light);font-size:13px}
+.reset-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:inherit;font-size:14px;font-weight:600;border-radius:8px;padding:8px 14px;cursor:pointer;background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn:hover{border-color:var(--sage)}
+.btn.danger{background:var(--clay);color:var(--surface);border-color:var(--clay)}
+.btn:disabled{opacity:.5;cursor:default}
+@media (prefers-reduced-motion:reduce){.bar span{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">LG Pilates booking system · Waiting list · Live production</div>
+    <h1>Waiting list walkthrough</h1>
+    <p class="lede">Try the waiting list end to end on the live system, as a customer and as Louise. Tick each step as you go and add a note wherever something looks different from what's expected. Your ticks and notes save automatically, and Claude can read them.</p>
+    <p class="lede" id="last-run"></p>
+  </header>
+
+  <div class="progress" aria-live="polite">
+    <div class="progress-row"><span><b id="done-count">0</b> of <b id="total-count">0</b> steps done</span><span class="sync" id="sync">Connecting…</span></div>
+    <div class="bar"><span id="bar"></span></div>
+  </div>
+
+  <dl class="facts">
+    <div class="fact"><dt>Booking page</dt><dd><button class="copy" data-copy="https://mjones2420-netizen.github.io/lg-pilates-booking/">mjones2420-netizen.github.io/lg-pilates-booking/</button></dd></div>
+    <div class="fact"><dt>Test card</dt><dd><button class="copy" data-copy="4242 4242 4242 4242">4242 4242 4242 4242</button><span class="tag">any future expiry, any CVC, any postcode. No real money moves.</span></dd></div>
+    <div class="fact"><dt>Email A</dt><dd><button class="copy" data-copy="mjones970+demoa@live.co.uk">mjones970+demoa@live.co.uk</button><span class="tag">books the last normal seat</span></dd></div>
+    <div class="fact"><dt>Email B</dt><dd><button class="copy" data-copy="mjones970+demob@live.co.uk">mjones970+demob@live.co.uk</button><span class="tag">first in the queue, gets the offer</span></dd></div>
+    <div class="fact"><dt>Email C</dt><dd><button class="copy" data-copy="mjones970+democ@live.co.uk">mjones970+democ@live.co.uk</button><span class="tag">second in the queue, offered then released</span></dd></div>
+    <div class="fact"><dt>Phone</dt><dd><button class="copy" data-copy="07700 900123">07700 900123</button><span class="tag">use for all three</span></dd></div>
+    <div class="fact"><dt>Windows</dt><dd class="who-key"><span class="chip cust">Customer window</span><span class="tag">private / incognito, not signed in</span><span class="chip louise">Louise window</span><span class="tag">normal window, signed in to the dashboard</span></dd></div>
+    <div class="fact"><dt>SQL steps</dt><dd><span class="chip stop">Stop</span><span class="tag">Paste the named file from <code>docs/walkthroughs/waitlist/</code> into the Supabase SQL Editor (production project) and run it.</span></dd></div>
+  </dl>
+
+  <main id="parts"></main>
+
+  <section class="part">
+    <div class="part-head"><h2>Not tested by hand</h2></div>
+    <p class="part-intro">These three checks can't be done safely or at all from a normal browser. The automated test suite covers each one.</p>
+    <div class="untested">
+      <table>
+        <thead><tr><th>Check</th><th>Why it's not in this walkthrough</th><th>Covered by</th></tr></thead>
+        <tbody>
+          <tr><td>Join limit (10 per hour)</td><td>Testing it would lock your own connection out of joining for an hour.</td><td class="mono">SEC-16</td></tr>
+          <tr><td>Server refuses a bad phone or email</td><td>The browser applies the same rule first, so a normal visitor never reaches the server check.</td><td class="mono">WL / SEC tests</td></tr>
+          <tr><td>Offer link used with a different email</td><td>The email box is locked on an offer link. Only developer tools could change it.</td><td class="mono">WL-16</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="part" id="new-run">
+    <div class="part-head"><h2>Start a new run</h2></div>
+    <p class="part-intro">Clears every tick and note so you can run the walkthrough again. This run's results are kept in a short history that Claude can read.</p>
+    <div class="reset-row">
+      <button class="btn" id="reset-btn" type="button">Start a new run</button>
+      <span id="reset-confirm" hidden><span class="tag">Clear all ticks and notes?</span> <button class="btn danger" id="reset-yes" type="button">Yes, clear them</button> <button class="btn" id="reset-no" type="button">Keep them</button></span>
+      <span class="tag" id="reset-msg"></span>
+    </div>
+  </section>
+
+  <footer>Kit files: <code>docs/walkthroughs/waitlist/</code> in the booking-system repo. First run 1 Oct 2026 (#107): all 33 steps passed.</footer>
+</div>
+
+<script>
+var PARTS=[
+ {title:"Setup",intro:"Two demo classes on production, each with dummy customers that can never receive email.",steps:[
+  {id:"s0",who:["claude","stop"],do:"Paste <code>01-setup.sql</code>: creates the two DEMO classes, their blocks and three dummy customers.",exp:"Two rows: waiting-list class 2 / 3 booked, catch-up class 1 / 3 booked. If it says STOPPED, DEMO classes already exist: run teardown first."}
+ ]},
+ {title:"Part 1 · Normal booking still works",steps:[
+  {id:"1",who:["cust"],do:"Open the booking page. Find “DEMO – Waiting list test (please ignore)”.",exp:"Card shows <span class=q>1 space left</span> and a <span class=q>Book Current Block</span> button."},
+  {id:"2",who:["cust"],do:"Book it as Email A. Pay with the test card.",exp:"Booking success screen. Confirmation email arrives at Email A."},
+  {id:"3",who:["cust"],do:"Refresh the page.",exp:"Card shows <span class=q>Block full</span> with a Full badge, and an amber <span class=q>Join Waiting List</span> button."}
+ ]},
+ {title:"Part 2 · Joining the waiting list",steps:[
+  {id:"4",who:["cust"],do:"Click Join Waiting List. Join as Email B.",exp:"Success view with position <span class=q>#1</span> and “We've let Louise know…”."},
+  {id:"5",who:["cust"],do:"Close it and look at the card.",exp:"Extra line: <span class=q>1 person on the waiting list</span>."},
+  {id:"6",who:["cust"],do:"Join again as Email B.",exp:"Message: <span class=q>You're already on the waiting list for this block.</span>"},
+  {id:"7",who:["cust"],do:"Join as Email C.",exp:"Position <span class=q>#2</span>. Card says <span class=q>2 people on the waiting list</span>."},
+  {id:"8",who:["cust"],do:"Try to join as Email A, who already has a seat.",exp:"Message: <span class=q>You've already got a place on this block.</span>"},
+  {id:"9",who:["cust"],do:"Open the join form, enter phone <code>123</code>, click Join.",exp:"Phone field goes red and nothing is sent."}
+ ]},
+ {title:"Part 3 · Louise's view while full",steps:[
+  {id:"10",who:["louise"],do:"Dashboard → Waiting lists.",exp:"DEMO block listed with <span class=q>No seat free</span>, <span class=q>3 / 3 booked</span>, <span class=q>2 waiting</span>. Email B 1st, Email C 2nd."},
+  {id:"11",who:["louise"],do:"Look at the Offer space buttons.",exp:"Greyed out, with “No free seat — the block is full and nobody has cancelled.”"}
+ ]},
+ {title:"Part 4 · A seat frees up",steps:[
+  {id:"12",who:["claude","stop"],do:"Paste <code>02-cancel-first-dummy.sql</code>: cancels Demo One's booking. This stands in for a real cancellation.",exp:"Result row: booked 2, cap 3, wait 2."},
+  {id:"13",who:["cust"],do:"Refresh.",exp:"Card <span class=q>still shows Block full</span> and Join Waiting List. The freed seat is kept for the queue, not the public."},
+  {id:"14",who:["louise"],do:"Refresh Waiting lists.",exp:"<span class=q>1 seat free</span>, <span class=q>2 / 3 booked</span>. Offer space buttons now active."},
+  {id:"15",who:["louise"],do:"Catch-up swaps → + Record swap. Customer: Demo Three (on the “Catch-up source” class). Target: the DEMO waiting-list class. Pick its next upcoming date and note it below. Save.",exp:"Swap saves. The DEMO class showed spaces, not FULL, because the seat is still free."}
+ ]},
+ {title:"Part 5 · Louise offers the space",steps:[
+  {id:"16",who:["louise"],do:"Waiting lists → Offer space on Email B. Confirm.",exp:"Toast <span class=q>Space offered and email sent.</span> Email B's row reads Offered, “Email sent · Today”."},
+  {id:"17",who:["louise"],do:"Look at the badges and Email C's row.",exp:"<span class=q>No seat free</span>, <span class=q>1 held · 1 waiting</span>. Email C's Offer button greyed: “a hold is using it. Release the hold first.”"},
+  {id:"18",who:["louise"],do:"Go to All Bookings (dashboard home). In a narrow window, tap the “things need attention” bar first.",exp:"Red warning <span class=q>1 block has a catch-up swap that will exceed capacity</span>, over capacity on the date from step 15.",tag:"Reverse catch-up check"},
+  {id:"19",who:["louise"],do:"+ Record swap again, Demo Three, target the DEMO class. Open the date list.",exp:"Every DEMO date shows <span class=q>— FULL</span> and can't be picked. Cancel without saving.",tag:"Forward catch-up check"}
+ ]},
+ {title:"Part 6 · The offer email and link",steps:[
+  {id:"20",who:["inbox"],do:"Check Email B's inbox.",exp:"Email <span class=q>A space has come up — DEMO – Waiting list test…</span> from bookings@lg-pilates.co.uk, with a booking link."},
+  {id:"21",who:["cust"],do:"Open the link in a fresh private window.",exp:"Booking box opens on the DEMO class with Email B's details filled in. Banner <span class=q>This space is reserved for you</span>. Email can't be edited. Address bar no longer shows <code>?offer=</code>."},
+  {id:"22",who:["cust"],do:"Close the booking box, then refresh the page.",exp:"Booking box reopens with the reserved banner. Closing or refreshing doesn't lose the seat."},
+  {id:"23",who:["cust"],do:"Complete the booking with the test card.",exp:"Success screen. Confirmation email to Email B."},
+  {id:"24",who:["louise"],do:"Refresh Waiting lists.",exp:"Email B gone. <span class=q>3 / 3 booked</span>, <span class=q>1 waiting</span>. Email C now 1st."},
+  {id:"25",who:["cust"],do:"Click the link in Email B's email again (new private window).",exp:"<span class=q>That booking link is no longer valid. Please contact Louise.</span>",tag:"Used link"},
+  {id:"26",who:["cust"],do:"Copy the link, change its last character, open it.",exp:"Same “no longer valid” message.",tag:"Forged link"},
+  {id:"27",who:["cust"],do:"Copy the link, delete its last 5 characters, open it.",exp:"<span class=q>That booking link is not complete…</span>",tag:"Truncated link"}
+ ]},
+ {title:"Part 7 · Release and remove",steps:[
+  {id:"28",who:["claude","stop"],do:"Paste <code>03-cancel-second-dummy.sql</code>: cancels Demo Two's booking.",exp:"Result row: booked 2, cap 3, wait 1. Offering to Email C next brings back the 4 Oct-style over-capacity warning: expected."},
+  {id:"29",who:["louise"],do:"Refresh. Offer space to Email C.",exp:"“Space offered and email sent.” Offer email arrives at Email C."},
+  {id:"30",who:["louise"],do:"Release hold on Email C. Confirm.",exp:"Toast <span class=q>Hold released.</span> Email C back to Waiting. Badge <span class=q>1 seat free</span>."},
+  {id:"31",who:["cust"],do:"Open the link from Email C's email (new private window).",exp:"<span class=q>That booking link is no longer valid.</span> Releasing a hold kills its link."},
+  {id:"32",who:["louise"],do:"Remove Email C. Confirm.",exp:"<span class=q>Removed from the waiting list.</span> DEMO block disappears from Waiting lists."},
+  {id:"33",who:["cust"],do:"Refresh.",exp:"DEMO card shows <span class=q>1 space left</span> and Book Current Block. With the queue empty, the seat is back on public sale."}
+ ]},
+ {title:"Teardown",steps:[
+  {id:"t1",who:["claude","stop"],do:"Paste <code>04-teardown.sql</code>: deletes both DEMO classes, the catch-up swap, the dummy customers and the Email A/B/C customer records.",exp:"Every count in the result row is 0. If it says STOPPED, nothing was deleted: tell Claude."}
+ ]}
+];
+var CHIP={cust:["cust","Customer window"],louise:["louise","Louise window"],claude:["claude","SQL file"],inbox:["inbox","Email inbox"],stop:["stop","Stop"]};
+var state={};          // id -> {done, note}
+var dbRef=null, openNotes={};
+var ALL=[]; PARTS.forEach(function(p){ p.steps.forEach(function(s){ ALL.push(s); }); });
+
+function esc(t){ var d=document.createElement("div"); d.textContent=t||""; return d.innerHTML; }
+function st(id){ return state[id]||{done:false,note:""}; }
+
+function render(){
+  var html="";
+  PARTS.forEach(function(p){
+    var doneN=p.steps.filter(function(s){ return st(s.id).done; }).length;
+    html+='<section class="part"><div class="part-head"><h2>'+esc(p.title)+'</h2><span class="part-count">'+doneN+' / '+p.steps.length+'</span></div>';
+    if(p.intro) html+='<p class="part-intro">'+esc(p.intro)+'</p>';
+    p.steps.forEach(function(s){
+      var v=st(s.id), isClaude=s.who.indexOf("claude")>-1;
+      var label=/^\d+$/.test(s.id)?s.id:s.id.toUpperCase();
+      html+='<div class="step'+(isClaude?' claude':'')+(v.done?' is-done':'')+'">';
+      html+='<label class="tick"><input type="checkbox" id="cb-'+s.id+'" data-id="'+s.id+'"'+(v.done?' checked':'')+' aria-label="Step '+label+' done"><span class="num">'+label+'</span></label>';
+      html+='<div class="meta">'+s.who.map(function(w){ return '<span class="chip '+CHIP[w][0]+'">'+CHIP[w][1]+'</span>'; }).join("")+(s.tag?'<span class="tag">'+esc(s.tag)+'</span>':'')+'</div>';
+      html+='<p class="do">'+s.do+'</p>';
+      html+='<p class="expect">'+s.exp+'</p>';
+      var showNote=openNotes[s.id]||!!v.note;
+      html+='<div class="note-row">';
+      if(showNote){
+        html+='<textarea id="note-'+s.id+'" data-id="'+s.id+'" placeholder="What did you see instead?">'+esc(v.note)+'</textarea>';
+      } else {
+        html+='<button class="note-toggle" data-open="'+s.id+'">Add a note</button>';
+      }
+      html+='</div></div>';
+    });
+    html+='</section>';
+  });
+  var focusId=document.activeElement&&document.activeElement.id, selStart=null, selEnd=null;
+  if(focusId&&focusId.indexOf("note-")===0){ selStart=document.activeElement.selectionStart; selEnd=document.activeElement.selectionEnd; }
+  document.getElementById("parts").innerHTML=html;
+  if(focusId){ var el=document.getElementById(focusId); if(el){ el.focus(); if(selStart!==null){ try{ el.setSelectionRange(selStart,selEnd); }catch(e){} } } }
+  var total=ALL.length, done=ALL.filter(function(s){ return st(s.id).done; }).length;
+  document.getElementById("done-count").textContent=done;
+  document.getElementById("total-count").textContent=total;
+  document.getElementById("bar").style.width=Math.round(done/total*100)+"%";
+}
+
+function setSync(t){ document.getElementById("sync").textContent=t; }
+
+// Local fallback when the shared store isn't available in this view.
+var LS_KEY="wl107-progress";
+function loadLocal(){ try{ var r=localStorage.getItem(LS_KEY); if(r) state=JSON.parse(r)||{}; }catch(e){} }
+function saveLocal(){ try{ localStorage.setItem(LS_KEY,JSON.stringify(state)); }catch(e){} }
+
+var pending=Promise.resolve();
+function save(id){
+  var v=st(id);
+  if(!dbRef){ saveLocal(); return; }
+  setSync("Saving…");
+  pending=pending.then(function(){
+    return dbRef.doc(id).set({done:!!v.done,note:v.note||"",updated:new Date().toISOString()});
+  }).then(function(){ setSync("Saved"); },function(err){
+    console.error("Save failed",err); setSync("Couldn't save. Check your connection and try again.");
+  });
+}
+
+document.getElementById("parts").addEventListener("change",function(e){
+  var t=e.target;
+  if(t.type==="checkbox"&&t.dataset.id){
+    var id=t.dataset.id; state[id]=Object.assign({},st(id),{done:t.checked});
+    render(); save(id);
+  }
+});
+var noteTimers={};
+document.getElementById("parts").addEventListener("input",function(e){
+  var t=e.target;
+  if(t.tagName==="TEXTAREA"&&t.dataset.id){
+    var id=t.dataset.id; state[id]=Object.assign({},st(id),{note:t.value});
+    clearTimeout(noteTimers[id]); noteTimers[id]=setTimeout(function(){ save(id); },800);
+  }
+});
+document.getElementById("parts").addEventListener("click",function(e){
+  var t=e.target.closest("[data-open]");
+  if(t){ var id=t.dataset.open; openNotes[id]=true; render(); var ta=document.getElementById("note-"+id); if(ta) ta.focus(); }
+});
+document.querySelectorAll(".copy").forEach(function(b){
+  b.addEventListener("click",function(){
+    var text=b.dataset.copy;
+    function ok(){ b.classList.add("ok"); setTimeout(function(){ b.classList.remove("ok"); },1200); }
+    try{
+      navigator.clipboard.writeText(text).then(ok,function(){ selectText(b); });
+    }catch(e){ selectText(b); }
+  });
+});
+function selectText(el){ try{ var r=document.createRange(); r.selectNodeContents(el); var s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
+
+var dbRoot=null;
+function showLastRun(runs){
+  var el=document.getElementById("last-run"); if(!el) return;
+  if(!runs||!runs.length){ el.textContent=""; return; }
+  var r=runs[0];
+  el.textContent="Last finished run: "+(r.label||"")+": "+r.done+" of "+r.total+" steps ticked"+(r.notes?", "+r.notes+" with notes":"")+".";
+}
+document.getElementById("reset-btn").addEventListener("click",function(){
+  document.getElementById("reset-confirm").hidden=false; document.getElementById("reset-btn").hidden=true;
+});
+document.getElementById("reset-no").addEventListener("click",function(){
+  document.getElementById("reset-confirm").hidden=true; document.getElementById("reset-btn").hidden=false;
+});
+document.getElementById("reset-yes").addEventListener("click",async function(){
+  var yes=document.getElementById("reset-yes"); yes.disabled=true;
+  var msg=document.getElementById("reset-msg");
+  var total=ALL.length, done=ALL.filter(function(s){ return st(s.id).done; }).length;
+  var notes={}; ALL.forEach(function(s){ if(st(s.id).note) notes[s.id]=st(s.id).note; });
+  var now=new Date();
+  var label=now.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+  try{
+    if(dbRef&&dbRoot){
+      msg.textContent="Saving this run and clearing…";
+      await dbRoot.collection("runs").doc("run-"+now.getTime()).set({label:label,finishedAt:now.toISOString(),done:done,total:total,notes:notes});
+      for(var i=0;i<ALL.length;i++){
+        var id=ALL[i].id;
+        if(state[id]){ await dbRef.doc(id).delete(); }
+      }
+    } else {
+      state={}; saveLocal();
+    }
+    state={}; openNotes={}; render();
+    msg.textContent="Cleared. Ready for a new run.";
+  }catch(err){
+    console.error("Reset failed",err);
+    msg.textContent="Couldn't clear everything. Check your connection and try again.";
+  }
+  yes.disabled=false;
+  document.getElementById("reset-confirm").hidden=true; document.getElementById("reset-btn").hidden=false;
+});
+
+loadLocal(); render(); setSync("Saving on this device only");
+
+(async function(){
+  if(!window.claude||!window.claude.use){ return; }
+  var db=null;
+  try{ db=await window.claude.use("db"); }catch(e){ db=null; }
+  if(!db){ setSync("Saving on this device only"); return; }
+  dbRoot=db;
+  dbRef=db.collection("steps");
+  setSync("Saved");
+  db.collection("runs").orderBy("finishedAt","desc").limit(1).onSnapshot(function(snap){
+    showLastRun(snap.docs.map(function(d){ var b=d.data()||{}; return {label:b.label,done:b.done,total:b.total,notes:Object.keys(b.notes||{}).length}; }));
+  },function(err){ console.error("History stopped",err); });
+  dbRef.onSnapshot(function(snap){
+    var next={};
+    snap.docs.forEach(function(d){ var b=d.data()||{}; next[d.id]={done:!!b.done,note:b.note||""}; });
+    // Keep a note that is still being typed rather than overwrite it mid-word.
+    var active=document.activeElement;
+    if(active&&active.tagName==="TEXTAREA"&&active.dataset.id){ var aid=active.dataset.id; next[aid]=Object.assign({},next[aid]||{done:false},{note:active.value}); }
+    state=next; render();
+  },function(err){ console.error("Sync stopped",err); setSync("Live sync stopped. Reload the page."); });
+})();
+</script>
