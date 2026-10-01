@@ -57,6 +57,7 @@ main { min-width: 0; }
 .eyebrow { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--sage); margin: 0 0 6px; }
 h1 { font-family: var(--display); font-weight: 600; font-size: clamp(24px, 3.6vw, 32px); line-height: 1.2; margin: 0 0 18px; text-wrap: balance; }
 h2 { font-family: var(--display); font-weight: 700; font-size: 17px; margin: 30px 0 10px; }
+h3 { font-family: var(--display); font-weight: 600; font-size: 15px; margin: 26px 0 6px; }
 p, li { max-width: 68ch; }
 .situation { border-left: 3px solid var(--sage); background: var(--sage-soft); padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 0 0 8px; font-style: italic; }
 ol.steps { padding-left: 0; list-style: none; counter-reset: s; display: grid; gap: 10px; margin: 0; }
@@ -69,6 +70,13 @@ ol.steps > li::before { content: counter(s); font-family: var(--display); font-w
 figure { margin: 16px 0; }
 figure img { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
 figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.email-fig { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; align-items: start; padding: 18px 0; border-top: 1px solid var(--line); margin: 0; }
+.email-fig figcaption { order: 2; margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink); padding-left: 14px; border-left: 3px solid var(--line); }
+.email-fig img { order: 1; }
+@media (max-width: 720px) {
+  .email-fig { grid-template-columns: 1fr; gap: 10px; }
+  .email-fig figcaption { order: 0; }
+}
 .status-table { overflow-x: auto; max-width: 100%; }
 .status-table tbody th { text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--ink); white-space: nowrap; padding-right: 16px; }
 table { border-collapse: collapse; font-size: 14px; min-width: 420px; }
@@ -866,25 +874,75 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
 <template id="L-R.1">
   <p class="eyebrow">Reference</p>
   <h1>Which emails go out when</h1>
-  <p>The system sends these emails automatically. Anything not listed, you tell the client yourself.</p>
-  <div class="status-table">
-    <table>
-      <thead><tr><th>When this happens</th><th>The client gets</th><th>You get</th></tr></thead>
-      <tbody>
-        <tr><td>Client books, paying by bank transfer</td><td>"Your booking is reserved", with how to pay</td><td>"New booking" alert</td></tr>
-        <tr><td>Client books and pays by card</td><td>"Your booking is confirmed"</td><td>"New booking (card payment)" alert</td></tr>
-        <tr><td>You click <strong>Confirm</strong> on a bank-transfer booking</td><td>"Your booking is confirmed"</td><td>Nothing</td></tr>
-        <tr><td>Client joins a waiting list</td><td>Nothing (they see their place in the queue on screen)</td><td>"Waiting list" alert</td></tr>
-        <tr><td>You click <strong>Offer space</strong></td><td>"A space has come up", with their booking link</td><td>Nothing</td></tr>
-        <tr><td>You remove a client and <strong>no refund</strong> is owed</td><td>"Your booking has been cancelled", straight away</td><td>Nothing</td></tr>
-        <tr><td>You remove a client and a <strong>refund is owed</strong></td><td>Nothing yet</td><td>Nothing</td></tr>
-        <tr><td>You click <strong>Mark Refunded</strong></td><td>"Your refund has been processed"</td><td>Nothing</td></tr>
-        <tr><td>You send an <strong>Email Block</strong> message</td><td>Your message</td><td>A copy</td></tr>
-        <tr><td>Catch-up swap, release hold, remove from waiting list</td><td>Nothing: tell them yourself</td><td>Nothing</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <p class="note">Emails come from bookings@lg-pilates.co.uk. "You get" means the notification email in Settings. The practice copy never sends real emails.</p>
+  <p>Every email the system sends, to clients and to you, as it really looks. They're filled in with a made-up client (Sarah Thompson) and made-up bank details. Use them when a client says "I got an email saying…".</p>
+  <p class="note">Emails come from bookings@lg-pilates.co.uk. Your alerts go to the notification email in Settings. The practice copy never sends real emails. No email goes out for a catch-up swap, releasing a hold or removing someone from a waiting list: tell them yourself.</p>
+
+  <h3>Client books, paying by bank transfer</h3>
+  <figure class="email-fig">
+    <img src="{{img:email-reserved}}" alt="Email to the client: 'Your spot is reserved, not yet confirmed'. Booking summary with class, venue, day and time, six session dates and £60 due, then bank details, payment reference and a 48-hour payment deadline" loading="lazy">
+    <figcaption>What the client sees when she books and chooses bank transfer. The real email shows your bank details from Settings.</figcaption>
+  </figure>
+  <figure class="email-fig">
+    <img src="{{img:email-new-booking}}" alt="Alert email to Louise: 'New booking'. Sarah Thompson (New client) has made a new booking, with class, venue, dates, amount due, a note that a health form was submitted, and a link to the dashboard" loading="lazy">
+    <figcaption>Your alert when anyone books. New clients also get the yellow note about their health form.</figcaption>
+  </figure>
+
+  <h3>Client pays by card, or you click Confirm</h3>
+  <figure class="email-fig">
+    <img src="{{img:email-confirmed}}" alt="Email to the client: 'Booking confirmed. Payment received, your booking is now confirmed', with class, venue, day and time, session dates and what to bring" loading="lazy">
+    <figcaption>What the client sees when she pays by card, or when you click <strong>Confirm</strong> on a bank-transfer booking. It's the same email either way.</figcaption>
+  </figure>
+  <figure class="email-fig">
+    <img src="{{img:email-card-alert}}" alt="Alert email to Louise: 'New booking'. Sarah Thompson (Returning client) has made a new booking via card payment, with class details and amount paid" loading="lazy">
+    <figcaption>Your alert when someone books and pays by card. It says "via card payment" and "Amount paid".</figcaption>
+  </figure>
+
+  <h3>Waiting list</h3>
+  <figure class="email-fig">
+    <img src="{{img:email-waitlist-alert}}" alt="Alert email to Louise: 'New waiting list request'. Sarah Thompson has joined the waiting list and is number 2 in the queue, with the class details and a link to the dashboard" loading="lazy">
+    <figcaption>Your alert when someone joins a waiting list. It tells you their place in the queue.</figcaption>
+  </figure>
+  <figure class="email-fig">
+    <img src="{{img:email-waitlist-offer}}" alt="Email to the client: 'Good news, a space has come up'. Asks her to book within 24 hours, shows the class details and a green 'Book my place' button with the link written out underneath" loading="lazy">
+    <figcaption>What the client sees when you click <strong>Offer space</strong>. The button is her personal booking link.</figcaption>
+  </figure>
+
+  <h3>Removing a client and refunds</h3>
+  <figure class="email-fig">
+    <img src="{{img:email-cancelled}}" alt="Email to the client: 'Your booking has been cancelled and you've been removed from this block', with class, venue, day and time and block dates" loading="lazy">
+    <figcaption>What the client sees when you remove her and <strong>no refund</strong> is owed. It goes straight away.</figcaption>
+  </figure>
+  <figure class="email-fig">
+    <img src="{{img:email-refund}}" alt="Email to the client: the same cancellation notice plus a green box saying 'Refund of £40.00 has been processed. Please allow 3 to 5 working days'" loading="lazy">
+    <figcaption>What the client sees when you click <strong>Mark Refunded</strong>. Same email, plus the green refund box.</figcaption>
+  </figure>
+
+  <figure class="email-fig">
+    <img src="{{img:email-stripe-refund}}" alt="Email to the client: 'Refund of £40.00 has been processed. Please allow 3 to 5 working days', with the class and venue" loading="lazy">
+    <figcaption>What the client sees if a card refund is made <strong>directly in Stripe</strong> rather than with Mark Refunded.</figcaption>
+  </figure>
+
+  <h3>Email Block</h3>
+  <figure class="email-fig">
+    <img src="{{img:email-block}}" alt="Email to the client: 'Hi Sarah,' followed by Louise's message about the class moving to the small hall this week" loading="lazy">
+    <figcaption>What each client sees when you send an <strong>Email Block</strong> message. The system adds "Hi" and their first name for you, so start your message straight in, without "Hi everyone".</figcaption>
+  </figure>
+  <figure class="email-fig">
+    <img src="{{img:email-block-copy}}" alt="Copy email to Louise: 'Block email sent. Your message was sent to 11 clients on Mixed Ability, Monday 9:45am', then the subject and the message" loading="lazy">
+    <figcaption>Your copy, so you know it went out and how many clients got it.</figcaption>
+  </figure>
+
+
+  <h3>Card payment problem</h3>
+  <p>Rare: the client paid by card, but the last seat went in the seconds while she was paying.</p>
+  <figure class="email-fig">
+    <img src="{{img:email-payfail-client}}" alt="Email to the client: 'Payment received, but we couldn't secure your place'. Explains the class filled up while she was paying, and that Louise will be in touch about a full refund or another class" loading="lazy">
+    <figcaption>What the client sees if her card payment went through but the class filled up in the seconds while she was paying.</figcaption>
+  </figure>
+  <figure class="email-fig">
+    <img src="{{img:email-payfail-alert}}" alt="Alert email to Louise: 'Action needed: payment taken, booking not placed', with the client's name, email, phone, class and amount paid, and a reference number" loading="lazy">
+    <figcaption>Your alert for the same thing. <strong>This one needs action:</strong> contact the client and refund her in Stripe, or offer another class.</figcaption>
+  </figure>
 </template>
 
 <template id="L-R.2">
