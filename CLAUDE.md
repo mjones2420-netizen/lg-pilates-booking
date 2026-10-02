@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 1 Oct 2026 (session 104 — waitlist walkthrough passed on prod, #107 closed)
+Last updated: 2 Oct 2026 (session 105 — #117/#118/#119 shipped, #110 planned)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -232,7 +232,7 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 - **Prod Edge Function versions**: send-email v15, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v1, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).
 - **New website LIVE at lg-pilates.co.uk** (DNS cutover 12 Sep 2026). **Release Phases 0 and 1 COMPLETE** (#63, #64 closed 28 Sep). **Next: Phase 1.5** (#65) — decide the Netlify-credit question first (see RELEASE-PLAN.md).
-- **Banked, NOT pushed (session 105):** #118 + #119 (Waiting lists notes + Offer box) and #117 (warnings bar on every width). Mark wants #116 built too, then one push; republish the walkthrough checklist artifact at that push. #110 (option C) planned, released separately afterwards.
+- **Shipped session 105:** #117 (warnings bar on every width), #118/#119 (Waiting lists notes + in-page Offer box). Prod walkthrough re-run waits until #116 ships. #110 (option C, email confirmation) planned, released separately after #116.
 - **Open risks / follow-ups**:
   - [#111](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/111) — `keep-alive.yml` has FAILED every run since 22 Aug (401: it calls `lookup_customer`, now service-role only). Prod most likely stayed awake because the nightly pg_cron clean-up counted as activity (strong evidence, not proof). Fix + add a failure alert (#98 uptime monitor is its sub-ticket).
   - Free-plan Supabase = **no usable backups** (#96) and no leaked-password check (#21). Supabase Pro (~$25/mo) would cover backups, pausing and leak-check — weigh at #96.
