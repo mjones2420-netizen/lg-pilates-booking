@@ -20,7 +20,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin, signOutAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, signOutAdmin, expandWarnings } = require('./helpers/admin-auth');
 const { getPool } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
@@ -59,6 +59,7 @@ test.describe('BLW-08 — Class name and time both shown in warning banner row',
     // Wait for dashboard and banner.
     await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#block-warnings')).toBeVisible();
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
 
     // The Wednesday row should be present.
     const wedRow = page.locator('.block-warning-row').filter({ hasText: /Wednesday/i }).first();

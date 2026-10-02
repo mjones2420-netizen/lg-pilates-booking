@@ -25,7 +25,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin, signOutAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, signOutAdmin, expandWarnings } = require('./helpers/admin-auth');
 const { getPool } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
@@ -68,6 +68,7 @@ test.describe('BLW-01 — Red alert: class with no active or upcoming block', ()
 
     // The #block-warnings container should now be visible.
     await expect(page.locator('#block-warnings')).toBeVisible();
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
 
     // The red banner title contains the 🚫 marker and the "no active or upcoming block" text.
     const title = page.locator('.block-warning-title').first();

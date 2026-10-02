@@ -8,7 +8,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, expandWarnings } = require('./helpers/admin-auth');
 
 test.describe('AC-15 — Red warning banner Add Block does NOT prefill date', () => {
 
@@ -46,6 +46,7 @@ test.describe('AC-15 — Red warning banner Add Block does NOT prefill date', ()
 
     const warnings = page.locator('#block-warnings');
     await expect(warnings).toBeVisible();
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
 
     // Red banner: title contains "no active or upcoming block"
     const redBanner = warnings.locator('.block-warning', {

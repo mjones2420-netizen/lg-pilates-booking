@@ -9,7 +9,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, expandWarnings } = require('./helpers/admin-auth');
 
 test.describe('AC-13 — Add block modal subtitle shows class time', () => {
 
@@ -22,6 +22,7 @@ test.describe('AC-13 — Add block modal subtitle shows class time', () => {
     // Block warnings should be visible; yellow advisory should show for Wed (class_id=2)
     const warnings = page.locator('#block-warnings');
     await expect(warnings).toBeVisible();
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
 
     // Find the "+ Add Block" button in the advisory (yellow) banner.
     // The yellow banner is the one whose title contains "no next block".

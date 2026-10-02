@@ -26,7 +26,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin, signOutAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, signOutAdmin, expandWarnings } = require('./helpers/admin-auth');
 const { getPool } = require('./helpers/admin-db');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 
@@ -74,6 +74,7 @@ test.describe('BLW-02 — Yellow advisory: active block but no next block', () =
 
     // The #block-warnings container should be visible.
     await expect(page.locator('#block-warnings')).toBeVisible();
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
 
     // The advisory text must be present somewhere in the warnings.
     await expect(page.locator('#block-warnings')).toContainText(/active block but no next block/i);

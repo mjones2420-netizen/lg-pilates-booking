@@ -35,7 +35,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, expandWarnings } = require('./helpers/admin-auth');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const { sb: sbAnon } = require('./helpers/supabase');
 const {
@@ -392,6 +392,7 @@ test.describe('CU — Catch-Up Swaps', () => {
     const warnings = page.locator('#block-warnings');
     await expect(warnings).toContainText('catch-up swap that will exceed capacity', { timeout: 8000 });
     await expect(warnings).toContainText('over capacity on:', { timeout: 5000 });
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
 
     // Button jumps straight to By Class
     await warnings.getByRole('button', { name: 'View By Class' }).click();

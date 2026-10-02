@@ -383,7 +383,27 @@ body:has(#pg-schedule.on) .site-footer-public { display:flex; }
 .db-topbar-action:hover { border-color:var(--sage-dk); color:var(--sage-dk); }
 .db-topbar-action.green { border-color:var(--green); color:var(--green); }
 .db-topbar-action.green:hover { background:var(--green); color:white; }
-.db-warnings { flex-shrink:0; }
+.db-warnings { flex-shrink:0; max-height:100%; overflow-y:auto; }
+/* ── Warnings banner (#103 phones, #117 every width) ──
+   Collapsed by default behind a one-line summary, so the warnings never take
+   the screen from the page underneath. Opened on a laptop it has no height
+   limit of its own: the cap above only stops it overflowing the main area,
+   where it scrolls with the summary pinned on top to close it again. */
+#block-warnings { padding:0 !important; }
+.db-warn-summary { display:flex; align-items:center; gap:10px; padding:11px 24px 11px 20px;
+                   border-left:4px solid var(--clay); background:#fff8ec; cursor:pointer;
+                   position:sticky; top:0; z-index:2; }
+.db-warn-summary:focus-visible { outline:2px solid var(--sage); outline-offset:-2px; }
+.db-warn-ico { width:21px; height:21px; border-radius:50%; background:var(--clay); color:#fff;
+               flex-shrink:0; display:flex; align-items:center; justify-content:center;
+               font-size:12px; font-weight:700; }
+.db-warn-txt { flex:1; font-size:12.5px; font-weight:600; color:var(--charcoal); line-height:1.35; }
+.db-warn-txt small { display:block; font-weight:400; color:var(--mid); font-size:11px; }
+.db-warn-break { display:block; font-weight:400; color:var(--mid); font-size:11.5px; margin-top:1px; }
+.db-warn-chev { color:var(--clay); font-size:15px; flex-shrink:0; transition:transform .18s ease; }
+.db-warn-body { display:none; padding:12px 24px 4px 20px; border-left:4px solid var(--clay); background:#fff8ec; }
+.db-warn-body.on { display:block; }
+.db-warnings.on .db-warn-chev { transform:rotate(90deg); }
 .db-content { flex:1; overflow-y:auto; padding:24px; background:#d4dede; }
 .db-page { display:none; }
 .db-page.on { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
@@ -588,7 +608,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
    here, rather than emitted conditionally, so rotating or resizing the window
    can never leave the wrong markup on screen. The mobile query at the bottom
    of this stylesheet turns each of these on. */
-.m-sub, .m-dot, .db-warn-summary, .db-more-scrim, .db-more-sheet { display:none; }
+.m-sub, .m-dot, .db-more-scrim, .db-more-sheet { display:none; }
 .blk-eyebrow { display:none; }
 @media(max-width:700px) {
   /* Shorthand must re-state the inset the base rule adds, or it resets it. */
@@ -623,25 +643,13 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
   .db-page.on { flex-shrink:1; }
 
   /* ── Warnings banner ──
-     Hard cap so a long warnings list can never starve the content pane to
-     zero height again, collapsed by default behind a one-line summary. */
-  .db-warnings { max-height:40dvh; overflow-y:auto; }
-  #block-warnings { padding:0 !important; }
-  .db-warn-summary { display:flex; align-items:center; gap:10px; padding:11px 13px;
-                     border-left:4px solid var(--clay); background:#fff8ec; cursor:pointer;
-                     position:sticky; top:0; z-index:2; }
-  .db-warn-summary:focus-visible { outline:2px solid var(--sage); outline-offset:-2px; }
-  .db-warn-ico { width:21px; height:21px; border-radius:50%; background:var(--clay); color:#fff;
-                 flex-shrink:0; display:flex; align-items:center; justify-content:center;
-                 font-size:12px; font-weight:700; }
-  .db-warn-txt { flex:1; font-size:12.5px; font-weight:600; color:var(--charcoal); line-height:1.35; }
-  .db-warn-txt small { display:block; font-weight:400; color:var(--mid); font-size:11px; }
-  .db-warn-chev { color:var(--clay); font-size:15px; flex-shrink:0; transition:transform .18s ease; }
-  .db-warn-body { display:none; padding:0 13px 11px; border-left:4px solid var(--clay); background:#fff8ec; }
-  .db-warn-body.on { display:block; }
+     Phones keep a hard cap so an open list can never starve the content pane
+     to zero height (the base rules above do the collapsing). */
+  .db-warnings { max-height:40dvh; }
+  .db-warn-summary { padding:11px 13px; }
+  .db-warn-body { padding:0 13px 11px; }
   .db-warn-body .block-warning { margin-bottom:10px !important; }
   .db-warn-body .block-warning-row { flex-wrap:wrap; gap:8px; }
-  .db-warnings.on .db-warn-chev { transform:rotate(90deg); }
 
   /* ── Expandable table rows ──
      One DOM: the desktop <table> markup is restyled here, never replaced.
@@ -3348,7 +3356,7 @@ function renderBlockWarnings(){
         html+='<div class="block-warning-row">';
         html+='<div><div class="block-warning-class">'+(c?sanitise(c.name)+' &mdash; '+sanitise(c.day)+' '+sanitise(c.time):'Block #'+blk.id)+'</div>';
         html+='<div class="block-warning-meta">'+(c?sanitise(c.venue)+', '+sanitise(c.loc)+' &mdash; ':'')+'over capacity on: '+overLabels.join(", ")+'</div></div>';
-        html+='<button class="act act-confirm" onclick="switchDashPage(\'byclass\')" style="white-space:nowrap">View By Class</button>';
+        html+='<button class="act act-confirm" onclick="closeWarnBanner();switchDashPage(\'byclass\')" style="white-space:nowrap">View By Class</button>';
         html+='</div>';
       });
       html+='</div>';
@@ -3359,16 +3367,22 @@ function renderBlockWarnings(){
       html+='<div class="block-warning-title" style="color:#8a5010">&#9888; '+pendingRefundCount+' cancellation'+(pendingRefundCount>1?"s are":" is")+' awaiting a refund decision</div>';
       html+='<div class="block-warning-row">';
       html+='<div class="block-warning-meta">Mark as refunded or no refund required in the Cancellations tab.</div>';
-      html+='<button class="act act-confirm" onclick="switchDashPage(\'cancellations\')" style="white-space:nowrap">View Cancellations</button>';
+      html+='<button class="act act-confirm" onclick="closeWarnBanner();switchDashPage(\'cancellations\')" style="white-space:nowrap">View Cancellations</button>';
       html+='</div>';
       html+='</div>';
     }
 
-    // The summary header is emitted on every render and hidden by CSS above
-    // 940px, so desktop output is visually unchanged and a rotate/resize can
-    // never strand the wrong markup. The body keeps its previous collapsed
-    // state so a re-render doesn't slam an open banner shut.
+    // Collapsed behind the summary at every width (#117). The body keeps its
+    // previous open/closed state so a re-render doesn't slam an open banner
+    // shut; nothing is saved, so every reload or login starts closed.
     var total=hidden.length+expiring.length+overCapEntries.length+pendingRefundCount;
+    // One-line breakdown under the count, so Louise can tell what's there
+    // without opening it.
+    var breakdown=[];
+    if(hidden.length) breakdown.push(hidden.length+" class"+(hidden.length===1?"":"es")+" with no block");
+    if(expiring.length) breakdown.push(expiring.length+" with no next block");
+    if(overCapEntries.length) breakdown.push(overCapEntries.length+" block"+(overCapEntries.length===1?"":"s")+" over capacity");
+    if(pendingRefundCount) breakdown.push(pendingRefundCount+" refund"+(pendingRefundCount===1?"":"s")+" to decide");
     var wasOpen=document.getElementById("dbwarn-body");
     wasOpen=!!(wasOpen&&wasOpen.classList.contains("on"));
     var summary='<div class="db-warn-summary" id="dbwarn-summary" role="button" tabindex="0"'
@@ -3376,7 +3390,8 @@ function renderBlockWarnings(){
       +' onclick="toggleWarnBanner()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleWarnBanner();}">'
       +'<div class="db-warn-ico">!</div>'
       +'<div class="db-warn-txt">'+total+' thing'+(total===1?"":"s")+' need'+(total===1?"s":"")+' attention'
-      +'<small id="dbwarn-hint">'+(wasOpen?"Tap to close":"Tap to see them")+'</small></div>'
+      +'<small id="dbwarn-hint">'+warnBannerHint(wasOpen)+'</small>'
+      +'<span class="db-warn-break">'+breakdown.join(" &middot; ")+'</span></div>'
       +'<div class="db-warn-chev">&#9654;</div></div>';
 
     el.innerHTML=summary+'<div class="db-warn-body'+(wasOpen?" on":"")+'" id="dbwarn-body">'+html+'</div>';
@@ -3386,8 +3401,19 @@ function renderBlockWarnings(){
   })();
 }
 
-// Mobile only in effect — the summary header that calls this is hidden above
-// 940px, so the body is never collapsed on desktop.
+// "Click" with a mouse, "Tap" on a touch screen.
+function warnBannerHint(open){
+  var verb=window.matchMedia&&window.matchMedia("(pointer: coarse)").matches?"Tap":"Click";
+  return verb+(open?" to close":" to see them");
+}
+
+// A warning's own "View …" button closes the bar first: on a laptop an open
+// list can fill the main area, and the page it opens would sit unseen behind it.
+function closeWarnBanner(){
+  var body=document.getElementById("dbwarn-body");
+  if(body&&body.classList.contains("on")) toggleWarnBanner();
+}
+
 function toggleWarnBanner(){
   var body=document.getElementById("dbwarn-body");
   if(!body) return;
@@ -3398,7 +3424,7 @@ function toggleWarnBanner(){
   var sum=document.getElementById("dbwarn-summary");
   if(sum) sum.setAttribute("aria-expanded",String(open));
   var hint=document.getElementById("dbwarn-hint");
-  if(hint) hint.textContent=open?"Tap to close":"Tap to see them";
+  if(hint) hint.textContent=warnBannerHint(open);
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
@@ -4255,6 +4281,19 @@ var CU_MSGS={
   CU_SAME_BLOCK:"The class they are joining must be different from their usual class."
 };
 
+// Reloads the catch-up list after a save or delete that already worked, and
+// says so plainly if only the reload failed.
+async function refreshCatchUpView(){
+  try{
+    await reloadCatchUpSwaps();
+    renderCatchUpSwapsList();
+    renderClassesView();
+  }catch(err){
+    console.error("Catch-up refresh error:",err);
+    showToast("Saved, but the list didn't refresh. Please reload the page.");
+  }
+}
+
 async function reloadCatchUpSwaps(){
   var{data:swapsData,error}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
   // Throw rather than fall through: an empty list would silently drop the
@@ -4462,13 +4501,14 @@ async function saveCatchUpSwap(overrideLimit){
     }
     closeCatchUpModal();
     showToast(overrideLimit?"Catch-up swap recorded (override: 3rd+ swap this block).":"Catch-up swap recorded.");
-    await reloadCatchUpSwaps();
-    renderCatchUpSwapsList();
-    renderClassesView();
   }catch(err){
     console.error("Swap save error:",err);
     fail("Error saving. Please try again.");
+    return;
   }
+  // Outside the try: the swap is saved, so a failed reload is a stale list,
+  // not a failed save.
+  await refreshCatchUpView();
 }
 
 async function deleteCatchUpSwap(id){
@@ -4477,13 +4517,12 @@ async function deleteCatchUpSwap(id){
     var{error}=await sb.from("catch_up_swaps").delete().eq("id",id).select();
     if(error) throw error;
     showToast("Catch-up swap removed.");
-    await reloadCatchUpSwaps();
-    renderCatchUpSwapsList();
-    renderClassesView();
   }catch(err){
     console.error("Delete swap error:",err);
     showToast("Error removing swap. Please try again.");
+    return;
   }
+  await refreshCatchUpView();
 }
 
 /* ═══ Waiting lists — admin page (#75) ═══════════════════════════════════════

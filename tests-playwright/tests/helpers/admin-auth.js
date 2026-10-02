@@ -153,11 +153,25 @@ async function signOutAdmin(page) {
   await expect(page.locator('#pg-schedule.on')).toBeVisible({ timeout: 5000 });
 }
 
+/**
+ * Opens the dashboard warnings bar (#117). The warnings sit collapsed behind
+ * #dbwarn-summary at every width, so anything that reads or clicks a warning
+ * row must open it first. No-op when it is already open. Assumes warnings
+ * exist — call it after asserting #block-warnings is visible.
+ */
+async function expandWarnings(page) {
+  const summary = page.locator('#dbwarn-summary');
+  await expect(summary).toBeVisible({ timeout: 15000 });
+  if ((await summary.getAttribute('aria-expanded')) !== 'true') await summary.click();
+  await expect(page.locator('#dbwarn-body')).toHaveClass(/\bon\b/);
+}
+
 module.exports = {
   loginAsAdmin,
   openClientsTab,
   expandPerClassPanel,
   classPriorityButton,
   classPriorityBadge,
-  signOutAdmin
+  signOutAdmin,
+  expandWarnings
 };

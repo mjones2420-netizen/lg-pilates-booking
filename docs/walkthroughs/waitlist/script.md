@@ -81,7 +81,7 @@ Dummy customers use addresses at `@lg-pilates-demo.invalid`, a domain that can n
 | 16 | Waiting lists → **Offer space** on **Email B**. | A box opens: **"Offer a space to [Email B's name]?"** with an amber **"Clash with a catch-up"** panel naming the date from step 15 and Demo Three ("4 people for 3 places"). Button reads **Offer anyway**. Click **Cancel**. Email B is still **Waiting**, and no email arrives. *(#119)* |
 | 16b | **Offer space** on **Email B** again → **Offer anyway**. | Toast: **"Space offered and email sent."** Email B's row reads **Offered [date]**, "Email sent · Today". |
 | 17 | Look at the badges and Email C's row. | **No seat free**, **1 held · 1 waiting**. Email C's Offer button is greyed, and the note under the heading reads: "No free seat — a hold is using it. Release the hold first." |
-| 18 | Go to the dashboard home (All Bookings). | Red warning: **"1 block has a catch-up swap that will exceed capacity"**, over capacity on the date from step 15. *(Reverse catch-up check.)* |
+| 18 | Go to the dashboard home (All Bookings) and click the orange **"things need attention"** bar to open it. | The bar's breakdown line mentions **1 block over capacity**. Inside, red warning: **"1 block has a catch-up swap that will exceed capacity"**, over capacity on the date from step 15. *(Reverse catch-up check.)* |
 | 19 | **+ Record swap** again, same customer, target the DEMO class. Open the date list. | Every DEMO date shows **"— FULL"** and can't be picked. The held seat counts as taken. Cancel without saving. *(Forward catch-up check.)* |
 
 ## Part 6 — The offer email and link [You, Email B inbox + a NEW private window]

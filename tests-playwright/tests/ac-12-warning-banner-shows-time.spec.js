@@ -11,7 +11,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, expandWarnings } = require('./helpers/admin-auth');
 
 test.describe('AC-12 — Warning banner shows class time in name', () => {
 
@@ -49,6 +49,7 @@ test.describe('AC-12 — Warning banner shows class time in name', () => {
     // Block warnings section should be visible
     const warnings = page.locator('#block-warnings');
     await expect(warnings).toBeVisible();
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
 
     // Red banner: our per-run class should appear with its time
     const redBanner = warnings.locator('.block-warning').first();

@@ -23,7 +23,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin, signOutAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, signOutAdmin, expandWarnings } = require('./helpers/admin-auth');
 const { getPool } = require('./helpers/admin-db');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 
@@ -83,6 +83,7 @@ test.describe('BLW-03 — Both red and yellow banners render simultaneously', ()
 
     // The warnings container must be visible.
     await expect(page.locator('#block-warnings')).toBeVisible();
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
 
     // Count .block-warning divs — expect at least 2 (one red, one yellow).
     // The fixture's Wed/Fri single-block classes also fire the advisory, so

@@ -28,7 +28,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin, signOutAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, signOutAdmin, expandWarnings } = require('./helpers/admin-auth');
 const { getPool } = require('./helpers/admin-db');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 
@@ -85,6 +85,7 @@ test.describe('BLW-07 — Yellow advisory: Add Block prefills suggested start da
     // Wait for banner.
     await expect(page.locator('#btbody tr').first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#block-warnings')).toBeVisible();
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
     await expect(page.locator('#block-warnings')).toContainText(/active block but no next block/i);
 
     // Find the Thursday advisory row and click its "+ Add Block" button.

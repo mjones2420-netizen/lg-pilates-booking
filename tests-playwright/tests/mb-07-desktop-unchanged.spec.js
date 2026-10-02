@@ -9,8 +9,8 @@
 // Scenario:
 //   Given: the dashboard at 1280x720
 //   Then:  the sidebar shows and the bottom nav does not; the More sheet and
-//          its trigger are hidden; the warnings banner renders in full with no
-//          summary header; tables render as real tables with a visible thead
+//          its trigger are hidden; the warnings sit behind the closed summary
+//          bar (#117, as on phones); tables render as real tables with a visible thead
 //          and all cells shown; and the .m-sub sub-lines / status dots / block
 //          eyebrow labels are not displayed.
 //
@@ -43,10 +43,10 @@ test.describe('MB-07 — Desktop dashboard unchanged', () => {
     await expect(page.locator('#db-more-sheet')).toBeHidden();
     await expect(page.locator('#db-more-scrim')).toBeHidden();
 
-    // Warnings render in full — no collapsed summary header on desktop.
-    await expect(page.locator('#dbwarn-summary')).toBeHidden();
-    await expect(page.locator('#dbwarn-body')).toBeVisible();
-    await expect(page.locator('#dbwarn-body .block-warning').first()).toBeVisible();
+    // Since #117 the desktop warnings use the same collapsed bar as phones,
+    // closed on arrival. MB-08 covers the bar itself.
+    await expect(page.locator('#dbwarn-summary')).toBeVisible();
+    await expect(page.locator('#dbwarn-body')).toBeHidden();
   });
 
   test('MB-07b — tables render as real tables, mobile-only markup hidden', async ({ page }) => {

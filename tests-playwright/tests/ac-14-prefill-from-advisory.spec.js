@@ -10,7 +10,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, expandWarnings } = require('./helpers/admin-auth');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 
 test.describe('AC-14 — Auto start date prefill from advisory warning', () => {
@@ -34,6 +34,7 @@ test.describe('AC-14 — Auto start date prefill from advisory warning', () => {
 
     const warnings = page.locator('#block-warnings');
     await expect(warnings).toBeVisible();
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
 
     // Find the yellow advisory banner and click its "+ Add Block"
     const yellowBanner = warnings.locator('.block-warning', {

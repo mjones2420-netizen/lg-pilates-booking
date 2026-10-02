@@ -33,6 +33,9 @@ async function login(page) {
   await login(page);
 
   // 3.1 "no next block" warning + Classes page + Add Block form (not saved)
+  // Warnings sit behind the orange bar at every width since #117 — open it.
+  await page.locator('#dbwarn-summary').click();
+  await page.waitForTimeout(300);
   await shot('p3-warning', page.locator('#block-warnings'));
   await page.evaluate(() => switchDashPage('classes'));
   await page.waitForTimeout(500);

@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const { APP_PATH } = require('./helpers/app-url');
-const { loginAsAdmin } = require('./helpers/admin-auth');
+const { loginAsAdmin, expandWarnings } = require('./helpers/admin-auth');
 const { sb } = require('./helpers/supabase');
 const { getBlockByRole } = require('./helpers/fixture-lookup');
 const {
@@ -92,6 +92,7 @@ test.describe('BLW-09 — Pending refund warning banner', () => {
     // Wait for block warnings to render (async DB call inside renderBlockWarnings)
     const warningBanner = page.locator('#block-warnings');
     await expect(warningBanner).toBeVisible({ timeout: 10000 });
+    await expandWarnings(page);   // warnings sit behind the collapsed bar (#117)
 
     // Assert the orange refund warning is present
     await expect(warningBanner).toContainText('awaiting a refund decision', { timeout: 5000 });
@@ -116,7 +117,9 @@ test.describe('BLW-09 — Pending refund warning banner', () => {
     await expect(warningBanner).toContainText('awaiting a refund decision', { timeout: 10000 });
 
     // Read the current count from the banner text
-    const bannerText = await warningBanner.innerText();
+    // textContent, not innerText: the rows sit inside the collapsed bar
+    // (#117), and innerText skips hidden text.
+    const bannerText = await warningBanner.textContent();
     const countMatch = bannerText.match(/(\d+) cancellation/);
     const countBefore = countMatch ? parseInt(countMatch[1]) : 0;
 

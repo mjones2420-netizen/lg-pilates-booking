@@ -532,4 +532,8 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - `customers.customer_type` allows only new / returning / vip (not 'existing').
 - Mark works in the terminal: open mockups for him with `open <path>` (memory).
 - Session start: drift check B: block 6168 (class 3) still `upcoming` on its own start date (the check only flags the day before); reseeded by `npm test`. C healthy.
-- **Next:** #117 (questions pending: default closed? 40% cap? remember open? breakdown line?), then #116 (6 questions), then push all four; then #110.
+- **#117 built (same session, banked):** decisions on the ticket. The phone "N things need attention" bar now shows at every width: always starts closed (no saved state; stays open across page switches), opened on a laptop has **no height cap** (`.db-warnings` max-height:100% of the main area, scrolls with the bar sticky; phones keep 40dvh), one-line breakdown under the count (`.db-warn-break`), hint "Click…" / "Tap…" via `(pointer: coarse)`.
+  - Code review (2 low, both fixed): `refreshCatchUpView()` so a save/delete that worked but whose reload failed says "Saved, but the list didn't refresh" (replaces the earlier side effect); the warnings' own View By Class / View Cancellations buttons call `closeWarnBanner()` first (an open list would hide the page they switch to).
+  - Tests: new helper `expandWarnings(page)` (admin-auth.js) added to AC-12–15, BLW-01–05/07/08/09, CU-01; BLW-09 reads the count with `textContent` (rows hidden); MB-07a flipped; new **MB-08**. **309/309 green.** Mark checked the real page on TEST.
+  - Docs: walkthrough step 18 (open the bar), Training Hub warnings wording + retaken `p3-warning` screenshot (only that one; `capture-part3.js` now opens the bar) → hub **v9**.
+- **Next:** #116 (6 questions, mockup exists), then push all four (#116–#119) together and republish the walkthrough checklist; then #110.
