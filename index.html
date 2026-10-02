@@ -490,7 +490,21 @@ tr:hover td { background:var(--cream); }
 .act-offer:hover:not([disabled]) { background:var(--amber); color:white; border-color:var(--amber); }
 .act[disabled] { opacity:0.42; cursor:not-allowed; border-color:var(--border); color:var(--light); font-weight:400; }
 .act[disabled]:hover { border-color:var(--border); color:var(--light); background:none; }
-.wl-why { display:block; font-size:11px; color:var(--light); margin-top:5px; max-width:230px; line-height:1.5; }
+/* Notes strip directly under a waiting-list header (#118/#119): explains the
+   whole block once, so it can't read as being about the first person, and it
+   stays visible on a phone where the row detail is collapsed. */
+.wl-head-note { display:flex; gap:8px; align-items:flex-start; padding:9px 18px; border-bottom:1px solid var(--border); font-size:12px; line-height:1.55; color:var(--mid); background:#f7fafa; }
+.wl-why { font-weight:700; font-style:italic; }
+.wl-note-ico { flex-shrink:0; width:16px; height:16px; border-radius:50%; border:1px solid var(--light); color:var(--light); font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; margin-top:1px; }
+.wl-head-note.clash { display:block; background:var(--amber-bg); border-left:3px solid var(--amber); padding-left:15px; color:var(--charcoal); }
+.wl-head-note.clash b { color:var(--amber-dk); font-weight:600; }
+.wl-head-note.clash ul { margin:3px 0 0 18px; padding:0; }
+.wl-head-note .wl-hint { display:block; color:var(--mid); font-size:11.5px; margin-top:2px; }
+.wl-offer-clash { margin-top:14px; background:var(--amber-bg); border-left:3px solid var(--amber); border-radius:3px; padding:11px 14px; color:var(--charcoal); font-size:13px; line-height:1.55; }
+.wl-offer-clash b { display:block; color:var(--amber-dk); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px; }
+.wl-offer-clash ul { margin:3px 0 4px 18px; padding:0; }
+.act-offer.solid { background:var(--amber); color:white; border-color:var(--amber); }
+.act-offer.solid:hover:not([disabled]) { background:var(--amber-dk); border-color:var(--amber-dk); }
 .class-group-badge.amber { background:var(--amber-bg); border-color:#e8d6bd; color:var(--amber-dk); font-weight:600; }
 .class-group-badge.full { background:#fdecec; border-color:#f3d2d2; color:var(--red); font-weight:600; }
 .class-group-badge.free { background:#e8f0e7; border-color:#cfe2cc; color:var(--green); font-weight:600; }
@@ -679,9 +693,9 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
      is opened; the client and joined sub-lines stay put. */
   .db-content td.m-badge .wl-sub { display:none; }
   .db-content tr.m-open td.m-badge .wl-sub { display:block; text-align:right; }
-  /* Sits in the action cell, which is a flex row here — without its own line
-     it would be squeezed between the buttons. */
-  .wl-why { flex-basis:100%; max-width:none; margin-top:2px; }
+  .wl-head-note { padding:8px 13px; }
+  .wl-head-note.clash { padding-left:10px; }
+  #wl-offer-footer .act { flex:1; }
   .wl-badges { justify-content:flex-start; margin-top:8px; }
   .db-content .class-group-header { flex-wrap:wrap; }
 
@@ -3259,15 +3273,11 @@ function renderBlockWarnings(){
   // Held waitlist seats count as attendance: a hold may be offered onto a
   // date a catch-up already occupies (allowed on purpose — session 99), and
   // this is what tells Louise to move the catch-up.
-  var cuToday=new Date(); cuToday.setHours(0,0,0,0);
   var overCapByBlock={};
   blocks.forEach(function(blk){
-    var dateGroups={};
-    catchUpSwaps.filter(function(s){ return s.target_block_id===blk.id; }).forEach(function(s){
-      var dt=new Date(s.class_date+"T00:00:00");
-      if(dt>=cuToday){ dateGroups[s.class_date]=(dateGroups[s.class_date]||0)+1; }
-    });
-    var overDates=Object.keys(dateGroups).filter(function(d){ return (blk.booked+cuHeldOnBlock(blk.id)+dateGroups[d])>blk.cap; });
+    var overDates=blockCatchUpLoad(blk)
+      .filter(function(d){ return d.taken>blk.cap; })
+      .map(function(d){ return d.iso; });
     if(overDates.length>0){ overCapByBlock[blk.id]={blk:blk,dates:overDates}; }
   });
   var overCapEntries=Object.keys(overCapByBlock).map(function(k){ return overCapByBlock[k]; });
@@ -4179,6 +4189,58 @@ function cuHeldOnBlock(blockId){
   return heldByBlock[blockId]||0;
 }
 
+// Per-date attendance on a block from today on, for dates that have catch-up
+// visitors: [{iso, names[], taken}], soonest first. taken = booked + held
+// waitlist seats + that date's catch-ups. One source for the dashboard
+// over-capacity warning (taken > cap) and the Waiting lists clash note
+// (taken >= cap: one more offer tips that date over), so they can't disagree.
+// Today counts — the class may not have run yet.
+function blockCatchUpLoad(blk){
+  var today=new Date(); today.setHours(0,0,0,0);
+  var byDate={};
+  catchUpSwaps.forEach(function(s){
+    if(s.target_block_id!==blk.id) return;
+    if(new Date(s.class_date+"T00:00:00")<today) return;
+    (byDate[s.class_date]=byDate[s.class_date]||[]).push(s.customer_name);
+  });
+  var base=(blk.booked||0)+cuHeldOnBlock(blk.id);
+  return Object.keys(byDate).sort().map(function(iso){
+    return {iso:iso, names:byDate[iso], taken:base+byDate[iso].length};
+  });
+}
+
+// Dates where offering this block's free seat would put that week over
+// capacity. Empty when there is no free seat: the Offer button is disabled.
+function waitlistClashDates(blk){
+  var free=(blk.cap||0)-(blk.booked||0)-cuHeldOnBlock(blk.id);
+  if(free<=0) return [];
+  return blockCatchUpLoad(blk).filter(function(d){ return d.taken>=(blk.cap||0); });
+}
+
+function wlClashDateLabel(iso){
+  return new Date(iso+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+}
+
+// "Demo Three is on a catch-up" / "Jo Bird and Amy Hart are on catch-ups"
+function wlClashWho(names){
+  var safe=names.map(function(n){ return sanitise(n); });
+  var who=safe.length===1?safe[0]:safe.slice(0,-1).join(", ")+" and "+safe[safe.length-1];
+  return who+(safe.length===1?" is on a catch-up":" are on catch-ups")+" that day";
+}
+
+// Amber strip under a waiting-list header (#119). "" when nothing clashes.
+function wlClashNoteHtml(clashes,blk){
+  if(!clashes.length) return "";
+  if(clashes.length===1){
+    var d=clashes[0], over=d.taken+1-(blk.cap||0);
+    return "<div class=\"wl-head-note clash\">&#9888; <b>"+wlClashDateLabel(d.iso)+" is already full:</b> "+wlClashWho(d.names)+"."
+      +"<span class=\"wl-hint\">Offering this space will put that week over capacity by "+(over===1?"one":over)+".</span></div>";
+  }
+  return "<div class=\"wl-head-note clash\">&#9888; <b>"+clashes.length+" weeks are already full:</b><ul>"
+    +clashes.map(function(d){ return "<li><b style=\"display:inline\">"+wlClashDateLabel(d.iso)+"</b> &ndash; "+wlClashWho(d.names)+"</li>"; }).join("")
+    +"</ul><span class=\"wl-hint\">Offering this space will put those weeks over capacity.</span></div>";
+}
+
 // "— 3 spaces" / "— FULL" suffix for the modal dropdowns
 function cuSpacesLabel(spaces){
   return spaces<=0?" — FULL":" — "+spaces+" space"+(spaces===1?"":"s");
@@ -4194,7 +4256,10 @@ var CU_MSGS={
 };
 
 async function reloadCatchUpSwaps(){
-  var{data:swapsData}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
+  var{data:swapsData,error}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
+  // Throw rather than fall through: an empty list would silently drop the
+  // over-capacity warning and the Waiting lists clash check (#119).
+  if(error) throw error;
   catchUpSwaps=mapSwapRows(swapsData,dashCustomerMap);
 }
 
@@ -4477,6 +4542,9 @@ async function reloadWaitlist(){
   // Seat counts come from the DB, not the login-time cache: an offer decision
   // made against a stale `booked` would offer a seat that no longer exists.
   await refreshBlockCounts();
+  // Catch-ups load once at login. The clash note and the Offer box judge a
+  // seat against them, so a swap recorded since then must be seen (#119).
+  await reloadCatchUpSwaps();
   var{data,error}=await sb.from("waitlist")
     .select("id,block_id,customer_id,status,offer_token,offered_at,offer_email_sent_at,created_at,customers(first_name,last_name,email,phone)")
     // id as the tiebreak: two people joining in the same instant must still
@@ -4569,12 +4637,22 @@ function renderWaitlistList(){
          +(offered>0?offered+" held · ":"")+waiting+" waiting</span>";
     html+="</div></div>";
 
+    // Notes strip under the header (#118/#119). Said once for the whole block:
+    // in a row it read as being about that one person, and on a phone it was
+    // hidden inside a collapsed card.
+    if(freeSeats<=0&&waiting>0){
+      html+="<div class=\"wl-head-note\"><span class=\"wl-note-ico\">i</span><span class=\"wl-why\">"+(offered>0
+        ? "No free seat &mdash; a hold is using it. Release the hold first."
+        : "No free seat &mdash; the block is full and nobody has cancelled.")+"</span></div>";
+    }
+    // Only where Offer space is live: a free seat and someone still Waiting.
+    if(waiting>0) html+=wlClashNoteHtml(waitlistClashDates(blk),blk);
+
     // Four columns, not five: the queue position rides inside the client cell
     // rather than owning one. Below 940px the FIRST cell is the one that stays
     // visible on the collapsed card (#103), and that has to be the name.
     html+="<table><thead><tr><th>Client</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
 
-    var shownReason=false;
     g.rows.forEach(function(r,i){
       var isOffered=r.status==="offered";
       html+="<tr>";
@@ -4606,15 +4684,8 @@ function renderWaitlistList(){
         html+="<td class=\"m-badge\" data-label=\"Status\"><span class=\"pill p-waiting\">Waiting</span></td>";
         html+="<td>"
              +"<button class=\"act act-offer\" onclick=\"offerWaitlistSpace("+r.id+")\""+(freeSeats<=0?" disabled":"")+">Offer space</button>"
-             +"<button class=\"act act-delete\" onclick=\"removeWaitlistEntry("+r.id+")\">Remove</button>";
-        // Explain the greyed-out button once per block, not on every row.
-        if(freeSeats<=0&&!shownReason){
-          shownReason=true;
-          html+="<span class=\"wl-why\">"+(offered>0
-            ? "No free seat &mdash; a hold is using it. Release the hold first."
-            : "No free seat &mdash; the block is full and nobody has cancelled.")+"</span>";
-        }
-        html+="</td>";
+             +"<button class=\"act act-delete\" onclick=\"removeWaitlistEntry("+r.id+")\">Remove</button>"
+             +"</td>";
       }
       html+="</tr>";
     });
@@ -4645,12 +4716,52 @@ function renderWaitlistPage(){
   })();
 }
 
-// Holds the seat, then emails the link. One action, as agreed — no draft step.
-async function offerWaitlistSpace(waitlistId){
+// Offer space opens an in-page box first, on every offer (#119): it states any
+// catch-up clash before anything is held or emailed. Not window.confirm —
+// that freezes automated browsers and can't show the clash detail.
+var _wlOfferId=null;
+
+function offerWaitlistSpace(waitlistId){
   var row=waitlistRows.find(function(r){ return r.id===waitlistId; });
-  var who=row?row.name:"this client";
-  if(!confirm("Offer a space to "+who+"?\n\nThis holds a seat for them and emails them a booking link straight away."))
-    return;
+  if(!row) return;
+  var blk=blocks.find(function(b){ return b.id===row.blockId; })||{};
+  var cls=classes.find(function(c){ return c.id===blk.class_id; })||{};
+  var clashes=waitlistClashDates(blk);
+  _wlOfferId=waitlistId;
+
+  document.getElementById("wl-offer-title").textContent="Offer a space to "+row.name+"?";
+  document.getElementById("wl-offer-sub").textContent=[cls.name,(cls.day||"")+(cls.time?" "+cls.time:""),cls.loc]
+    .filter(function(x){ return x&&String(x).trim(); }).join(" · ");
+  var clashEl=document.getElementById("wl-offer-clash");
+  if(clashes.length===0){
+    clashEl.style.display="none"; clashEl.innerHTML="";
+  } else if(clashes.length===1){
+    var d=clashes[0];
+    clashEl.innerHTML="<b>&#9888; Clash with a catch-up</b>"+wlClashDateLabel(d.iso)+" is already full: "+wlClashWho(d.names)
+      +". Offering this space will put that week over capacity ("+(d.taken+1)+" people for "+(blk.cap||0)+" places).";
+    clashEl.style.display="block";
+  } else {
+    clashEl.innerHTML="<b>&#9888; Clash with catch-ups</b>"+clashes.length+" weeks are already full:<ul>"
+      +clashes.map(function(d){ return "<li>"+wlClashDateLabel(d.iso)+" &ndash; "+wlClashWho(d.names)+"</li>"; }).join("")
+      +"</ul>Offering this space will put those weeks over capacity.";
+    clashEl.style.display="block";
+  }
+  document.getElementById("wl-offer-go").textContent=clashes.length?"Offer anyway":"Offer space";
+  document.getElementById("wl-offer-overlay").style.display="flex";
+}
+
+function closeWaitlistOfferModal(){
+  document.getElementById("wl-offer-overlay").style.display="none";
+  _wlOfferId=null;
+}
+
+// Holds the seat, then emails the link. One action, as agreed — no draft step.
+async function confirmWaitlistOffer(){
+  var waitlistId=_wlOfferId;
+  // closeWaitlistOfferModal clears the id before the first await, so a
+  // double click finds nothing to offer and the row is offered once.
+  if(waitlistId==null) return;
+  closeWaitlistOfferModal();
   try{
     var{error}=await sb.rpc("offer_waitlist_space",{p_waitlist_id:waitlistId});
     if(error) throw error;
@@ -6018,6 +6129,23 @@ async function showStripeOutcome(sessionId){
     <div style="padding:14px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;">
       <button class="act" id="blockemail-cancel" onclick="closeBlockEmailModal()">Cancel</button>
       <button class="act act-confirm" id="blockemail-send" onclick="sendBlockEmail()">Send</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="wl-offer-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="wl-offer-title" onclick="if(event.target===this)closeWaitlistOfferModal()">
+  <div class="modal" style="max-width:460px;">
+    <div style="padding:22px 28px 14px;border-bottom:1px solid var(--border);">
+      <h3 id="wl-offer-title" style="font-family:'Raleway',sans-serif;font-size:20px;font-weight:500;margin-bottom:4px"></h3>
+      <p id="wl-offer-sub" style="font-size:13px;color:var(--mid)"></p>
+    </div>
+    <div style="padding:16px 28px;font-size:13.5px;color:var(--mid);line-height:1.6;">
+      This holds a seat for them and emails them a booking link straight away.
+      <div class="wl-offer-clash" id="wl-offer-clash" style="display:none"></div>
+      <p style="margin-top:12px;font-size:12px">Nothing is held and no email is sent until you choose.</p>
+    </div>
+    <div id="wl-offer-footer" style="padding:14px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;">
+      <button class="act" id="wl-offer-cancel" onclick="closeWaitlistOfferModal()">Cancel</button>
+      <button class="act act-offer solid" id="wl-offer-go" onclick="confirmWaitlistOffer()">Offer space</button>
     </div>
   </div>
 </div>

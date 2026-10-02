@@ -148,7 +148,7 @@ footer{margin-top:28px;color:var(--light);font-size:13px}
     </div>
   </section>
 
-  <footer>Kit files: <code>docs/walkthroughs/waitlist/</code> in the booking-system repo. First run 1 Oct 2026 (#107): all 33 steps passed.</footer>
+  <footer>Kit files: <code>docs/walkthroughs/waitlist/</code> in the booking-system repo. First run 1 Oct 2026 (#107): all 33 steps passed. Updated 2 Oct for #118/#119 (34 steps).</footer>
 </div>
 
 <script>
@@ -171,17 +171,18 @@ var PARTS=[
  ]},
  {title:"Part 3 · Louise's view while full",steps:[
   {id:"10",who:["louise"],do:"Dashboard → Waiting lists.",exp:"DEMO block listed with <span class=q>No seat free</span>, <span class=q>3 / 3 booked</span>, <span class=q>2 waiting</span>. Email B 1st, Email C 2nd."},
-  {id:"11",who:["louise"],do:"Look at the Offer space buttons.",exp:"Greyed out, with “No free seat — the block is full and nobody has cancelled.”"}
+  {id:"11",who:["louise"],do:"Look at the Offer space buttons.",exp:"Greyed out. Once, under the class heading (grey, bold italic, “i” icon): “No free seat — the block is full and nobody has cancelled.”"}
  ]},
  {title:"Part 4 · A seat frees up",steps:[
   {id:"12",who:["claude","stop"],do:"Paste <code>02-cancel-first-dummy.sql</code>: cancels Demo One's booking. This stands in for a real cancellation.",exp:"Result row: booked 2, cap 3, wait 2."},
   {id:"13",who:["cust"],do:"Refresh.",exp:"Card <span class=q>still shows Block full</span> and Join Waiting List. The freed seat is kept for the queue, not the public."},
   {id:"14",who:["louise"],do:"Refresh Waiting lists.",exp:"<span class=q>1 seat free</span>, <span class=q>2 / 3 booked</span>. Offer space buttons now active."},
-  {id:"15",who:["louise"],do:"Catch-up swaps → + Record swap. Customer: Demo Three (on the “Catch-up source” class). Target: the DEMO waiting-list class. Pick its next upcoming date and note it below. Save.",exp:"Swap saves. The DEMO class showed spaces, not FULL, because the seat is still free."}
+  {id:"15",who:["louise"],do:"Catch-up swaps → + Record swap. Customer: Demo Three (on the “Catch-up source” class). Target: the DEMO waiting-list class. Pick its next upcoming date and note it below. Save.",exp:"Swap saves. The DEMO class showed spaces, not FULL, because the seat is still free. Back on Waiting lists (refresh): amber note under the DEMO heading <span class=q>[date] is already full: Demo Three is on a catch-up that day.</span>"}
  ]},
  {title:"Part 5 · Louise offers the space",steps:[
-  {id:"16",who:["louise"],do:"Waiting lists → Offer space on Email B. Confirm.",exp:"Toast <span class=q>Space offered and email sent.</span> Email B's row reads Offered, “Email sent · Today”."},
-  {id:"17",who:["louise"],do:"Look at the badges and Email C's row.",exp:"<span class=q>No seat free</span>, <span class=q>1 held · 1 waiting</span>. Email C's Offer button greyed: “a hold is using it. Release the hold first.”"},
+  {id:"16",who:["louise"],do:"Waiting lists → Offer space on Email B.",exp:"A box opens with an amber <span class=q>Clash with a catch-up</span> panel naming the date from step 15 and Demo Three (4 people for 3 places). Button reads <span class=q>Offer anyway</span>. Click <b>Cancel</b>: Email B is still Waiting and no email arrives.",tag:"Clash warning"},
+  {id:"16b",who:["louise"],do:"Offer space on Email B again → Offer anyway.",exp:"Toast <span class=q>Space offered and email sent.</span> Email B's row reads Offered, “Email sent · Today”."},
+  {id:"17",who:["louise"],do:"Look at the badges and Email C's row.",exp:"<span class=q>No seat free</span>, <span class=q>1 held · 1 waiting</span>. Email C's Offer button greyed; the note under the heading reads “No free seat — a hold is using it. Release the hold first.”"},
   {id:"18",who:["louise"],do:"Go to All Bookings (dashboard home). In a narrow window, tap the “things need attention” bar first.",exp:"Red warning <span class=q>1 block has a catch-up swap that will exceed capacity</span>, over capacity on the date from step 15.",tag:"Reverse catch-up check"},
   {id:"19",who:["louise"],do:"+ Record swap again, Demo Three, target the DEMO class. Open the date list.",exp:"Every DEMO date shows <span class=q>— FULL</span> and can't be picked. Cancel without saving.",tag:"Forward catch-up check"}
  ]},
@@ -197,7 +198,7 @@ var PARTS=[
  ]},
  {title:"Part 7 · Release and remove",steps:[
   {id:"28",who:["claude","stop"],do:"Paste <code>03-cancel-second-dummy.sql</code>: cancels Demo Two's booking.",exp:"Result row: booked 2, cap 3, wait 1. Offering to Email C next brings back the 4 Oct-style over-capacity warning: expected."},
-  {id:"29",who:["louise"],do:"Refresh. Offer space to Email C.",exp:"“Space offered and email sent.” Offer email arrives at Email C."},
+  {id:"29",who:["louise"],do:"Refresh. Offer space to Email C → Offer anyway (the box shows the same clash again).",exp:"“Space offered and email sent.” Offer email arrives at Email C."},
   {id:"30",who:["louise"],do:"Release hold on Email C. Confirm.",exp:"Toast <span class=q>Hold released.</span> Email C back to Waiting. Badge <span class=q>1 seat free</span>."},
   {id:"31",who:["cust"],do:"Open the link from Email C's email (new private window).",exp:"<span class=q>That booking link is no longer valid.</span> Releasing a hold kills its link."},
   {id:"32",who:["louise"],do:"Remove Email C. Confirm.",exp:"<span class=q>Removed from the waiting list.</span> DEMO block disappears from Waiting lists."},

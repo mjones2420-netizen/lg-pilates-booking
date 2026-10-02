@@ -227,11 +227,12 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 
 ## CURRENT STATE (snapshot — the board is the truth for priorities)
 
-- **Tests**: 305, all passing (as of session 103).
+- **Tests**: 308, all passing (as of session 105).
 - **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71–75, session 95).
 - **Prod Edge Function versions**: send-email v15, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v1, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).
 - **New website LIVE at lg-pilates.co.uk** (DNS cutover 12 Sep 2026). **Release Phases 0 and 1 COMPLETE** (#63, #64 closed 28 Sep). **Next: Phase 1.5** (#65) — decide the Netlify-credit question first (see RELEASE-PLAN.md).
+- **Banked, NOT pushed (session 105):** #118 + #119 (Waiting lists notes + Offer box). Mark wants #116/#117 built too, then one push; republish the walkthrough checklist artifact at that push. #110 (option C) planned, released separately afterwards.
 - **Open risks / follow-ups**:
   - [#111](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/111) — `keep-alive.yml` has FAILED every run since 22 Aug (401: it calls `lookup_customer`, now service-role only). Prod most likely stayed awake because the nightly pg_cron clean-up counted as activity (strong evidence, not proof). Fix + add a failure alert (#98 uptime monitor is its sub-ticket).
   - Free-plan Supabase = **no usable backups** (#96) and no leaked-password check (#21). Supabase Pro (~$25/mo) would cover backups, pausing and leak-check — weigh at #96.
@@ -276,6 +277,7 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - If `supabase` exits 137 instantly (even `--version`), the binary is being killed by macOS — `brew reinstall supabase` fixes it (session 99).
 - Edge Function test/prod parity is NOT checked by `schema-check` — verify manually (`supabase functions download` + diff).
 - **Revoking/locking a function from anon? Check `.github/workflows/keep-alive.yml` first** — it pings via an anon RPC. Locking `lookup_customer` (Aug) silently broke it for 5 weeks (#111); scheduled-workflow failures go unnoticed.
+- `TEST_APP_URL` already contains `?env=test` — append with `&`, never `/?env=test` (that makes `env` ≠ `test` and the page silently talks to PROD). Ad-hoc scripts: wait for `#test-mode-banner.on` before doing anything.
 - `TEST_BYPASS_ENABLED` secret exists on TEST only — it's what makes caller-supplied `isTest` safe. Never set it on prod.
 - **CI green ≠ site deployed.** Confirm GitHub Pages by hashing the live page against `git show <sha>:index.html`. Stuck build: `POST /repos/{owner}/{repo}/pages/builds`.
 - Code review reads diffs, it doesn't run the app — always run the full suite for shared-chrome changes (nav, layout).

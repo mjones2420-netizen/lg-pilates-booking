@@ -1,6 +1,6 @@
 # Waiting list — hands-on walkthrough on production (#107)
 
-Runs on the LIVE booking system. First run: 01 Oct 2026 (#107), all 33 steps passed.
+Runs on the LIVE booking system. First run: 01 Oct 2026 (#107), all 33 steps passed. Updated 02 Oct 2026 for #118/#119 (34 steps: new step 16b).
 Checklist page with tickboxes: see README.md.
 
 Booking page:
@@ -63,7 +63,7 @@ Dummy customers use addresses at `@lg-pilates-demo.invalid`, a domain that can n
 | # | Do this | Expect |
 |---|---|---|
 | 10 | Dashboard → **Waiting lists**. | DEMO block listed. Badges: **No seat free**, **3 / 3 booked**, **2 waiting**. Email B is 1st, Email C is 2nd. |
-| 11 | Look at the **Offer space** buttons. | Greyed out, with: "No free seat — the block is full and nobody has cancelled." |
+| 11 | Look at the **Offer space** buttons. | Greyed out. Once, under the class heading (grey, bold italic, "i" icon): "No free seat — the block is full and nobody has cancelled." *(#118)* |
 
 ## Part 4 — A seat frees up
 
@@ -72,14 +72,15 @@ Dummy customers use addresses at `@lg-pilates-demo.invalid`, a domain that can n
 | 12 | **[SQL: 02-cancel-first-dummy.sql]** | Cancels Demo One's booking on the DEMO class (stands in for a real cancellation). | Result row: booked 2, cap 3, wait 2. |
 | 13 | You, customer window | Refresh. | Card **still shows "Block full"** and Join Waiting List. The freed seat is reserved for the queue, not the public. |
 | 14 | You, Louise window | Refresh Waiting lists. | **1 seat free**, **2 / 3 booked**. Offer space buttons are now active. |
-| 15 | You, Louise window | **Catch-up swaps → + Record swap.** Customer: the dummy on the "Catch-up source" class. Target: the DEMO waiting-list class. Pick its **next upcoming date** and note it. (Demo Three is the customer on the Catch-up source class.) Save. | Swap saves. The DEMO class showed spaces, not FULL, because the seat is still free. |
+| 15 | You, Louise window | **Catch-up swaps → + Record swap.** Customer: the dummy on the "Catch-up source" class. Target: the DEMO waiting-list class. Pick its **next upcoming date** and note it. (Demo Three is the customer on the Catch-up source class.) Save. | Swap saves. The DEMO class showed spaces, not FULL, because the seat is still free. Back on Waiting lists (refresh), an amber note under the DEMO heading: **"[date] is already full: Demo Three is on a catch-up that day."** *(#119)* |
 
 ## Part 5 — Louise offers the space [You, Louise window]
 
 | # | Do this | Expect |
 |---|---|---|
-| 16 | Waiting lists → **Offer space** on **Email B**. Confirm. | Toast: **"Space offered and email sent."** Email B's row reads **Offered [date]**, "Email sent · Today". |
-| 17 | Look at the badges and Email C's row. | **No seat free**, **1 held · 1 waiting**. Email C's Offer button is greyed: "a hold is using it. Release the hold first." |
+| 16 | Waiting lists → **Offer space** on **Email B**. | A box opens: **"Offer a space to [Email B's name]?"** with an amber **"Clash with a catch-up"** panel naming the date from step 15 and Demo Three ("4 people for 3 places"). Button reads **Offer anyway**. Click **Cancel**. Email B is still **Waiting**, and no email arrives. *(#119)* |
+| 16b | **Offer space** on **Email B** again → **Offer anyway**. | Toast: **"Space offered and email sent."** Email B's row reads **Offered [date]**, "Email sent · Today". |
+| 17 | Look at the badges and Email C's row. | **No seat free**, **1 held · 1 waiting**. Email C's Offer button is greyed, and the note under the heading reads: "No free seat — a hold is using it. Release the hold first." |
 | 18 | Go to the dashboard home (All Bookings). | Red warning: **"1 block has a catch-up swap that will exceed capacity"**, over capacity on the date from step 15. *(Reverse catch-up check.)* |
 | 19 | **+ Record swap** again, same customer, target the DEMO class. Open the date list. | Every DEMO date shows **"— FULL"** and can't be picked. The held seat counts as taken. Cancel without saving. *(Forward catch-up check.)* |
 
@@ -101,7 +102,7 @@ Dummy customers use addresses at `@lg-pilates-demo.invalid`, a domain that can n
 | # | Who | Do this | Expect |
 |---|---|---|---|
 | 28 | **[SQL: 03-cancel-second-dummy.sql]** | Cancels Demo Two's booking. | Result row: booked 2, cap 3, wait 1. |
-| 29 | You, Louise window | Refresh. Offer space to **Email C**. | "Space offered and email sent." Offer email arrives at Email C. |
+| 29 | You, Louise window | Refresh. Offer space to **Email C** → **Offer anyway** (the box shows the same catch-up clash again). | "Space offered and email sent." Offer email arrives at Email C. |
 | 30 | You, Louise window | **Release hold** on Email C. Confirm. | Toast **"Hold released."** Email C goes back to **Waiting**. Badge: **1 seat free**. |
 | 31 | You, new private window | Open the link from Email C's email. | **"That booking link is no longer valid."** Releasing kills the link. |
 | 32 | You, Louise window | **Remove** Email C. Confirm. | **"Removed from the waiting list."** DEMO block disappears from Waiting lists (nobody waiting). |

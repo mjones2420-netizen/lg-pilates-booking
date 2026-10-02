@@ -9,7 +9,7 @@ First run: 01 Oct 2026 (#107), all 33 steps passed.
 
 | File | What it is |
 |---|---|
-| `script.md` | The 33-step script with the expected result for each step |
+| `script.md` | The 34-step script with the expected result for each step |
 | `01-setup.sql` | Creates the two DEMO classes, dummy customers and bookings. Refuses to run if DEMO classes already exist. |
 | `02-cancel-first-dummy.sql` | Step 12: cancels Demo One's booking |
 | `03-cancel-second-dummy.sql` | Step 28: cancels Demo Two's booking |

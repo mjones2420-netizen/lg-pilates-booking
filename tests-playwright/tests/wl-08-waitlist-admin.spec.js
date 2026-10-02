@@ -8,6 +8,9 @@
 //   WL-14  Copy link puts the live booking link on the clipboard
 //   WL-11  Remove deletes the entry and drops blocks.wait
 //   WL-12  Entries on an ended block are counted but not listed
+//   WL-20  The "No free seat" note shows once, under the heading, even on a phone (#118)
+//   WL-21  A catch-up that already fills a week shows a clash note (#119)
+//   WL-22  Offer space with a clash: Cancel holds nothing, Offer anyway holds (#119)
 //
 // Isolation
 //   Same posture as wl-01: this file builds its own class + blocks and deletes
@@ -29,7 +32,8 @@ const {
   getWaitlistRow,
   getBlockWaitCount,
   getCustomerByEmail,
-  deleteCustomerCascade
+  deleteCustomerCascade,
+  insertCatchUpSwap
 } = require('./helpers/admin-db');
 
 const APP_URL = process.env.TEST_APP_URL;
@@ -65,6 +69,30 @@ async function seedQueued(blockId, first, last, tag, status) {
      status === 'offered' ? new Date() : null]
   );
   return { waitlistId: w.rows[0].id, customerId: c.rows[0].id, email, name: `${first} ${last}` };
+}
+
+/** A plain customer (no queue row) to stand in as a catch-up visitor. */
+async function seedVisitor(first, last) {
+  const email = `wladm-cu-${Date.now()}-${++seedSeq}@test.example`;
+  createdEmails.push(email);
+  const c = await getPool().query(
+    `INSERT INTO customers (first_name,last_name,email,phone,customer_type)
+     VALUES ($1,$2,$3,'07700 900100','new') RETURNING id`,
+    [first, last, email]
+  );
+  return { id: c.rows[0].id, name: `${first} ${last}` };
+}
+
+/** Local YYYY-MM-DD `days` from today — the browser judges "today" locally. */
+function isoFromToday(days) {
+  const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + days);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** "4 Oct" — the label the page uses for a clash date. */
+function dateLabel(iso) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 async function setBooked(id, n) {
@@ -144,6 +172,7 @@ test.describe('WL — waiting lists, admin page', () => {
   test.beforeEach(async ({ page }) => {
     await clearWaitlistForBlock(blockId);
     await clearWaitlistForBlock(endedBlockId);
+    await getPool().query('DELETE FROM catch_up_swaps WHERE target_block_id = $1', [blockId]);
     await setBooked(blockId, CAP);
 
     await page.goto(APP_PATH);
@@ -151,7 +180,8 @@ test.describe('WL — waiting lists, admin page', () => {
       page.locator('#test-mode-banner.on'),
       'TEST MODE banner is not visible — env switch is NOT active, aborting to protect production data'
     ).toBeVisible({ timeout: 5000 });
-    // Every action on this page is behind a confirm().
+    // Release hold and Remove are behind a confirm(). Offer space is not:
+    // it opens the in-page #wl-offer-overlay (#119).
     page.on('dialog', d => d.accept());
   });
 
@@ -178,7 +208,11 @@ test.describe('WL — waiting lists, admin page', () => {
     await expect(grp).toContainText(`${CAP} / ${CAP} booked`);
     await expect(grp).toContainText('3 waiting');
     await expect(grp.locator('.act-offer[disabled]')).toHaveCount(3);
-    await expect(grp.locator('.wl-why')).toContainText('the block is full');
+    // Said once, under the heading — not inside a row, where it read as
+    // being about that one person (#118).
+    await expect(grp.locator('.wl-head-note .wl-why')).toHaveCount(1);
+    await expect(grp.locator('.wl-head-note .wl-why')).toContainText('the block is full');
+    await expect(grp.locator('tbody .wl-why')).toHaveCount(0);
   });
 
   // ── WL-09 ────────────────────────────────────────────────────────────────
@@ -190,8 +224,19 @@ test.describe('WL — waiting lists, admin page', () => {
     await openWaitlistPage(page);
     const grp = ownGroup(page);
     await expect(grp.locator('.act-offer:not([disabled])')).toHaveCount(2);
+    // A seat is free, so there is nothing to explain.
+    await expect(grp.locator('.wl-why')).toHaveCount(0);
 
+    // Offer space asks first. No catch-ups here, so no clash panel and the
+    // plain button label.
     await grp.locator('tbody tr').first().locator('.act-offer').click();
+    const box = page.locator('#wl-offer-overlay');
+    await expect(box).toBeVisible();
+    await expect(box.locator('#wl-offer-title')).toContainText(a.name);
+    await expect(box.locator('#wl-offer-clash')).toBeHidden();
+    await expect(box.locator('#wl-offer-go')).toHaveText('Offer space');
+    await box.locator('#wl-offer-go').click();
+    await expect(box).toBeHidden();
     await expect(grp.locator('tbody tr').first()).toContainText('Offered', { timeout: 15000 });
 
     const held = await getWaitlistRow(blockId, a.email);
@@ -202,7 +247,8 @@ test.describe('WL — waiting lists, admin page', () => {
     // The seat is now spoken for, so the next person cannot be offered it.
     await expect(grp).toContainText('No seat free');
     await expect(grp.locator('.act-offer[disabled]')).toHaveCount(1);
-    await expect(grp.locator('.wl-why')).toContainText('a hold is using it');
+    await expect(grp.locator('.wl-head-note .wl-why')).toContainText('a hold is using it');
+    await expect(grp.locator('tbody .wl-why')).toHaveCount(0);
 
     // And the greyed-out button is a courtesy, not the gate: the DB refuses
     // the same call made directly.
@@ -302,5 +348,96 @@ test.describe('WL — waiting lists, admin page', () => {
 
     // The row is hidden from view, not deleted.
     expect(await getWaitlistRow(endedBlockId, ghost.email)).not.toBeNull();
+  });
+
+  // ── WL-20 ────────────────────────────────────────────────────────────────
+  test('WL-20 — the "No free seat" note is visible on a phone without opening a card', async ({ page }) => {
+    // Below 940px each row is a collapsed card whose action cell is hidden
+    // until tapped — where the note used to live, so Louise never saw it.
+    await page.setViewportSize({ width: 480, height: 900 });
+    await seedQueued(blockId, 'Kim', 'Eleven', 'k');
+    await seedQueued(blockId, 'Lou', 'Twelve', 'l');
+
+    await openWaitlistPage(page);
+    const grp = ownGroup(page);
+    const why = grp.locator('.wl-why');
+    await expect(why).toHaveCount(1);
+    await expect(why).toBeVisible();
+    await expect(why).toContainText('No free seat');
+  });
+
+  // ── WL-21 ────────────────────────────────────────────────────────────────
+  test('WL-21 — a catch-up that already fills a week shows a clash note', async ({ page }) => {
+    await seedQueued(blockId, 'Mia', 'Thirteen', 'm');
+    await setBooked(blockId, CAP - 1);               // one seat free across the block
+    const sam = await seedVisitor('Sam', 'Lee');
+    const jo = await seedVisitor('Jo', 'Bird');
+    const old = await seedVisitor('Ola', 'Past');
+
+    const today = isoFromToday(0);
+    const later = isoFromToday(17);
+    // Today counts: the class may not have run yet. Yesterday does not.
+    await insertCatchUpSwap(sam.id, endedBlockId, blockId, today);
+    await insertCatchUpSwap(jo.id, endedBlockId, blockId, later);
+    await insertCatchUpSwap(old.id, endedBlockId, blockId, isoFromToday(-1));
+
+    await openWaitlistPage(page);
+    const grp = ownGroup(page);
+    const note = grp.locator('.wl-head-note.clash');
+    await expect(note).toHaveCount(1);
+    await expect(note).toContainText('2 weeks are already full');
+    await expect(note).toContainText(dateLabel(today));
+    await expect(note).toContainText('Sam Lee is on a catch-up that day');
+    await expect(note).toContainText(dateLabel(later));
+    await expect(note).toContainText('Jo Bird is on a catch-up that day');
+    await expect(note).not.toContainText('Ola Past');
+    await expect(note).toContainText('over capacity');
+    // A warning, not a block: the seat can still be offered.
+    await expect(grp.locator('.act-offer:not([disabled])')).toHaveCount(1);
+    await expect(grp.locator('.wl-why')).toHaveCount(0);
+  });
+
+  // ── WL-22 ────────────────────────────────────────────────────────────────
+  test('WL-22 — Offer space with a clash: Cancel holds nothing, Offer anyway holds', async ({ page }) => {
+    const a = await seedQueued(blockId, 'Nia', 'Fourteen', 'n');
+    await setBooked(blockId, CAP - 1);
+    const visitor = await seedVisitor('Demo', 'Three');
+    const clashDate = isoFromToday(17);
+    await insertCatchUpSwap(visitor.id, endedBlockId, blockId, clashDate);
+
+    await openWaitlistPage(page);
+    const grp = ownGroup(page);
+    // One clash date: the single-line form of the note.
+    await expect(grp.locator('.wl-head-note.clash'))
+      .toContainText(`${dateLabel(clashDate)} is already full: Demo Three is on a catch-up that day`);
+    await expect(grp.locator('.wl-head-note.clash')).toContainText('over capacity by one');
+
+    const row = grp.locator('tbody tr').filter({ hasText: a.name }).first();
+    const box = page.locator('#wl-offer-overlay');
+
+    // Cancel: nothing held, no token, still Waiting.
+    await row.locator('.act-offer').click();
+    await expect(box).toBeVisible();
+    await expect(box.locator('#wl-offer-clash')).toBeVisible();
+    await expect(box.locator('#wl-offer-clash'))
+      .toContainText(`${dateLabel(clashDate)} is already full: Demo Three is on a catch-up that day`);
+    await expect(box.locator('#wl-offer-clash')).toContainText(`(${CAP + 1} people for ${CAP} places)`);
+    await expect(box.locator('#wl-offer-go')).toHaveText('Offer anyway');
+    await box.locator('#wl-offer-cancel').click();
+    await expect(box).toBeHidden();
+    await expect(row).toContainText('Waiting');
+    const untouched = await getWaitlistRow(blockId, a.email);
+    expect(untouched.status, 'Cancel must not hold a seat').toBe('waiting');
+    expect(untouched.offer_token).toBeNull();
+
+    // Offer anyway: the hold goes through as normal.
+    await row.locator('.act-offer').click();
+    await expect(box.locator('#wl-offer-go')).toHaveText('Offer anyway');
+    await box.locator('#wl-offer-go').click();
+    await expect(grp.locator('tbody tr').filter({ hasText: a.name }).first())
+      .toContainText('Offered', { timeout: 15000 });
+    const held = await getWaitlistRow(blockId, a.email);
+    expect(held.status).toBe('offered');
+    expect(held.offer_token).toBeTruthy();
   });
 });

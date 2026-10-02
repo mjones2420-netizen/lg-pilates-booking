@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 30 Sept 2026
-**Total tests:** 305
+**Last updated:** 2 Oct 2026
+**Total tests:** 308
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -404,7 +404,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `mb-09-class-status-dots.spec.js` | MB-09a — green tracks the active block, orange tracks the upcoming block |
 | `mb-09-class-status-dots.spec.js` | MB-09b — the dot colours match the badges the row expands to reveal |
 
-## Waiting List (WL) — 19 tests
+## Waiting List (WL) — 22 tests
 
 | Spec file | Test |
 |---|---|
@@ -423,6 +423,9 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `wl-08-waitlist-admin.spec.js` | WL-14 — Copy link puts the live booking link on the clipboard |
 | `wl-08-waitlist-admin.spec.js` | WL-11 — Remove deletes the entry and drops the block wait count |
 | `wl-08-waitlist-admin.spec.js` | WL-12 — entries on an ended block are counted but not listed |
+| `wl-08-waitlist-admin.spec.js` | WL-20 — the "No free seat" note is visible on a phone without opening a card |
+| `wl-08-waitlist-admin.spec.js` | WL-21 — a catch-up that already fills a week shows a clash note |
+| `wl-08-waitlist-admin.spec.js` | WL-22 — Offer space with a clash: Cancel holds nothing, Offer anyway holds |
 | `wl-16-waitlist-guards.spec.js` | WL-16 — an offer link used by a different customer is refused, and the hold survives |
 | `wl-16-waitlist-guards.spec.js` | WL-17 — the join alert to Louise is sent once per waitlist entry |
 | `wl-16-waitlist-guards.spec.js` | WL-18 — the offer email is sent once per offer; release + re-offer allows a fresh one |
