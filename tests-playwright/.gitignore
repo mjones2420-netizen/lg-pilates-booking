@@ -12,3 +12,5 @@ playwright/.cache/
 # OS noise
 .DS_Store
 Thumbs.db
+.test-progress.json
+.test-progress.json.tmp

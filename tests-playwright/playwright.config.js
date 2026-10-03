@@ -36,7 +36,8 @@ module.exports = defineConfig({
 
   reporter: [
     ['list'],
-    ['html', { open: 'never' }]
+    ['html', { open: 'never' }],
+    ['./progress-reporter.js']
   ],
 
 use: {
