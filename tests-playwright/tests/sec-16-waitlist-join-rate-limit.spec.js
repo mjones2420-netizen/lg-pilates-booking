@@ -1,4 +1,5 @@
 // SEC-16 — join-waitlist-throttled rate-limits the public waiting-list join (#106)
+//          and, since #110, only stores a request until the emailed link is clicked
 //
 // Every waitlist row takes a seat off public sale (migration 28's reservation
 // rule) and emails Louise, so an unthrottled anon join_waitlist let a loop of
@@ -11,7 +12,7 @@
 // rest of the suite can't trip it. This spec proves the real path by calling
 // the function directly with isTest left off.
 //
-// Requires migrations 29 + 30 and join-waitlist-throttled deployed to test.
+// Requires migrations 29 + 30 + 33 and join-waitlist-throttled deployed to test.
 //
 // Isolation: builds its own class + block (cap 2) and deletes it in afterAll,
 // same as the WL specs — shared fixture blocks are never touched (#101). The
@@ -113,23 +114,65 @@ test.describe('SEC-16 — join-waitlist-throttled rate limit (#106)', () => {
     expect(await getBlockWaitCount(blockId), 'nothing was queued').toBe(0);
   });
 
-  test('SEC-16b — the function joins a full block and passes WL_* refusals through', async () => {
+  test('SEC-16b — the function stores a request (no token back) and passes WL_* refusals through', async () => {
     await setBlockBookedCount(blockId, CAP);
     const fields = {
       blockId, firstName: 'Sec', lastName: 'Sixteen', email: EMAIL, phone: '07700900123',
     };
 
+    // #110: a join is only a REQUEST until the emailed link is clicked.
     const ok = await callJoin(fields, true);
     expect(ok.status).toBe(200);
-    const okBody = await ok.json();
-    expect(okBody.data.length).toBe(1);
-    expect(okBody.data[0].queue_position).toBe(1);
+    const okText = await ok.text();
+    const okBody = JSON.parse(okText);
+    expect(okBody.data.request_id).toBeGreaterThan(0);
+    expect(okBody.data.is_resend).toBe(false);
+    expect(await getBlockWaitCount(blockId), 'nothing queued before confirmation').toBe(0);
+
+    // The confirmation token must never come back to the caller, or a script
+    // could confirm without owning the inbox.
+    const { rows } = await getPool().query(
+      'SELECT token FROM waitlist_requests WHERE id = $1', [okBody.data.request_id]
+    );
+    expect(okText).not.toContain(rows[0].token);
+
+    // Same details again: a resend of the same request, not a second one.
+    const again = await callJoin(fields, true);
+    expect(again.status).toBe(200);
+    const againBody = await again.json();
+    expect(againBody.data.request_id).toBe(okBody.data.request_id);
+    expect(againBody.data.is_resend).toBe(true);
+
+    // Confirm it as the email owner would, then the DB's own refusal applies.
+    const { data: conf } = await sb.rpc('confirm_waitlist_request', { p_token: rows[0].token });
+    expect(conf[0].outcome).toBe('joined');
     expect(await getBlockWaitCount(blockId)).toBe(1);
 
-    // Same email again: the DB's own refusal, reduced to its bare code.
     const dupe = await callJoin(fields, true);
     expect(dupe.status).toBe(400);
     expect((await dupe.json()).error).toBe('WL_DUPLICATE');
+  });
+
+  test('SEC-16f — the practice copy (test project) gets the confirmation token back', async () => {
+    // Only on the test project: the token comes back solely when the server
+    // holds TEST_BYPASS_ENABLED, which production never has. (A call without
+    // isTest is not made here — it would hand a real email to Resend.)
+    await setBlockBookedCount(blockId, CAP);
+    const email = 'sec16f-practice@test.example';
+    const fields = { blockId, firstName: 'Sec', lastName: 'Practice', email, phone: '07700900123' };
+    try {
+      const noFlag = await callJoin(fields, true);
+      expect((await noFlag.json()).data.practice_token, 'not without practiceLink').toBeUndefined();
+
+      const practice = await callJoin({ ...fields, practiceLink: true }, true);
+      const body = await practice.json();
+      const { rows } = await getPool().query(
+        'SELECT token FROM waitlist_requests WHERE id = $1', [body.data.request_id]
+      );
+      expect(body.data.practice_token).toBe(rows[0].token);
+    } finally {
+      await getPool().query('DELETE FROM waitlist_requests WHERE email = $1', [email]);
+    }
   });
 
   test('SEC-16c — same IP is throttled after the limit; isTest bypasses it', async () => {

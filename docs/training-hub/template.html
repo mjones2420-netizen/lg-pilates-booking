@@ -326,7 +326,8 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
   <ol class="steps">
     <li>A full class shows <span class="ui">Join Waiting List</span> instead of a Book button. The card also shows how many people are already waiting.</li>
     <li>The client enters their name, email and phone, and clicks <span class="ui">Join the waiting list</span>.</li>
-    <li>They see <strong>"You're on the list"</strong> and their place in the queue, for example #3.</li>
+    <li>They see <strong>"Nearly done"</strong>. We email them a link, and they are <strong>not on the list until they click it</strong> (within 24 hours). This stops anyone filling a list with made-up names.</li>
+    <li>When they click <span class="ui">Confirm my place</span> in the email, they see <strong>"You're on the list"</strong> and their place in the queue, for example #3. Only now do you get the "New waiting list request" email, and only now do they appear on your Waiting lists page.</li>
   </ol>
   <figure>
     <img src="{{img:p1-fullcard}}" alt="Class card showing the class is full, 2 people on the waiting list, and a Join Waiting List button" loading="lazy" style="max-width:380px">
@@ -335,6 +336,10 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
   <figure>
     <img src="{{img:p1-waitlist-form}}" alt="Join the waiting list form: first name, last name, email and phone" loading="lazy" style="max-width:380px">
     <figcaption>The waiting-list form.</figcaption>
+  </figure>
+  <figure>
+    <img src="{{img:p1-waitlist-check}}" alt="Nearly done screen: we've emailed a link, click it within 24 hours to join the waiting list, with a Resend the email button" loading="lazy" style="max-width:380px">
+    <figcaption>After the form: the client must click the link in their email. (The "Practice copy" button only appears on the practice copy.)</figcaption>
   </figure>
   <h2>When you offer them a space</h2>
   <ol class="steps">
@@ -348,6 +353,7 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
     <p>The practice copy always has a full class ready for this: <strong>Practice – Full Class</strong> on Tuesdays.</p>
     <ol class="steps">
       <li>On the practice copy, find <strong>Practice – Full Class</strong>, click <span class="ui">Join Waiting List</span> and join with a made-up name.</li>
+      <li>The practice copy never sends emails, so instead of checking an inbox click <span class="ui">Practice copy: open the confirmation link</span>. That's what the client's email button does. You'll see "You're on the list".</li>
       <li>In the Dashboard, open <span class="ui">By Class</span> and click <span class="ui">Remove from Block</span> next to <em>Practice Full-One</em>. That frees a space.</li>
       <li>Open <span class="ui">Waiting lists</span> and offer the space to your made-up person (lesson 2.5).</li>
       <li>No email is sent on the practice copy, so click <span class="ui">Copy link</span> and paste the link into a new tab to see the client's side.</li>
@@ -359,6 +365,7 @@ th { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: v
     <ul>
       <li>When a seat frees up and people are waiting, the public <strong>doesn't</strong> see a free space. It's kept for the queue until you offer it or clear the list.</li>
       <li>The link only works while you're holding the seat for them. If you release the hold, the link stops working.</li>
+      <li>A client who says "I joined the waiting list" but isn't on your page probably never clicked the email link. Ask them to check their junk folder, or to join again (they can press <span class="ui">Resend the email</span>). Unclicked requests disappear after a day or two.</li>
       <li>If the next block fills up with early (priority) bookings before it opens to everyone, clients see <strong>Next Block Full</strong> and can't join a waiting list yet. The waiting-list button appears once the block opens to everyone, 7 days before it starts.</li>
     </ul>
   </div>

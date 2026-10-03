@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 3 Oct 2026
-**Total tests:** 313
+**Total tests:** 322
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -259,7 +259,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 37 tests
+## Security (SEC) — 38 tests
 
 | Spec file | Test |
 |---|---|
@@ -296,7 +296,8 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-15-lookup-rate-limit.spec.js` | returns the customer id for a known email, empty array for an unknown one |
 | `sec-15-lookup-rate-limit.spec.js` | same IP is throttled after the limit; isTest bypasses it |
 | `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16a — anon can no longer call join_waitlist directly |
-| `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16b — the function joins a full block and passes WL_* refusals through |
+| `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16b — the function stores a request (no token back) and passes WL_* refusals through |
+| `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16f — the practice copy (test project) gets the confirmation token back |
 | `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16c — same IP is throttled after the limit; isTest bypasses it |
 | `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16d — a caller-supplied X-Forwarded-For does not buy a fresh budget |
 | `sec-16-waitlist-join-rate-limit.spec.js` | SEC-16e — the function applies the browser field rules itself |
@@ -409,12 +410,12 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `mb-09-class-status-dots.spec.js` | MB-09a — green tracks the active block, orange tracks the upcoming block |
 | `mb-09-class-status-dots.spec.js` | MB-09b — the dot colours match the badges the row expands to reveal |
 
-## Waiting List (WL) — 22 tests
+## Waiting List (WL) — 30 tests
 
 | Spec file | Test |
 |---|---|
 | `wl-01-waitlist-public.spec.js` | WL-01 — a full block offers the waiting list, a block with spaces does not |
-| `wl-01-waitlist-public.spec.js` | WL-02 — joining writes the row, bumps blocks.wait and shows the queue position |
+| `wl-01-waitlist-public.spec.js` | WL-02 — joining asks for email confirmation; the link writes the row and shows the position |
 | `wl-01-waitlist-public.spec.js` | WL-03 — joining twice with the same email is refused in plain English |
 | `wl-01-waitlist-public.spec.js` | WL-04 — a freed seat stays hidden from the public while anyone is waiting |
 | `wl-01-waitlist-public.spec.js` | WL-05 — a valid offer link prefills the booking form and locks the email |
@@ -435,6 +436,14 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `wl-16-waitlist-guards.spec.js` | WL-17 — the join alert to Louise is sent once per waitlist entry |
 | `wl-16-waitlist-guards.spec.js` | WL-18 — the offer email is sent once per offer; release + re-offer allows a fresh one |
 | `wl-19-practice-full-class.spec.js` | WL-19 — practice full class card offers Join Waiting List |
+| `wl-23-waitlist-email-confirm.spec.js` | WL-23 — a request is invisible until confirmed, and the public cannot reach requests |
+| `wl-23-waitlist-email-confirm.spec.js` | WL-24 — clicking the link twice is harmless |
+| `wl-23-waitlist-email-confirm.spec.js` | WL-25 — an expired link says so and queues nothing |
+| `wl-23-waitlist-email-confirm.spec.js` | WL-26 — a seat freed meanwhile points them at booking instead |
+| `wl-23-waitlist-email-confirm.spec.js` | WL-27 — a list that filled meanwhile is refused in plain English |
+| `wl-23-waitlist-email-confirm.spec.js` | WL-28 — resends reuse the same link, keep the first details and stop after three |
+| `wl-23-waitlist-email-confirm.spec.js` | WL-29 — confirming never rewrites an existing customer |
+| `wl-23-waitlist-email-confirm.spec.js` | WL-30 — the practice copy shows a confirmation-link button instead of an email |
 
 ---
 

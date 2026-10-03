@@ -3,7 +3,8 @@
 // WL (Waiting List) — public-site behaviour (#74).
 //
 //   WL-01  A full block offers the list; a block with real spaces does not
-//   WL-02  Joining: RPC row written, blocks.wait bumped, queue position shown
+//   WL-02  Joining: email-confirm step (#110), then the link writes the row,
+//          bumps blocks.wait, alerts Louise and shows the queue position
 //   WL-03  Joining twice with the same email is refused in plain English
 //   WL-04  The reservation rule: a free seat stays hidden while anyone waits
 //   WL-05  A valid ?offer= link prefills the booking form and locks the email
@@ -22,7 +23,7 @@
 // on direct INSERT/DELETE (see admin-db.js).
 
 const { test, expect } = require('@playwright/test');
-const { APP_PATH } = require('./helpers/app-url');
+const { APP_PATH, APP_PATH_EMAIL } = require('./helpers/app-url');
 const {
   getPool,
   setBlockBookedCount,
@@ -31,6 +32,7 @@ const {
   getCustomerById,
   getParqByCustomerId,
   clearWaitlistForBlock,
+  getWaitlistRequest,
   getWaitlistRow,
   offerWaitlistRowDirect,
   getBlockWaitCount,
@@ -176,7 +178,7 @@ test.describe('WL — waiting list, public site', () => {
   });
 
   // ── WL-02 ────────────────────────────────────────────────────────────────
-  test('WL-02 — joining writes the row, bumps blocks.wait and shows the queue position', async ({ page }) => {
+  test('WL-02 — joining asks for email confirmation; the link writes the row and shows the position', async ({ page }) => {
     const email = uniqueEmail('join');
     createdEmails.push(email);
 
@@ -192,8 +194,29 @@ test.describe('WL — waiting list, public site', () => {
     await page.locator('#wl-phone').fill('07700900123');
     await page.locator('#wl-submit-btn').click();
 
+    // #110: step one only stores a request — "check your email", nothing queued.
+    await expect(page.locator('#wl-check-view.on')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#wl-check-email')).toHaveText(email);
+    expect(await getWaitlistRow(blockId, email), 'not on the list until confirmed').toBeNull();
+    expect(await getBlockWaitCount(blockId)).toBe(0);
+
+    // Step two: the emailed link.
+    const req = await getWaitlistRequest(blockId, email);
+    expect(req, 'a pending request should exist').toBeTruthy();
+    // APP_PATH carries noemail=1, which skips the alert to Louise entirely, so
+    // this load uses APP_PATH_EMAIL with send-email intercepted: proves the
+    // alert is asked for on confirmation without sending anything.
+    const alerts = [];
+    await page.route('**/functions/v1/send-email', route => {
+      alerts.push(JSON.parse(route.request().postData() || '{}'));
+      route.fulfill({ status: 200, contentType: 'application/json',
+        headers: { 'Access-Control-Allow-Origin': '*' }, body: '{"id":"intercepted"}' });
+    });
+    await page.goto(`${APP_PATH_EMAIL}&wl_confirm=${req.token}`);
+
     await expect(page.locator('#wl-success-view.on')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#wl-pos')).toHaveText('#1');
+    expect(page.url(), 'the token is stripped from the address bar').not.toContain('wl_confirm=');
 
     const row = await getWaitlistRow(blockId, email);
     expect(row, 'a waitlist row should exist for the joiner').toBeTruthy();
@@ -201,6 +224,10 @@ test.describe('WL — waiting list, public site', () => {
 
     // The display counter is trigger-maintained — prove the trigger ran.
     expect(await getBlockWaitCount(blockId)).toBe(1);
+
+    // Louise is alerted on confirmation, not on the form.
+    expect(alerts.map(a => a.type)).toEqual(['waitlist_joined_alert']);
+    expect(alerts[0].waitlist_id).toBe(row.id);
 
     // And the card behind the modal now reports the queue.
     await page.locator('#wl-success-view button.confirm-btn').click();

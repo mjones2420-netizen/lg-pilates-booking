@@ -148,7 +148,7 @@ footer{margin-top:28px;color:var(--light);font-size:13px}
     </div>
   </section>
 
-  <footer>Kit files: <code>docs/walkthroughs/waitlist/</code> in the booking-system repo. First run 1 Oct 2026 (#107): all 33 steps passed. Updated 2 Oct for #118/#119 (34 steps).</footer>
+  <footer>Kit files: <code>docs/walkthroughs/waitlist/</code> in the booking-system repo. First run 1 Oct 2026 (#107): all 33 steps passed. Updated 2 Oct for #118/#119 (34 steps); 3 Oct for #116 (customer messages are pop-ups you close with OK) and #110 (joining needs the email link: steps 4a–4c, 37 steps).</footer>
 </div>
 
 <script>
@@ -162,10 +162,13 @@ var PARTS=[
   {id:"3",who:["cust"],do:"Refresh the page.",exp:"Card shows <span class=q>Block full</span> with a Full badge, and an amber <span class=q>Join Waiting List</span> button."}
  ]},
  {title:"Part 2 · Joining the waiting list",steps:[
-  {id:"4",who:["cust"],do:"Click Join Waiting List. Join as Email B.",exp:"Success view with position <span class=q>#1</span> and “We've let Louise know…”."},
+  {id:"4",who:["cust"],do:"Click Join Waiting List. Join as Email B.",exp:"<span class=q>Nearly done</span> screen: “We've emailed a link to…”, a junk-folder tip and a Resend the email button."},
+  {id:"4a",who:["cust"],do:"Close it and refresh.",exp:"Card <span class=q>unchanged</span>: no “on the waiting list” line. Nothing counts until the email link is clicked.",tag:"Invisible until confirmed"},
+  {id:"4b",who:["inbox","cust"],do:"Open Email B's inbox: “Please confirm your waiting list place”. Click Confirm my place.",exp:"Booking page opens with <span class=q>You're on the list</span>, position <span class=q>#1</span>. Louise gets the waiting-list alert now."},
+  {id:"4c",who:["cust"],do:"Click the same email button again.",exp:"Pop-up: <span class=q>You're already on the waiting list — you're number 1 in the queue.</span>",tag:"Click twice"},
   {id:"5",who:["cust"],do:"Close it and look at the card.",exp:"Extra line: <span class=q>1 person on the waiting list</span>."},
   {id:"6",who:["cust"],do:"Join again as Email B.",exp:"Pop-up: <span class=q>You're already on the waiting list for this block.</span> Stays until you press OK."},
-  {id:"7",who:["cust"],do:"Join as Email C.",exp:"Position <span class=q>#2</span>. Card says <span class=q>2 people on the waiting list</span>."},
+  {id:"7",who:["cust"],do:"Join as Email C, then click Confirm my place in Email C's email.",exp:"Position <span class=q>#2</span>. Card says <span class=q>2 people on the waiting list</span>."},
   {id:"8",who:["cust"],do:"Try to join as Email A, who already has a seat.",exp:"Pop-up: <span class=q>You've already got a place on this block.</span>"},
   {id:"9",who:["cust"],do:"Open the join form, enter phone <code>123</code>, click Join.",exp:"Phone field goes red and nothing is sent."}
  ]},

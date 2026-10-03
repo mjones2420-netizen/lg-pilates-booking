@@ -254,6 +254,8 @@ body:has(#pg-schedule.on) .site-footer-public { display:flex; }
 .wl-reserved b { display:block; font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:var(--amber-dk); margin-bottom:4px; }
 .wl-reserved span { font-size:14.5px; color:var(--mid); line-height:1.6; }
 .wl-pos { font-family:'Barlow',sans-serif; font-size:52px; font-weight:800; color:var(--amber); line-height:1; margin-bottom:6px; }
+.wl-practice-link { display:block; text-align:center; text-decoration:none; margin-top:10px; background:var(--sage-dk); color:#fff; }
+.wl-resend-msg { font-size:13px; color:var(--mid); margin-top:8px; min-height:1em; }
 .wl-pos-lbl { font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--light); margin-bottom:22px; }
 #wl-overlay .sicon { background:var(--amber-bg); }
 #wl-overlay .step-btn { background:var(--amber); }
@@ -1498,6 +1500,16 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
         <button class="step-btn" id="wl-submit-btn" onclick="submitWaitlist()">Join the waiting list</button>
       </div>
     </div>
+    <div class="success" id="wl-check-view">
+      <div class="sicon">&#9993;</div>
+      <div class="stitle">Nearly done</div>
+      <div class="ssub">We've emailed a link to <b id="wl-check-email"></b>. Click it within 24 hours to join the waiting list.<br><b>You're not on the list until you do.</b></div>
+      <div class="wl-note" style="text-align:left;margin-top:18px">Can't see it? Check your junk or spam folder. It comes from bookings@lg-pilates.co.uk.</div>
+      <button class="step-btn" id="wl-resend-btn" onclick="resendWaitlistEmail()" style="margin-top:4px">Resend the email</button>
+      <a class="step-btn wl-practice-link" id="wl-practice-link" href="#" style="display:none">Practice copy: open the confirmation link</a>
+      <div class="wl-resend-msg" id="wl-resend-msg" aria-live="polite"></div>
+      <button class="confirm-btn" onclick="closeWaitlistModal()" style="margin-top:14px">Back to Schedule</button>
+    </div>
     <div class="success" id="wl-success-view">
       <div class="sicon">&#9203;</div>
       <div class="stitle">You're on the list</div>
@@ -2192,7 +2204,7 @@ function clearOfferState(){
   if(emailEl) emailEl.readOnly=false;
 }
 
-var wlSelected=null, wlSelectedBlock=null;
+var wlSelected=null, wlSelectedBlock=null, wlLastFields=null;
 
 function openWaitlistModal(classId, blockId){
   var c=classes.find(function(x){ return x.id===classId; });
@@ -2206,6 +2218,7 @@ function openWaitlistModal(classId, blockId){
   btn.disabled=false; btn.textContent="Join the waiting list";
   document.getElementById("wl-form-view").style.display="block";
   document.getElementById("wl-success-view").className="success";
+  document.getElementById("wl-check-view").className="success";
   document.getElementById("wl-overlay").className="overlay on";
   lockBodyScroll();
 }
@@ -2270,11 +2283,13 @@ function submitWaitlist(){
   var btn=document.getElementById("wl-submit-btn");
   btn.disabled=true; btn.textContent="Joining\u2026";
 
+  // practiceLink: on the practice copy (test project) the server hands back the
+  // confirmation token, because no email is ever sent there. Ignored on live.
+  wlLastFields={ blockId: blk.id, firstName: fn, lastName: ln, email: em, phone: ph, practiceLink: IS_TEST_ENV };
+
   (async function(){
     try{
-      var res=await joinWaitlistThrottled({
-        blockId: blk.id, firstName: fn, lastName: ln, email: em, phone: ph
-      });
+      var res=await joinWaitlistThrottled(wlLastFields);
       if(res.error){
         var msg=res.error.message||"";
         var friendly=waitlistErrorMessage(msg);
@@ -2289,31 +2304,59 @@ function submitWaitlist(){
         }
         throw new Error("Waitlist join failed: "+msg);
       }
-      var row=(res.data&&res.data.length>0)?res.data[0]:null;
-      if(!row) throw new Error("Waitlist join returned no row");
-
-      await sendWaitlistEmail("waitlist_joined_alert", row.waitlist_id);
-      await refreshBlockCounts();
-      renderGrid();
-
-      var pos=row.queue_position;
-      document.getElementById("wl-pos").textContent="#"+pos;
-      document.getElementById("wl-ssub").innerHTML="We've let Louise know. If a space frees up she'll email you at <b>"+sanitise(em)+"</b> with a link to book it.";
-      var html="";
-      html+="<div class=\"srow\"><span>Name</span><span>"+sanitise(fn)+" "+sanitise(ln)+"</span></div>";
-      html+="<div class=\"srow\"><span>Class</span><span>"+sanitise(c.name)+"</span></div>";
-      html+="<div class=\"srow\"><span>When</span><span>"+sanitise(c.day)+" "+sanitise(c.time)+"</span></div>";
-      html+="<div class=\"srow\"><span>Venue</span><span>"+sanitise(c.venue)+", "+sanitise(c.loc)+"</span></div>";
-      html+="<div class=\"srow\"><span>Block</span><span>"+sanitise((blk.dates||[])[0]||"")+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||"")+"</span></div>";
-      document.getElementById("wl-sdetail").innerHTML=html;
-      document.getElementById("wl-form-view").style.display="none";
-      document.getElementById("wl-success-view").className="success on";
+      // #110: this is only a REQUEST. Nothing is held and Louise hears nothing
+      // until the emailed link is clicked (handleWaitlistConfirmLink), so the
+      // card is unchanged and there is no alert to send yet.
+      showWaitlistCheckEmail(em, res.data&&res.data.emailed!==false, res.data&&res.data.practice_token);
     }catch(err){
       console.error("Waitlist error:",err);
       showNotice("Something went wrong. Please try again.");
       btn.disabled=false; btn.textContent="Join the waiting list";
     }
   })();
+}
+
+// "Nearly done — check your email" (#110). emailed=false means the request was
+// saved but the email didn't go; Resend is the way out.
+function showWaitlistCheckEmail(email, emailed, practiceToken){
+  document.getElementById("wl-check-email").textContent=email;
+  // Practice copy only: stand-in for the email Louise can't receive there.
+  var pl=document.getElementById("wl-practice-link");
+  if(IS_TEST_ENV&&practiceToken&&/^[0-9a-f-]{36}$/i.test(practiceToken)){
+    pl.href=window.location.origin+window.location.pathname+"?env=test&wl_confirm="+encodeURIComponent(practiceToken);
+    pl.style.display="block";
+  } else { pl.style.display="none"; pl.href="#"; }
+  document.getElementById("wl-resend-msg").textContent="";
+  var rb=document.getElementById("wl-resend-btn");
+  rb.disabled=false; rb.textContent="Resend the email";
+  document.getElementById("wl-form-view").style.display="none";
+  document.getElementById("wl-check-view").className="success on";
+  if(!emailed) showNotice("We saved your request but couldn't send the email just now. Please press “Resend the email”.");
+}
+
+// Same request again: request_waitlist_join treats it as a resend of the
+// existing request (same link, 24 hours from now) and caps it at three.
+async function resendWaitlistEmail(){
+  if(!wlLastFields) return;
+  var rb=document.getElementById("wl-resend-btn");
+  var note=document.getElementById("wl-resend-msg");
+  rb.disabled=true; rb.textContent="Sending\u2026";
+  try{
+    var res=await joinWaitlistThrottled(wlLastFields);
+    if(res.error){
+      var friendly=waitlistErrorMessage(res.error.message||"");
+      showNotice(friendly||"Something went wrong. Please try again.");
+    } else if(res.data&&res.data.emailed===false){
+      showNotice("We couldn't send the email just now. Please try again in a minute.");
+    } else {
+      var t=new Date();
+      note.textContent="Sent again at "+t.getHours()+":"+(t.getMinutes()<10?"0":"")+t.getMinutes()+".";
+    }
+  }catch(err){
+    console.error("Waitlist resend error:",err);
+    showNotice("Something went wrong. Please try again.");
+  }
+  rb.disabled=false; rb.textContent="Resend the email";
 }
 
 // Coded errors raised by join_waitlist / book_if_available. Returns null for
@@ -2330,6 +2373,7 @@ function waitlistErrorMessage(msg){
   if(msg.indexOf("WL_BAD_TOKEN")>-1)        return "That reserved space is no longer available.";
   if(msg.indexOf("WL_TOKEN_MISMATCH")>-1)   return "That reserved space belongs to a different email address.";
   if(msg.indexOf("WL_RATE_LIMITED")>-1)     return "Too many attempts. Please try again later, or email Louise directly.";
+  if(msg.indexOf("WL_RESEND_LIMIT")>-1)     return "We've already sent that email several times. Please check your junk folder, or email Louise directly.";
   return null;
 }
 
@@ -2337,10 +2381,12 @@ function waitlistErrorMessage(msg){
 // test-mode flag attached. Resolves {ok, body}; network or parse failures throw,
 // so each caller decides what a failure means for it.
 async function callEdgeFunction(name, payload){
+  // app_url: where emailed links should point (#110 confirmation link). The
+  // server keeps it only if the origin is on its allow-list.
   var res=await fetch(SUPABASE_URL+"/functions/v1/"+name,{
     method:"POST",
     headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPABASE_KEY},
-    body:JSON.stringify(Object.assign({},payload,{isTest:IS_TEST_ENV}))
+    body:JSON.stringify(Object.assign({},payload,{isTest:IS_TEST_ENV,app_url:window.location.origin+window.location.pathname}))
   });
   return {ok:res.ok, body:await res.json()};
 }
@@ -2445,6 +2491,93 @@ async function handleOfferLink(){
     showNotice("We couldn't check that booking link just now. Please refresh to try again.");
   }
 }
+// #110: ?wl_confirm=TOKEN landing — the link in the "confirm your place"
+// email. confirm_waitlist_request re-checks everything under the block lock
+// and answers with an outcome; this only turns each one into plain English.
+// Runs once at page load, after handleOfferLink, and stands aside for an offer
+// link or a Stripe return, which own the page load.
+var WL_CONFIRM_MESSAGES={
+  expired:        "That link has expired. Please join the waiting list again \u2014 it only takes a minute.",
+  invalid:        "That link is no longer valid. Please join the waiting list again, or contact Louise.",
+  block_gone:     "That class is no longer taking bookings. Please contact Louise.",
+  list_full:      "Sorry \u2014 the waiting list filled up before you confirmed. Please email Louise directly.",
+  already_booked: "You've already got a place on this block."
+};
+async function handleWaitlistConfirmLink(){
+  var params=new URLSearchParams(window.location.search);
+  var token=params.get("wl_confirm");
+  if(!token||params.has("payment")||params.has("offer")) return;
+  function dropToken(){
+    var p=new URLSearchParams(window.location.search);
+    p.delete("wl_confirm");
+    var qs=p.toString();
+    window.history.replaceState({},"",window.location.pathname+(qs?"?"+qs:""));
+  }
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token)){
+    dropToken();
+    showNotice("That link is not complete. Please use the full link from your email, or contact Louise.");
+    return;
+  }
+  try{
+    var res=await sb.rpc("confirm_waitlist_request",{ p_token: token });
+    if(res.error) throw new Error(res.error.message||"");
+    var row=(res.data&&res.data.length>0)?res.data[0]:null;
+    // Only stripped once we KNOW the answer, so a network blip can be retried
+    // with a refresh (same rule as the offer link).
+    dropToken();
+    var outcome=row?row.outcome:"invalid";
+    if(outcome==="joined"){
+      // Louise hears about the join only now, once the email owner confirmed.
+      await sendWaitlistEmail("waitlist_joined_alert", row.waitlist_id);
+      await refreshBlockCounts();
+      renderGrid();
+      showWaitlistJoined(row.class_id, row.block_id, row.queue_position);
+    } else if(outcome==="already"){
+      // If the first click's answer was lost (patchy signal, closed tab, a mail
+      // scanner opening the link), Louise was never told. Ask again whenever
+      // they are still queued — send-email's one-shot stamp makes it a no-op
+      // if she already heard.
+      if(row.waitlist_id&&row.queue_position) await sendWaitlistEmail("waitlist_joined_alert", row.waitlist_id);
+      showNotice(row.queue_position
+        ? "You're already on the waiting list \u2014 you're number "+row.queue_position+" in the queue."
+        : "You've already confirmed this waiting list place.", "success");
+    } else if(outcome==="space_free"){
+      await refreshBlockCounts();
+      renderGrid();
+      var cid=row.class_id, bid=row.block_id;
+      showNotice("Good news \u2014 a space has opened up, so you don't need the waiting list. Press OK to book it.", "success", function(){
+        if(classes.some(function(x){ return x.id===cid; })&&blocks.some(function(b){ return b.id===bid; })) openModal(cid, bid);
+      });
+    } else {
+      showNotice(WL_CONFIRM_MESSAGES[outcome]||WL_CONFIRM_MESSAGES.invalid);
+    }
+  }catch(err){
+    console.error("Waitlist confirm link error:",err);
+    showNotice("We couldn't check that link just now. Please refresh to try again.");
+  }
+}
+
+// The "You're on the list" screen, now reached from the confirmation link.
+function showWaitlistJoined(classId, blockId, pos){
+  var c=classes.find(function(x){ return x.id===classId; });
+  var blk=blocks.find(function(b){ return b.id===blockId; });
+  document.getElementById("wl-pos").textContent="#"+pos;
+  document.getElementById("wl-ssub").textContent="We've let Louise know. If a space frees up she'll email you with a link to book it.";
+  var html="";
+  if(c&&blk){
+    html+="<div class=\"srow\"><span>Class</span><span>"+sanitise(c.name)+"</span></div>";
+    html+="<div class=\"srow\"><span>When</span><span>"+sanitise(c.day)+" "+sanitise(c.time)+"</span></div>";
+    html+="<div class=\"srow\"><span>Venue</span><span>"+sanitise(c.venue)+", "+sanitise(c.loc)+"</span></div>";
+    html+="<div class=\"srow\"><span>Block</span><span>"+sanitise((blk.dates||[])[0]||"")+" &ndash; "+sanitise((blk.dates||[])[(blk.dates||[]).length-1]||"")+"</span></div>";
+  }
+  document.getElementById("wl-sdetail").innerHTML=html;
+  document.getElementById("wl-form-view").style.display="none";
+  document.getElementById("wl-check-view").className="success";
+  document.getElementById("wl-success-view").className="success on";
+  document.getElementById("wl-overlay").className="overlay on";
+  lockBodyScroll();
+}
+
 function closeViewModal(){
   document.getElementById("view-overlay").className="overlay";
   unlockBodyScroll();
@@ -5962,8 +6095,11 @@ function showToast(msg){
 // 3-second toast vanished before customers had read it. kind "success" swaps
 // the info icon for a green tick. A second notice while one is open replaces
 // its text rather than stacking.
-var _noticeReturnFocus=null, _noticeLockedScroll=false;
-function showNotice(msg, kind){
+var _noticeReturnFocus=null, _noticeLockedScroll=false, _noticeOnClose=null;
+// onClose (optional) runs once the notice has gone — e.g. open the booking box
+// after "a space is free" (#110). A replacing notice takes over the callback.
+function showNotice(msg, kind, onClose){
+  _noticeOnClose=onClose||null;
   var ov=document.getElementById("notice-overlay");
   document.getElementById("notice-box").className="modal notice-modal"+(kind==="success"?" notice-good":"");
   document.getElementById("notice-icon").textContent=(kind==="success")?"✓":"i";
@@ -5987,6 +6123,8 @@ function closeNotice(){
   _noticeLockedScroll=false;
   var f=_noticeReturnFocus; _noticeReturnFocus=null;
   if(f&&f.focus&&document.contains(f)) f.focus();
+  var cb=_noticeOnClose; _noticeOnClose=null;
+  if(cb) cb();
 }
 // Capture phase so Escape closes only the notice, not the form or sheet under it.
 // Tab stays on OK — the only control — so focus can't wander behind the pop-up.
@@ -6156,6 +6294,8 @@ async function showStripeOutcome(sessionId){
   // Waiting-list offer link (#74) — needs classes and blocks already loaded,
   // since it opens the booking modal for one of them.
   await handleOfferLink();
+  // Waiting-list confirmation link (#110) — same reason: needs classes/blocks.
+  await handleWaitlistConfirmLink();
 
   // Handle Stripe redirect back to app after payment
   (function handleStripeRedirect(){

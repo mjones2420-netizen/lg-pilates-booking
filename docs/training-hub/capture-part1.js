@@ -52,6 +52,11 @@ const URL = 'http://localhost:8000/?env=test&noemail=1';
     await page.fill('#wl-firstname', 'Sam'); await page.fill('#wl-lastname', 'Example');
     await page.fill('#wl-email', 'sam@example.com'); await page.fill('#wl-phone', '07700 900456');
     await shot('p1-waitlist-form', page.locator('#wl-overlay .modal'));
+    // #110 "Nearly done" screen, display-only (nothing submitted). The made-up
+    // token just makes the practice-copy button appear, as it does on test.
+    await page.evaluate(() => showWaitlistCheckEmail('sam@example.com', true, '00000000-0000-4000-8000-000000000000'));
+    await page.waitForTimeout(300);
+    await shot('p1-waitlist-check', page.locator('#wl-overlay .modal'));
     await page.evaluate(() => closeWaitlistModal());
   } else console.log('no full card in test data');
   await page.reload();

@@ -21,6 +21,9 @@
 //   TRUSTED-TYPED path (service-role key or a real admin JWT; server builds
 //   the HTML from an id, no caller-supplied recipient or body):
 //     - confirmed_booking / card_payment_alert (#53)
+//     - waitlist_confirm : "confirm your place on the waiting list" email
+//       carrying the request token (#110). Sent only by join-waitlist-throttled
+//       with the service-role key — the token must never pass through a browser.
 //     - waitlist_offer : the personal "a space is yours" email carrying the
 //       booking token (#73). Trusted rather than public because it is only
 //       ever sent from the admin dashboard right after offer_waitlist_space,
@@ -307,6 +310,11 @@ interface WaitlistContext {
 // the CORS allow-list is honoured, the caller's own query string and hash are
 // discarded, and anything unparseable falls back to the canonical URL.
 function buildOfferLink(appUrl: unknown, token: string, isTest: boolean): string {
+  return buildAppLink(appUrl, 'offer', token, isTest);
+}
+
+// Shared by the offer and confirmation links (#110): same allow-list rule.
+function buildAppLink(appUrl: unknown, param: string, token: string, isTest: boolean): string {
   let base = DEFAULT_APP_URL;
   if (typeof appUrl === 'string' && appUrl) {
     try {
@@ -317,7 +325,7 @@ function buildOfferLink(appUrl: unknown, token: string, isTest: boolean): string
     }
   }
   const params = new URLSearchParams();
-  params.set('offer', token);
+  params.set(param, token);
   if (isTest) params.set('env', 'test'); // keep Playwright runs on the test project
   return base + '?' + params.toString();
 }
@@ -394,6 +402,88 @@ function buildWaitlistOfferHtml(o: WaitlistContext, offerLink: string): string {
     + '</table>'
     + '</td></tr></table>'
     + '</body></html>';
+}
+
+// Customer email: confirm a waiting-list request (#110). Until the link is
+// clicked nothing is held and Louise sees nothing. 24 hours is real here —
+// confirm_waitlist_request refuses an expired request.
+function buildWaitlistConfirmHtml(o: WaitlistRequestContext, confirmLink: string): string {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f0f0f0;font-family:Arial,Helvetica,sans-serif;">'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f0f0;padding:24px 0;">'
+    + '<tr><td align="center">'
+    + '<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;">'
+    + '<tr><td style="background:#1a2e2e;padding:28px 32px;text-align:center;">'
+    + '<div style="color:#ffffff;font-size:22px;font-weight:600;letter-spacing:0.06em;font-family:Arial,Helvetica,sans-serif;margin-bottom:4px;">LG <span style="color:#b8d8d8;font-style:italic;">Pilates</span></div>'
+    + '<div style="color:#8aabab;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;">Baildon &amp; Guiseley</div>'
+    + '</td></tr>'
+    + '<tr><td style="background:#fef3e8;border-left:4px solid #e07b4a;padding:18px 32px;">'
+    + '<div style="font-size:15px;font-weight:600;color:#b35c2a;margin-bottom:6px;">One more step &mdash; confirm your place</div>'
+    + '<div style="font-size:13px;color:#7a4420;line-height:1.6;">You are <strong>not on the waiting list yet</strong>. Click the button below within <strong>24 hours</strong> to join it.</div>'
+    + '</td></tr>'
+    + '<tr><td style="padding:24px 32px;">'
+    + '<p style="font-size:15px;margin:0 0 16px;color:#1a2e2e;">Hi ' + esc(o.firstName) + ',</p>'
+    + '<p style="font-size:14px;color:#4a6060;line-height:1.7;margin:0 0 20px;">Thanks for asking to join the waiting list for this class. Please confirm it was you, and we will add you to the queue.</p>'
+    + '<div style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#8aabab;margin-bottom:10px;">Class</div>'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef5f5;border-radius:6px;padding:16px 20px;margin-bottom:20px;">'
+    + '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Class</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">' + esc(o.className) + '</td></tr>'
+    + '<tr><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;color:#4a6060;">Venue</td><td style="padding:6px 0;border-bottom:1px solid #cde0e0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">' + esc(o.venue) + ', ' + esc(o.loc) + '</td></tr>'
+    + '<tr><td style="padding:6px 0;font-size:13px;color:#4a6060;">Day &amp; time</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#1a2e2e;text-align:right;">' + esc(o.day) + ', ' + esc(o.time) + ' &ndash; ' + esc(o.endTime) + '</td></tr>'
+    + '</table>'
+    + '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;"><tr><td align="center">'
+    + '<a href="' + esc(confirmLink) + '" style="display:inline-block;background:#3a8a6a;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:6px;">Confirm my place &rarr;</a>'
+    + '</td></tr></table>'
+    + '<p style="font-size:12px;color:#8aabab;line-height:1.6;margin:0 0 20px;word-break:break-all;">If the button does not work, copy this link into your browser:<br>' + esc(confirmLink) + '</p>'
+    + '<p style="font-size:13px;color:#4a6060;line-height:1.7;margin:0;">Didn&rsquo;t ask to join? You can ignore this email &mdash; nothing happens unless the button is clicked.</p>'
+    + '</td></tr>'
+    + '<tr><td style="background:#eef5f5;padding:16px 32px;text-align:center;">'
+    + '<div style="font-size:11px;color:#8aabab;line-height:1.6;">Questions? Contact Louise at <a href="mailto:bookings@lg-pilates.co.uk" style="color:#3a8a8a;text-decoration:none;">bookings@lg-pilates.co.uk</a><br>LG Pilates &middot; Baildon &amp; Guiseley</div>'
+    + '</td></tr>'
+    + '</table>'
+    + '</td></tr></table>'
+    + '</body></html>';
+}
+
+interface WaitlistRequestContext {
+  firstName: string;
+  className: string;
+  venue: string;
+  loc: string;
+  day: string;
+  time: string;
+  endTime: string;
+}
+
+// A pending (unconfirmed, unexpired) request -> its email, token and class.
+// Returns null for anything else, so a confirmed or stale request is never
+// re-sent.
+async function loadWaitlistRequestContext(
+  admin: ReturnType<typeof createClient>,
+  requestId: string,
+): Promise<{ ctx: WaitlistRequestContext; email: string; token: string } | null> {
+  const { data: row, error } = await admin
+    .from('waitlist_requests')
+    .select('id, block_id, first_name, email, token, expires_at, confirmed_at')
+    .eq('id', requestId)
+    .single();
+  if (error || !row || row.confirmed_at || new Date(row.expires_at) < new Date()) return null;
+
+  const { data: block } = await admin.from('blocks').select('class_id').eq('id', row.block_id).single();
+  if (!block) return null;
+  const { data: cls } = await admin.from('classes').select('name, day, time, end_time, venue, loc').eq('id', block.class_id).single();
+
+  return {
+    ctx: {
+      firstName: row.first_name || '',
+      className: cls?.name || '',
+      venue: cls?.venue || '',
+      loc: cls?.loc || '',
+      day: cls?.day || '',
+      time: cls?.time || '',
+      endTime: cls?.end_time || '',
+    },
+    email: row.email || '',
+    token: row.token,
+  };
 }
 
 // Waitlist counterpart to loadBookingContext: waitlist row -> customer + block
@@ -487,7 +577,7 @@ serve(async (req: Request) => {
     }
 
     const body = await req.json();
-    const { type, booking_id, waitlist_id, app_url, isTest: isTestRequested } = body;
+    const { type, booking_id, waitlist_id, waitlist_request_id, app_url, isTest: isTestRequested } = body;
 
     // isTest arrives in the request body, and the public types below are
     // anon-callable — so on its own it is an attacker-controlled flag. Left
@@ -609,6 +699,30 @@ serve(async (req: Request) => {
           .eq('id', waitlist_id);
         if (rbErr) console.error('send-email waitlist stamp rollback error:', rbErr);
       };
+    } else if (type === 'waitlist_confirm') {
+      // --- TRUSTED path (#110): the "confirm your place" email ---
+      // Service-role only in practice: join-waitlist-throttled sends it right
+      // after request_waitlist_join. It carries the request token, which is the
+      // only thing that turns a request into a real waiting-list place, so an
+      // anon caller must never be able to trigger it or see the HTML.
+      // Resends are capped in request_waitlist_join (send_count), not here.
+      const authErr = await requireTrustedCaller(req, supabaseUrl, supabaseServiceKey);
+      if (authErr) return authErr;
+
+      if (!waitlist_request_id) {
+        return json({ error: 'Missing waitlist_request_id' }, 400, req);
+      }
+      const admin = createClient(supabaseUrl, supabaseServiceKey);
+      const loaded = await loadWaitlistRequestContext(admin, String(waitlist_request_id));
+      if (!loaded) {
+        return json({ error: 'No pending request' }, 409, req);
+      }
+      if (!loaded.email) return json({ error: 'No email on request' }, 400, req);
+
+      recipient = loaded.email;
+      subject = 'Please confirm your waiting list place — ' + loaded.ctx.className;
+      html = buildWaitlistConfirmHtml(loaded.ctx, buildAppLink(app_url, 'wl_confirm', loaded.token, isTest === true));
+      echoHtml = isTest === true;
     } else if (type === 'waitlist_offer') {
       // --- TRUSTED path (waitlist): the personal "a space is yours" email ---
       // Deliberately NOT on the public path, unlike waitlist_joined_alert. This

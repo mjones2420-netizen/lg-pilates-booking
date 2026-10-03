@@ -1,6 +1,6 @@
 # Waiting list — hands-on walkthrough on production (#107)
 
-Runs on the LIVE booking system. First run: 01 Oct 2026 (#107), all 33 steps passed. Updated 02 Oct 2026 for #118/#119 (34 steps: new step 16b).
+Runs on the LIVE booking system. First run: 01 Oct 2026 (#107), all 33 steps passed. Updated 02 Oct 2026 for #118/#119 (34 steps: new step 16b). Updated 03 Oct 2026 for #116 (pop-ups) and #110 (email confirmation: steps 4a–4c, 37 steps).
 Checklist page with tickboxes: see README.md.
 
 Booking page:
@@ -51,10 +51,13 @@ Dummy customers use addresses at `@lg-pilates-demo.invalid`, a domain that can n
 
 | # | Do this | Expect |
 |---|---|---|
-| 4 | Click **Join Waiting List**. Join as **Email B**. | Success view showing position **#1**. Text: "We've let Louise know…". |
+| 4 | Click **Join Waiting List**. Join as **Email B**. | **"Nearly done"** screen: "We've emailed a link to…", a junk-folder tip and a **Resend the email** button. |
+| 4a | Close it and refresh. | Card **unchanged**: no "on the waiting list" line. Nothing counts until the email link is clicked. *(Invisible until confirmed.)* |
+| 4b | Open Email B's inbox: **"Please confirm your waiting list place"**. Click **Confirm my place**. | Booking page opens with **"You're on the list"**, position **#1**. Text: "We've let Louise know…". Louise gets the waiting-list alert now. |
+| 4c | Click the same email button again. | Pop-up: **"You're already on the waiting list — you're number 1 in the queue."** *(Click twice is harmless.)* |
 | 5 | Close it and look at the card. | Extra line: **"1 person on the waiting list"**. |
 | 6 | Join again as **Email B**. | Pop-up: **"You're already on the waiting list for this block."** It stays until you press **OK**. |
-| 7 | Join as **Email C**. | Position **#2**. Card now says **"2 people on the waiting list"**. |
+| 7 | Join as **Email C**, then click **Confirm my place** in Email C's email. | Position **#2**. Card now says **"2 people on the waiting list"**. |
 | 8 | Try to join as **Email A** (who already has a seat). | Pop-up: **"You've already got a place on this block."** Press **OK** to close. |
 | 9 | Open the join form, enter phone `123`, click Join. | Phone field goes red and nothing is sent. |
 

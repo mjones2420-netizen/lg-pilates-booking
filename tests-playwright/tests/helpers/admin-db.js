@@ -432,7 +432,21 @@ async function countCatchUpSwaps(customerId, sourceBlockId) {
 
 /** Deletes every waitlist row for one block. Safe to call when there are none. */
 async function clearWaitlistForBlock(blockId) {
+  // Pending email-confirmation requests (#110) too, so a test starts with none.
+  await getPool().query(`DELETE FROM waitlist_requests WHERE block_id = $1`, [blockId]);
   await getPool().query(`DELETE FROM waitlist WHERE block_id = $1`, [blockId]);
+}
+
+/** The #110 request row for an email on a block (incl. its token), or null. */
+async function getWaitlistRequest(blockId, email) {
+  const { rows } = await getPool().query(
+    `SELECT id, token, send_count, expires_at, confirmed_at, waitlist_id
+       FROM waitlist_requests
+      WHERE block_id = $1 AND LOWER(email) = LOWER($2)
+      ORDER BY id DESC LIMIT 1`,
+    [blockId, email]
+  );
+  return rows[0] || null;
 }
 
 /** Returns the waitlist row for an email on a block, or null. */
@@ -495,6 +509,7 @@ module.exports = {
   clearCatchUpSwaps,
   countCatchUpSwaps,
   clearWaitlistForBlock,
+  getWaitlistRequest,
   getWaitlistRow,
   offerWaitlistRowDirect,
   getBlockWaitCount
