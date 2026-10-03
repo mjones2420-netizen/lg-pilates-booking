@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 3 Oct 2026 (session 106 — config audit, skills fixed, mockup rule)
+Last updated: 3 Oct 2026 (session 107 — #116 pop-ups, #111 keep-alive, #110 waitlist email confirmation)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -149,7 +149,7 @@ No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, 
 | `PAYMENT-MODE-SPEC.md` | Stripe integration spec |
 | `EMAIL-NOTIFICATIONS-SPEC.md` | Email spec |
 | `supabase/functions/` | Edge Function source (stripe-checkout, stripe-webhook, stripe-refund, send-email, lookup-customer-throttled, join-waitlist-throttled; shared code in `_shared/throttle.ts`) |
-| `tests-playwright/migrations/` | SQL migrations (latest: 32_practice_full_class — TEST fixture only, never prod) |
+| `tests-playwright/migrations/` | SQL migrations (latest: 33_waitlist_email_confirmation; 32_practice_full_class is a TEST fixture only, never prod) |
 | `tests-playwright/tests/helpers/` | Shared test helpers |
 | `.claude/commands/deploy.md` | Deploy pipeline (local only, gitignored) |
 | `docs/training-hub/` | Training Hub source (#114): `template.html` lessons, `build.js`, read-only screenshot scripts `capture*.js` (`capture-emails.js` renders the real email templates offline, #120). Published to a private artifact (URL in memory / SESSION-LOG session 102) |
@@ -172,14 +172,14 @@ No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, 
 ## DATABASE — QUICK REFERENCE
 
 Tables: `classes`, `blocks`, `bookings`, `customers`, `parq`, `settings`, `cancellations`,
-`waitlist`, `pending_bookings`, `customer_class_priority`, `catch_up_swaps`, `admin_users`
+`waitlist`, `waitlist_requests` (#110, unconfirmed joins — no anon/auth access), `pending_bookings`, `customer_class_priority`, `catch_up_swaps`, `admin_users`
 
 Admin gate: `is_admin()` (checks `admin_users`) — RLS policies use it, not bare `authenticated`.
 
 Key SECURITY DEFINER functions:
-- Public (anon): `upsert_customer`, `book_if_available` (5-arg, `p_offer_token`), `check_priority_access`, `has_active_booking_on_block`, `insert_parq`, `get_offer_details`, `booking_confirmed_for_session`
+- Public (anon): `upsert_customer`, `book_if_available` (5-arg, `p_offer_token`), `check_priority_access`, `has_active_booking_on_block`, `insert_parq`, `get_offer_details`, `booking_confirmed_for_session`, `confirm_waitlist_request` (token from the #110 email)
 - Admin only: `record_catch_up_swap`, `offer_waitlist_space`, `release_waitlist_hold`, `admin_delete_block/class/customer`, `admin_remove_from_block`
-- Service role only: `lookup_customer` and `join_waitlist` (browser goes via the `lookup-customer-throttled` / `join-waitlist-throttled` Edge Functions), `check_rate_limit` (shared per-IP limiter, `rate_limits` table keyed by bucket + IP; IPv6 counted per /64)
+- Service role only: `request_waitlist_join` (public join since #110; creates a request + email), `lookup_customer` and `join_waitlist` (tests seed queues with it; browser goes via the `lookup-customer-throttled` / `join-waitlist-throttled` Edge Functions), `check_rate_limit` (shared per-IP limiter, `rate_limits` table keyed by bucket + IP; IPv6 counted per /64)
 
 Stripe columns on `bookings`: `stripe_payment_intent_id`, `stripe_checkout_session_id` (nullable).
 `settings.payment_mode`: `'bank_transfer'` (default) or `'stripe'`. Anon can read only the public settings keys (not `admin_email`).
@@ -227,18 +227,17 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 
 ## CURRENT STATE (snapshot — the board is the truth for priorities)
 
-- **Tests**: 309, all passing (as of session 105).
-- **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71–75, session 95).
-- **Prod Edge Function versions**: send-email v15, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v1, stripe-refund v5.
+- **Tests**: 322 (session 107; CU-06 flaked once under load, passes isolated).
+- **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71 closed) with **email confirmation** (#110, session 107), customer/problem **pop-ups** (#116).
+- **Prod Edge Function versions**: send-email v16, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v2, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).
 - **New website LIVE at lg-pilates.co.uk** (DNS cutover 12 Sep 2026). **Release Phases 0 and 1 COMPLETE** (#63, #64 closed 28 Sep). **Next: Phase 1.5** (#65) — decide the Netlify-credit question first (see RELEASE-PLAN.md).
-- **Shipped session 105:** #117 (warnings bar on every width), #118/#119 (Waiting lists notes + in-page Offer box). Prod walkthrough re-run waits until #116 ships. #110 (option C, email confirmation) planned, released separately after #116.
+- **Shipped session 107:** #116, #111 (keep-alive green again + failure alert issue), #110. **Next:** Mark re-runs the prod waiting-list walkthrough (37 steps; first real confirmation email = steps 4–4c). #123 (Training Hub messages page, High).
 - **Open risks / follow-ups**:
-  - [#111](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/111) — `keep-alive.yml` has FAILED every run since 22 Aug (401: it calls `lookup_customer`, now service-role only). Prod most likely stayed awake because the nightly pg_cron clean-up counted as activity (strong evidence, not proof). Fix + add a failure alert (#98 uptime monitor is its sub-ticket).
+  - Keep-alive (#111 fixed): a failing run now opens a "Keep-alive ping failing" issue that emails Mark. GitHub can still silently disable schedules after 60 days of repo inactivity — outside monitor is #98.
   - Free-plan Supabase = **no usable backups** (#96) and no leaked-password check (#21). Supabase Pro (~$25/mo) would cover backups, pausing and leak-check — weigh at #96.
   - [#112](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/112) — RP-01 failed 3/3 in one CI run (27 Sep); repeat flake. Also: `ubuntu-latest` → Ubuntu 26 from 19 Oct 2026.
-  - [#110](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/110) — accepted limitation of the #106 throttle: one IP can still fill a class waiting list in ~an hour (10 joins/hr vs list cap = class size). Revisit before Phase 2b.
-  - #107 waitlist walkthrough PASSED on prod (1 Oct, all 33 steps). Follow-ups: [#116](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/116) customer messages vanish in 3s (High), #117 desktop warnings banner, #118, #119 catch-up clash warning before Offer space, #121 dead admin email code. #71 closes with #110.
+  - #107 waitlist walkthrough PASSED on prod (1 Oct, 33 steps); re-run due for #116/#110 (now 37 steps). #121 dead admin email code still open.
   - [#113](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/113) — booking-system header links still point at `new-lg-website.netlify.app` (9 in index.html); swap to `lg-pilates.co.uk` before the pilot.
   - Before customer logins (#81): `record_catch_up_swap` has no `is_admin()` check — note on #81.
 
@@ -276,7 +275,7 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - Functions importing `_shared/` deploy fine with the CLI (it uploads the shared file). Via MCP `deploy_edge_function`, pass files as `<fn>/index.ts` + `_shared/throttle.ts` with entrypoint `<fn>/index.ts`.
 - If `supabase` exits 137 instantly (even `--version`), the binary is being killed by macOS — `brew reinstall supabase` fixes it (session 99).
 - Edge Function test/prod parity is NOT checked by `schema-check` — verify manually (`supabase functions download` + diff).
-- **Revoking/locking a function from anon? Check `.github/workflows/keep-alive.yml` first** — it pings via an anon RPC. Locking `lookup_customer` (Aug) silently broke it for 5 weeks (#111); scheduled-workflow failures go unnoticed.
+- **Changing anon access to `settings`? Check `.github/workflows/keep-alive.yml` first** — it pings by reading the public `payment_mode` settings row (since #111; the old `lookup_customer` ping broke silently for 5 weeks when that was locked). A failing run now opens a "Keep-alive ping failing" issue.
 - `TEST_APP_URL` already contains `?env=test` — append with `&`, never `/?env=test` (that makes `env` ≠ `test` and the page silently talks to PROD). Ad-hoc scripts: wait for `#test-mode-banner.on` before doing anything.
 - `TEST_BYPASS_ENABLED` secret exists on TEST only — it's what makes caller-supplied `isTest` safe. Never set it on prod.
 - **CI green ≠ site deployed.** Confirm GitHub Pages by hashing the live page against `git show <sha>:index.html`. Stuck build: `POST /repos/{owner}/{repo}/pages/builds`.
@@ -301,6 +300,8 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - iOS: insets via `--safe-top`/`--safe-bottom` (needs `viewport-fit=cover`). A `padding:` shorthand in a media query resets the inset — restate it.
 - `navigator.clipboard.writeText` after an `await` is refused by Safari. Never use `window.prompt`/`alert` (freezes automated browsers).
 - `.card-when-day` must contain the day name, not the class name.
+- Don't reuse the class name `.success` on anything that should show: it's the booking success-view class with `display:none` (made the #116 good-news pop-up invisible). Customer/problem messages use `showNotice()`; `showToast()` is for admin success/progress only.
+- `APP_PATH` carries `noemail=1`, so `sendSystemEmail`/`sendWaitlistEmail` never fire in specs. To assert an email is requested, load `APP_PATH_EMAIL` and `page.route` the send-email call.
 - Book button labels must be "Book Current Block" / "Book Next Block" (booking-flow.js clicks by text).
 - Dashboard uses a sidebar, not tabs — old `#tab-*` selectors don't exist.
 - Public vs admin pages share one `<nav>`; variants toggle via `body:has(#pg-schedule.on)`. Public palette is scoped by CSS variable overrides on `#pg-schedule`/`#overlay`.
