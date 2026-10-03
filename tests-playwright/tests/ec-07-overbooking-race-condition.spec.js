@@ -192,8 +192,8 @@ test.describe('EC-07 — Overbooking prevented when class fills during booking',
     await expect(page.locator('#reserve-btn')).toBeEnabled();
     await page.locator('#reserve-btn').click();
 
-    // The toast should appear with the CLASS_FULL message.
-    const toast = page.locator('#toastEl.on');
+    // The notice pop-up (#116) should appear with the CLASS_FULL message.
+    const toast = page.locator('#notice-overlay.on #notice-msg');
     await expect(toast).toBeVisible({ timeout: 5000 });
     await expect(toast).toContainText(/this class just became full/i);
 

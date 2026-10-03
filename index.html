@@ -71,7 +71,8 @@ body.has-test-banner nav { --safe-top: 0px; }
   --pub-font-display: 'Marcellus', Georgia, serif;
   --pub-font-body: 'Karla', sans-serif;
 }
-#pg-schedule, #overlay, #wl-overlay, #stripe-success-overlay, #stripe-failed-overlay, .site-footer-public {
+#pg-schedule, #overlay, #wl-overlay, #stripe-success-overlay, #stripe-failed-overlay, .site-footer-public,
+body:has(#pg-schedule.on) #notice-overlay {
   --sage: var(--pub-sage);
   --sage-dk: var(--pub-sage-dk);
   --sage-lt: var(--pub-sage-lt);
@@ -119,7 +120,9 @@ body:has(#pg-schedule.on) nav {
 #wl-overlay .finp,
 #wl-overlay .step-btn,
 #stripe-success-overlay .confirm-btn,
-#stripe-failed-overlay .confirm-btn {
+#stripe-failed-overlay .confirm-btn,
+body:has(#pg-schedule.on) #notice-overlay .notice-msg,
+body:has(#pg-schedule.on) #notice-overlay .confirm-btn {
   font-family: var(--pub-font-body);
 }
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -570,6 +573,14 @@ tr:hover td { background:var(--cream); }
 .or span { font-size:12px; color:var(--light); }
 .toast { position:fixed; bottom:calc(28px + var(--safe-bottom)); right:28px; background:var(--charcoal); color:white; padding:12px 22px; border-radius:3px; font-size:13px; z-index:999; transform:translateY(60px); opacity:0; transition:all 0.3s; }
 .toast.on { transform:translateY(0); opacity:1; }
+/* Notice pop-up (#116): customer messages and admin problems stay until the
+   reader closes them. Above the booking overlays (200) so a notice raised
+   while a form is open sits on top of it. */
+#notice-overlay { z-index:300; }
+.notice-modal { max-width:400px; padding:32px 28px 28px; text-align:center; border-radius:8px; }
+.notice-icon { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-family:Georgia,serif; font-size:24px; font-weight:700; background:var(--sage-lt); color:var(--sage-dk); }
+.notice-modal.notice-good .notice-icon { background:#e3f1ea; color:#3a8a6a; font-family:inherit; }
+.notice-msg { font-size:15px; line-height:1.6; color:var(--charcoal); margin-bottom:22px; overflow-wrap:break-word; }
 .block-warning { background:#fff8ec; border:1px solid #f0d080; border-left:4px solid var(--clay); border-radius:4px; padding:16px 18px; margin-bottom:28px; }
 .block-warning-title { font-size:13px; font-weight:600; color:var(--clay); margin-bottom:10px; display:flex; align-items:center; gap:7px; }
 .block-warning-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0e0b0; font-size:13px; }
@@ -1675,6 +1686,15 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 
 <div class="toast" id="toastEl"></div>
 
+<!-- Notice pop-up (#116) — see showNotice() -->
+<div class="overlay" id="notice-overlay" role="dialog" aria-modal="true" aria-labelledby="notice-msg" onclick="if(event.target===this)closeNotice()">
+  <div class="modal notice-modal" id="notice-box">
+    <div class="notice-icon" id="notice-icon" aria-hidden="true">i</div>
+    <p class="notice-msg" id="notice-msg"></p>
+    <button class="confirm-btn" id="notice-ok" onclick="closeNotice()">OK</button>
+  </div>
+</div>
+
 <script>
 var classes = [];   // permanent class slots
 var blocks  = [];   // all blocks loaded from DB
@@ -2259,11 +2279,12 @@ function submitWaitlist(){
         var msg=res.error.message||"";
         var friendly=waitlistErrorMessage(msg);
         if(friendly){
-          showToast(friendly);
           // WL_NOT_FULL means a space opened while the form was on screen, so
           // the card is now out of date — redraw it before the visitor looks.
-          if(msg.indexOf("WL_NOT_FULL")>-1){ await refreshBlockCounts(); renderGrid(); }
+          var spaceFree=msg.indexOf("WL_NOT_FULL")>-1;
+          if(spaceFree){ await refreshBlockCounts(); renderGrid(); }
           closeWaitlistModal();
+          showNotice(friendly, spaceFree?"success":"info");
           return;
         }
         throw new Error("Waitlist join failed: "+msg);
@@ -2289,7 +2310,7 @@ function submitWaitlist(){
       document.getElementById("wl-success-view").className="success on";
     }catch(err){
       console.error("Waitlist error:",err);
-      showToast("Something went wrong. Please try again.");
+      showNotice("Something went wrong. Please try again.");
       btn.disabled=false; btn.textContent="Join the waiting list";
     }
   })();
@@ -2375,7 +2396,7 @@ async function handleOfferLink(){
   // that isn't a uuid can never be valid, so say so once and clear it.
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token)){
     dropOfferToken(); clearStashedOfferToken();
-    showToast("That booking link is not complete. Please use the full link from your email, or contact Louise.");
+    showNotice("That booking link is not complete. Please use the full link from your email, or contact Louise.");
     return;
   }
   // The token is a bearer credential for one held space, so it is stripped
@@ -2390,14 +2411,14 @@ async function handleOfferLink(){
     var row=(res.data&&res.data.length>0)?res.data[0]:null;
     if(!row){
       dropToken(); clearStashedOfferToken();
-      showToast("That booking link is no longer valid. Please contact Louise.");
+      showNotice("That booking link is no longer valid. Please contact Louise.");
       return;
     }
     var c=classes.find(function(x){ return x.id===row.class_id; });
     var blk=blocks.find(function(b){ return b.id===row.block_id; });
     if(!c||!blk){
       dropToken(); clearStashedOfferToken();
-      showToast("That booking link is no longer valid. Please contact Louise.");
+      showNotice("That booking link is no longer valid. Please contact Louise.");
       return;
     }
     dropToken();
@@ -2421,7 +2442,7 @@ async function handleOfferLink(){
     // Could not CHECK the link, which is not the same as the link being dead —
     // so say so, and leave the token in place so a refresh retries.
     console.error("Offer link error:",err);
-    showToast("We couldn't check that booking link just now. Please refresh to try again.");
+    showNotice("We couldn't check that booking link just now. Please refresh to try again.");
   }
 }
 function closeViewModal(){
@@ -3144,7 +3165,7 @@ function confirmBooking(){
           // held. The success return clears it instead (handleOfferLink).
           window.location.href=pendingData.url;
         } else {
-          showToast("Payment could not be started. Please try again.");
+          showNotice("Payment could not be started. Please try again.");
           if(confirmBtn){ confirmBtn.disabled=false; confirmBtn.style.opacity="1"; confirmBtn.style.cursor="pointer"; }
         }
         return;
@@ -3166,22 +3187,23 @@ function confirmBooking(){
       if(bookRes.error){
         var msg=bookRes.error.message||"";
         var wlMsg=waitlistErrorMessage(msg);
+        // The form closes first so the notice is the one thing left on screen.
         if(wlMsg){
-          showToast(wlMsg);
           await refreshBlockCounts();
           renderGrid();
           closeModal();
+          showNotice(wlMsg);
           return;
         }
         if(msg.indexOf("CLASS_FULL")>-1){
-          showToast("Sorry — this class just became full. Please try another block.");
           renderGrid();
           closeModal();
+          showNotice("Sorry — this class just became full. Please try another block.");
           return;
         }
         if(msg.indexOf("ALREADY_BOOKED")>-1){
-          showToast("You already have a booking on this block.");
           closeModal();
+          showNotice("You already have a booking on this block.");
           return;
         }
         throw new Error("Booking failed: "+msg);
@@ -3247,7 +3269,7 @@ function confirmBooking(){
 
     }catch(err){
       console.error("Booking error:",err);
-      showToast("Something went wrong. Please try again.");
+      showNotice("Something went wrong. Please try again.");
       if(confirmBtn){ confirmBtn.disabled=false; confirmBtn.style.opacity="1"; confirmBtn.style.cursor="pointer"; }
     }
   })();
@@ -3990,7 +4012,7 @@ function toggleClassPriority(customerId, classId, currentlyGranted){
         showToast("Manual priority granted.");
       }
       renderCustomersTab();
-    }catch(err){ console.error(err); showToast("Error updating priority."); }
+    }catch(err){ console.error(err); showNotice("Error updating priority."); }
   })();
 }
 
@@ -4290,7 +4312,7 @@ async function refreshCatchUpView(){
     renderClassesView();
   }catch(err){
     console.error("Catch-up refresh error:",err);
-    showToast("Saved, but the list didn't refresh. Please reload the page.");
+    showNotice("Saved, but the list didn't refresh. Please reload the page.");
   }
 }
 
@@ -4519,7 +4541,7 @@ async function deleteCatchUpSwap(id){
     showToast("Catch-up swap removed.");
   }catch(err){
     console.error("Delete swap error:",err);
-    showToast("Error removing swap. Please try again.");
+    showNotice("Error removing swap. Please try again.");
     return;
   }
   await refreshCatchUpView();
@@ -4807,15 +4829,14 @@ async function confirmWaitlistOffer(){
     // Non-fatal by design: the hold is already recorded, so a bounced email
     // must not undo it. But Louise has to KNOW it bounced — otherwise she
     // waits for a reply to a message that was never delivered while the seat
-    // sits held. Copy link is the fallback the toast points her at.
+    // sits held. Copy link is the fallback the notice points her at.
     var emailed=await sendWaitlistEmail("waitlist_offer",waitlistId);
-    showToast(IS_NO_EMAIL||emailed
-      ? "Space offered and email sent."
-      : "Space offered, but the email did not send — use Copy link to send it yourself.");
+    if(IS_NO_EMAIL||emailed) showToast("Space offered and email sent.");
+    else showNotice("Space offered, but the email did not send — use Copy link to send it yourself.");
   }catch(err){
     console.error("Offer space error:",err);
     var friendly=waitlistAdminError(err.message||"");
-    showToast(friendly||"Error offering the space. Please try again.");
+    showNotice(friendly||"Error offering the space. Please try again.");
   }
   // Outside the try on purpose: the seat is held and the email has gone, so a
   // failed refresh is a stale table, not a failed offer. Reporting it as
@@ -4831,7 +4852,7 @@ async function refreshWaitlistView(){
     renderWaitlistList();
   }catch(err){
     console.error("Waiting list refresh error:",err);
-    showToast("Could not refresh the list — please reload the page to see the latest.");
+    showNotice("Could not refresh the list — please reload the page to see the latest.");
   }
 }
 
@@ -4844,7 +4865,7 @@ async function refreshWaitlistView(){
 function copyWaitlistOfferLink(waitlistId){
   var row=waitlistRows.find(function(r){ return r.id===waitlistId; });
   if(!row||row.status!=="offered"||!row.offerToken){
-    showToast("That hold is no longer active. Refreshing the list.");
+    showNotice("That hold is no longer active. Refreshing the list.");
     refreshWaitlistView();
     return;
   }
@@ -4872,7 +4893,7 @@ function copyWaitlistOfferLink(waitlistId){
         .then(function(res){
           var d=res&&res.data;
           if(!d||d.status!=="offered"||d.offer_token!==row.offerToken){
-            showToast("That link has changed since the page loaded — refreshing, please copy it again.");
+            showNotice("That link has changed since the page loaded — refreshing, please copy it again.");
             refreshWaitlistView();
           }
         });
@@ -4898,9 +4919,8 @@ function showLinkFallback(link){
     ok=document.execCommand("copy");
     document.body.removeChild(ta);
   }catch(e){ ok=false; }
-  showToast(ok
-    ? "Booking link copied."
-    : "Could not copy automatically — the link is in the browser console.");
+  if(ok) showToast("Booking link copied.");
+  else showNotice("Could not copy automatically — the link is in the browser console.");
   if(!ok) console.log("Waiting-list booking link:",link);
 }
 
@@ -4916,7 +4936,7 @@ async function releaseWaitlistHold(waitlistId){
   }catch(err){
     console.error("Release hold error:",err);
     var friendly=waitlistAdminError(err.message||"");
-    showToast(friendly||"Error releasing the hold. Please try again.");
+    showNotice(friendly||"Error releasing the hold. Please try again.");
   }
   await refreshWaitlistView();
 }
@@ -4941,7 +4961,7 @@ async function removeWaitlistEntry(waitlistId){
     showToast("Removed from the waiting list.");
   }catch(err){
     console.error("Remove waitlist entry error:",err);
-    showToast("Error removing them. Please try again.");
+    showNotice("Error removing them. Please try again.");
   }
   await refreshWaitlistView();
 }
@@ -5013,7 +5033,7 @@ function saveNewClass(){
       closeAddClassModal();
       document.querySelector("#add-class-overlay .mtitle").textContent="Add New Class";
       buildFilters(); renderGrid(); renderDashboard();
-    }catch(err){ console.error(err); showToast("Error saving class."); }
+    }catch(err){ console.error(err); showNotice("Error saving class."); }
     finally{ btn.disabled=false; btn.textContent=editingClassId?"Save Changes":"Create Class"; }
   })();
 }
@@ -5107,7 +5127,7 @@ function saveNewBlock(){
       closeAddBlockModal();
       buildFilters(); renderGrid(); renderDashboard();
       showToast("Block added!");
-    }catch(err){ console.error(err); showToast("Error adding block."); }
+    }catch(err){ console.error(err); showNotice("Error adding block."); }
     finally{ btn.disabled=false; }
   })();
 }
@@ -5174,7 +5194,7 @@ function saveEditBlock(blockId){
       closeAddBlockModal();
       buildFilters(); renderGrid(); renderDashboard();
       showToast("Block updated!");
-    }catch(err){ console.error(err); showToast("Error updating block."); }
+    }catch(err){ console.error(err); showNotice("Error updating block."); }
     finally{ btn.disabled=false; }
   })();
 }
@@ -5188,7 +5208,7 @@ function deleteBlock(blockId){
       blocks=blocks.filter(function(b){ return b.id!==blockId; });
       buildFilters(); renderGrid(); renderDashboard();
       showToast("Block deleted.");
-    }catch(err){ console.error(err); showToast("Error deleting block."); }
+    }catch(err){ console.error(err); showNotice("Error deleting block."); }
   })();
 }
 
@@ -5209,7 +5229,7 @@ function deleteClass(id){
       blocks=blocks.filter(function(b){ return b.class_id!==id; });
       buildFilters(); renderGrid(); renderDashboard();
       showToast("Class deleted.");
-    }catch(err){ console.error(err); showToast("Error deleting class."); }
+    }catch(err){ console.error(err); showNotice("Error deleting class."); }
   })();
 }
 
@@ -5230,7 +5250,7 @@ function confirmBookingAdmin(idx){
 
       renderDashboard();
     }
-    catch(err){ console.error(err); showToast("Error confirming booking."); }
+    catch(err){ console.error(err); showNotice("Error confirming booking."); }
   })();
 }
 
@@ -5276,10 +5296,10 @@ function closeBlockEmailModal(){
 async function sendBlockEmail(){
   var subject=document.getElementById("blockemail-subject").value.trim();
   var message=document.getElementById("blockemail-message").value.trim();
-  if(!subject){ showToast("Please enter a subject"); return; }
-  if(!message){ showToast("Please enter a message"); return; }
+  if(!subject){ showNotice("Please enter a subject"); return; }
+  if(!message){ showNotice("Please enter a message"); return; }
   var recipients=_blockEmailRecipients.slice();
-  if(recipients.length===0){ showToast("No clients to email on this block"); return; }
+  if(recipients.length===0){ showNotice("No clients to email on this block"); return; }
   if(!window.confirm("Send this email to "+recipients.length+" client"+(recipients.length===1?"":"s")+"?")) return;
 
   var sendBtn=document.getElementById("blockemail-send");
@@ -5307,7 +5327,9 @@ async function sendBlockEmail(){
   }
 
   closeBlockEmailModal();
-  showToast("Sent to "+sent+" of "+recipients.length+" client"+(recipients.length===1?"":"s"));
+  var sentMsg="Sent to "+sent+" of "+recipients.length+" client"+(recipients.length===1?"":"s");
+  // Some failed to send: a problem Louise must not miss (#116).
+  if(sent<recipients.length) showNotice(sentMsg); else showToast(sentMsg);
 }
 
 function openRfbModal(idx){
@@ -5512,7 +5534,7 @@ function rfbConfirm(){
       renderRfbStep();
       renderDashboard();
       renderGrid();
-    }catch(err){ console.error(err); showToast("Error removing booking. See console."); }
+    }catch(err){ console.error(err); showNotice("Error removing booking. See console."); }
   })();
 }
 
@@ -5589,7 +5611,7 @@ function markCancellationRefunded(id){
         if(!refRes.ok){
           var refErr=await refRes.text();
           console.error("Stripe refund failed:",refRes.status,refErr);
-          showToast("Stripe refund failed. Not marked refunded. See console.");
+          showNotice("Stripe refund failed. Not marked refunded. See console.");
           return;
         }
       }
@@ -5631,7 +5653,7 @@ function markCancellationRefunded(id){
         var clientHtml=buildRefundClientEmailHtml(refundOpts);
         sendBookingEmail(r.email, clientSubject, clientHtml);
       }
-    }catch(err){ console.error(err); showToast("Error updating. See console."); }
+    }catch(err){ console.error(err); showNotice("Error updating. See console."); }
   })();
 }
 
@@ -5640,11 +5662,11 @@ function exportCancellations(){
     try{
       var {data,error}=await sb.from("cancellations").select("*").order("cancelled_at",{ascending:false});
       if(error) throw error;
-      if(!data||data.length===0){ showToast("No cancellations to export."); return; }
+      if(!data||data.length===0){ showNotice("No cancellations to export."); return; }
       var dateStr=new Date().toISOString().slice(0,10);
       downloadCsv("lgpilates-cancellations-"+dateStr+".csv", rowsToCsv(data));
       showToast("Cancellations exported.");
-    }catch(err){ console.error(err); showToast("Error exporting cancellations."); }
+    }catch(err){ console.error(err); showNotice("Error exporting cancellations."); }
   })();
 }
 
@@ -5656,7 +5678,7 @@ function deleteCustomer(idx){
       var{error}=await sb.rpc("admin_delete_customer",{p_customer_id:b.customerId});
       if(error) throw error;
       showToast("Customer deleted."); renderDashboard();
-    }catch(err){ console.error(err); showToast("Error deleting customer."); }
+    }catch(err){ console.error(err); showNotice("Error deleting customer."); }
   })();
 }
 
@@ -5750,7 +5772,7 @@ function saveSettings(){
   var bs=document.getElementById("setting-bank-sort").value.trim();
   var ba=document.getElementById("setting-bank-acc").value.trim();
   var ae=document.getElementById("setting-admin-email").value.trim();
-  if(!bn||!bs||!ba){ showToast("Please fill in all bank details."); return; }
+  if(!bn||!bs||!ba){ showNotice("Please fill in all bank details."); return; }
   showToast("Saving...");
   (async function(){
     try{
@@ -5762,17 +5784,17 @@ function saveSettings(){
       ["bank-sort-1","bank-sort-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=bs; });
       ["bank-acc-1","bank-acc-2"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=ba; });
       showToast("Settings saved!");
-    }catch(err){ console.error(err); showToast("Error saving settings."); }
+    }catch(err){ console.error(err); showNotice("Error saving settings."); }
   })();
 }
 
 function savePaymentSettings(){
   var mode=document.querySelector('input[name="payment-mode"]:checked');
-  if(!mode){ showToast("Please select a payment method."); return; }
+  if(!mode){ showNotice("Please select a payment method."); return; }
   var modeVal=mode.value;
   var pk=document.getElementById("setting-stripe-pk").value.trim();
-  if(modeVal==="stripe" && !pk){ showToast("Please enter your Stripe publishable key."); return; }
-  if(modeVal==="stripe" && !pk.startsWith("pk_")){ showToast("Stripe publishable key must start with pk_"); return; }
+  if(modeVal==="stripe" && !pk){ showNotice("Please enter your Stripe publishable key."); return; }
+  if(modeVal==="stripe" && !pk.startsWith("pk_")){ showNotice("Stripe publishable key must start with pk_"); return; }
   showToast("Saving...");
   (async function(){
     try{
@@ -5783,7 +5805,7 @@ function savePaymentSettings(){
       PAYMENT_MODE=modeVal;
       updateStripeBadge();
       showToast("Settings saved!");
-    }catch(err){ console.error(err); showToast("Error saving settings."); }
+    }catch(err){ console.error(err); showNotice("Error saving settings."); }
   })();
 }
 
@@ -5925,11 +5947,55 @@ function showValidationToast(errors){
   setTimeout(function(){ if(t.parentNode) t.remove(); }, 5000);
 }
 
+// Corner toast: admin success and progress messages only. Anything a customer
+// must read, and any admin problem, goes through showNotice() instead (#116).
+var _toastTimer=null;
 function showToast(msg){
   var el=document.getElementById("toastEl");
   el.textContent=msg; el.className="toast on";
-  setTimeout(function(){ el.className="toast"; },3000);
+  // Clear the previous timer, or the second of two quick toasts vanishes early.
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){ el.className="toast"; },3000);
 }
+
+// Pop-up the reader closes with OK, Escape or a backdrop tap (#116). The
+// 3-second toast vanished before customers had read it. kind "success" swaps
+// the info icon for a green tick. A second notice while one is open replaces
+// its text rather than stacking.
+var _noticeReturnFocus=null, _noticeLockedScroll=false;
+function showNotice(msg, kind){
+  var ov=document.getElementById("notice-overlay");
+  document.getElementById("notice-box").className="modal notice-modal"+(kind==="success"?" notice-good":"");
+  document.getElementById("notice-icon").textContent=(kind==="success")?"✓":"i";
+  document.getElementById("notice-msg").textContent=msg;
+  if(!ov.classList.contains("on")){
+    _noticeReturnFocus=document.activeElement;
+    ov.classList.add("on");
+    // Only take the scroll lock if nothing else holds it, and on close undo only
+    // what we did — some overlays (e.g. Email this block) never lock at all.
+    _noticeLockedScroll=document.body.style.overflow!=="hidden";
+    if(_noticeLockedScroll) lockBodyScroll();
+  }
+  document.getElementById("notice-ok").focus();
+}
+function closeNotice(){
+  var ov=document.getElementById("notice-overlay");
+  if(!ov.classList.contains("on")) return;
+  ov.classList.remove("on");
+  // A notice can sit on top of an open form — leave that form's scroll lock alone.
+  if(_noticeLockedScroll) unlockBodyScroll();
+  _noticeLockedScroll=false;
+  var f=_noticeReturnFocus; _noticeReturnFocus=null;
+  if(f&&f.focus&&document.contains(f)) f.focus();
+}
+// Capture phase so Escape closes only the notice, not the form or sheet under it.
+// Tab stays on OK — the only control — so focus can't wander behind the pop-up.
+document.addEventListener("keydown",function(e){
+  var ov=document.getElementById("notice-overlay");
+  if(!ov||!ov.classList.contains("on")) return;
+  if(e.key==="Escape"){ e.preventDefault(); e.stopImmediatePropagation(); closeNotice(); }
+  else if(e.key==="Tab"){ e.preventDefault(); document.getElementById("notice-ok").focus(); }
+},true);
 
 // ─── Auto am/pm formatting for time inputs ────────────────────────────────────
 // Class-time dropdown pickers (#5). Louise picks Hour / Minutes / am-pm from
@@ -6103,7 +6169,7 @@ async function showStripeOutcome(sessionId){
     if(payment==="success"){
       showStripeOutcome(sessionId);
     } else if(payment==="cancelled"){
-      showToast("Payment was not completed — you can try again.");
+      showNotice("Payment was not completed — you can try again.");
     }
   })();
 })();

@@ -1,8 +1,8 @@
-// ST-18 — Cancel redirect leaves pending_bookings row intact, shows toast
+// ST-18 — Cancel redirect leaves pending_bookings row intact, shows notice
 //
 // What this proves:
 //   When the app loads with ?payment=cancelled in the URL (Stripe's cancel_url
-//   redirect), handleStripeRedirect() shows the toast "Payment was not
+//   redirect), handleStripeRedirect() shows the notice "Payment was not
 //   completed — you can try again." and does NOT touch pending_bookings —
 //   the row created by the earlier stripe-checkout call is left as-is to
 //   expire naturally after 2 hours.
@@ -10,9 +10,8 @@
 // Approach:
 //   A pending_bookings row is inserted directly via pg (simulating a checkout
 //   that was started but cancelled before completion). The app is then loaded
-//   with &payment=cancelled appended to APP_PATH. The toast text is checked
-//   via #toastEl's textContent (not its 'on' class, which the app removes
-//   after 3 seconds — checking textContent avoids a timing race). The pending
+//   with &payment=cancelled appended to APP_PATH. The message is checked
+//   in the #notice-overlay pop-up (#116), which stays until closed. The pending
 //   row is re-fetched by id and compared field-for-field to the original.
 //
 // Cleanup:
@@ -63,9 +62,8 @@ test.describe('ST-18 — Cancel redirect leaves pending_bookings row intact', ()
     await page.goto(cancelUrl);
     await expect(page.locator('#test-mode-banner')).toHaveClass(/on/);
 
-    // Toast textContent is set synchronously and never cleared (only the
-    // 'on' class is removed after 3s), so this is timing-safe.
-    await expect(page.locator('#toastEl')).toHaveText('Payment was not completed — you can try again.');
+    // #116: a notice pop-up that stays until the customer closes it.
+    await expect(page.locator('#notice-overlay.on #notice-msg')).toHaveText('Payment was not completed — you can try again.');
 
     // The pending row must be completely untouched.
     const after = await getPendingBookingById(pendingId);

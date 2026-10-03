@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 2 Oct 2026
-**Total tests:** 309
+**Last updated:** 3 Oct 2026
+**Total tests:** 313
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -46,7 +46,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `smoke-04-ui-page-loads.spec.js` | page shows all three seeded class days |
 | `smoke-04-ui-page-loads.spec.js` | TEST MODE banner is visible (proves env switch is active) |
 
-## Client Booking (CB) — 35 tests
+## Client Booking (CB) — 39 tests
 
 | Spec file | Test |
 |---|---|
@@ -85,6 +85,10 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `cb-31-duplicate-booking-already-booked-screen.spec.js` | returning client already booked on this block sees the already-booked screen |
 | `cb-32-returning-client-not-on-block-welcome-back.spec.js` | returning client not yet on this block sees welcome-back message and proceeds to payment |
 | `cb-34-rebook-after-success.spec.js` | modal opens cleanly after closing success screen from a prior booking |
+| `cb-35-notice-popup.spec.js` | CB-35 — Stripe cancel return shows a notice that stays until OK is pressed |
+| `cb-35-notice-popup.spec.js` | CB-36 — Escape and a backdrop tap each close the notice |
+| `cb-35-notice-popup.spec.js` | CB-37 — a notice over an open booking form leaves the form intact |
+| `cb-35-notice-popup.spec.js` | CB-38 — good news shows a green tick, a problem shows the info icon |
 
 ## Priority Booking (PB) — 16 tests
 

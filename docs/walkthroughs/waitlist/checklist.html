@@ -164,9 +164,9 @@ var PARTS=[
  {title:"Part 2 · Joining the waiting list",steps:[
   {id:"4",who:["cust"],do:"Click Join Waiting List. Join as Email B.",exp:"Success view with position <span class=q>#1</span> and “We've let Louise know…”."},
   {id:"5",who:["cust"],do:"Close it and look at the card.",exp:"Extra line: <span class=q>1 person on the waiting list</span>."},
-  {id:"6",who:["cust"],do:"Join again as Email B.",exp:"Message: <span class=q>You're already on the waiting list for this block.</span>"},
+  {id:"6",who:["cust"],do:"Join again as Email B.",exp:"Pop-up: <span class=q>You're already on the waiting list for this block.</span> Stays until you press OK."},
   {id:"7",who:["cust"],do:"Join as Email C.",exp:"Position <span class=q>#2</span>. Card says <span class=q>2 people on the waiting list</span>."},
-  {id:"8",who:["cust"],do:"Try to join as Email A, who already has a seat.",exp:"Message: <span class=q>You've already got a place on this block.</span>"},
+  {id:"8",who:["cust"],do:"Try to join as Email A, who already has a seat.",exp:"Pop-up: <span class=q>You've already got a place on this block.</span>"},
   {id:"9",who:["cust"],do:"Open the join form, enter phone <code>123</code>, click Join.",exp:"Phone field goes red and nothing is sent."}
  ]},
  {title:"Part 3 · Louise's view while full",steps:[
@@ -192,15 +192,15 @@ var PARTS=[
   {id:"22",who:["cust"],do:"Close the booking box, then refresh the page.",exp:"Booking box reopens with the reserved banner. Closing or refreshing doesn't lose the seat."},
   {id:"23",who:["cust"],do:"Complete the booking with the test card.",exp:"Success screen. Confirmation email to Email B."},
   {id:"24",who:["louise"],do:"Refresh Waiting lists.",exp:"Email B gone. <span class=q>3 / 3 booked</span>, <span class=q>1 waiting</span>. Email C now 1st."},
-  {id:"25",who:["cust"],do:"Click the link in Email B's email again (new private window).",exp:"<span class=q>That booking link is no longer valid. Please contact Louise.</span>",tag:"Used link"},
-  {id:"26",who:["cust"],do:"Copy the link, change its last character, open it.",exp:"Same “no longer valid” message.",tag:"Forged link"},
-  {id:"27",who:["cust"],do:"Copy the link, delete its last 5 characters, open it.",exp:"<span class=q>That booking link is not complete…</span>",tag:"Truncated link"}
+  {id:"25",who:["cust"],do:"Click the link in Email B's email again (new private window).",exp:"Pop-up: <span class=q>That booking link is no longer valid. Please contact Louise.</span> Press OK to close.",tag:"Used link"},
+  {id:"26",who:["cust"],do:"Copy the link, change its last character, open it.",exp:"Same “no longer valid” pop-up.",tag:"Forged link"},
+  {id:"27",who:["cust"],do:"Copy the link, delete its last 5 characters, open it.",exp:"Pop-up: <span class=q>That booking link is not complete…</span>",tag:"Truncated link"}
  ]},
  {title:"Part 7 · Release and remove",steps:[
   {id:"28",who:["claude","stop"],do:"Paste <code>03-cancel-second-dummy.sql</code>: cancels Demo Two's booking.",exp:"Result row: booked 2, cap 3, wait 1. Offering to Email C next brings back the 4 Oct-style over-capacity warning: expected."},
   {id:"29",who:["louise"],do:"Refresh. Offer space to Email C → Offer anyway (the box shows the same clash again).",exp:"“Space offered and email sent.” Offer email arrives at Email C."},
   {id:"30",who:["louise"],do:"Release hold on Email C. Confirm.",exp:"Toast <span class=q>Hold released.</span> Email C back to Waiting. Badge <span class=q>1 seat free</span>."},
-  {id:"31",who:["cust"],do:"Open the link from Email C's email (new private window).",exp:"<span class=q>That booking link is no longer valid.</span> Releasing a hold kills its link."},
+  {id:"31",who:["cust"],do:"Open the link from Email C's email (new private window).",exp:"Pop-up: <span class=q>That booking link is no longer valid.</span> Releasing a hold kills its link."},
   {id:"32",who:["louise"],do:"Remove Email C. Confirm.",exp:"<span class=q>Removed from the waiting list.</span> DEMO block disappears from Waiting lists."},
   {id:"33",who:["cust"],do:"Refresh.",exp:"DEMO card shows <span class=q>1 space left</span> and Book Current Block. With the queue empty, the seat is back on public sale."}
  ]},

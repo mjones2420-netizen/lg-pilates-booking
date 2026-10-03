@@ -53,9 +53,9 @@ Dummy customers use addresses at `@lg-pilates-demo.invalid`, a domain that can n
 |---|---|---|
 | 4 | Click **Join Waiting List**. Join as **Email B**. | Success view showing position **#1**. Text: "We've let Louise know…". |
 | 5 | Close it and look at the card. | Extra line: **"1 person on the waiting list"**. |
-| 6 | Join again as **Email B**. | Message: **"You're already on the waiting list for this block."** |
+| 6 | Join again as **Email B**. | Pop-up: **"You're already on the waiting list for this block."** It stays until you press **OK**. |
 | 7 | Join as **Email C**. | Position **#2**. Card now says **"2 people on the waiting list"**. |
-| 8 | Try to join as **Email A** (who already has a seat). | Message: **"You've already got a place on this block."** |
+| 8 | Try to join as **Email A** (who already has a seat). | Pop-up: **"You've already got a place on this block."** Press **OK** to close. |
 | 9 | Open the join form, enter phone `123`, click Join. | Phone field goes red and nothing is sent. |
 
 ## Part 3 — Louise's view while full [You, Louise window]
@@ -93,9 +93,9 @@ Dummy customers use addresses at `@lg-pilates-demo.invalid`, a domain that can n
 | 22 | Close the booking box, then refresh the page. | The booking box reopens with the reserved banner. A closed box or refresh doesn't lose the seat. |
 | 23 | Complete the booking with the test card. | Success screen. Booking confirmation email to Email B. |
 | 24 | Louise window: refresh Waiting lists. | Email B is gone. **3 / 3 booked**, **1 waiting** (Email C is now 1st). |
-| 25 | Click the link in Email B's email again (new private window). | Message: **"That booking link is no longer valid. Please contact Louise."** *(Used link.)* |
-| 26 | Copy the link, change the last character to something else, open it. | Same **"no longer valid"** message. *(Forged link.)* |
-| 27 | Copy the link, delete the last 5 characters, open it. | **"That booking link is not complete…"** *(Truncated link.)* |
+| 25 | Click the link in Email B's email again (new private window). | Pop-up: **"That booking link is no longer valid. Please contact Louise."** *(Used link.)* Press **OK** to close. |
+| 26 | Copy the link, change the last character to something else, open it. | Same **"no longer valid"** pop-up. *(Forged link.)* |
+| 27 | Copy the link, delete the last 5 characters, open it. | Pop-up: **"That booking link is not complete…"** *(Truncated link.)* |
 
 ## Part 7 — Release and remove
 
@@ -104,7 +104,7 @@ Dummy customers use addresses at `@lg-pilates-demo.invalid`, a domain that can n
 | 28 | **[SQL: 03-cancel-second-dummy.sql]** | Cancels Demo Two's booking. | Result row: booked 2, cap 3, wait 1. |
 | 29 | You, Louise window | Refresh. Offer space to **Email C** → **Offer anyway** (the box shows the same catch-up clash again). | "Space offered and email sent." Offer email arrives at Email C. |
 | 30 | You, Louise window | **Release hold** on Email C. Confirm. | Toast **"Hold released."** Email C goes back to **Waiting**. Badge: **1 seat free**. |
-| 31 | You, new private window | Open the link from Email C's email. | **"That booking link is no longer valid."** Releasing kills the link. |
+| 31 | You, new private window | Open the link from Email C's email. | Pop-up: **"That booking link is no longer valid."** Releasing kills the link. |
 | 32 | You, Louise window | **Remove** Email C. Confirm. | **"Removed from the waiting list."** DEMO block disappears from Waiting lists (nobody waiting). |
 | 33 | You, customer window | Refresh. | DEMO card now shows **"1 space left"** and **Book Current Block**. With the queue empty, the seat goes back on public sale. |
 

@@ -49,7 +49,7 @@ test('SE-21 — signed-out save is rejected and shows an error toast', async ({ 
   // write, the error is thrown, and the catch shows the failure toast.
   await page.evaluate(() => saveSettings());
 
-  await expect(page.locator('#toastEl')).toContainText('Error saving settings.', { timeout: 5000 });
+  await expect(page.locator('#notice-msg')).toContainText('Error saving settings.', { timeout: 5000 });
   await expect(page.locator('#toastEl')).not.toContainText('Settings saved!');
 
   // The DB must still hold the baseline value — the failed save changed nothing.

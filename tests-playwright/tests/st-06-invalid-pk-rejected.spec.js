@@ -21,11 +21,12 @@ test('ST-06: invalid Stripe publishable key is rejected on save', async ({ page 
   // Save with no key — should error
   await page.locator('.db-settings-card').filter({ hasText: 'Payment method' })
     .locator('button', { hasText: 'Save Settings' }).click();
-  await expect(page.locator('.toast')).toContainText('Please enter your Stripe publishable key');
+  await expect(page.locator('#notice-overlay.on #notice-msg')).toContainText('Please enter your Stripe publishable key');
+  await page.locator('#notice-ok').click();
 
   // Save with key that doesn't start with pk_ — should error
   await page.locator('#setting-stripe-pk').fill('sk_test_notapublishablekey');
   await page.locator('.db-settings-card').filter({ hasText: 'Payment method' })
     .locator('button', { hasText: 'Save Settings' }).click();
-  await expect(page.locator('.toast')).toContainText('must start with pk_');
+  await expect(page.locator('#notice-overlay.on #notice-msg')).toContainText('must start with pk_');
 });

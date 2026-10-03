@@ -230,7 +230,7 @@ test.describe('WL — waiting list, public site', () => {
     await page.locator('#wl-phone').fill('07700900123');
     await page.locator('#wl-submit-btn').click();
 
-    await expect(page.locator('#toastEl.on')).toContainText(
+    await expect(page.locator('#notice-overlay.on #notice-msg')).toContainText(
       "You're already on the waiting list for this block.",
       { timeout: 15000 }
     );
@@ -301,12 +301,15 @@ test.describe('WL — waiting list, public site', () => {
   test('WL-06 — a junk offer link says so and leaves the page usable', async ({ page }) => {
     await page.goto(`${APP_PATH}&offer=11111111-2222-3333-4444-555555555555`);
 
-    await expect(page.locator('#toastEl.on')).toContainText(
+    await expect(page.locator('#notice-overlay.on #notice-msg')).toContainText(
       'That booking link is no longer valid.',
       { timeout: 15000 }
     );
     await expect(page.locator('#overlay.on')).toHaveCount(0);
     expect(page.url()).not.toContain('offer=');
+    // The notice (#116) covers the page until closed.
+    await page.locator('#notice-ok').click();
+    await expect(page.locator('#notice-overlay.on')).toHaveCount(0);
     // The schedule still works — a dead link is not a dead page.
     await expect(wlCard(page).locator('button.book-btn').first()).toHaveText('Book Current Block');
   });
@@ -431,7 +434,7 @@ test.describe('WL — waiting list, public site', () => {
     await page.locator('#wl-phone').fill('07700900123');
     await page.locator('#wl-submit-btn').click();
 
-    await expect(page.locator('#toastEl.on')).toContainText(
+    await expect(page.locator('#notice-overlay.on #notice-msg')).toContainText(
       'Too many attempts. Please try again later, or email Louise directly.',
       { timeout: 15000 }
     );

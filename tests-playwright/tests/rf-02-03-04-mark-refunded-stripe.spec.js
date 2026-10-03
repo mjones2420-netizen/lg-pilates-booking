@@ -194,8 +194,8 @@ test.describe('RF-02/03/04 — Mark Refunded issues real Stripe refund', () => {
     await gotoAdminCancellations(page);
     await clickMarkRefunded(page, 'CardFail');
 
-    // Error toast shown (auto-clears after 3s, so assert promptly).
-    await expect(page.locator('#toastEl')).toContainText('Stripe refund failed', { timeout: 15000 });
+    // Error notice shown (#116: stays until closed).
+    await expect(page.locator('#notice-overlay.on #notice-msg')).toContainText('Stripe refund failed', { timeout: 15000 });
 
     // Flag must remain false — no money moved.
     const { rows } = await getPool().query('SELECT refunded FROM cancellations WHERE id = $1', [cid]);
