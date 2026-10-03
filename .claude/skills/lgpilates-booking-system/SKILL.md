@@ -8,7 +8,7 @@ description: >
 
 ## Project Overview
 
-A web-based booking system for LG Pilates, a Pilates business run by Louise (Mark's partner). Built as a standalone single HTML file connected to a Supabase database. It is separate from the WordPress website and operates independently.
+A web-based booking system for LG Pilates, a Pilates business run by Louise (Mark's partner). Built as a standalone single HTML file connected to a Supabase database. It is separate from the main website (lg-pilates.co.uk) and operates independently.
 
 Mark builds and maintains this system. Louise is the end user and business owner.
 
@@ -39,11 +39,10 @@ All code lives in `index.html`. There are no separate JS or CSS files. Any featu
 
 ## Supabase Setup
 
-Mark has a Supabase project connected to this system. Key rules when working with Supabase:
+There are two Supabase projects (test and production) — see CLAUDE.md for IDs and which MCP server to use. Key rules when working with Supabase:
 
 - **Always confirm with Mark before running any SQL query** — explain what the query does before executing
-- The database schema should be referenced from the current index.html and any context files Mark provides
-- Never assume the schema — ask Mark to confirm table and column names if uncertain
+- Take the schema from context.txt section 4, or inspect the test database directly — don't guess table or column names
 
 ---
 
@@ -54,10 +53,10 @@ This project follows the **mockup-first-ui** skill for any visual or UI changes:
 2. Wait for Mark's explicit sign-off
 3. Apply to index.html only after approval
 
-This project also follows the **code-quality-review** skill after every code change.
+Every product-code change follows the order in CLAUDE.md rule 9: `/code-review` → `/security-review` (when relevant) → tests → commit/push.
 
 ### Session start
-In Claude Code, read `index.html` directly from the repo — never use a cached version. The session-start checks (index.html line count, time drift, state drift) are defined in CLAUDE.md and run automatically at the start of every session.
+In Claude Code, read `index.html` directly from the repo — never use a cached version. The session-start checks (index.html line count, time drift, state drift) are defined in CLAUDE.md.
 
 ### GitHub commits
 Single-line commit messages only — no em-dashes or backticks (zsh quoting issues). Always run `npm test` and confirm green before pushing.
@@ -66,12 +65,7 @@ Single-line commit messages only — no em-dashes or backticks (zsh quoting issu
 
 ## End of Session
 
-When Mark says "End of session", "Wrap up", "Update context", or similar, work through this checklist in order:
-
-1. **CLAUDE.md** — update test count, current state, and "Next likely work" to reflect what was done this session. Keep it lean — it's a session-start briefing, not a full archive.
-2. **GitHub Issues** — the single source of truth for the backlog. Close completed issues, open new ones for anything identified this session. BACKLOG.md is historical reference only — do not update it.
-3. **context.txt** — update with session changes for use as a fallback if Claude chat is ever needed. This is lower priority than CLAUDE.md.
-4. **Git** — confirm everything is committed and pushed. Provide the exact commands if not already done.
+When Mark says "End of session", "Wrap up", or similar, run the `/wrap-up` routine. Session notes go in SESSION-LOG.md; CLAUDE.md changes only when a rule, gotcha, or the current-state snapshot changes. GitHub Issues is the backlog — BACKLOG.md is historical only.
 
 ---
 
@@ -79,7 +73,7 @@ When Mark says "End of session", "Wrap up", "Update context", or similar, work t
 
 - **Business name:** LG Pilates
 - **Owner:** Louise (Mark's partner)
-- **Location:** Guiseley and nearby areas in West Yorkshire
+- **Location:** Baildon and Guiseley, West Yorkshire
 - **Classes:** Pilates sessions run at hired venues
 - **Customers:** Members who book classes individually or in blocks
 - Mark helps Louise with the technical side — Louise is non-technical
@@ -88,7 +82,7 @@ When Mark says "End of session", "Wrap up", "Update context", or similar, work t
 
 ## Important Reminders
 
-- Always work from the uploaded `index.html` — never guess or reconstruct from memory
+- Always work from `index.html` in the repo — never guess or reconstruct from memory
 - Supabase SQL must be confirmed with Mark before execution
 - All UI changes require a mockup and sign-off before touching the source file
 - Keep all code in the single `index.html` file — do not suggest splitting into multiple files unless Mark explicitly requests it

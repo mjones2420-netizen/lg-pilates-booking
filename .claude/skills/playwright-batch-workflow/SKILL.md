@@ -1,74 +1,28 @@
 ---
 name: playwright-batch-workflow
 description: >
-  Mark's personal workflow for writing batches of Playwright tests for the LG Pilates booking system. Apply this skill whenever Mark wants to write, expand, or work on a batch of automated tests — including any mention of "Batch [N]", "next batch", "continue with batch", "write CB-XX tests", "write AB-XX tests", "write PB-XX tests", "add Playwright tests", or any general intent to expand Playwright coverage for the booking system. This skill governs the full session rhythm including session-start checks, scope confirmation, pre-flight selector verification, 1:1 spec mapping, established CB/AB/PB patterns, mandatory TEST-PLAN.md updates, Coverage Tracker maintenance, and end-of-batch verification. Always load this skill alongside the lgpilates-booking-system skill when Playwright work is requested. Do NOT apply this skill to one-off bug fixes, manual testing, or unrelated coding work.
+  Mark's personal workflow for writing batches of Playwright tests for the LG Pilates booking system. Apply this skill whenever Mark wants to write, expand, or work on a batch of automated tests — including any mention of "Batch [N]", "next batch", "continue with batch", "write CB-XX tests", "write AB-XX tests", "write PB-XX tests", "add Playwright tests", or any general intent to expand Playwright coverage for the booking system. This skill governs the full session rhythm including scope confirmation, pre-flight selector verification, 1:1 spec mapping, established CB/AB/PB patterns, TEST-PLAN.md regeneration, and end-of-batch documentation. Always load this skill alongside the lgpilates-booking-system skill when Playwright work is requested. Do NOT apply this skill to one-off bug fixes, manual testing, or unrelated coding work.
 ---
 
 # Playwright Batch Workflow Skill — Mark's Personal Setup
 
 ## Context
 
-Mark and Claude are working through ~169 test scenarios across multiple tabs (CB, AB, PB, Booking Windows, Edge Cases, etc.) of `LG-Pilates-Test-Scenarios.xlsx`. Coverage is built up in batches, grouped by shared scaffold (e.g. "Batch 1 — quick wins on new-client scaffold", "Batch 2 — T&Cs checkbox").
+Mark and Claude are working through ~169 test scenarios across multiple tabs (CB, AB, PB, Booking Windows, Edge Cases, etc.) of `LG_Pilates_Test_Scenarios.xlsx`. Coverage is built up in batches, grouped by shared scaffold (e.g. "Batch 1 — quick wins on new-client scaffold", "Batch 2 — T&Cs checkbox").
 
 The recurring rhythm of writing a batch needs to be consistent across sessions so:
 - Mark can trust the conventions don't drift
 - Existing tests stay maintainable as new ones land
-- TEST-PLAN.md and the Coverage Tracker stay accurate
+- TEST-PLAN.md stays accurate
 - Nothing gets accidentally skipped
 
 This skill is the playbook. It assumes context.txt has already been read and the lgpilates-booking-system skill is loaded.
 
 ---
 
-## STEP 0 — Session-start checks (MANDATORY at start of every session)
+## STEP 0 — Session start
 
-Two checks must be run before any test work, regardless of whether the session looks test-related or not. These are also documented in context.txt under WORKFLOW FOR NEW CHAT SESSIONS.
-
-**Check A: Confirm index.html is present**
-- Verify Mark uploaded a fresh copy at session start
-- Note line count (~2,885 lines post-Session 11)
-- Copy to `/home/claude/index.html` as the working file
-
-**Check B: Test DB fixture freshness**
-- Run the drift check query against `ngzfhamjuviwfwuncrjo`:
-
-```sql
-SELECT
-  COUNT(*) FILTER (WHERE status='active'
-                   AND start_date <= CURRENT_DATE
-                   AND end_date   >= CURRENT_DATE) AS active_ok,
-  COUNT(*) FILTER (WHERE status='completed'
-                   AND end_date < CURRENT_DATE)    AS past_ok,
-  COUNT(*) FILTER (WHERE status='upcoming'
-                   AND (start_date - CURRENT_DATE) BETWEEN 0 AND 7)  AS standard_window,
-  COUNT(*) FILTER (WHERE status='upcoming'
-                   AND (start_date - CURRENT_DATE) BETWEEN 8 AND 14) AS priority_window,
-  COUNT(*) FILTER (WHERE status='upcoming'
-                   AND (start_date - CURRENT_DATE) >= 15)            AS locked_window
-FROM blocks;
-```
-
-- Healthy: `active_ok >= 1`, `past_ok >= 1`, at least 2 of (standard_window, priority_window, locked_window) >= 1
-- If drift detected, remind Mark to run `npm run seed` before any test work — do not block the session over it
-
-**Check C: Confirm helper files are in context**
-
-When Playwright work is on the agenda, the test helper files are needed to verify function signatures before writing specs. Don't wait until pre-flight to discover one is missing — flag at session start.
-
-At the top of the opening response (alongside Checks A and B), list which of these helpers are in context and which are not:
-
-- `tests/helpers/booking-flow.js`
-- `tests/helpers/fixture-lookup.js`
-- `tests/helpers/app-url.js`
-- `tests/helpers/supabase.js`
-
-If any are missing, ask Mark to upload them before scope confirmation. Wording template:
-
-> "I have [X] of the 4 test helpers in context. Could you upload [missing files] before we start? It avoids guessing at function signatures and saves a wrong-first-draft."
-
-This is preventive, not blocking — if Mark prefers to skip and proceed, accept that and rely on Step 2a to catch issues. But the default is: ask now, not later. Session 13 produced a wrong CB-14 first draft because `openBookingModal`'s signature was guessed wrong; uploading `booking-flow.js` at session start would have prevented it.
-
-Report results as a single line near the top of the opening response. Do not explain the checks at length unless something fails.
+The session-start checks (index.html present, time drift, state drift) are defined in CLAUDE.md — run those; this skill adds none of its own. Read the test helpers in `tests-playwright/tests/helpers/` directly from the repo before writing specs.
 
 ---
 
@@ -82,7 +36,7 @@ Before writing any code, lock down which scenarios are being automated this sess
 
 Do not proceed to Step 2 until Mark explicitly confirms.
 
-If TEST-PLAN.md isn't in context, read it from `~/dev/lg-pilates-booking/tests-playwright/TEST-PLAN.md` (or ask Mark to upload). The Coverage Tracker at the top is the authoritative view of outstanding scenarios.
+Read `tests-playwright/TEST-PLAN.md` (generated by `npm run test-plan`) to see what is already covered.
 
 ---
 
@@ -90,15 +44,15 @@ If TEST-PLAN.md isn't in context, read it from `~/dev/lg-pilates-booking/tests-p
 
 Before producing any spec code, verify the building blocks:
 
-**2a. Confirm helpers are in context.** Check C in Step 0 should already have surfaced any missing helpers. Verify the following are in context before writing any spec:
+**2a. Read the helpers.** Read these from `tests-playwright/tests/helpers/` before writing any spec:
 - `tests/helpers/app-url.js` — exports `APP_PATH`
 - `tests/helpers/booking-flow.js` — exports `openBookingModal(page, day, which)`, `fillStep1`, `fillStep2Medical`, `fillStep2Emergency`, `agreeAndReserve`, `uniqueTestEmail`, `DEFAULT_NEW_CLIENT`. Note that `openBookingModal` takes a day-name string (e.g. "Monday"), NOT a numeric class_id — common pitfall.
 - `tests/helpers/fixture-lookup.js` — exports `getBlockByRole`, `getBlocksByRoles`, `clearFixtureCache`, `VALID_ROLES`
 - `tests/helpers/supabase.js` — exports `sb` (NOT `supabase` — common pitfall)
 
-If any are still missing at this point, stop and request them. Do not guess at function signatures — wrong-first-drafts cost time and erode trust in the workflow.
+Do not guess at function signatures — check them in the helper file.
 
-**2b. Confirm at least one existing CB/AB/PB spec is in context** so the new specs match the existing style. If no example is uploaded, request one (typically `cb-01-new-client-happy-path.spec.js`).
+**2b. Read at least one existing CB/AB/PB spec** so the new specs match the existing style (typically `tests-playwright/tests/cb-01-new-client-happy-path.spec.js`).
 
 **2c. Scan index.html for the selectors and validation strings the batch will use.** Don't write `expect(toast).toContainText(/some text/i)` based on assumptions — grep the actual file for the validation strings, button labels, and IDs the tests will interact with. Common targets:
 - `#validation-toast` — top-of-page validation summary toast (added via `showValidationToast()`)
@@ -118,7 +72,7 @@ If any are still missing at this point, stop and request them. Do not guess at f
 - All other CB specs in the suite (especially returning-client specs like CB-13, CB-31, CB-03)
 - All smoke specs that assert "no booking exists for X" (these treat unbooked pairs as stable, and a new spec booking that pair will break them)
 
-Practical scan: ask Mark to upload any returning-client specs already in the suite, plus `smoke-02-anon-rpcs.spec.js`, and grep them for the customer email and block role. If a collision is found, pick a different `(customer, block)` combination and document the rationale in the spec's header comment.
+Practical scan: grep the returning-client specs and the smoke specs in `tests-playwright/tests/` for the customer email and block role. If a collision is found, pick a different `(customer, block)` combination and document the rationale in the spec's header comment.
 
 Session 15 hit this pitfall three times in one batch: CB-03 vs CB-32 (both wanted returning-two + mon-current), CB-13 vs CB-32 (both wanted returning-two + fri-upcoming), then smoke-02 vs CB-32 (smoke test was relying on returning-one + fri-upcoming being unbooked, which the eventual CB-32 fix booked). Each took a separate test run + debug cycle to surface. Doing the scan up front would have caught all three before any spec was written.
 
@@ -157,7 +111,7 @@ When triggered, the response template is:
 
 That's it. Two lines. No preamble, no extended diagnostic, no narration of how the problem was discovered. If the user wants the reasoning they'll ask.
 
-**Documentation files are locked until tests pass.** Do not update `TEST-PLAN.md`, `context.txt`, or the Excel scenarios sheet during a batch in progress. These files capture state, and updating them before the state is verified (i.e. tests pass green) is wasted work and creates rework when the plan changes mid-flight. The trigger for updating them is the user explicitly saying tests are green or asking for the update — not Claude inferring that the work is "done enough."
+**Documentation files are locked until tests pass.** Do not update `context.txt` or the Excel scenarios sheet, or regenerate `TEST-PLAN.md`, during a batch in progress. These files capture state, and updating them before the state is verified (i.e. tests pass green) is wasted work and creates rework when the plan changes mid-flight. The trigger for updating them is the user explicitly saying tests are green or asking for the update — not Claude inferring that the work is "done enough."
 
 If a documentation update would clearly help — e.g. recording a fixture change for the next reseed — flag it ("Worth updating context.txt to reflect this when we wrap up?") and wait for the answer.
 
@@ -224,31 +178,25 @@ await expect(toast).toBeVisible({ timeout: 3000 });
 await expect(toast).toContainText(/exact text from goStep2 or goStep2b/i);
 ```
 
-**Mobile viewport tests:** until a Mobile Safari project is added to `playwright.config.js`, use `await page.setViewportSize({ width: 480, height: 700 })` as a proxy AND add a `> Follow-up:` note in the matching TEST-PLAN.md entry pointing back to the mobile project follow-up in context.txt.
+**Mobile viewport tests:** until a Mobile Safari project is added to `playwright.config.js`, use `await page.setViewportSize({ width: 480, height: 700 })` as a proxy.
 
 ---
 
-## STEP 4 — TEST-PLAN.md is updated IN THE SAME SESSION as the test change (NON-NEGOTIABLE)
+## STEP 4 — Regenerate TEST-PLAN.md in the same session
 
-This is the rule Mark explicitly captured in memory: TEST-PLAN.md must be updated in the same session as any new or substantially modified test. There are no exceptions.
-
-The detailed structure of the TEST-PLAN.md updates lives in Step 4B.2 below — it's part of the broader end-of-batch documentation routine that also covers context.txt and (sometimes) the Excel scenarios sheet. Don't update TEST-PLAN.md piecemeal mid-batch — wait for tests to be green AND user sign-off, then run the full 4B routine in one go.
+TEST-PLAN.md is generated — never hand-edit it. After adding or removing tests, run `cd tests-playwright && npm run test-plan` in the same session. A new spec prefix needs a group added to `generate-test-plan.js` (it errors on ungrouped prefixes).
 
 ---
 
 ## STEP 4B — End-of-batch documentation routine (after tests are GREEN and user has signed off)
 
-This is the canonical end-of-batch sequence Mark and Claude have settled on across many batches. It updates three files in a specific order, with specific structural changes in each. Do all three in the same session as the batch — do not let any drift to the next session.
-
 **Trigger:** the user has explicitly confirmed the full test suite is passing (`N passed`) AND has signaled to proceed with documentation updates. Do not start this on Claude's own judgement.
 
-**Order of updates (smallest first to keep momentum):**
+**Order of updates:**
 
 1. Excel (`LG_Pilates_Test_Scenarios.xlsx`) — only if scenario wording changed during the batch
-2. `TEST-PLAN.md` — Coverage Tracker, header, batch summary row, new detailed sections
-3. `context.txt` — header date, helper exports, test count, repo layout, batches list, KEY DECISIONS
-
-Each file is its own `present_files` deliverable. After all three are ready, produce the consolidated push command at the bottom.
+2. `TEST-PLAN.md` — `npm run test-plan` (Step 4)
+3. `context.txt` — header date, helper exports, test count, repo layout, batches list
 
 ---
 
@@ -264,70 +212,12 @@ Touch the Excel only when something in the batch revealed that the canonical sce
 1. Read the current row via `openpyxl` and print what's there before touching it
 2. Update only the columns that need it — never rewrite the whole row
 3. Preserve existing styling: alternating row fills `FFFFFFFF` / `FFEEF5F5`, SQL column (5) uses `FFE8F0FE` pale-blue fill with Courier New 8pt, header style untouched
-4. Save to `/home/claude/LG_Pilates_Test_Scenarios.xlsx` then copy to outputs
+4. Save in place in the repo
 
 **Do NOT touch:**
 - Red-filled rows (those are intentionally inactive duplicates)
 - Header row, column widths, freeze panes
 - Other tabs that the batch didn't visit
-
----
-
-### 4B.2 — TEST-PLAN.md updates
-
-Five distinct edits, in this order:
-
-**(a) Header date and total tests:**
-```markdown
-**Last updated:** [today's date]
-**Total tests:** [N] (14 smoke + 34 CB + 16 PB + 6 SD + 2 ACL + 3 BW + 6 SEC + [EC/AB/AC/etc] count)
-```
-
-**(b) Coverage Tracker summary row** — update the row for the tab this batch touched. Bump Automated up, Outstanding down. Then update the **Totals** row at the bottom.
-
-**(c) Per-tab table** — flip each newly-automated scenario from `⬜ Outstanding` to `✅ [spec-filename].spec.js`. Format must match exactly:
-```markdown
-| EC-01 | Booking a full class is prevented | ✅ ec-01.spec.js | Batch 11 |
-```
-
-**(d) Suggested Batches table** — mark the batch complete with a detailed one-line summary of what each spec proved. Format:
-```markdown
-| Batch [N] ✅ | [Tab name] (part [X]) | [count] | [Detailed sentence-per-spec summary referring to specific mechanisms, helper additions, and any Excel updates made in the same session.] |
-```
-
-The summary should be substantive enough that future Claude can reconstruct what this batch did without opening the specs. Mention any new helpers, fixture changes, or notable mechanism findings.
-
-**(e) Detailed scenario sections** — add a new block for each scenario, inserted after the last existing detailed section (typically below SEC-07 or wherever the previous batch ended). Format matches the established pattern:
-
-```markdown
-### [ID] — [Title matching test.describe block]
-
-**What this proves:** [Plain English business reason — why this test matters to Louise/customers]
-
-**Preconditions:**
-- [What must be true in the test database]
-
-**Mechanism note (if deviating from Excel):** [Only include if the spec works differently to the Excel scenario — explain the actual mechanism and reference the Excel update in 4B.1.]
-
-**Steps the test performs:**
-1. [Step 1]
-2. [Step 2]
-...
-
-**What a fail would mean:**
-[What would be broken in the real system, in plain English. Why Mark/Louise should care.]
-
-**Cleanup:** [afterEach behaviour, OR "No DB state created — no afterEach cleanup is required."]
-
----
-```
-
-**(f) Outstanding totals + next session focus** — near the bottom of TEST-PLAN.md:
-```markdown
-**Outstanding totals:** [N] scenarios across [X] tabs ([today's date]).
-
-**Next session focus:** Batch [N+1] — [name]. See the Suggested Batches table for full batch sequence.
-```
 
 ---
 
@@ -364,46 +254,7 @@ Last updated: [today's date]
 - Remove the just-completed batch from the UPCOMING BATCHES list
 - Update NEXT SESSION FOCUS to point at the next batch
 
-**(f) KEY DECISIONS — append a "SESSION [N] LEARNINGS" block** at the end. Required content:
-- A short title naming the 2-4 main learnings of the session
-- One bullet per learning, no padding, focused on what would save time next session
-
-Template:
-```
-SESSION [N] LEARNINGS — [SHORT TITLE LISTING MAIN TOPICS]
----------------------------------------------------------
-- [Specific gotcha, mechanism finding, helper pitfall, or pattern. State
-  the symptom, the cause, and the fix in compact prose. Reference the
-  spec that surfaced it so future debugging can find context fast.]
-- [Next learning — same compact style.]
-- [...]
-
-```
-
-Only include genuine durable learnings — not session narrative. Rule of thumb: if it would save a future Claude/Mark session real time, include it. If it's a one-off bug fix or session play-by-play, leave it out.
-
----
-
-### 4B.4 — Consolidated push command
-
-After all three (or four, if a new helper was added) files are produced, supply a single push command block that includes only the files that actually changed. Order them logically:
-
-```bash
-cd ~/dev/lg-pilates-booking
-git status
-git add tests-playwright/tests/helpers/[helper].js \
-        tests-playwright/tests/[ec-XX-...].spec.js \
-        [...all new spec files...] \
-        tests-playwright/TEST-PLAN.md \
-        LG_Pilates_Test_Scenarios.xlsx \
-        context.txt
-git commit -m "Batch [N] complete — [Tab name] part [X] ([count] [tab-prefix] specs)"
-git push
-```
-
-Remind Mark to confirm `git status` shows only the expected files before committing.
-
-**Commit message format:** single-line title only. zsh-safe (no em-dashes, no backticks). Same rule as Step 7.
+**(f) Learnings** — durable learnings go in SESSION-LOG.md (session notes) and, if they are lasting gotchas, CLAUDE.md's gotchas section. Only genuine time-savers, not session narrative.
 
 ---
 
@@ -420,63 +271,11 @@ If any check fails, fix before presenting.
 
 ---
 
-## STEP 6 — Present output
+## STEP 6 — Ship
 
-Produce these files in `/mnt/user-data/outputs/`:
-- `tests/cb-XX-*.spec.js` for each new spec (under a `tests/` subdir)
-- `TEST-PLAN.md` (updated)
+Shipping follows the deploy pipeline in CLAUDE.md rule 9 and `/deploy`: `/code-review` → tests → commit/push, with Mark's OK before the push. Report the test count change (e.g. "21 → 28") and the coverage change for the tab.
 
-Use `present_files` to make them downloadable.
-
-In the response message:
-- Confirm the test count change (e.g. "21 → 28")
-- Confirm the CB coverage change (e.g. "7 → 15 of 33")
-- Provide the destination paths in Mark's repo:
-  - Specs go in `~/dev/lg-pilates-booking/tests-playwright/tests/`
-  - TEST-PLAN.md replaces `~/dev/lg-pilates-booking/tests-playwright/TEST-PLAN.md`
-- Provide the run commands:
-  ```
-  cd ~/dev/lg-pilates-booking/tests-playwright
-  npm test
-  ```
-- Provide the commit message (Step 7)
-
----
-
-## STEP 7 — Commit message format
-
-**Single-line title only.** Do not produce multi-line commit messages with em-dashes, backticks, or other special characters. zsh quoting trips on these and Mark's terminal copy-paste fails (Session 10 learning).
-
-Format:
-
-```
-Title: Batch [N] CB tests: CB-AA, CB-BB, CB-CC, CB-DD, CB-EE
-Description: [2-3 sentences on what changed and why]
-```
-
-Mark uses just the title for `git commit -m`. The description is for context in the chat reply, not the commit itself.
-
----
-
-## STEP 8 — End-of-batch verification
-
-After Mark drops files into the repo:
-
-1. Ask him to verify file locations with `ls`
-2. Wait for him to run `npm test` and report back
-3. If all green: provide the push commands
-4. If anything fails: dig into the trace together (always-on traces from Session 10 mean every failure has full forensic evidence)
-
-Push commands:
-```
-cd ~/dev/lg-pilates-booking
-git status
-git add tests-playwright/
-git commit -m "[title from Step 7]"
-git push
-```
-
-If `git status` shows index.html as modified and it shouldn't be (the env switch was already pushed in Session 11), flag it before staging.
+**Commit message:** single-line title only, zsh-safe (no em-dashes, no backticks), e.g. `Batch N CB tests: CB-AA, CB-BB, CB-CC`.
 
 ---
 
@@ -496,18 +295,15 @@ If Mark types "skill?" at any point, it means Claude has skipped or is about to 
 
 ## Quick Reference — Batch Session Checklist
 
-1. Run session-start checks (index.html present, fixture drift, helpers in context)
+1. Run the CLAUDE.md session-start checks; read the helpers from the repo
 2. Confirm batch scope with hard gate phrase
-3. Pre-flight: helpers verified, example spec in context, selectors verified in index.html, Excel scenario wording matches reality, file naming confirmed, fixture-customer collisions scanned (returning-client batches only)
-4. **Throughout the session:** if anything changes from agreed scope (spec deferral, fixture change, obsolete scenario, etc.) STOP and ask in two lines. Self-trigger on phrases like "I'll just" / "easiest thing is" / "let me also". Do NOT update TEST-PLAN.md, context.txt, or Excel until tests are green AND the user has signed off.
+3. Pre-flight: helpers read, example spec read, selectors verified in index.html, Excel scenario wording matches reality, file naming confirmed, fixture-customer collisions scanned (returning-client batches only)
+4. **Throughout the session:** if anything changes from agreed scope (spec deferral, fixture change, obsolete scenario, etc.) STOP and ask in two lines. Self-trigger on phrases like "I'll just" / "easiest thing is" / "let me also". Do NOT update context.txt or Excel, or regenerate TEST-PLAN.md, until tests are green AND the user has signed off.
 5. Write specs following the mandatory structure
-6. Run tests, iterate until green
-7. After user confirms all tests pass AND signals to proceed with documentation:
-   - **STEP 4B routine:** Excel (if scenario wording changed) → TEST-PLAN.md (5 edits) → context.txt (6 edits, including KEY DECISIONS "SESSION [N] LEARNINGS" block)
-8. Self-review against security/code/regression checklist
-9. Produce output files for the entire batch (specs + helper changes + 3 docs), present them with destination paths and run commands
-10. Provide single-line commit message + consolidated push command block
-11. Remind Mark to confirm `git status` shows only the expected files before committing
+6. Self-review against security/code/regression checklist
+7. Run tests, iterate until green
+8. After user confirms all tests pass AND signals to proceed: Excel (if scenario wording changed) → `npm run test-plan` → context.txt
+9. Ship via the deploy pipeline (Step 6)
 
 ---
 
@@ -515,7 +311,7 @@ If Mark types "skill?" at any point, it means Claude has skipped or is about to 
 
 - **Project-level conventions** — see the lgpilates-booking-system skill
 - **Mockup-first UI gating** — that's the mockup-first-ui skill, applies to feature changes not test writing
-- **Code quality review for index.html changes** — that's the code-quality-review skill
+- **Code review for index.html changes** — that's `/code-review` (CLAUDE.md rule 9)
 
 **Excel test scenario updates ARE in scope when:** the wording in `LG_Pilates_Test_Scenarios.xlsx` no longer matches what the system actually does (e.g. references defunct steps, old labels, or skipped transitions). Session 13 hit this — the Excel CB-14 to CB-20 referenced an old 3-step flow when the live system has 4 steps. When this is detected:
 
@@ -526,4 +322,4 @@ If Mark types "skill?" at any point, it means Claude has skipped or is about to 
 
 If a NEW scenario is added (e.g. CB-16b filling a flow gap), confirm whether it should be an "official numbered scenario" in the Excel or remain an unofficial extra. Default recommendation: make it official to avoid confusing gaps in the numbering. Update the Excel total scenario count accordingly.
 
-If the session involves a mix (e.g. a feature change AND new tests for it), all relevant skills apply in their proper order: mockup-first → code-quality-review for index.html → playwright-batch-workflow for the new tests.
+If the session involves a mix (e.g. a feature change AND new tests for it), all relevant skills apply in their proper order: mockup-first → `/code-review` for index.html → playwright-batch-workflow for the new tests.

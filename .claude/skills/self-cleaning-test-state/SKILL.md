@@ -152,10 +152,10 @@ This is fixed by the schema. The deletion order, when manual cleanup is required
 
 After applying self-cleaning to one or more specs:
 
-1. Run the affected spec(s) **twice in a row** without a reseed:
+1. Run the affected spec(s) **twice in a row** without a reseed (`npm test` reseeds first via its `pretest` hook, so call Playwright directly):
    ```
-   npm test -- --grep "CB-XX"
-   npm test -- --grep "CB-XX"
+   npx playwright test --grep "CB-XX"
+   npx playwright test --grep "CB-XX"
    ```
 2. Both runs should pass cleanly — no skips, no failures.
 3. Check the test DB to confirm no orphan customer rows accumulated:
@@ -177,25 +177,6 @@ If either step fails, the cleanup isn't reaching the afterEach — likely a test
 - **Using `test.skip(condition, ...)` as a substitute for cleanup.** This makes the suite green while hiding the fact that the test never actually ran. Self-cleaning should be the default; `test.skip` is reserved for genuine pre-conditions (e.g. a fixture missing entirely).
 - **Deleting `cancellations` rows.** They're audit records. Don't.
 - **Not resyncing `blocks.booked` after raw SQL changes.** The `trg_sync_block_booked_count` trigger only fires on app-level INSERT/DELETE, not on UPDATE or raw SQL. Both helper functions handle this internally — but if you write custom cleanup outside them, you must resync manually.
-
----
-
-## Migration path: applying this skill to existing specs
-
-Specs known to need this pattern (per Session 18 audit):
-
-- CB-01, CB-02 — create per-run new customers
-- CB-03 — books returning-two on mon-current (entry-side cleanup added Session 18)
-- CB-07 — capacity test
-- CB-13 — books returning-two on fri-upcoming (entry-side cleanup added Session 18)
-- CB-31 — duplicate detection
-- CB-32 — books returning-one on fri-upcoming (entry-side cleanup added Session 18)
-- CB-33 — PAR-Q creation
-- PB-09 — creates per-run customer + reserved booking
-- PB-10 — books returning-one on mon-upcoming (entry-side cleanup added Session 18)
-- PB-X4 — full afterEach cleanup added Session 18 (canonical example)
-
-The CB and PB-09/10 specs that currently use entry-side cleanup work correctly but leave per-run state behind. Upgrading them to exit-side `afterEach` cleanup is the "Option B" rollout.
 
 ---
 

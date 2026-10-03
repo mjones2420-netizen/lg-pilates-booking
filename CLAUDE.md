@@ -102,7 +102,7 @@ If drift detected, remind Mark to run: `cd tests-playwright && npm run seed`
 
 ## WORKFLOW — NON-NEGOTIABLE RULES
 
-1. **Mockup first** for any UI change — visual approval before editing index.html. Prefer iterating in the real browser against the test DB over a static mockup (static mockups hide dead-CSS bugs).
+1. **Mockup first** for any UI change — visual approval before the change is kept. The mockup is the change running locally in the real browser against the test DB (static mockups hide dead-CSS bugs); declined = revert with git. Publish screenshots as an Artifact only when Mark asks. Details: `mockup-first-ui` skill.
 2. **One action per response** — stop and ask before acting on anything non-trivial.
 3. **No git push until `npm test` is green** — including any new specs.
 4. **New/changed functionality gets new Playwright specs in the same session.**
