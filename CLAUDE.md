@@ -133,7 +133,7 @@ npm run test-plan          # regenerate TEST-PLAN.md
 ```
 
 In Claude Code: check port 8000 first (reuse, don't stack), start the server in the background, then `npm test`.
-No `--retries` needed. Known occasional parallel flakes (pass isolated): CU-04, CU-08, EC-09, cb-18, cb-30, CB-28, BLW-05, BLW-06, SEC-08 (transient 502).
+No `--retries` needed. A third reporter (`progress-reporter.js`) writes `tests-playwright/.test-progress.json` for the Claude Code test-progress band (`.claude/skills/test-progress/`, gitignored). It is display-only and never affects results. Known occasional parallel flakes (pass isolated): CU-04, CU-08, EC-09, cb-18, cb-30, CB-28, BLW-05, BLW-06, SEC-08 (transient 502).
 
 ---
 
