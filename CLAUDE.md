@@ -278,6 +278,7 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - **Changing anon access to `settings`? Check `.github/workflows/keep-alive.yml` first** — it pings by reading the public `payment_mode` settings row (since #111; the old `lookup_customer` ping broke silently for 5 weeks when that was locked). A failing run now opens a "Keep-alive ping failing" issue.
 - `TEST_APP_URL` already contains `?env=test` — append with `&`, never `/?env=test` (that makes `env` ≠ `test` and the page silently talks to PROD). Ad-hoc scripts: wait for `#test-mode-banner.on` before doing anything.
 - `TEST_BYPASS_ENABLED` secret exists on TEST only — it's what makes caller-supplied `isTest` safe. Never set it on prod.
+- **Never run local tests while a GitHub Actions test run is in progress** (`gh run list --limit 3`). Both use the one TEST database: the local reseed and rate-limit clean-ups break the CI run and vice versa. Session 108's overlap failed the #110 CI run (SEC-16f + 13 flaky) and caused the local WL-08 failures; the next CI run, alone, passed (306 + RP-01 flaky).
 - **CI green ≠ site deployed.** Confirm GitHub Pages by hashing the live page against `git show <sha>:index.html`. Stuck build: `POST /repos/{owner}/{repo}/pages/builds`.
 - Code review reads diffs, it doesn't run the app — always run the full suite for shared-chrome changes (nav, layout).
 - **UI/wording changes to index.html can make a Training Hub lesson stale** — deploy.md step 3b checks and republishes the hub (`docs/training-hub/`).
