@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 2 Oct 2026 (session 105 — #117/#118/#119 shipped, #110 planned)
+Last updated: 3 Oct 2026 (session 106 — config audit, skills fixed, mockup rule)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
