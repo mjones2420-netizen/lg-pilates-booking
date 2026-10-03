@@ -3,41 +3,114 @@ name: Keep Supabase Awake
 # Free-tier Supabase projects auto-pause after 7 days with no API activity
 # (#19). This pings both the test and production projects every 3 days —
 # well inside that window, with margin for GitHub's scheduled jobs not being
-# second-precise. The ping calls lookup_customer with a nonsense email via
-# the public anon key (same key already shipped in index.html) — a
-# read-only RPC that already exists for the public booking flow, returns an
-# empty result for an unknown email, and touches no table data. The bare
-# REST API root (/rest/v1/) was tried first but now 401s for anon keys
-# (UNAUTHORIZED_INVALID_API_KEY_TYPE — introspection is service_role-only on
-# this gateway version), so an anon-permitted RPC call is used instead.
+# second-precise.
+#
+# The ping is a plain anon read of ONE public settings row
+# (settings?key=eq.payment_mode) using the public publishable key (the same
+# key already shipped in index.html). It is a real Postgres query through the
+# REST API, read-only, creates no data, and does not go through any of the
+# throttled Edge Functions. The anon RLS policy (migration 24) allows exactly
+# this row, so a 200 with "payment_mode" in the body proves the database
+# answered.
+#
+# History (#111): this used to call the lookup_customer RPC, which was locked
+# to service-role only in Aug 2026 — every run from 22 Aug returned 401 and
+# nobody noticed for 5 weeks. Hence the alert job below. The bare REST root
+# (/rest/v1/) is also unusable: it 401s for anon keys.
+#
+# If this workflow fails, the "alert" job opens (or comments on) a GitHub
+# issue titled "Keep-alive ping failing" and @mentions the owner, so the
+# failure lands in Mark's notifications/email rather than only the Actions tab.
+#
+# To test the alert on purpose: Actions > Keep Supabase Awake > Run workflow,
+# tick "force_failure". Close the resulting issue afterwards.
 
 on:
   schedule:
     - cron: '0 6 */3 * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      force_failure:
+        description: 'Deliberately fail the ping (to test the failure alert)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PROD_URL: https://mrlooyixnlxzcfmvnqme.supabase.co
+      PROD_ANON_KEY: sb_publishable_8PxvOxmytzkhdMgAuzuKpA_20rZcz_8
+      TEST_URL: https://ngzfhamjuviwfwuncrjo.supabase.co
+      TEST_ANON_KEY: sb_publishable_RgKTW_ZdIxRVy2bBK4sDOw_Vgc65rS2
+      FORCE_FAILURE: ${{ inputs.force_failure || false }}
     steps:
-      - name: Ping production Supabase
+      - name: Ping production and test Supabase
         run: |
-          curl -sf -o /dev/null -w "prod: %{http_code}\n" \
-            -X POST "https://mrlooyixnlxzcfmvnqme.supabase.co/rest/v1/rpc/lookup_customer" \
-            -H "apikey: ${PROD_ANON_KEY}" \
-            -H "Authorization: Bearer ${PROD_ANON_KEY}" \
-            -H "Content-Type: application/json" \
-            -d '{"p_email":"keepalive-ping@example.invalid"}'
-        env:
-          PROD_ANON_KEY: sb_publishable_8PxvOxmytzkhdMgAuzuKpA_20rZcz_8
+          # ping <label> <base-url> <anon-key>
+          # Succeeds only on HTTP 200 AND a body containing the payment_mode
+          # row. One retry after 20s to ride out a transient blip (e.g. a 502).
+          ping() {
+            local label="$1" url="$2" key="$3" body code attempt
+            if [ "$FORCE_FAILURE" = "true" ]; then
+              url="${url}/rest/v1/this-path-does-not-exist-alert-test"
+            else
+              url="${url}/rest/v1/settings?select=key&key=eq.payment_mode"
+            fi
+            for attempt in 1 2; do
+              body=$(curl -sS --max-time 30 -w '\n%{http_code}' "$url" \
+                -H "apikey: ${key}" -H "Authorization: Bearer ${key}") || body=$'\n000'
+              code="${body##*$'\n'}"
+              body="${body%$'\n'*}"
+              if [ "$code" = "200" ] && printf '%s' "$body" | grep -q '"payment_mode"'; then
+                echo "${label}: OK (HTTP ${code})"
+                return 0
+              fi
+              echo "${label}: attempt ${attempt} failed (HTTP ${code})"
+              [ "$attempt" = 1 ] && sleep 20
+            done
+            echo "::error::${label} Supabase ping failed (HTTP ${code})"
+            return 1
+          }
 
-      - name: Ping test Supabase
+          failed=0
+          ping prod "$PROD_URL" "$PROD_ANON_KEY" || failed=1
+          ping test "$TEST_URL" "$TEST_ANON_KEY" || failed=1
+          exit $failed
+
+  alert:
+    needs: ping
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      OWNER: ${{ github.repository_owner }}
+    steps:
+      - name: Open or update the failure issue
         run: |
-          curl -sf -o /dev/null -w "test: %{http_code}\n" \
-            -X POST "https://ngzfhamjuviwfwuncrjo.supabase.co/rest/v1/rpc/lookup_customer" \
-            -H "apikey: ${TEST_ANON_KEY}" \
-            -H "Authorization: Bearer ${TEST_ANON_KEY}" \
-            -H "Content-Type: application/json" \
-            -d '{"p_email":"keepalive-ping@example.invalid"}'
-        env:
-          TEST_ANON_KEY: sb_publishable_RgKTW_ZdIxRVy2bBK4sDOw_Vgc65rS2
+          title="Keep-alive ping failing"
+          msg="@${OWNER} the Keep Supabase Awake workflow failed on $(date -u '+%d %b %Y %H:%M UTC').
+
+          **What it means:** the every-3-days ping that stops the free Supabase databases going to sleep did not get a good answer. If it keeps failing, production can pause after 7 days with no activity and the booking system goes down until it is restored in the Supabase dashboard.
+
+          **What to do:** open the run log below and ask Claude to look at it. Close this issue once a run passes.
+
+          Run log: ${RUN_URL}"
+
+          existing=$(gh issue list --state open --search "\"${title}\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"${title}\") | .number" | head -n1)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$msg"
+            echo "Commented on existing issue #${existing}"
+          else
+            gh issue create --title "$title" --body "$msg"
+          fi
