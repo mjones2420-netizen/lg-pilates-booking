@@ -62,7 +62,7 @@ serve(async (req) => {
     if (customerId != null) {
       const [custRes, parqRes] = await Promise.all([
         adminClient.from("customers").select("customer_type").eq("id", customerId).maybeSingle(),
-        adminClient.from("parq").select("id").eq("customer_id", customerId).limit(1),
+        adminClient.from("parq").select("id,anonymised_at").eq("customer_id", customerId),
       ]);
 
       if (custRes.error || parqRes.error) {
@@ -74,8 +74,12 @@ serve(async (req) => {
         // 'vip' is a valid customer_type (migration 01) and means an
         // established client, so it skips alongside 'returning'.
         const knownClient = type === "returning" || type === "vip";
-        const hasParq = Array.isArray(parqRes.data) && parqRes.data.length > 0;
-        needsHealthForm = !knownClient && !hasParq;
+        const rows = Array.isArray(parqRes.data) ? parqRes.data : [];
+        const hasLiveParq = rows.some((r) => r.anonymised_at == null);
+        // A form cleared under the retention policy (#90) means the client
+        // must be asked again — even an established 'returning' client.
+        const hasErasedParq = rows.some((r) => r.anonymised_at != null);
+        needsHealthForm = !hasLiveParq && (!knownClient || hasErasedParq);
       }
     }
 

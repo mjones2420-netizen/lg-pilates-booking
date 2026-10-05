@@ -51,7 +51,7 @@ serve(async (req) => {
       first_name, last_name, email, phone,
       customer_type, class_name,
       parq_data, success_url, cancel_url, is_test,
-      offer_token,
+      offer_token, terms_version,
     } = await req.json();
 
     if (!class_id || !block_id || !first_name || !last_name || !email ||
@@ -161,6 +161,41 @@ serve(async (req) => {
       verifiedOfferToken = offer_token;
     }
 
+    // T&C / consent versions (#90/#91): check they exist BEFORE Stripe is
+    // contacted — an unknown version found by the webhook would be after the
+    // card is charged. Missing versions are still tolerated while an older
+    // front end may be live.
+    const wantVersions: Array<[unknown, string]> = [
+      [terms_version, "booking_terms"],
+      [parq_data?.declaration_version, "parq_declaration"],
+      [parq_data?.health_consent_version, "health_consent"],
+    ];
+    for (const [ver, kind] of wantVersions) {
+      if (ver == null) continue;
+      const { data: tv, error: tvErr } = typeof ver === "string"
+        ? await adminClient.from("terms_versions").select("version")
+            .eq("version", ver).eq("kind", kind).maybeSingle()
+        : { data: null, error: null };
+      if (tvErr) {
+        console.error("terms_versions lookup failed:", tvErr);
+        return new Response(JSON.stringify({ error: "Could not verify terms" }), {
+          status: 500,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        });
+      }
+      if (!tv) {
+        return new Response(JSON.stringify({ error: "Unknown terms version" }), {
+          status: 400,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        });
+      }
+    }
+    const nowIso = new Date().toISOString();
+    // Server-side consent timestamp: the customer's clock is never trusted.
+    const verifiedParq = parq_data
+      ? { ...parq_data, health_consent_at: parq_data.health_consent_version ? nowIso : null }
+      : null;
+
     // Insert pending_bookings row — holds booking intent until Stripe webhook confirms
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
     const { data: pendingRow, error: pendingErr } = await adminClient
@@ -169,9 +204,11 @@ serve(async (req) => {
         class_id, block_id,
         first_name, last_name, email, phone: phone || "",
         customer_type, amount_pence: verifiedAmountPence,
-        parq_data: parq_data || null,
+        parq_data: verifiedParq,
         expires_at: expiresAt,
         offer_token: verifiedOfferToken,
+        terms_version: terms_version ?? null,
+        terms_accepted_at: terms_version ? nowIso : null,
       })
       .select("id")
       .single();

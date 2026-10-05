@@ -100,6 +100,7 @@ Moves the booking system from GitHub Pages to its final home at `book.lg-pilates
 | 18 | — | Reminder: hidden = unlinked + no Google, **not** password-protected. Don't share the URL publicly. |
 | 19a | CLAUDE | Add browser security headers (CSP etc.) to the booking site — GitHub Pages can't, Netlify can ([#99](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/99)). CSP must allow Stripe + Supabase; full suite + manual Stripe test after. |
 | 19b | CLAUDE | Swap the 9 header links from `new-lg-website.netlify.app` to `lg-pilates.co.uk` ([#113](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/113)). |
+| 19c | MARK + CLAUDE | **Repoint the HetrixTools "Booking site" monitor** ([#98](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/98)) from the GitHub Pages `health.txt` to `https://book.lg-pilates.co.uk/health.txt` (the file is already in the repo root, so it ships with the first Netlify deploy). Every 10 min from 3 locations ≈ 3 Netlify credits/month — never point it at the full page (~400 KB). Delete or pause the old Pages monitor. |
 | 19 | CLAUDE | Update `DASHBOARD_URL` in `send-email` (test + prod) from the GitHub Pages address to `book.lg-pilates.co.uk`, then redeploy. Fixes the admin alert email's "View in dashboard" link ([#77](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/77)). |
 
 > **ROLLBACK (Phase 1.5):** nothing customer-facing changed — delete the `book` DNS record if needed and the old GitHub Pages address still works.

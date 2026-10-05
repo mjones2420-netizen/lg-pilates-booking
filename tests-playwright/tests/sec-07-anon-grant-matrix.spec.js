@@ -63,6 +63,9 @@ const FORBIDDEN_ANON_TABLES = [
   'waitlist',
   'customer_class_priority',
   'pending_bookings',
+  // #90/#91 (migration 34): admin-read only.
+  'terms_versions',
+  'data_protection_log',
 ];
 
 test.describe('SEC-07 — Anon grant matrix audit', () => {

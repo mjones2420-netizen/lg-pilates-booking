@@ -37,6 +37,7 @@ const GROUPS = [
   ['Reports (RP)', 'rp'],
   ['Mobile Dashboard (MB)', 'mb'],
   ['Waiting List (WL)', 'wl'],
+  ['Data Protection (DP)', 'dp'],
 ];
 
 function getRows() {

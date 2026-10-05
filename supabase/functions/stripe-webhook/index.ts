@@ -526,6 +526,17 @@ serve(async (req) => {
       stripe_checkout_session_id: session.id || null,
     }).eq("id", bookingId);
 
+    // Record which T&Cs were agreed, and when (#91). Kept OUT of the update
+    // above and out of book_if_available: a problem here must never leave a
+    // paid booking unconfirmed. The time is when they agreed at checkout.
+    if (pending.terms_version) {
+      const { error: termsErr } = await adminClient.from("bookings").update({
+        terms_version: pending.terms_version,
+        terms_accepted_at: pending.terms_accepted_at || new Date().toISOString(),
+      }).eq("id", bookingId).select("id");
+      if (termsErr) console.warn("terms record failed (non-fatal):", termsErr.message, "booking:", bookingId);
+    }
+
     // Save PAR-Q for new clients (non-fatal if it fails)
     if (pending.customer_type === "new" && pending.parq_data) {
       try {
@@ -541,6 +552,11 @@ serve(async (req) => {
           additional_notes: p.additional_notes,
           print_name: p.print_name,
           sign_date: p.sign_date,
+          // Consent record (#90). Versions were checked by stripe-checkout;
+          // health_consent_at was stamped there, server-side.
+          declaration_version: p.declaration_version ?? null,
+          health_consent_version: p.health_consent_version ?? null,
+          health_consent_at: p.health_consent_version ? (p.health_consent_at ?? new Date().toISOString()) : null,
         };
         if (p.answers) {
           for (const key of PARQ_QUESTION_KEYS) {

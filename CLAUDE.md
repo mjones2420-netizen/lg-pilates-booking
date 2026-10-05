@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 3 Oct 2026 (session 107 — #116 pop-ups, #111 keep-alive, #110 waitlist email confirmation)
+Last updated: 5 Oct 2026 (session 109 — #98 uptime monitor, #90/#91 data protection built + tested, not live)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -84,7 +84,8 @@ Healthy: all `drift_warning` = NULL.
 SELECT
   (SELECT COUNT(*) FROM customers
    WHERE email LIKE 'cb%-%@test.example'
-      OR email LIKE 'pb%-%@test.example')               AS stray_test_customers,
+      OR email LIKE 'pb%-%@test.example'
+      OR email LIKE 'dp%-%@test.example')               AS stray_test_customers,
   (SELECT COUNT(*) FROM blocks
    WHERE status IN ('active','upcoming')
      AND booked >= cap AND cap > 2)                     AS unexpectedly_full_blocks;
@@ -149,7 +150,7 @@ No `--retries` needed. A third reporter (`progress-reporter.js`) writes `tests-p
 | `PAYMENT-MODE-SPEC.md` | Stripe integration spec |
 | `EMAIL-NOTIFICATIONS-SPEC.md` | Email spec |
 | `supabase/functions/` | Edge Function source (stripe-checkout, stripe-webhook, stripe-refund, send-email, lookup-customer-throttled, join-waitlist-throttled; shared code in `_shared/throttle.ts`) |
-| `tests-playwright/migrations/` | SQL migrations (latest: 33_waitlist_email_confirmation; 32_practice_full_class is a TEST fixture only, never prod) |
+| `tests-playwright/migrations/` | SQL migrations (latest: 34_data_protection_consent — TEST only until #90 ships; 32_practice_full_class is a TEST fixture only, never prod) |
 | `tests-playwright/tests/helpers/` | Shared test helpers |
 | `.claude/commands/deploy.md` | Deploy pipeline (local only, gitignored) |
 | `docs/training-hub/` | Training Hub source (#114): `template.html` lessons, `build.js`, read-only screenshot scripts `capture*.js` (`capture-emails.js` renders the real email templates offline, #120). Published to a private artifact (URL in memory / SESSION-LOG session 102) |
@@ -172,14 +173,15 @@ No `--retries` needed. A third reporter (`progress-reporter.js`) writes `tests-p
 ## DATABASE — QUICK REFERENCE
 
 Tables: `classes`, `blocks`, `bookings`, `customers`, `parq`, `settings`, `cancellations`,
-`waitlist`, `waitlist_requests` (#110, unconfirmed joins — no anon/auth access), `pending_bookings`, `customer_class_priority`, `catch_up_swaps`, `admin_users`
+`waitlist`, `waitlist_requests` (#110, unconfirmed joins — no anon/auth access), `pending_bookings`, `customer_class_priority`, `catch_up_swaps`, `admin_users`,
+`terms_versions` + `data_protection_log` (#90/#91, admin-read only; migration 34 — schema notes in context.txt section 4)
 
 Admin gate: `is_admin()` (checks `admin_users`) — RLS policies use it, not bare `authenticated`.
 
 Key SECURITY DEFINER functions:
-- Public (anon): `upsert_customer`, `book_if_available` (5-arg, `p_offer_token`), `check_priority_access`, `has_active_booking_on_block`, `insert_parq`, `get_offer_details`, `booking_confirmed_for_session`, `confirm_waitlist_request` (token from the #110 email)
-- Admin only: `record_catch_up_swap`, `offer_waitlist_space`, `release_waitlist_hold`, `admin_delete_block/class/customer`, `admin_remove_from_block`
-- Service role only: `request_waitlist_join` (public join since #110; creates a request + email), `lookup_customer` and `join_waitlist` (tests seed queues with it; browser goes via the `lookup-customer-throttled` / `join-waitlist-throttled` Edge Functions), `check_rate_limit` (shared per-IP limiter, `rate_limits` table keyed by bucket + IP; IPv6 counted per /64)
+- Public (anon): `upsert_customer`, `book_if_available` (5-arg `p_offer_token` on prod; 6-arg + `p_terms_version` on TEST since migration 34), `check_priority_access`, `has_active_booking_on_block`, `insert_parq`, `get_offer_details`, `booking_confirmed_for_session`, `confirm_waitlist_request` (token from the #110 email)
+- Admin only: `record_catch_up_swap`, `offer_waitlist_space`, `release_waitlist_hold`, `admin_delete_block/class/customer`, `admin_remove_from_block`, `admin_parq_retention_preview`, `admin_anonymise_customer_parq`, `admin_export_customer`
+- Service role only: `anonymise_stale_parq` (nightly cron, OFF until `settings.parq_retention_months` exists; specs must always pass a customer id), `request_waitlist_join` (public join since #110; creates a request + email), `lookup_customer` and `join_waitlist` (tests seed queues with it; browser goes via the `lookup-customer-throttled` / `join-waitlist-throttled` Edge Functions), `check_rate_limit` (shared per-IP limiter, `rate_limits` table keyed by bucket + IP; IPv6 counted per /64)
 
 Stripe columns on `bookings`: `stripe_payment_intent_id`, `stripe_checkout_session_id` (nullable).
 `settings.payment_mode`: `'bank_transfer'` (default) or `'stripe'`. Anon can read only the public settings keys (not `admin_email`).
@@ -227,12 +229,12 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 
 ## CURRENT STATE (snapshot — the board is the truth for priorities)
 
-- **Tests**: 322 (session 107; CU-06 flaked once under load, passes isolated).
+- **Tests**: 344 (session 109, all green locally — includes 22 DP data-protection tests; the #90 code is not pushed yet).
 - **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71 closed) with **email confirmation** (#110, session 107), customer/problem **pop-ups** (#116).
 - **Prod Edge Function versions**: send-email v16, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v2, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).
 - **New website LIVE at lg-pilates.co.uk** (DNS cutover 12 Sep 2026). **Release Phases 0 and 1 COMPLETE** (#63, #64 closed 28 Sep). **Next: Phase 1.5** (#65) — decide the Netlify-credit question first (see RELEASE-PLAN.md).
-- **Shipped session 107:** #116, #111 (keep-alive green again + failure alert issue), #110. **Next:** Mark re-runs the prod waiting-list walkthrough (37 steps; first real confirmation email = steps 4–4c). #123 (Training Hub messages page, High).
+- **Session 109:** #98 uptime monitor LIVE (HetrixTools, every 10 min, 3 locations: booking-site `health.txt` + PROD DB check; website monitor waits for the 7 Oct website push). **#90/#91 data protection built, reviewed and green on TEST, committed LOCALLY (the commit titled "Data protection for health forms..."), NOT pushed.** ⚠️ **Do not push this repo until the #90 rollout:** any push sends it live, and the new page needs migration 34 on PROD, so prod bookings would break. Order: website #51 (`/privacy`) live → prod migration 34 (Mark pastes) → prod functions (lookup, checkout, webhook) → push. Steps are on #90. Retention switch-on (12 months) is a separate later step. **Next:** the 7 Oct website push, then the #90 rollout; prod waiting-list walkthrough re-run still due.
 - **Open risks / follow-ups**:
   - Keep-alive (#111 fixed): a failing run now opens a "Keep-alive ping failing" issue that emails Mark. GitHub can still silently disable schedules after 60 days of repo inactivity — outside monitor is #98.
   - Free-plan Supabase = **no usable backups** (#96) and no leaked-password check (#21). Supabase Pro (~$25/mo) would cover backups, pausing and leak-check — weigh at #96.
@@ -275,7 +277,8 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - Functions importing `_shared/` deploy fine with the CLI (it uploads the shared file). Via MCP `deploy_edge_function`, pass files as `<fn>/index.ts` + `_shared/throttle.ts` with entrypoint `<fn>/index.ts`.
 - If `supabase` exits 137 instantly (even `--version`), the binary is being killed by macOS — `brew reinstall supabase` fixes it (session 99).
 - Edge Function test/prod parity is NOT checked by `schema-check` — verify manually (`supabase functions download` + diff).
-- **Changing anon access to `settings`? Check `.github/workflows/keep-alive.yml` first** — it pings by reading the public `payment_mode` settings row (since #111; the old `lookup_customer` ping broke silently for 5 weeks when that was locked). A failing run now opens a "Keep-alive ping failing" issue.
+- Type-check an Edge Function before deploying: `cd supabase/functions && deno check <fn>/index.ts` (Deno installed via Homebrew, session 109).
+- **Changing anon access to `settings`? Check `.github/workflows/keep-alive.yml` AND the HetrixTools "Database" monitor (#98) first** — both read the public `payment_mode` settings row (the monitor via `?apikey=` in the URL; free HetrixTools can't send headers). The old `lookup_customer` ping broke silently for 5 weeks when that was locked. A failing keep-alive run opens a "Keep-alive ping failing" issue; the monitor emails Mark.
 - `TEST_APP_URL` already contains `?env=test` — append with `&`, never `/?env=test` (that makes `env` ≠ `test` and the page silently talks to PROD). Ad-hoc scripts: wait for `#test-mode-banner.on` before doing anything.
 - `TEST_BYPASS_ENABLED` secret exists on TEST only — it's what makes caller-supplied `isTest` safe. Never set it on prod.
 - **Never run local tests while a GitHub Actions test run is in progress** (`gh run list --limit 3`). Both use the one TEST database: the local reseed and rate-limit clean-ups break the CI run and vice versa. Session 108's overlap failed the #110 CI run (SEC-16f + 13 flaky) and caused the local WL-08 failures; the next CI run, alone, passed (306 + RP-01 flaky).

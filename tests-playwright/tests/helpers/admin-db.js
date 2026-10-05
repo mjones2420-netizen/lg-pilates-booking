@@ -332,13 +332,14 @@ async function countBookingsForCustomerOnBlock(customerId, blockId) {
  * lifecycle in specs that need a pre-existing pending row (e.g. ST-18).
  * Returns the new row's UUID id.
  */
-async function insertPendingBooking({ classId, blockId, firstName, lastName, email, phone, customerType, amountPence, parqData = null }) {
+async function insertPendingBooking({ classId, blockId, firstName, lastName, email, phone, customerType, amountPence, parqData = null, termsVersion = null, termsAcceptedAt = null }) {
   const { rows } = await getPool().query(
     `INSERT INTO pending_bookings
-       (class_id, block_id, first_name, last_name, email, phone, customer_type, amount_pence, parq_data, created_at, expires_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, NOW(), NOW() + INTERVAL '2 hours')
+       (class_id, block_id, first_name, last_name, email, phone, customer_type, amount_pence, parq_data, created_at, expires_at,
+        terms_version, terms_accepted_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, NOW(), NOW() + INTERVAL '2 hours', $10, $11)
      RETURNING id`,
-    [classId, blockId, firstName, lastName, email, phone, customerType, amountPence, parqData]
+    [classId, blockId, firstName, lastName, email, phone, customerType, amountPence, parqData, termsVersion, termsAcceptedAt]
   );
   return rows[0].id;
 }
@@ -480,6 +481,54 @@ async function getBlockWaitCount(blockId) {
   return rows[0] ? rows[0].wait : null;
 }
 
+// ── Data protection (#90/#91, migration 34) ────────────────────────────────
+
+/**
+ * Runs the PAR-Q retention clear-down. ALWAYS pass customerId: the test DB is
+ * shared, and a global run would clear other specs' (and fixtures') forms.
+ * `asOf` (YYYY-MM-DD) fakes "today"; `months` overrides the settings row.
+ * Returns the number of parq rows cleared.
+ */
+async function runAnonymise({ customerId, asOf = null, months = null }) {
+  if (!customerId) throw new Error('[admin-db] runAnonymise needs a customerId (shared test DB)');
+  const { rows } = await getPool().query(
+    `SELECT public.anonymise_stale_parq(COALESCE($1::date, CURRENT_DATE), $2::int, $3::int) AS n`,
+    [asOf, customerId, months]
+  );
+  return Number(rows[0].n);
+}
+
+/** All parq rows for a customer (oldest first). */
+async function getAllParqByCustomerId(customerId) {
+  const { rows } = await getPool().query(
+    `SELECT * FROM parq WHERE customer_id = $1 ORDER BY id`, [customerId]);
+  return rows;
+}
+
+/** data_protection_log rows for a customer (oldest first). */
+async function getDataProtectionLog(customerId) {
+  const { rows } = await getPool().query(
+    `SELECT * FROM data_protection_log WHERE customer_id = $1 ORDER BY id`, [customerId]);
+  return rows;
+}
+
+/** Spec clean-up: log rows have no FK, so they outlive the customer. */
+async function deleteDataProtectionLog(customerId) {
+  await getPool().query(`DELETE FROM data_protection_log WHERE customer_id = $1`, [customerId]);
+}
+
+/** Removes a settings row (e.g. parq_retention_months after DP-09). */
+async function deleteSetting(key) {
+  await getPool().query(`DELETE FROM settings WHERE key = $1`, [key]);
+}
+
+/** A terms_versions row by version, or null. */
+async function getTermsVersion(version) {
+  const { rows } = await getPool().query(
+    `SELECT * FROM terms_versions WHERE version = $1`, [version]);
+  return rows[0] || null;
+}
+
 module.exports = {
   getPool,
   closePool,
@@ -512,5 +561,11 @@ module.exports = {
   getWaitlistRequest,
   getWaitlistRow,
   offerWaitlistRowDirect,
-  getBlockWaitCount
+  getBlockWaitCount,
+  runAnonymise,
+  getAllParqByCustomerId,
+  getDataProtectionLog,
+  deleteDataProtectionLog,
+  deleteSetting,
+  getTermsVersion
 };

@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 3 Oct 2026
-**Total tests:** 322
+**Last updated:** 5 Oct 2026
+**Total tests:** 344
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -444,6 +444,33 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `wl-23-waitlist-email-confirm.spec.js` | WL-28 — resends reuse the same link, keep the first details and stop after three |
 | `wl-23-waitlist-email-confirm.spec.js` | WL-29 — confirming never rewrites an existing customer |
 | `wl-23-waitlist-email-confirm.spec.js` | WL-30 — the practice copy shows a confirmation-link button instead of an email |
+
+## Data Protection (DP) — 22 tests
+
+| Spec file | Test |
+|---|---|
+| `dp-01-health-consent-required.spec.js` | continue is blocked until the consent box is ticked, and the privacy link is correct |
+| `dp-02-new-client-consent-recorded.spec.js` | booking and health form carry version records with server timestamps |
+| `dp-03-returning-client-terms-recorded.spec.js` | returning client skips the health form and the booking records the terms version |
+| `dp-04-versioned-text-matches-db.spec.js` | T&Cs, declaration and consent text each equal their terms_versions row |
+| `dp-05-terms-version-validation.spec.js` | unknown versions are rejected; a missing version is still accepted |
+| `dp-06-stripe-path-consent.spec.js` | checkout rejects an unknown terms version before Stripe |
+| `dp-06-stripe-path-consent.spec.js` | checkout stores the terms record and stamps consent time server-side |
+| `dp-06-stripe-path-consent.spec.js` | webhook copies terms onto the booking and consent onto the parq row |
+| `dp-07-anonymise-stale-parq.spec.js` | a form older than the retention period is cleared and logged; the rest survives |
+| `dp-08-active-customers-protected.spec.js` | a booking on a block ending inside the window protects them |
+| `dp-08-active-customers-protected.spec.js` | being on a waiting list protects them |
+| `dp-08-active-customers-protected.spec.js` | a card payment in progress protects them |
+| `dp-08-active-customers-protected.spec.js` | a health form submitted inside the window protects them |
+| `dp-09-retention-setting-guards.spec.js` | missing, junk or too-small settings do nothing; 12 clears |
+| `dp-10-cleared-client-asked-again.spec.js` | returning client with a cleared form lands on the Medical step |
+| `dp-11-admin-view-cleared-parq.spec.js` | cleared form shows the retention note, no answers, and the terms row |
+| `dp-12-admin-export-customer.spec.js` | download contains the client's records and is logged |
+| `dp-13-admin-delete-health-form.spec.js` | clears only the chosen client's form and keeps their booking |
+| `dp-14-delete-customer-cleans-extras.spec.js` | waiting-list requests and expired card attempts go; live checkout and cancellation stay |
+| `dp-15-grants-and-cron.spec.js` | anon is locked out of the new tables and RPCs |
+| `dp-15-grants-and-cron.spec.js` | a signed-in non-admin is rejected by every admin RPC |
+| `dp-15-grants-and-cron.spec.js` | the nightly clear-down job is scheduled |
 
 ---
 

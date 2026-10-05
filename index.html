@@ -1318,7 +1318,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
 
           <div class="parq-declaration">
             <div class="parq-section-title">Declaration</div>
-            <p>I have answered all the questions on this form honestly and I am aware that if I answered YES to any of the questions I will need to consult my doctor before taking part in the class. I am aware that if my circumstances in health or medical conditions change I must notify my instructor, and it is my responsibility to do so.</p>
+            <p id="parq-declaration-text">I have answered all the questions on this form honestly and I am aware that if I answered YES to any of the questions I will need to consult my doctor before taking part in the class. I am aware that if my circumstances in health or medical conditions change I must notify my instructor, and it is my responsibility to do so.</p>
             <div class="frow" style="margin-top:14px">
               <div><label class="flbl">Print Name <span class="req">*</span></label><input type="text" class="finp" id="b-print-name" placeholder="Full name" maxlength="100" style="margin-bottom:0"></div>
               <div><label class="flbl">Date</label><div class="finp" id="b-sign-date" style="margin-bottom:0;background:#f5f5f5;color:var(--light);cursor:default"></div></div>
@@ -1329,6 +1329,11 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
               I agree to the declaration above <span class="req">*</span>
             </label>
             <div class="field-err" id="err-agree">You must agree to the declaration to continue.</div>
+            <label class="returning-lbl" style="margin-top:10px">
+              <input type="checkbox" id="b-health-consent">
+              <span id="health-consent-text">I agree to LG Pilates keeping my health answers.</span> <a href="https://lg-pilates.co.uk/privacy" target="_blank" rel="noopener" id="privacy-link" onclick="event.stopPropagation()">Privacy notice</a> <span class="req">*</span>
+            </label>
+            <div class="field-err" id="err-health-consent">You must agree to us keeping your health answers to continue.</div>
           </div>
 
           <div class="frow-btns" style="margin-top:16px">
@@ -1398,7 +1403,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
             <div style="padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border);">
               <span style="font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:var(--light);font-weight:600;">Terms &amp; Conditions</span>
             </div>
-            <div style="padding:12px 14px;font-size:12px;line-height:1.7;color:var(--mid);">
+            <div id="tcs-text" style="padding:12px 14px;font-size:12px;line-height:1.7;color:var(--mid);">
               <ul style="margin:0;padding-left:1.1rem;">
                 <li style="margin-bottom:5px">Payment is to be made before the start of a block, no later than 48 hours.</li>
                 <li style="margin-bottom:5px">Blocks will run between 4&ndash;6 weeks dependent on school holidays, instructor holiday or venue availability.</li>
@@ -1742,6 +1747,14 @@ const TEST_SUPABASE_KEY = "sb_publishable_RgKTW_ZdIxRVy2bBK4sDOw_Vgc65rS2";
 const SUPABASE_URL = IS_TEST_ENV ? TEST_SUPABASE_URL : PROD_SUPABASE_URL;
 const SUPABASE_KEY = IS_TEST_ENV ? TEST_SUPABASE_KEY : PROD_SUPABASE_KEY;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Versions of the wording customers agree to (#90/#91). Each must match a
+// terms_versions row whose body is the rendered text of #tcs-text /
+// #parq-declaration-text / #health-consent-text (spec DP-04 checks). To change
+// the wording: edit the text, bump the version here, add a migration row.
+const TERMS_VERSION = "tcs-2026-10";
+const PARQ_DECLARATION_VERSION = "parq-decl-2026-10";
+const HEALTH_CONSENT_VERSION = "health-consent-2026-10";
 
 // Visible TEST MODE banner — only injected when running against the test
 // project. Production visitors see nothing. Also serves as the Playwright
@@ -2120,6 +2133,7 @@ function openModal(classId, blockId) {
     signDateEl.setAttribute("data-iso",y+"-"+mo+"-"+d);
   }
   if(document.getElementById("b-declaration")) document.getElementById("b-declaration").checked=false;
+  if(document.getElementById("b-health-consent")) document.getElementById("b-health-consent").checked=false;
   if(document.getElementById("parq-yes-section")) document.getElementById("parq-yes-section").style.display="none";
   for(var qi=1;qi<=12;qi++){
     document.querySelectorAll("input[name=\"q"+qi+"\"][value=\"No\"]").forEach(function(r){ r.checked=true; });
@@ -2785,6 +2799,7 @@ function goStep2b(){
   var ag=document.getElementById("b-declaration").checked;
   if(!pn) errors.push("Please print your name in the declaration");
   if(!ag) errors.push("You must agree to the declaration to continue");
+  if(!document.getElementById("b-health-consent").checked) errors.push("You must agree to us keeping your health answers to continue");
   if(errors.length>0){ showValidationToast(errors); return; }
   document.getElementById("step-2a").style.display="none";
   document.getElementById("step-2b").style.display="block";
@@ -3268,7 +3283,9 @@ function confirmBooking(){
             emergency_relationship:parqData.emergencyRelationship, emergency_phone:parqData.emergencyPhone,
             yes_details:parqData.details, additional_notes:parqData.other,
             print_name:parqData.printName, sign_date:parqData.signDate,
-            answers:parqAnswers
+            answers:parqAnswers,
+            declaration_version:PARQ_DECLARATION_VERSION,
+            health_consent_version:HEALTH_CONSENT_VERSION
           };
         }
         var pendingFetch=await fetch(SUPABASE_URL+"/functions/v1/stripe-checkout",{
@@ -3286,6 +3303,7 @@ function confirmBooking(){
             // stripe-checkout validates the hold BEFORE contacting Stripe, so a
             // dead token fails without anyone being charged (#74).
             offer_token:(offerState && offerState.blockId===blk.id)?offerState.token:null,
+            terms_version:TERMS_VERSION,
             is_test:IS_TEST_ENV
           })
         });
@@ -3313,7 +3331,8 @@ function confirmBooking(){
         p_block_id: blk.id,
         p_class_id: c.id,
         p_customer_id: customerId,
-        p_amount_due: calcProrata(blk).totalPrice
+        p_amount_due: calcProrata(blk).totalPrice,
+        p_terms_version: TERMS_VERSION
       };
       if(offerState && offerState.blockId===blk.id) bookArgs.p_offer_token=offerState.token;
       var bookRes=await sb.rpc("book_if_available", bookArgs);
@@ -3367,7 +3386,9 @@ function confirmBooking(){
             p_yes_details:parqData.details, p_additional_notes:parqData.other,
             p_emergency_name:parqData.emergencyName, p_emergency_relationship:parqData.emergencyRelationship,
             p_emergency_phone:parqData.emergencyPhone,
-            p_print_name:parqData.printName, p_sign_date:parqData.signDate
+            p_print_name:parqData.printName, p_sign_date:parqData.signDate,
+            p_declaration_version:PARQ_DECLARATION_VERSION,
+            p_health_consent_version:HEALTH_CONSENT_VERSION
           });
         }catch(parqErr){ console.error("PAR-Q save error (booking still saved):",parqErr); }
       }
@@ -3603,7 +3624,7 @@ function renderDashboard(){
       }
       // Load bookings
       var bookingsRes=await sb.from("bookings")
-        .select("id,status,amount_due,refund_amount,block_id,class_id,customer_id,stripe_payment_intent_id,created_at")
+        .select("id,status,amount_due,refund_amount,block_id,class_id,customer_id,stripe_payment_intent_id,created_at,terms_version,terms_accepted_at")
         .order("created_at",{ascending:false});
       var dbBookings=bookingsRes.data;
       var bookingsErr=bookingsRes.error;
@@ -3631,6 +3652,7 @@ function renderDashboard(){
           paid:b.amount_due, status:b.status, refundAmount:b.refund_amount,
           createdAt:b.created_at,
           stripePaymentIntentId:b.stripe_payment_intent_id||null,
+          termsVersion:b.terms_version||null, termsAcceptedAt:b.terms_accepted_at||null,
           day:cls.day||"",
           blockPast:isBlockPast(blk)
         };
@@ -3642,7 +3664,7 @@ function renderDashboard(){
       // has no row in the parq table.
       var parqMissingIds={};
       try{
-        var parqRes=await sb.from("parq").select("booking_id");
+        var parqRes=await sb.from("parq").select("booking_id").is("anonymised_at",null);
         var parqBookingIds={};
         if(parqRes.data) parqRes.data.forEach(function(p){ if(p.booking_id) parqBookingIds[p.booking_id]=true; });
         bookings.forEach(function(b){
@@ -4018,7 +4040,7 @@ function renderReportsPage(){
       document.getElementById("rpt-new-lbl").textContent="New — "+newClients+(total>0?" ("+Math.round(newClients/total*100)+"%)":"");
 
       // PAR-Q count
-      var{data:parqs}=await sb.from("parq").select("customer_id");
+      var{data:parqs}=await sb.from("parq").select("customer_id").is("anonymised_at",null);
       var uniqueParq=new Set((parqs||[]).map(function(p){ return p.customer_id; })).size;
       document.getElementById("rpt-parq-count").textContent=uniqueParq;
 
@@ -4090,9 +4112,19 @@ function renderCustomersTab(){
         html+='<td class="m-badge">'+overallBadge+'</td>';
         var detailBtn=relevantClasses.length>0
           ?'<button class="act cust-perclass-btn" style="font-size:11px;" onclick="toggleCustPriorityPanel('+cu.id+')">Per-class &#8964;</button>'
-          :'—';
-        html+='<td>'+detailBtn+'</td>';
+          :'';
+        var dataBtn='<button class="act cust-data-btn" style="font-size:11px;" onclick="toggleCustDataPanel('+cu.id+')">Data &#8964;</button>';
+        html+='<td style="white-space:nowrap;">'+detailBtn+(detailBtn?' ':'')+dataBtn+'</td>';
         html+='</tr>';
+        // Data-protection actions (#90): export, delete health form, delete customer.
+        html+='<tr id="cust-data-'+cu.id+'" class="m-plain" style="display:none;"><td colspan="6" style="padding:10px 14px 14px;background:var(--warm);">';
+        html+='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">';
+        html+='<button class="act" style="font-size:11px;" onclick="exportCustomerData('+cu.id+')">Download data</button>';
+        html+='<button class="act act-delete" style="font-size:11px;" onclick="deleteCustomerHealthForm('+cu.id+')">Delete health form now</button>';
+        html+='<button class="act act-delete" style="font-size:11px;" onclick="deleteCustomerById('+cu.id+')">Delete customer completely</button>';
+        html+='</div>';
+        html+='<div style="font-size:11px;color:var(--light);margin-top:8px;">For data requests: download sends them a copy; deleting the health form keeps their bookings (they refill it next time); full delete keeps cancellation records for accounts.</div>';
+        html+='</td></tr>';
         if(relevantClasses.length>0){
           // m-plain keeps the mobile card styling off this row — it is a panel
           // toggled by toggleCustPriorityPanel(), not an expandable record.
@@ -4129,6 +4161,54 @@ function renderCustomersTab(){
 function toggleCustPriorityPanel(customerId){
   var panel=document.getElementById("cust-panel-"+customerId);
   panel.style.display=panel.style.display==="none"?"":"none";
+}
+
+function toggleCustDataPanel(customerId){
+  var panel=document.getElementById("cust-data-"+customerId);
+  panel.style.display=panel.style.display==="none"?"":"none";
+}
+
+// Data-protection actions on the Clients page (#90). confirm() matches the
+// existing All Bookings delete; specs accept it with page.on('dialog').
+function exportCustomerData(customerId){
+  (async function(){
+    try{
+      var{data,error}=await sb.rpc("admin_export_customer",{p_customer_id:customerId});
+      if(error) throw error;
+      var d=new Date();
+      var stamp=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+      var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+      var a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download="lgpilates-customer-"+customerId+"-"+stamp+".json";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); },1000);
+      showToast("Client data downloaded.");
+    }catch(err){ console.error(err); showNotice("Couldn't download this client's data. Please try again."); }
+  })();
+}
+
+function deleteCustomerHealthForm(customerId){
+  if(!confirm("Delete this client's health form now? Their bookings are kept, and they'll be asked to fill in a new one next time they book. This cannot be undone.")) return;
+  (async function(){
+    try{
+      var{data,error}=await sb.rpc("admin_anonymise_customer_parq",{p_customer_id:customerId});
+      if(error) throw error;
+      showToast(data>0?"Health form deleted.":"No health form on file to delete.");
+    }catch(err){ console.error(err); showNotice("Couldn't delete the health form. Please try again."); }
+  })();
+}
+
+function deleteCustomerById(customerId){
+  if(!confirm("Delete this client and ALL their bookings? Cancellation records are kept for your accounts. This cannot be undone.")) return;
+  (async function(){
+    try{
+      var{error}=await sb.rpc("admin_delete_customer",{p_customer_id:customerId});
+      if(error) throw error;
+      showToast("Client deleted.");
+      renderCustomersTab();
+    }catch(err){ console.error(err); showNotice("Couldn't delete this client. Please try again."); }
+  })();
 }
 
 function toggleClassPriority(customerId, classId, currentlyGranted){
@@ -5828,7 +5908,7 @@ function viewBooking(idx){
       var p=parqData&&parqData.length>0?parqData[0]:null;
       var parqFromPrevious=false;
       if(!p&&b.customerId){
-        var{data:fallback}=await sb.from("parq").select("*").eq("customer_id",b.customerId).order("created_at",{ascending:false}).limit(1);
+        var{data:fallback}=await sb.from("parq").select("*").eq("customer_id",b.customerId).order("anonymised_at",{ascending:false,nullsFirst:true}).order("created_at",{ascending:false}).limit(1);
         if(fallback&&fallback.length>0){p=fallback[0];parqFromPrevious=true;}
       }
       var html="";
@@ -5840,8 +5920,11 @@ function viewBooking(idx){
       html+="<div class=\"srow\"><span>Block</span><span>"+sanitise(b.blockDates)+"</span></div>";
       html+="<div class=\"srow\"><span>Amount Due</span><span>&pound;"+sanitise(String(b.paid))+"</span></div>";
       if(b.refundAmount) html+="<div class=\"srow\"><span>Refund Amount</span><span style=\"color:var(--red);font-weight:600\">&pound;"+sanitise(String(b.refundAmount))+"</span></div>";
+      html+="<div class=\"srow\"><span>Terms agreed</span><span>"+(b.termsVersion?sanitise(b.termsVersion)+" on "+sanitise(formatDateDisplay(b.termsAcceptedAt)):"<span style=\"color:var(--light)\">Not recorded (booked before Oct 2026)</span>")+"</span></div>";
       html+="</div>";
-      if(p){
+      if(p&&p.anonymised_at){
+        html+="<div class=\"health-note\" style=\"margin-top:16px\">Health form deleted on "+sanitise(formatDateDisplay(p.anonymised_at))+". They will be asked to fill in a new one when they next book.</div>";
+      } else if(p){
         var qLabels=["Heart problems","Circulatory problems","Blood pressure problems","Chest pain","Joint or movement problems","Dizziness or imbalance","Pregnant / recently given birth","Doctor advised not to exercise","Medical care for spinal pain","Prescribed medication","Asthma or breathing difficulties","Any other reasons not to exercise"];
         var qKeys=["q1_heart","q2_circulatory","q3_blood_pressure","q4_chest_pain","q5_joint","q6_dizziness","q7_pregnant","q8_doctor_advised","q9_spinal","q10_medication","q11_asthma","q12_other_reasons"];
         html+="<div class=\"parq-section-title\" style=\"margin-top:20px\">Health Form"+(parqFromPrevious?" <span style=\"font-size:11px;background:#e8f4fd;color:#1a6fb5;padding:2px 8px;border-radius:4px;font-weight:400;vertical-align:middle\">From previous booking</span>":"")+"</div><div class=\"sdetail\">";
@@ -5859,7 +5942,8 @@ function viewBooking(idx){
         if(p.additional_notes) html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Additional Notes</div><div class=\"health-note\">"+sanitise(p.additional_notes)+"</div>";
         html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Declaration</div><div class=\"sdetail\">";
         html+="<div class=\"srow\"><span>Signed by</span><span>"+sanitise(p.print_name)+"</span></div>";
-        html+="<div class=\"srow\"><span>Date</span><span>"+sanitise(formatDateDisplay(p.sign_date))+"</span></div></div>";
+        html+="<div class=\"srow\"><span>Date</span><span>"+sanitise(formatDateDisplay(p.sign_date))+"</span></div>";
+        html+="<div class=\"srow\"><span>Health consent</span><span>"+(p.health_consent_at?"Given on "+sanitise(formatDateDisplay(p.health_consent_at)):"<span style=\"color:var(--light)\">Not recorded (before Oct 2026)</span>")+"</span></div></div>";
       } else {
         html+="<div class=\"health-note\" style=\"margin-top:16px\">Returning customer \u2014 no health form required.</div>";
       }
