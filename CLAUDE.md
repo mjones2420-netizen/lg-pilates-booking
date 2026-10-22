@@ -114,6 +114,7 @@ If drift detected, remind Mark to run: `cd tests-playwright && npm run seed`
 9. **Order for any product-code change: code review → security review (if payments/auth/DB/Edge Functions) → tests → commit/push.** Not gated on a trigger word. A PreToolUse hook blocks test runs until `touch .claude/.review-marker` — run the touch in a **separate** Bash call (same-call touch is still blocked).
 10. **Do not propose and action in the same response** — state the plan, wait for sign-off, then act.
 11. **Session notes go in SESSION-LOG.md**, not here. Update this file only when a rule, gotcha, or the current-state snapshot changes.
+12. **Show the checklist panel on any multi-step task** (3+ steps). The panel only shows what Claude sends it: load the deferred tool `mcp__checklist-panel__show_steps` via ToolSearch at the start, list the steps in plain English, and update it as each step finishes. Mark follows progress there (missed twice: 18 Oct + 22 Oct 2026).
 
 ---
 
