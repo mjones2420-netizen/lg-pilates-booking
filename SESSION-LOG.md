@@ -603,3 +603,5 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - **Testing:** checklist mod has 1 basic test (the tool answers). Look and fit were checked by Mark by eye over two live demos, not automated.
 - **Open:** a Claude Code restart is needed for the permanent copy to take over from this session's temporary one. Clean view applies in every project, so Mark sees less detail by default.
 - **Next session:** unchanged from session 109: check the 7 Oct website push happened (health.txt, /privacy #51, footer link), then the #90 rollout (steps on #90). Also due: website uptime monitor, Louise as HetrixTools contact, prod waiting-list walkthrough re-run.
+
+**22 Oct 2026 (from a website session):** added workflow rule 12 — show the checklist panel on multi-step tasks (missed 18 Oct + 22 Oct). Heads-up comment added on #90: its consent link to `/privacy` 404s while website #51 is parked (Mark not publishing it for now). The stale duplicate test-progress mod in `~/.claude/dev-mods/` was deleted (a suspect for the old "1 error during load"). New global Auto Model mod also affects sessions here — see the website SESSION-LOG.
