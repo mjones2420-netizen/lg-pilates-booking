@@ -605,3 +605,13 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - **Next session:** unchanged from session 109: check the 7 Oct website push happened (health.txt, /privacy #51, footer link), then the #90 rollout (steps on #90). Also due: website uptime monitor, Louise as HetrixTools contact, prod waiting-list walkthrough re-run.
 
 **22 Oct 2026 (from a website session):** added workflow rule 12 — show the checklist panel on multi-step tasks (missed 18 Oct + 22 Oct). Heads-up comment added on #90: its consent link to `/privacy` 404s while website #51 is parked (Mark not publishing it for now). The stale duplicate test-progress mod in `~/.claude/dev-mods/` was deleted (a suspect for the old "1 error during load"). New global Auto Model mod also affects sessions here — see the website SESSION-LOG.
+
+## Session 111 (2026-10-23)
+
+**#90/#91 data protection LIVE on production.** Commit `dd6f3cd` (pushed with 60e8987 and 3 docs commits). Prod touched with Mark's OK. Resumed after a power cut cut off the earlier session the same day.
+- **Earlier today (interrupted session):** removed the health-consent tick box and privacy link before launch (privacy page #51 parked), so customers see the same health form as before. Code review + full suite green (345). Privacy draft taken out of git history; a copy is in `~/Documents/LG Pilates/PRIVACY-NOTICE-DRAFT.md`. Mark pointed out the prod booking system has never been used by customers (memory saved).
+- **Rollout:** prod migration 34 wrapped in an all-or-nothing script with an abort guard (dry-run on TEST with ROLLBACK earlier); Mark pasted it (result: cron job id 6). Read-only check: 10 function md5s, grants, new tables/columns, RLS, 3 terms_versions rows and the cron job all identical on prod and TEST. Prod functions backed up (scratchpad), type-checked, deployed: lookup-customer-throttled v4, stripe-checkout v11 (verify_jwt true), stripe-webhook v12 (false); downloaded code matches TEST and the repo byte for byte. Pushed `c4437b8..dd6f3cd`; live page hash matched on the 3rd poll.
+- **Still off:** the nightly auto-clear does nothing until `settings.parq_retention_months` exists. #90 left open for that step; #91 closed.
+- **Not checked by hand on prod:** Louise's new admin tools (TEST suite only).
+- **Feedback:** Mark said replies were far too long ("like reading an essay"), second time (first: session 99). Memory updated; keep replies to a few lines with one question.
+- **Next session:** retention switch-on (#90), prod waiting-list walkthrough re-run, website uptime monitor, Phase 1.5 (#65).

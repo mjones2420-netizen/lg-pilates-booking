@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 5 Oct 2026 (session 109 — #98 uptime monitor, #90/#91 data protection built + tested, not live)
+Last updated: 23 Oct 2026 (session 111 — #90/#91 data protection LIVE on prod; auto-clear still off)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -151,7 +151,7 @@ No `--retries` needed. A third reporter (`progress-reporter.js`) writes `tests-p
 | `PAYMENT-MODE-SPEC.md` | Stripe integration spec |
 | `EMAIL-NOTIFICATIONS-SPEC.md` | Email spec |
 | `supabase/functions/` | Edge Function source (stripe-checkout, stripe-webhook, stripe-refund, send-email, lookup-customer-throttled, join-waitlist-throttled; shared code in `_shared/throttle.ts`) |
-| `tests-playwright/migrations/` | SQL migrations (latest: 34_data_protection_consent — TEST only until #90 ships; 32_practice_full_class is a TEST fixture only, never prod) |
+| `tests-playwright/migrations/` | SQL migrations (latest: 34_data_protection_consent — on TEST and PROD since 23 Oct; 32_practice_full_class is a TEST fixture only, never prod) |
 | `tests-playwright/tests/helpers/` | Shared test helpers |
 | `.claude/commands/deploy.md` | Deploy pipeline (local only, gitignored) |
 | `docs/training-hub/` | Training Hub source (#114): `template.html` lessons, `build.js`, read-only screenshot scripts `capture*.js` (`capture-emails.js` renders the real email templates offline, #120). Published to a private artifact (URL in memory / SESSION-LOG session 102) |
@@ -180,7 +180,7 @@ Tables: `classes`, `blocks`, `bookings`, `customers`, `parq`, `settings`, `cance
 Admin gate: `is_admin()` (checks `admin_users`) — RLS policies use it, not bare `authenticated`.
 
 Key SECURITY DEFINER functions:
-- Public (anon): `upsert_customer`, `book_if_available` (5-arg `p_offer_token` on prod; 6-arg + `p_terms_version` on TEST since migration 34), `check_priority_access`, `has_active_booking_on_block`, `insert_parq`, `get_offer_details`, `booking_confirmed_for_session`, `confirm_waitlist_request` (token from the #110 email)
+- Public (anon): `upsert_customer`, `book_if_available` (6-arg: `p_offer_token` + `p_terms_version`, both optional; migration 34), `check_priority_access`, `has_active_booking_on_block`, `insert_parq`, `get_offer_details`, `booking_confirmed_for_session`, `confirm_waitlist_request` (token from the #110 email)
 - Admin only: `record_catch_up_swap`, `offer_waitlist_space`, `release_waitlist_hold`, `admin_delete_block/class/customer`, `admin_remove_from_block`, `admin_parq_retention_preview`, `admin_anonymise_customer_parq`, `admin_export_customer`
 - Service role only: `anonymise_stale_parq` (nightly cron, OFF until `settings.parq_retention_months` exists; specs must always pass a customer id), `request_waitlist_join` (public join since #110; creates a request + email), `lookup_customer` and `join_waitlist` (tests seed queues with it; browser goes via the `lookup-customer-throttled` / `join-waitlist-throttled` Edge Functions), `check_rate_limit` (shared per-IP limiter, `rate_limits` table keyed by bucket + IP; IPv6 counted per /64)
 
@@ -230,12 +230,12 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 
 ## CURRENT STATE (snapshot — the board is the truth for priorities)
 
-- **Tests**: 344 (session 109, all green locally — includes 22 DP data-protection tests; the #90 code is not pushed yet).
+- **Tests**: 345 (session 111 — includes the DP data-protection tests; last full green run 23 Oct).
 - **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71 closed) with **email confirmation** (#110, session 107), customer/problem **pop-ups** (#116).
-- **Prod Edge Function versions**: send-email v16, stripe-checkout v10, stripe-webhook v11, lookup-customer-throttled v3, join-waitlist-throttled v2, stripe-refund v5.
+- **Prod Edge Function versions**: send-email v16, stripe-checkout v11, stripe-webhook v12, lookup-customer-throttled v4, join-waitlist-throttled v2, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).
 - **New website LIVE at lg-pilates.co.uk** (DNS cutover 12 Sep 2026). **Release Phases 0 and 1 COMPLETE** (#63, #64 closed 28 Sep). **Next: Phase 1.5** (#65) — decide the Netlify-credit question first (see RELEASE-PLAN.md).
-- **Session 109:** #98 uptime monitor LIVE (HetrixTools, every 10 min, 3 locations: booking-site `health.txt` + PROD DB check; website monitor waits for the 7 Oct website push). **#90/#91 data protection built, reviewed and green on TEST, committed LOCALLY (the commit titled "Data protection for health forms..."), NOT pushed.** ⚠️ **Do not push this repo until the #90 rollout:** any push sends it live, and the new page needs migration 34 on PROD, so prod bookings would break. Consent tick box + privacy link removed 23 Oct (privacy page parked; no customer-facing change). Order: prod migration 34 (Mark pastes) → prod functions (lookup, checkout, webhook) → push. Steps are on #90. Retention switch-on (12 months) is a separate later step. **Next:** the 7 Oct website push, then the #90 rollout; prod waiting-list walkthrough re-run still due.
+- **Session 109–111:** #98 uptime monitor LIVE (HetrixTools, every 10 min, 3 locations: booking-site `health.txt` + PROD DB check; website monitor still to add). **#90/#91 data protection LIVE on prod 23 Oct** (`dd6f3cd`): migration 34 (Mark pasted), lookup/checkout/webhook deployed, page pushed. Consent tick box + privacy link removed before launch (privacy page parked), so customers see no change; Louise gets Download data / Delete health form / fuller customer delete. **Auto-clear is OFF** until the retention switch-on (12 months): parq CSV export → `admin_parq_retention_preview(12)` → Louise confirms → Mark pastes the settings INSERT (steps on #90). **Next:** retention switch-on, prod waiting-list walkthrough re-run, website uptime monitor, Phase 1.5 (#65).
 - **Open risks / follow-ups**:
   - Keep-alive (#111 fixed): a failing run now opens a "Keep-alive ping failing" issue that emails Mark. GitHub can still silently disable schedules after 60 days of repo inactivity — outside monitor is #98.
   - Free-plan Supabase = **no usable backups** (#96) and no leaked-password check (#21). Supabase Pro (~$25/mo) would cover backups, pausing and leak-check — weigh at #96.
