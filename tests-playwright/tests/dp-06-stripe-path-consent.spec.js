@@ -87,6 +87,20 @@ test.describe('DP-06 — Card payment path records terms and consent', () => {
     expect(pending.parq_data.health_consent_at.startsWith('1999')).toBe(false);
   });
 
+  test('checkout without a consent version stamps no consent time', async () => {
+    // The booking form stopped sending health_consent_version (box removed 23 Oct 2026).
+    const blk = await getBlockByRole('fri-upcoming');
+    const email = `dp06d-${Date.now()}@test.example`;
+    emails.push(email);
+    const { health_consent_version, ...parqNoConsent } = PARQ;
+    const res = await callCheckout(blk, email, { terms_version: 'tcs-2026-10', parq_data: parqNoConsent });
+    expect(res.status).toBe(200);
+    const pending = await getPendingBookingByEmail(email);
+    expect(pending).not.toBeNull();
+    expect(pending.terms_version).toBe('tcs-2026-10');
+    expect(pending.parq_data.health_consent_at).toBeNull();
+  });
+
   test('webhook copies terms onto the booking and consent onto the parq row', async () => {
     const blk = await getBlockByRole('fri-upcoming');
     const email = `dp06c-${Date.now()}@test.example`;

@@ -69,7 +69,6 @@ test.describe('SE-12 — Booking reserved email fires on reserve', () => {
     await page.locator('#b-age').fill('30');
     await page.locator('#b-print-name').fill(FIRST + ' ' + LAST);
     await page.locator('#b-declaration').check();
-    await page.locator('#b-health-consent').check(); // #90 consent box
     await page.locator('button[onclick="goStep2b()"]').click();
 
     // Step 2b — Emergency contact

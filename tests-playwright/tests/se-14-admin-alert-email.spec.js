@@ -75,7 +75,6 @@ test.describe('SE-14 — New booking admin alert email', () => {
     await page.fill('#b-age', '30');
     await page.fill('#b-print-name', TEST_FIRST + ' ' + TEST_LAST);
     await page.locator('#b-declaration').check();
-    await page.locator('#b-health-consent').check(); // #90 consent box
     await page.locator('button[onclick="goStep2b()"]').click();
 
     // Step 2b — emergency contact details

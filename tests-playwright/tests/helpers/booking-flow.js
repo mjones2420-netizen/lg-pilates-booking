@@ -64,7 +64,6 @@ async function fillStep1(page, details) {
  * - All 12 PAR-Q questions stay No (default on modal open)
  * - Print name filled
  * - Declaration checkbox ticked
- * - Health-consent checkbox ticked (#90)
  *
  * If `yesQuestions` is a non-empty array of 1-12, those questions get set to
  * Yes and the "please provide details" textarea is populated.
@@ -83,7 +82,6 @@ async function fillStep2Medical(page, { age = 34, printName = 'Test Client', yes
 
   await page.locator('#b-print-name').fill(printName);
   await page.locator('#b-declaration').check();
-  await page.locator('#b-health-consent').check(); // #90 consent box
   await page.locator('#step-2a .step-btn', { hasText: 'Continue' }).click();
 }
 

@@ -1329,11 +1329,6 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
               I agree to the declaration above <span class="req">*</span>
             </label>
             <div class="field-err" id="err-agree">You must agree to the declaration to continue.</div>
-            <label class="returning-lbl" style="margin-top:10px">
-              <input type="checkbox" id="b-health-consent">
-              <span id="health-consent-text">I agree to LG Pilates keeping my health answers.</span> <a href="https://lg-pilates.co.uk/privacy" target="_blank" rel="noopener" id="privacy-link" onclick="event.stopPropagation()">Privacy notice</a> <span class="req">*</span>
-            </label>
-            <div class="field-err" id="err-health-consent">You must agree to us keeping your health answers to continue.</div>
           </div>
 
           <div class="frow-btns" style="margin-top:16px">
@@ -1750,11 +1745,11 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Versions of the wording customers agree to (#90/#91). Each must match a
 // terms_versions row whose body is the rendered text of #tcs-text /
-// #parq-declaration-text / #health-consent-text (spec DP-04 checks). To change
-// the wording: edit the text, bump the version here, add a migration row.
+// #parq-declaration-text (spec DP-04 checks). To change the wording: edit the
+// text, bump the version here, add a migration row. The health-consent tick box
+// was removed before launch (Mark, 23 Oct 2026), so no consent version is sent.
 const TERMS_VERSION = "tcs-2026-10";
 const PARQ_DECLARATION_VERSION = "parq-decl-2026-10";
-const HEALTH_CONSENT_VERSION = "health-consent-2026-10";
 
 // Visible TEST MODE banner — only injected when running against the test
 // project. Production visitors see nothing. Also serves as the Playwright
@@ -2133,7 +2128,6 @@ function openModal(classId, blockId) {
     signDateEl.setAttribute("data-iso",y+"-"+mo+"-"+d);
   }
   if(document.getElementById("b-declaration")) document.getElementById("b-declaration").checked=false;
-  if(document.getElementById("b-health-consent")) document.getElementById("b-health-consent").checked=false;
   if(document.getElementById("parq-yes-section")) document.getElementById("parq-yes-section").style.display="none";
   for(var qi=1;qi<=12;qi++){
     document.querySelectorAll("input[name=\"q"+qi+"\"][value=\"No\"]").forEach(function(r){ r.checked=true; });
@@ -2799,7 +2793,6 @@ function goStep2b(){
   var ag=document.getElementById("b-declaration").checked;
   if(!pn) errors.push("Please print your name in the declaration");
   if(!ag) errors.push("You must agree to the declaration to continue");
-  if(!document.getElementById("b-health-consent").checked) errors.push("You must agree to us keeping your health answers to continue");
   if(errors.length>0){ showValidationToast(errors); return; }
   document.getElementById("step-2a").style.display="none";
   document.getElementById("step-2b").style.display="block";
@@ -3284,8 +3277,7 @@ function confirmBooking(){
             yes_details:parqData.details, additional_notes:parqData.other,
             print_name:parqData.printName, sign_date:parqData.signDate,
             answers:parqAnswers,
-            declaration_version:PARQ_DECLARATION_VERSION,
-            health_consent_version:HEALTH_CONSENT_VERSION
+            declaration_version:PARQ_DECLARATION_VERSION
           };
         }
         var pendingFetch=await fetch(SUPABASE_URL+"/functions/v1/stripe-checkout",{
@@ -3387,8 +3379,7 @@ function confirmBooking(){
             p_emergency_name:parqData.emergencyName, p_emergency_relationship:parqData.emergencyRelationship,
             p_emergency_phone:parqData.emergencyPhone,
             p_print_name:parqData.printName, p_sign_date:parqData.signDate,
-            p_declaration_version:PARQ_DECLARATION_VERSION,
-            p_health_consent_version:HEALTH_CONSENT_VERSION
+            p_declaration_version:PARQ_DECLARATION_VERSION
           });
         }catch(parqErr){ console.error("PAR-Q save error (booking still saved):",parqErr); }
       }
@@ -5942,8 +5933,7 @@ function viewBooking(idx){
         if(p.additional_notes) html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Additional Notes</div><div class=\"health-note\">"+sanitise(p.additional_notes)+"</div>";
         html+="<div class=\"parq-section-title\" style=\"margin-top:14px\">Declaration</div><div class=\"sdetail\">";
         html+="<div class=\"srow\"><span>Signed by</span><span>"+sanitise(p.print_name)+"</span></div>";
-        html+="<div class=\"srow\"><span>Date</span><span>"+sanitise(formatDateDisplay(p.sign_date))+"</span></div>";
-        html+="<div class=\"srow\"><span>Health consent</span><span>"+(p.health_consent_at?"Given on "+sanitise(formatDateDisplay(p.health_consent_at)):"<span style=\"color:var(--light)\">Not recorded (before Oct 2026)</span>")+"</span></div></div>";
+        html+="<div class=\"srow\"><span>Date</span><span>"+sanitise(formatDateDisplay(p.sign_date))+"</span></div></div>";
       } else {
         html+="<div class=\"health-note\" style=\"margin-top:16px\">Returning customer \u2014 no health form required.</div>";
       }

@@ -1,11 +1,12 @@
 // tests/dp-02-new-client-consent-recorded.spec.js
 //
 // DP (Data Protection) — DP-02: a new-client bank-transfer booking records
-// the T&Cs version + time (#91) and the declaration / consent records (#90).
+// the T&Cs version + time (#91) and the declaration version (#90).
 //   Given: a new client books Monday through the UI (bank transfer)
 //   Then:  bookings.terms_version = the page's TERMS_VERSION and
 //          terms_accepted_at is the DB's time (not the browser's);
-//          parq.declaration_version / health_consent_version / health_consent_at set.
+//          parq.declaration_version set; health_consent_version / _at stay
+//          NULL (the consent box was removed before launch, 23 Oct 2026).
 //
 // Fixture role: mon-current. Self-cleaning (afterEach).
 
@@ -46,7 +47,7 @@ test.describe('DP-02 — New client booking records terms and consent', () => {
   test('booking and health form carry version records with server timestamps', async ({ page }) => {
     const email = uniqueTestEmail(902);
     const versions = await page.evaluate(() => ({
-      terms: TERMS_VERSION, decl: PARQ_DECLARATION_VERSION, consent: HEALTH_CONSENT_VERSION
+      terms: TERMS_VERSION, decl: PARQ_DECLARATION_VERSION
     }));
 
     await openBookingModal(page, 'Monday', 'current');
@@ -72,8 +73,8 @@ test.describe('DP-02 — New client booking records terms and consent', () => {
     const parq = await getParqByCustomerId(customer.id);
     expect(parq).not.toBeNull();
     expect(parq.declaration_version).toBe(versions.decl);
-    expect(parq.health_consent_version).toBe(versions.consent);
-    expect(parq.health_consent_at).toBeTruthy();
+    expect(parq.health_consent_version).toBeNull();
+    expect(parq.health_consent_at).toBeNull();
     expect(parq.anonymised_at).toBeNull();
   });
 });

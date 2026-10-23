@@ -1,8 +1,8 @@
 // tests/dp-04-versioned-text-matches-db.spec.js
 //
 // DP (Data Protection) — DP-04: the wording customers see matches the stored
-// version (#91). If someone edits the T&Cs, the PAR-Q declaration or the
-// consent box without adding a new terms_versions row and bumping the
+// version (#91). If someone edits the T&Cs or the PAR-Q declaration
+// without adding a new terms_versions row and bumping the
 // constant, the record would claim people agreed to words they never saw.
 // This spec is the tripwire for that.
 //
@@ -27,14 +27,12 @@ test.describe('DP-04 — On-page wording matches the stored versions', () => {
     ).toBeVisible({ timeout: 5000 });
   });
 
-  test('T&Cs, declaration and consent text each equal their terms_versions row', async ({ page }) => {
+  test('T&Cs and declaration text each equal their terms_versions row', async ({ page }) => {
     const onPage = await page.evaluate(() => {
       const norm = (id) => document.getElementById(id).textContent.replace(/\s+/g, ' ').trim();
       return [
         { version: TERMS_VERSION, kind: 'booking_terms', text: norm('tcs-text') },
-        { version: PARQ_DECLARATION_VERSION, kind: 'parq_declaration', text: norm('parq-declaration-text') },
-        { version: HEALTH_CONSENT_VERSION, kind: 'health_consent', text: norm('health-consent-text') },
-      ];
+        { version: PARQ_DECLARATION_VERSION, kind: 'parq_declaration', text: norm('parq-declaration-text') },      ];
     });
 
     for (const item of onPage) {

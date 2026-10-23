@@ -36,7 +36,6 @@ async function reachStep2(page, specNumber) {
 async function fillStep2ExceptAge(page, { printName = 'Age Checker' } = {}) {
   await page.locator('#b-print-name').fill(printName);
   await page.locator('#b-declaration').check();
-  await page.locator('#b-health-consent').check(); // #90 consent box
 }
 
 test.describe('CB-23 — Medical step age validation', () => {
