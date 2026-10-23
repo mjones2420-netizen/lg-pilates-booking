@@ -616,3 +616,11 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - **Not checked by hand on prod:** Louise's new admin tools (TEST suite only).
 - **Feedback:** Mark said replies were far too long ("like reading an essay"), second time (first: session 99). Memory updated; keep replies to a few lines with one question.
 - **Next session:** prod waiting-list walkthrough re-run, website uptime monitor, Phase 1.5 (#65).
+
+## Session 112 (2026-10-23)
+
+**Reply-format rules + #98 closed.** No product code, prod untouched.
+- **Reply length:** Mark asked for an honest view on long, repetitive replies. Merged the brevity rules into one "Answer format — short by default" section in global `~/.claude/CLAUDE.md` (2–5 lines, say each fact once, no process narration, one question then stop). Milestone recap is now headline + Done + Your actions (only if any); the Caveats and "Where things stand" sections are gone (Mark found Caveats confusing), so untested items go inline on their Done line. Memory: 4 brevity notes merged into one; short-replies and progress-updates notes deleted.
+- **Scrolling:** checked the Claude Code docs. No "start at top of reply" setting, but `/focus` (last prompt + one-line tool summary + final reply) helps; Mark turned it on. Fullscreen (`/tui fullscreen`) + Auto-scroll off in `/config` is the other option.
+- **#98 closed + Done:** Mark had already added the website monitor, so all three (website, booking site, database) are monitored. Top of High Priority is now #121.
+- **Next session:** #121 (remove two unused email designs), prod waiting-list walkthrough re-run.
