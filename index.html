@@ -1713,6 +1713,10 @@ var blocks  = [];   // all blocks loaded from DB
 var bookings = [];
 var catchUpSwaps = [];   // catch-up swap visitors — loaded in renderDashboard
 var dashCustomerMap = null;   // id -> customers row, built in renderDashboard
+// The latest renderDashboard load. Reports, Catch-ups and Waiting lists draw from
+// what it loads (bookings, client names), so they wait for it first — opened
+// before it finished they showed £0 or "Unknown" until reopened (#112).
+var dashLoadPromise = Promise.resolve();
 var waitlistRows = [];        // waiting-list rows for the admin page (#75)
 var heldByBlock = {};         // live waitlist holds (status 'offered') per block id — taken seats for catch-ups (migration 31)
 var appSettings = {};      // bank details + admin email, loaded at startup
@@ -3497,7 +3501,7 @@ function setBookingTables(rowHtml){
 
 function renderDashboard(){
   setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>');
-  (async function(){
+  dashLoadPromise=(async function(){
     try{
       var{data:sessionData}=await sb.auth.getSession();
       if(!sessionData.session){
@@ -3863,6 +3867,7 @@ function filterCancellationsTable(){
 function renderReportsPage(){
   (async function(){
     try{
+      await dashLoadPromise;
       // Active (non-cancelled) bookings
       var activeBks=bookings.filter(function(b){ return b.status!=="cancelled"; });
       document.getElementById("rpt-active-bookings").textContent=activeBks.length;
@@ -4269,7 +4274,13 @@ function renderClassesView(){
     });
     html+="</div>";
   });
-  document.getElementById("classes-accordion").innerHTML=html||"<div style='color:var(--light);padding:20px'>No classes yet.</div>";
+  // Redraws happen after every dashboard reload (e.g. after Confirm), so keep
+  // any class Louise had opened open, instead of snapping them all shut (#112).
+  var acc=document.getElementById("classes-accordion");
+  var openIds=[];
+  acc.querySelectorAll(".class-group-body").forEach(function(el){ if(el.style.display==="block") openIds.push(el.id); });
+  acc.innerHTML=html||"<div style='color:var(--light);padding:20px'>No classes yet.</div>";
+  openIds.forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display="block"; });
 }
 
 function toggleClassGroup(id){
@@ -4459,6 +4470,7 @@ function renderCatchUpSwapsPage(){
   el.innerHTML="<div style=\"color:var(--light);padding:20px;font-size:13px\">Loading&hellip;</div>";
   (async function(){
     try{
+      await dashLoadPromise;
       await reloadCatchUpSwaps();
       renderCatchUpSwapsList();
       renderClassesView();
@@ -4469,7 +4481,12 @@ function renderCatchUpSwapsPage(){
   })();
 }
 
-function openCatchUpModal(){
+async function openCatchUpModal(){
+  // The client and class lists come from the dashboard's bookings; opened
+  // before that load finished they were empty (#112).
+  await dashLoadPromise;
+  // Moved to another page while it loaded? Don't pop the form up over it.
+  if(!document.getElementById("dbpage-catchup").classList.contains("on")) return;
   var errEl=document.getElementById("cu-err");
   errEl.style.display="none"; errEl.textContent="";
   // Customer dropdown — from non-cancelled bookings
@@ -4861,6 +4878,7 @@ function renderWaitlistPage(){
   el.innerHTML="<div style=\"color:var(--light);padding:20px;font-size:13px\">Loading&hellip;</div>";
   (async function(){
     try{
+      await dashLoadPromise;
       await reloadWaitlist();
       renderWaitlistList();
     }catch(err){

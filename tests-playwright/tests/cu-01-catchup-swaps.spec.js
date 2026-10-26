@@ -24,6 +24,9 @@
 //   CU-08: Class and week pickers show spaces left / FULL and disable full options
 //   CU-09: Hard lock — duplicate saves into the last space cannot overbook
 //   CU-10: Plain labels; usual class auto-selects for a single-block customer
+//   CU-16: Opened before client names load, the list waits for real names (#112)
+//   CU-17: Record swap opened before the bookings load waits and lists clients (#112)
+//   CU-18: Record swap does not pop up after moving to another page (#112)
 //
 // Fixture:
 //   Customer "Returning One" (returning-one@test.example) has confirmed
@@ -47,6 +50,7 @@ const {
   resyncBlockBookedCount,
   closePool,
 } = require('./helpers/admin-db');
+const { holdRequest } = require('./helpers/hold-request');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -536,5 +540,95 @@ test.describe('CU — Catch-Up Swaps', () => {
     await page.locator('#cu-customer').selectOption({ value: String(customer.id) });
     await expect(page.locator('#cu-source-block')).toHaveValue(String(monFull.id));
     await expect(page.locator('#cu-source-block option')).toHaveCount(1);
+  });
+
+  // ── CU-16: Opened before client names load (#112) ─────────────────────────
+  // Opened before the dashboard's client list loaded, a swap's client showed
+  // as "Unknown" and never corrected itself. Hold that load, open the page,
+  // then let it through: the list must wait for the names and show the real one.
+
+  test('CU-16 — opened before client names load, the list waits and shows the real name', async ({ page }) => {
+    const srcBlock = await getBlockByRole('mon-current');
+    const tgtBlock = await getBlockByRole('wed-upcoming');
+    const customer = await getCustomerByEmail('returning-one@test.example');
+    const classDate = getFutureIsoDates(tgtBlock)[0];
+    test.skip(!classDate, 'No future date on wed-upcoming');
+    await insertCatchUpSwap(customer.id, srcBlock.id, tgtBlock.id, classDate, 'CU-16 early open');
+    const realName = `${customer.first_name} ${customer.last_name}`.trim();
+
+    const releaseCustomers = await holdRequest(page, 'customers', 'id,first_name,last_name');
+
+    // beforeEach already loaded the dashboard; start again so the held load is the first one.
+    await page.reload();
+    await expect(page.locator('#test-mode-banner.on')).toBeVisible({ timeout: 5000 });
+    await loginAsAdmin(page);
+    await goToCatchUpPage(page);
+
+    // Opened while client names are held: the list waits ("Loading…")
+    // rather than drawing the client as "Unknown".
+    await page.waitForTimeout(500); // room for an early draw to happen, if it would
+    await expect(page.locator('#catchup-list')).toContainText('Loading');
+
+    releaseCustomers();
+
+    const row = page.locator('#catchup-list tr').filter({ hasText: 'CU-16 early open' });
+    await expect(row).toContainText(realName);
+    await expect(row).not.toContainText('Unknown');
+    await expect(page.locator('#dbpage-catchup.on')).toBeVisible();
+  });
+
+  // ── CU-17: Record swap opened before the bookings load (#112) ─────────────
+  // The form's client list comes from the dashboard's bookings. Opened before
+  // that load finished it was empty, so picking a client timed out (how CU-02,
+  // CU-04 and CU-10 flaked). Hold the load, click Record swap, then let it
+  // through: the form must open with the client list filled. (Before #112 the
+  // form opened at once with an empty list that never filled, so the client
+  // check below fails on the old code whatever the timing.)
+
+  test('CU-17 — Record swap opened before the bookings load waits and lists clients', async ({ page }) => {
+    const customer = await getCustomerByEmail('returning-one@test.example');
+    const releaseBookings = await holdRequest(page, 'bookings', 'id,status,amount_due');
+
+    // beforeEach already loaded the dashboard; start again so the held load is the first one.
+    await page.reload();
+    await expect(page.locator('#test-mode-banner.on')).toBeVisible({ timeout: 5000 });
+    await loginAsAdmin(page);
+    await goToCatchUpPage(page);
+
+    await page.locator('button', { hasText: '+ Record swap' }).click();
+    releaseBookings();
+
+    await expect(page.locator('#catchup-overlay.on')).toBeVisible({ timeout: 10000 });
+    // Read the list the instant the form is showing: no waiting for it to fill.
+    const optionValues = await page.locator('#cu-customer option').evaluateAll(
+      (opts) => opts.map((o) => o.value)
+    );
+    expect(optionValues).toContain(String(customer.id));
+    await page.locator('#cu-customer').selectOption({ value: String(customer.id) });
+    await expect(page.locator('#cu-customer')).toHaveValue(String(customer.id));
+  });
+
+  // ── CU-18: Record swap clicked, then Louise moves on before it loads (#112) ─
+  // The form waits for the dashboard load. If she has gone to another page by
+  // the time it arrives, the form must not pop up over that page.
+
+  test('CU-18 — Record swap does not pop up after moving to another page', async ({ page }) => {
+    const releaseBookings = await holdRequest(page, 'bookings', 'id,status,amount_due');
+
+    await page.reload();
+    await expect(page.locator('#test-mode-banner.on')).toBeVisible({ timeout: 5000 });
+    await loginAsAdmin(page);
+    await goToCatchUpPage(page);
+
+    await page.locator('button', { hasText: '+ Record swap' }).click();
+    await page.locator('#dbnav-clients').click();
+    await expect(page.locator('#dbnav-clients.on')).toBeVisible();
+
+    releaseBookings();
+    await page.evaluate(() => dashLoadPromise); // the load the form was waiting on has landed
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 0))); // let the form's own wait finish
+
+    await expect(page.locator('#catchup-overlay.on')).toHaveCount(0);
+    await expect(page.locator('#dbpage-clients.on')).toBeVisible();
   });
 });

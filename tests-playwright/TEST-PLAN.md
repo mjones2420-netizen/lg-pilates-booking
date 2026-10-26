@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 26 Oct 2026
-**Total tests:** 344
+**Total tests:** 350
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -119,7 +119,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `bw-02-current-block-session-dates-listed.spec.js` | Thursday card renders one date pill per session in chronological order |
 | `bw-06-upcoming-becomes-active-on-start-date.spec.js` | Monday active block renders as current; upcoming block stays in next-block panel |
 
-## Admin Bookings (AB) — 26 tests
+## Admin Bookings (AB) — 27 tests
 
 | Spec file | Test |
 |---|---|
@@ -149,6 +149,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `ab-25-booking-history-page.spec.js` | AB-25b — History search box filters rows |
 | `ab-26-by-class-hides-past-blocks.spec.js` | AB-26a — ended blocks do not render; upcoming blocks do |
 | `ab-26-by-class-hides-past-blocks.spec.js` | AB-26b — class with only ended blocks shows redirect empty state |
+| `ab-27-by-class-stays-open.spec.js` | AB-27 — an opened class stays open when the dashboard reloads, and others stay closed |
 
 ## Admin Classes (AC) — 23 tests
 
@@ -348,7 +349,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `rf-05-webhook-refund-sync.spec.js` | RF-05b — resending the same event after sync is idempotent |
 | `rf-05-webhook-refund-sync.spec.js` | RF-05c — no matching cancellation is a safe no-op |
 
-## Catch-Up Swaps (CU) — 15 tests
+## Catch-Up Swaps (CU) — 18 tests
 
 | Spec file | Test |
 |---|---|
@@ -362,6 +363,9 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `cu-01-catchup-swaps.spec.js` | CU-08 — Class and week pickers show spaces left, mark full options FULL and disable them |
 | `cu-01-catchup-swaps.spec.js` | CU-09 — Two saves into the last space: first succeeds, second is rejected by the DB |
 | `cu-01-catchup-swaps.spec.js` | CU-10 — Modal uses plain labels and auto-selects the usual class for a single-block customer |
+| `cu-01-catchup-swaps.spec.js` | CU-16 — opened before client names load, the list waits and shows the real name |
+| `cu-01-catchup-swaps.spec.js` | CU-17 — Record swap opened before the bookings load waits and lists clients |
+| `cu-01-catchup-swaps.spec.js` | CU-18 — Record swap does not pop up after moving to another page |
 | `cu-11-catchup-respects-holds.spec.js` | CU-11 — the DB refuses a catch-up into a held seat, and allows it once the hold is released |
 | `cu-11-catchup-respects-holds.spec.js` | CU-12 — the class picker shows a held seat as FULL |
 | `cu-11-catchup-respects-holds.spec.js` | CU-14 — the week picker counts held seats alongside that week's catch-ups |
@@ -377,11 +381,12 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `pr-01-prorata-year-boundary.spec.js` | before the block starts → full price, not prorated |
 | `pr-01-prorata-year-boundary.spec.js` | after the block ends → zero remaining, full price fallback (never negative) |
 
-## Reports (RP) — 1 tests
+## Reports (RP) — 2 tests
 
 | Spec file | Test |
 |---|---|
 | `rp-01-revenue-mtd.spec.js` | RP-01 — a confirmed booking this month makes Revenue MTD greater than £0 |
+| `rp-02-reports-before-data.spec.js` | RP-02 — Revenue MTD appears once the bookings arrive, without reopening Reports |
 
 ## Mobile Dashboard (MB) — 21 tests
 
@@ -409,7 +414,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `mb-09-class-status-dots.spec.js` | MB-09a — green tracks the active block, orange tracks the upcoming block |
 | `mb-09-class-status-dots.spec.js` | MB-09b — the dot colours match the badges the row expands to reveal |
 
-## Waiting List (WL) — 30 tests
+## Waiting List (WL) — 31 tests
 
 | Spec file | Test |
 |---|---|
@@ -431,6 +436,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `wl-08-waitlist-admin.spec.js` | WL-20 — the "No free seat" note is visible on a phone without opening a card |
 | `wl-08-waitlist-admin.spec.js` | WL-21 — a catch-up that already fills a week shows a clash note |
 | `wl-08-waitlist-admin.spec.js` | WL-22 — Offer space with a clash: Cancel holds nothing, Offer anyway holds |
+| `wl-08-waitlist-admin.spec.js` | WL-31 — opened before client names load, the clash note waits and shows the real name |
 | `wl-16-waitlist-guards.spec.js` | WL-16 — an offer link used by a different customer is refused, and the hold survives |
 | `wl-16-waitlist-guards.spec.js` | WL-17 — the join alert to Louise is sent once per waitlist entry |
 | `wl-16-waitlist-guards.spec.js` | WL-18 — the offer email is sent once per offer; release + re-offer allows a fresh one |

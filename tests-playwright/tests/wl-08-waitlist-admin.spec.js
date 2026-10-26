@@ -35,6 +35,7 @@ const {
   deleteCustomerCascade,
   insertCatchUpSwap
 } = require('./helpers/admin-db');
+const { holdRequest } = require('./helpers/hold-request');
 
 const APP_URL = process.env.TEST_APP_URL;
 
@@ -439,5 +440,38 @@ test.describe('WL — waiting lists, admin page', () => {
     const held = await getWaitlistRow(blockId, a.email);
     expect(held.status).toBe('offered');
     expect(held.offer_token).toBeTruthy();
+  });
+
+  // ── WL-31 ────────────────────────────────────────────────────────────────
+  // Opened before the dashboard's client list loaded, the clash note named the
+  // catch-up visitor "Unknown" and never corrected itself (#112, seen as a WL-22
+  // flake). Hold that load, open the page, then let it through: the page must
+  // wait for the names and show the real one.
+  test('WL-31 — opened before client names load, the clash note waits and shows the real name', async ({ page }) => {
+    await seedQueued(blockId, 'Ola', 'ThirtyOne', 'o');
+    await setBooked(blockId, CAP - 1);
+    const visitor = await seedVisitor('Demo', 'Four');
+    const clashDate = isoFromToday(17);
+    await insertCatchUpSwap(visitor.id, endedBlockId, blockId, clashDate);
+
+    const releaseCustomers = await holdRequest(page, 'customers', 'id,first_name,last_name');
+
+    // Opened while client names are held: the page waits ("Loading…")
+    // rather than drawing the visitor as "Unknown".
+    await loginAsAdmin(page);
+    await page.evaluate(() => switchDashPage('waitlist'));
+    await page.waitForTimeout(500); // room for an early draw to happen, if it would
+    await expect(page.locator('#waitlist-list')).toContainText('Loading');
+
+    releaseCustomers();
+
+    await page.waitForFunction(
+      () => !document.querySelector('#waitlist-list').textContent.includes('Loading'),
+      null, { timeout: 15000 }
+    );
+    const note = ownGroup(page).locator('.wl-head-note.clash');
+    await expect(note).toContainText(`${dateLabel(clashDate)} is already full: Demo Four is on a catch-up that day`);
+    await expect(note).not.toContainText('Unknown');
+    await expect(page.locator('#dbpage-waitlist.on')).toBeVisible();
   });
 });
