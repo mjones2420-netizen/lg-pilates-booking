@@ -6,7 +6,7 @@
 // proves the fix on every place email HTML is now built:
 //
 //   1. index.html — sanitise() and the client-side builders that remain there
-//      (cancellation + refund emails).
+//      (refund email to the client, Email Block message).
 //   2. send-email Edge Function (deployed test project) — the confirmed_booking
 //      and card_payment_alert templates, which moved server-side in #53. These
 //      are checked against the real deployed output via the test-mode html
@@ -39,20 +39,6 @@ test.describe('SEC-08 — Email name/email fields are escaped (#39)', () => {
     expect(out).toContain('&gt;');
   });
 
-  test('index.html buildCancelledAdminEmailHtml escapes firstName, lastName and email', async ({ page }) => {
-    await page.goto(APP_PATH);
-    const html = await page.evaluate(({ name, email }) => buildCancelledAdminEmailHtml({
-      firstName: name, lastName: name, email: email, className: 'Mixed Ability',
-      venue: 'Baildon Moravian Church', loc: 'Baildon', day: 'Monday', time: '9:45am',
-      endTime: '10:30am', blockDates: [], sessionsAttended: 1, totalSessions: 6,
-      pricePerSession: 10, refundAmount: 0, dashboardUrl: ''
-    }), { name: MALICIOUS_NAME, email: MALICIOUS_EMAIL });
-    expect(html).not.toContain(MALICIOUS_NAME);
-    expect(html).not.toContain(MALICIOUS_EMAIL);
-    expect(html).toContain('&lt;img');
-    expect(html).toContain('&lt;script&gt;');
-  });
-
   test('index.html buildRefundClientEmailHtml escapes firstName', async ({ page }) => {
     await page.goto(APP_PATH);
     const html = await page.evaluate((name) => buildRefundClientEmailHtml({
@@ -63,18 +49,13 @@ test.describe('SEC-08 — Email name/email fields are escaped (#39)', () => {
     expect(html).toContain('&lt;img');
   });
 
-  test('index.html buildRefundAdminEmailHtml escapes firstName, lastName and email', async ({ page }) => {
+  test('index.html buildBlockEmailHtml escapes firstName', async ({ page }) => {
     await page.goto(APP_PATH);
-    const html = await page.evaluate(({ name, email }) => buildRefundAdminEmailHtml({
-      firstName: name, lastName: name, email: email, className: 'Mixed Ability',
-      venue: 'Baildon Moravian Church', loc: 'Baildon', day: 'Monday', time: '9:45am',
-      endTime: '10:30am', blockDates: [], sessionsAttended: 1, totalSessions: 6,
-      pricePerSession: 10, refundAmount: 10, dashboardUrl: ''
-    }), { name: MALICIOUS_NAME, email: MALICIOUS_EMAIL });
+    const html = await page.evaluate((name) => buildBlockEmailHtml({
+      firstName: name, messageHtml: '<p>Class moves to the small hall this week.</p>'
+    }), MALICIOUS_NAME);
     expect(html).not.toContain(MALICIOUS_NAME);
-    expect(html).not.toContain(MALICIOUS_EMAIL);
     expect(html).toContain('&lt;img');
-    expect(html).toContain('&lt;script&gt;');
   });
 
   // --- Server-side templates (send-email, #53) ---

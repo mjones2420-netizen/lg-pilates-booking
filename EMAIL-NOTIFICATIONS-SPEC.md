@@ -189,7 +189,7 @@ Steps:
 Steps:
 1. ✅ Identified the confirm step in `rfbConfirm()` where cancellation is finalised
 2. ✅ `buildCancelledClientEmailHtml()` helper built — red banner ("Your booking has been cancelled"), booking summary table, refund breakdown (sessions attended/remaining, price per session, refund due) if refund > £0, or "No refund required as payment had not yet been received" if £0. Footer includes "If you have any questions, please reply to this email."
-3. ✅ `buildCancelledAdminEmailHtml()` helper built — slate banner ("Booking cancelled"), full details table (client name, email, class, venue, day/time, block dates, sessions attended, price per session, refund amount), dashboard link
+3. ✅ `buildCancelledAdminEmailHtml()` helper built — slate banner ("Booking cancelled"), full details table (client name, email, class, venue, day/time, block dates, sessions attended, price per session, refund amount), dashboard link (later never sent; removed in #121)
 4. ✅ Both Edge Function calls wired into `rfbConfirm()` after successful DB operations — non-fatal, guarded by `if(cancelOpts.email)` and `if(appSettings.adminEmail)`
 5. ✅ SE-15 spec written — per-run customer + confirmed booking on mon-current; drives RFB flow with 2 sessions attended; asserts both payloads via array intercept pattern (index 0 = client, index 1 = Louise)
 
@@ -219,7 +219,7 @@ Steps:
 **Notes:**
 - Subject: client "Your refund has been processed — [ClassName], [Venue]"
 - Zero-refund case: client email fires from `rfbConfirm()` with subject "Your booking has been cancelled — [Day], [Time], [Venue]"
-- `buildRefundAdminEmailHtml` and `buildCancelledAdminEmailHtml` remain in codebase (unused) — can be removed at tidy-up
+- `buildRefundAdminEmailHtml` and `buildCancelledAdminEmailHtml` were never sent; both removed in #121 (session 113, Oct 2026)
 
 **Sign-off:** ✅ Complete — Session 7 (final review) next.
 

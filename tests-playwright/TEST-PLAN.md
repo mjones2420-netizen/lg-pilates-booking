@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 23 Oct 2026
-**Total tests:** 345
+**Last updated:** 26 Oct 2026
+**Total tests:** 344
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -259,7 +259,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `blw-09-pending-refund-warning.spec.js` | orange warning banner appears when a cancellation is awaiting a refund decision |
 | `blw-09-pending-refund-warning.spec.js` | orange warning disappears after cancellation is marked as refunded |
 
-## Security (SEC) — 38 tests
+## Security (SEC) — 37 tests
 
 | Spec file | Test |
 |---|---|
@@ -277,9 +277,8 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sec-08-email-name-escaping.spec.js` | confirmed_booking escapes the client name |
 | `sec-08-email-name-escaping.spec.js` | card_payment_alert escapes the client name |
 | `sec-08-email-name-escaping.spec.js` | index.html sanitise() escapes angle brackets and quotes |
-| `sec-08-email-name-escaping.spec.js` | index.html buildCancelledAdminEmailHtml escapes firstName, lastName and email |
 | `sec-08-email-name-escaping.spec.js` | index.html buildRefundClientEmailHtml escapes firstName |
-| `sec-08-email-name-escaping.spec.js` | index.html buildRefundAdminEmailHtml escapes firstName, lastName and email |
+| `sec-08-email-name-escaping.spec.js` | index.html buildBlockEmailHtml escapes firstName |
 | `sec-09-book-rpc-price-tampering.spec.js` | a forged 1p amount_due is ignored — booking row gets the server-computed price |
 | `sec-09-book-rpc-price-tampering.spec.js` | a forged class_id is rejected with CLASS_MISMATCH and no booking is created |
 | `sec-10-send-email-one-shot.spec.js` | reserved_confirmation: first call sends, second call is refused with 429 |

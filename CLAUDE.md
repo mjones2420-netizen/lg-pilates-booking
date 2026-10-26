@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 23 Oct 2026 (session 112 — #98 closed, all uptime monitors live; auto-clear still off)
+Last updated: 26 Oct 2026 (session 113 — #121 unused admin email designs removed; auto-clear still off)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -230,17 +230,17 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 
 ## CURRENT STATE (snapshot — the board is the truth for priorities)
 
-- **Tests**: 345 (session 111 — includes the DP data-protection tests; last full green run 23 Oct).
+- **Tests**: 344 (session 113 — #121 dropped 2 dead-email SEC-08 tests, added a block-email one; last full green run 26 Oct).
 - **Live on production**: full booking flow, Stripe payments + refund sync, catch-up swaps, Booking history, mobile dashboard, **waitlist** (#71 closed) with **email confirmation** (#110, session 107), customer/problem **pop-ups** (#116).
 - **Prod Edge Function versions**: send-email v16, stripe-checkout v11, stripe-webhook v12, lookup-customer-throttled v4, join-waitlist-throttled v2, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).
 - **New website LIVE at lg-pilates.co.uk** (DNS cutover 12 Sep 2026). **Release Phases 0 and 1 COMPLETE** (#63, #64 closed 28 Sep). **Next: Phase 1.5** (#65) — decide the Netlify-credit question first (see RELEASE-PLAN.md).
-- **Session 109–112:** #98 uptime monitors LIVE and closed (HetrixTools, every 10 min, 3 locations: website, booking-site `health.txt`, PROD DB check). **#90/#91 data protection LIVE on prod 23 Oct** (`dd6f3cd`): migration 34 (Mark pasted), lookup/checkout/webhook deployed, page pushed. Consent tick box + privacy link removed before launch (privacy page parked), so customers see no change; Louise gets Download data / Delete health form / fuller customer delete. **Auto-clear is OFF** until the retention switch-on (12 months, #124): parq CSV export → `admin_parq_retention_preview(12)` → Louise confirms → Mark pastes the settings INSERT (steps on #124). **Next:** #121 (top of High), prod waiting-list walkthrough re-run; leftovers on #124 (Low), Phase 1.5 (#65).
+- **Session 109–112:** #98 uptime monitors LIVE and closed (HetrixTools, every 10 min, 3 locations: website, booking-site `health.txt`, PROD DB check). **#90/#91 data protection LIVE on prod 23 Oct** (`dd6f3cd`): migration 34 (Mark pasted), lookup/checkout/webhook deployed, page pushed. Consent tick box + privacy link removed before launch (privacy page parked), so customers see no change; Louise gets Download data / Delete health form / fuller customer delete. **Auto-clear is OFF** until the retention switch-on (12 months, #124): parq CSV export → `admin_parq_retention_preview(12)` → Louise confirms → Mark pastes the settings INSERT (steps on #124). **Session 113:** #121 done (two never-sent admin email designs removed; Settings notification-email wording now "New booking alerts" only). **Next:** prod waiting-list walkthrough re-run; leftovers on #124 (Low), Phase 1.5 (#65).
 - **Open risks / follow-ups**:
   - Keep-alive (#111 fixed): a failing run now opens a "Keep-alive ping failing" issue that emails Mark. GitHub can still silently disable schedules after 60 days of repo inactivity — outside monitor is #98.
   - Free-plan Supabase = **no usable backups** (#96) and no leaked-password check (#21). Supabase Pro (~$25/mo) would cover backups, pausing and leak-check — weigh at #96.
   - [#112](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/112) — RP-01 failed 3/3 in one CI run (27 Sep); repeat flake. Also: `ubuntu-latest` → Ubuntu 26 from 19 Oct 2026.
-  - #107 waitlist walkthrough PASSED on prod (1 Oct, 33 steps); re-run due for #116/#110 (now 37 steps). #121 dead admin email code still open.
+  - #107 waitlist walkthrough PASSED on prod (1 Oct, 33 steps); re-run due for #116/#110 (now 37 steps).
   - [#113](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/113) — booking-system header links still point at `new-lg-website.netlify.app` (9 in index.html); swap to `lg-pilates.co.uk` before the pilot.
   - Before customer logins (#81): `record_catch_up_swap` has no `is_admin()` check — note on #81.
 
