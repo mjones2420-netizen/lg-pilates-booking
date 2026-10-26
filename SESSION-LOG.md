@@ -624,3 +624,13 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - **Scrolling:** checked the Claude Code docs. No "start at top of reply" setting, but `/focus` (last prompt + one-line tool summary + final reply) helps; Mark turned it on. Fullscreen (`/tui fullscreen`) + Auto-scroll off in `/config` is the other option.
 - **#98 closed + Done:** Mark had already added the website monitor, so all three (website, booking site, database) are monitored. Top of High Priority is now #121.
 - **Next session:** #121 (remove two unused email designs), prod waiting-list walkthrough re-run.
+
+## Session 113 (2026-10-26)
+
+**#121 and #112 shipped and closed.** Pushed `19c4b04` (#121) and `52c6de3` (#112); live page hashes matched both times. Prod DB, Stripe and Edge Functions untouched.
+- **#121:** removed the two never-sent admin email designs (`buildCancelledAdminEmailHtml`, `buildRefundAdminEmailHtml`) and their 2 SEC-08 tests; added a `buildBlockEmailHtml` escaping test. Settings wording now "New booking alerts are sent to this address." CI 325 passed, 0 flaky.
+- **#112 cause:** admin pages drew from dashboard globals before `renderDashboard` had finished loading. Fix: `dashLoadPromise` (the latest load), awaited by Reports, Catch-ups, Waiting lists and `openCatchUpModal` (RP-01, WL-22, CU-02/04/10 flakes). Record swap no longer opens if the page was left while it waited. `renderClassesView` keeps opened class groups open across redraws (AC-08 flake; Mark checked it by hand on TEST and approved). CI actions moved to v5 (Node 24).
+- **Tests:** RP-02, CU-16, CU-17, CU-18, WL-31, AB-27 + `helpers/hold-request.js` (holds one Supabase request until released). All six fail on the old page. RP-02 builds its own hidden class (review found it used `fri-upcoming`). 350 tests; local full run 350/350 (first run: AC-05 one-off — startup `classes` load came back empty; passed 3/3 alone). CI attempt 1 hit TEST Edge Function HTML error pages (SEC-10, SEC-16b/c/f, PB-10); rerun 331 passed, 0 flaky.
+- **Decisions:** failed / overlapping dashboard loads are pre-existing, so not fixed here: new ticket **#125** (High, Mark's call), with the review's "one shared gate" and "load in parallel" ideas added as a comment. EC-09, WL-02, AC-05 noted on #112 as watched one-offs.
+- **Test data:** for Mark's By Class check, one pending booking was added on TEST (Intermediate, block 6857) and he confirmed it; the next reseed clears it.
+- **Next session:** #125 (top of High), prod waiting-list walkthrough re-run, Phase 1.5 (#65).
