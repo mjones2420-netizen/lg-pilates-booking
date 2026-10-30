@@ -470,6 +470,58 @@ body:has(#pg-schedule.on) .site-footer-public { display:flex; }
 .class-group-loc-header { background:var(--charcoal); color:#eef5f5; padding:10px 18px; display:flex; justify-content:space-between; align-items:center; margin-bottom:0; }
 .class-group-loc-title { font-size:13px; font-weight:500; display:flex; align-items:center; gap:7px; }
 .class-group-loc-count { font-size:11px; color:var(--light); }
+/* week strip (All bookings page, #89) — every class on its day with how full it is */
+.week-strip { margin-bottom:18px; border:1px solid var(--border); border-radius:4px; background:white; overflow:hidden; }
+.week-strip-head { display:flex; justify-content:space-between; align-items:baseline; gap:10px; width:100%; padding:10px 14px; border:none; border-bottom:1px solid var(--border); background:none; font-family:inherit; text-align:left; cursor:default; }
+.week-strip-title { font-size:13px; font-weight:600; color:var(--charcoal); }
+.week-strip-range { font-size:12px; color:var(--mid); }
+.week-strip-days { display:grid; }
+.ws-day { border-right:1px solid var(--border); padding:8px 8px 10px; min-height:84px; }
+.ws-day:last-child { border-right:none; }
+.ws-day.today { background:var(--warm); }
+.ws-day-name { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--mid); margin-bottom:6px; }
+.ws-day.today .ws-day-name { color:var(--sage-dk); }
+.ws-card { display:block; width:100%; text-align:left; background:white; border:1px solid var(--border); border-radius:3px; padding:6px 7px; margin-bottom:6px; cursor:pointer; font-family:inherit; color:var(--charcoal); }
+.ws-card:hover { border-color:var(--sage); }
+.ws-card:last-child { margin-bottom:0; }
+.ws-time { font-size:11px; color:var(--mid); }
+.ws-name { font-size:12px; font-weight:600; line-height:1.3; margin:1px 0 4px; overflow-wrap:anywhere; }
+.ws-fill { display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--mid); }
+.ws-fill strong { color:var(--charcoal); }
+.ws-bar { height:4px; border-radius:2px; background:var(--cream); margin-top:4px; overflow:hidden; }
+.ws-bar span { display:block; height:100%; background:var(--sage); }
+.ws-card.nearly .ws-bar span { background:var(--amber); }
+.ws-card.full .ws-bar span { background:var(--red); }
+.ws-tag { font-size:10px; font-weight:700; letter-spacing:0.4px; padding:1px 6px; border-radius:100px; }
+.ws-card.nearly .ws-tag { background:var(--amber-bg); color:var(--amber-dk); }
+.ws-card.full .ws-tag { background:#fbeaea; color:var(--red); }
+.ws-card.noblock { background:var(--warm); color:var(--mid); }
+.ws-note { font-size:11px; color:var(--light); margin-top:3px; }
+.ws-summary { display:none; }
+/* Phones and upright iPads: folded to a one-line summary ("12 classes · 3 full"),
+   tap to open one slim line per class with the day name on the left. */
+@media(max-width:940px){
+  .week-strip-head { cursor:pointer; border-bottom:none; }
+  .week-strip.open .week-strip-head { border-bottom:1px solid var(--border); }
+  .ws-summary { display:inline; font-size:12px; color:var(--mid); }
+  .week-strip-range { display:none; }
+  .week-strip-days { display:none; grid-template-columns:1fr !important; }
+  .week-strip.open .week-strip-days { display:grid; }
+  .ws-day { border-right:none; border-bottom:1px solid var(--border); min-height:0; display:flex; gap:8px; padding:4px 12px; }
+  .ws-day:last-child { border-bottom:none; }
+  .ws-day-name { width:34px; flex-shrink:0; margin:9px 0 0; }
+  .ws-day-cards { flex:1; min-width:0; }
+  .ws-card { display:grid; grid-template-columns:52px minmax(0,1fr) 64px; column-gap:8px; align-items:center; border:none; border-radius:0; padding:7px 0; margin:0; background:none; }
+  .ws-card + .ws-card { border-top:1px dashed var(--border); }
+  .ws-name { margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ws-fill { grid-column:3; grid-row:1; justify-content:flex-end; }
+  .ws-fill span:first-child { white-space:nowrap; }
+  .ws-tag { display:none; }
+  .ws-card.full .ws-fill, .ws-card.full .ws-fill strong { color:var(--red); font-weight:700; }
+  .ws-card.nearly .ws-fill, .ws-card.nearly .ws-fill strong { color:var(--amber-dk); font-weight:700; }
+  .ws-bar { grid-column:2 / 4; height:3px; margin-top:4px; }
+  .ws-note { grid-column:2 / 4; margin-top:2px; }
+}
 /* block status badges */
 .blk-badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:100px; }
 .blk-badge-active { background:#e8f0e7; color:var(--green); }
@@ -938,6 +990,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
             </div>
             <div class="parq-warn-chev">&rsaquo;</div>
           </div>
+          <div id="week-strip" class="week-strip" style="display:none"></div>
           <div class="db-search-wrap">
             <i class="ti ti-search" aria-hidden="true"></i>
             <input class="db-search-input" id="bookings-search" type="text" placeholder="Search by client name or class…" autocomplete="off" oninput="filterBookingsTable()">
@@ -3665,9 +3718,13 @@ function renderDashboard(){
 
       // By Class tab
       renderClassesView();
+      // Week strip at the top of All bookings (#89)
+      renderWeekStrip();
 
     }catch(err){
       console.error("Dashboard error:",err);
+      var weekStrip=document.getElementById("week-strip");
+      if(weekStrip) weekStrip.style.display="none";
       setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">Error loading. Please refresh.</td></tr>');
     }
   })();
@@ -4181,6 +4238,13 @@ function denyPriorityAccess(blockId, msgEl, btn){
   msgEl.innerHTML="You don't have priority booking for this block. Standard booking opens on <strong>"+stdOpenStr+"</strong> &mdash; we look forward to seeing you then!";
 }
 
+// A class's current and upcoming blocks, soonest first. Ended blocks are
+// excluded — their bookings live on the Booking History page.
+function liveBlocksForClass(classId){
+  return blocks.filter(function(b){ return b.class_id===classId && !isBlockPast(b); })
+    .sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
+}
+
 function renderClassesView(){
   var html="";
   // Group classes by location (c.loc)
@@ -4199,9 +4263,7 @@ function renderClassesView(){
     html+="<span class=\"class-group-loc-count\">"+locClasses.length+" class"+(locClasses.length===1?"":"es")+"</span>";
     html+="</div>";
     locClasses.forEach(function(c){
-      // Ended blocks are excluded — their bookings live on the Booking History page.
-      var classBlocks=blocks.filter(function(b){ return b.class_id===c.id && !isBlockPast(b); });
-      classBlocks.sort(function(a,b){ return new Date(a.start_date)-new Date(b.start_date); });
+      var classBlocks=liveBlocksForClass(c.id);
       var groupId="cg-"+c.id;
       html+="<div class=\"class-group\" style=\"margin-bottom:0;border:none;border-top:1px solid var(--border);border-radius:0;\">";
       html+="<div class=\"class-group-header\" onclick=\"toggleClassGroup('"+groupId+"')\" style=\"background:white;color:var(--charcoal);padding-left:22px;\">";
@@ -4281,6 +4343,102 @@ function renderClassesView(){
   acc.querySelectorAll(".class-group-body").forEach(function(el){ if(el.style.display==="block") openIds.push(el.id); });
   acc.innerHTML=html||"<div style='color:var(--light);padding:20px'>No classes yet.</div>";
   openIds.forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display="block"; });
+}
+
+// ─── Week strip (#89) ─────────────────────────────────────────────────────────
+// Top of All bookings: Monday to Sunday of this week, every class on its day
+// with how full it is. Each class shows the block running this week; with none
+// running, its next block (so Louise still sees how that is filling).
+// On phones it is folded to a one-line summary; tapping the header opens it.
+
+// "6:00pm" / "18:00" / "9.30am" -> minutes after midnight, for sorting a day's
+// classes. A bare hour of 1-6 with no am/pm ("6:00") is read as evening —
+// there are no classes before 7am.
+function weekStripTimeKey(t){
+  var m=/(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?/i.exec(t||"");
+  if(!m) return 9999;
+  var h=parseInt(m[1],10), ap=(m[3]||"").toLowerCase();
+  if(ap) h=h%12+(ap==="pm"?12:0);
+  else if(h>=1&&h<=6) h+=12;
+  return h*60+(m[2]?parseInt(m[2],10):0);
+}
+
+function weekStripIso(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function renderWeekStrip(){
+  var el=document.getElementById("week-strip");
+  if(!el) return;
+  if(!classes.length){ el.style.display="none"; return; }
+  var weekOrder=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  var today=new Date(); today.setHours(0,0,0,0);
+  var monday=new Date(today); monday.setDate(today.getDate()-((today.getDay()+6)%7));
+  var sunday=new Date(monday); sunday.setDate(monday.getDate()+6);
+  var monIso=weekStripIso(monday), sunIso=weekStripIso(sunday);
+  var fmt=function(d){ return d.toLocaleDateString("en-GB",{day:"numeric",month:"short"}); };
+  var todayName=weekOrder[(today.getDay()+6)%7];
+  var nFull=0, nNearly=0;
+
+  // Only days that have a class get a column, so an empty Saturday/Sunday
+  // takes no space — and appears by itself if Louise adds a class that day.
+  var classDays=weekOrder.filter(function(day){ return classes.some(function(c){ return c.day===day; }); });
+  var days="<div class=\"week-strip-days\" style=\"grid-template-columns:repeat("+classDays.length+",minmax(0,1fr))\">";
+  classDays.forEach(function(day){
+    var dayClasses=classes.filter(function(c){ return c.day===day; });
+    dayClasses.sort(function(a,b){ return weekStripTimeKey(a.time)-weekStripTimeKey(b.time); });
+    days+="<div class=\"ws-day"+(day===todayName?" today":"")+"\"><div class=\"ws-day-name\">"+day.slice(0,3)+"</div><div class=\"ws-day-cards\">";
+    dayClasses.forEach(function(c){
+      var live=liveBlocksForClass(c.id);
+      var running=live.find(function(b){ return b.start_date<=sunIso && b.end_date>=monIso; });
+      // Fallback is the next block on offer — a hidden block isn't on offer yet.
+      var blk=running||live.find(function(b){ return b.visible!==false; })||null;
+      var card="<button type=\"button\" data-class-id=\""+c.id+"\" class=\"ws-card";
+      var body="<div class=\"ws-time\">"+sanitise(c.time||"")+"</div><div class=\"ws-name\">"+sanitise(c.name)+"</div>";
+      if(!blk){
+        card+=" noblock";
+        body+="<div class=\"ws-note\">No block booked in</div>";
+      } else {
+        // A seat held for a waiting-list offer is taken, as everywhere else on the dashboard.
+        var booked=blk.booked||0, cap=blk.cap||0, held=cuHeldOnBlock(blk.id), taken=booked+held;
+        var full=cap>0&&taken>=cap, nearly=!full&&cap>0&&cap-taken<=1;
+        if(full){ card+=" full"; nFull++; } else if(nearly){ card+=" nearly"; nNearly++; }
+        var pct=cap>0?Math.min(100,Math.round(taken/cap*100)):0;
+        var tag=full?"<span class=\"ws-tag\">FULL</span>":nearly?"<span class=\"ws-tag\">1 left</span>":"";
+        body+="<div class=\"ws-fill\"><span><strong>"+booked+"</strong>/"+cap+" booked</span>"+tag+"</div>";
+        body+="<div class=\"ws-bar\"><span style=\"width:"+pct+"%\"></span></div>";
+        if(held) body+="<div class=\"ws-note\">+"+held+" held for waiting list</div>";
+        if(!running) body+="<div class=\"ws-note\">Next block starts "+fmt(new Date(blk.start_date+"T00:00:00"))+"</div>";
+      }
+      days+=card+"\" onclick=\"openClassFromWeekStrip("+c.id+")\">"+body+"</button>";
+    });
+    days+="</div></div>";
+  });
+  days+="</div>";
+
+  var nClasses=classes.filter(function(c){ return classDays.indexOf(c.day)>=0; }).length;
+  var summary=nClasses+" class"+(nClasses===1?"":"es")+(nFull?" &middot; "+nFull+" full":"")+(nNearly?" &middot; "+nNearly+" nearly full":"")+" &#8964;";
+  var isOpen=el.classList.contains("open");
+  // The head is a button so the phone fold opens from the keyboard too; on
+  // desktop the days always show and toggling it changes nothing.
+  var head="<button type=\"button\" class=\"week-strip-head\" aria-expanded=\""+isOpen+"\" onclick=\"toggleWeekStrip()\"><span class=\"week-strip-title\">This week</span><span class=\"ws-summary\">"+summary+"</span><span class=\"week-strip-range\">"+fmt(monday)+" &ndash; "+fmt(sunday)+"</span></button>";
+  el.innerHTML=head+days;
+  el.style.display="";
+}
+
+function toggleWeekStrip(){
+  var el=document.getElementById("week-strip");
+  var open=el.classList.toggle("open");
+  el.querySelector(".week-strip-head").setAttribute("aria-expanded",open);
+}
+
+// Tapping a class in the week strip opens it on the By class page.
+function openClassFromWeekStrip(classId){
+  switchDashPage("byclass");
+  var grp=document.getElementById("cg-"+classId);
+  if(!grp) return;
+  grp.style.display="block";
+  grp.parentNode.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
 function toggleClassGroup(id){

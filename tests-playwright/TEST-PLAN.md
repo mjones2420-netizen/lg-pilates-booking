@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 26 Oct 2026
-**Total tests:** 350
+**Last updated:** 30 Oct 2026
+**Total tests:** 354
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -119,7 +119,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `bw-02-current-block-session-dates-listed.spec.js` | Thursday card renders one date pill per session in chronological order |
 | `bw-06-upcoming-becomes-active-on-start-date.spec.js` | Monday active block renders as current; upcoming block stays in next-block panel |
 
-## Admin Bookings (AB) — 27 tests
+## Admin Bookings (AB) — 31 tests
 
 | Spec file | Test |
 |---|---|
@@ -150,6 +150,10 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `ab-26-by-class-hides-past-blocks.spec.js` | AB-26a — ended blocks do not render; upcoming blocks do |
 | `ab-26-by-class-hides-past-blocks.spec.js` | AB-26b — class with only ended blocks shows redirect empty state |
 | `ab-27-by-class-stays-open.spec.js` | AB-27 — an opened class stays open when the dashboard reloads, and others stay closed |
+| `ab-28-31-week-strip.spec.js` | AB-31 — starts folded with a summary line and opens when tapped |
+| `ab-28-31-week-strip.spec.js` | AB-28 — each class sits on its weekday with the booked count of its block; empty days have no column |
+| `ab-28-31-week-strip.spec.js` | AB-29 — a full class is marked FULL |
+| `ab-28-31-week-strip.spec.js` | AB-30 — clicking a class opens it on the By class page |
 
 ## Admin Classes (AC) — 23 tests
 
