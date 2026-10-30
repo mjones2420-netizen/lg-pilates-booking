@@ -1,5 +1,5 @@
 # LG PILATES BOOKING SYSTEM — CLAUDE CODE CONTEXT
-Last updated: 26 Oct 2026 (session 113 — #121 + #112 done; auto-clear still off)
+Last updated: 30 Oct 2026 (session 114 — #96 nightly backups live; auto-clear still off)
 
 > This file = rules + current snapshot + gotchas. Read on demand:
 > - `context.txt` — full schema, fixtures, front-end detail
@@ -155,6 +155,7 @@ No `--retries` needed. A third reporter (`progress-reporter.js`) writes `tests-p
 | `tests-playwright/tests/helpers/` | Shared test helpers |
 | `.claude/commands/deploy.md` | Deploy pipeline (local only, gitignored) |
 | `docs/training-hub/` | Training Hub source (#114): `template.html` lessons, `build.js`, read-only screenshot scripts `capture*.js` (`capture-emails.js` renders the real email templates offline, #120). Published to a private artifact (URL in memory / SESSION-LOG session 102) |
+| `docs/backups/` | Nightly PROD backups (#96): setup + emergency restore guide (README), `backup_reader` role SQL, `table-counts.sql`, `restore-skip.txt`. Jobs: `.github/workflows/db-backup.yml` (02:00 UTC → Cloudflare R2, gpg-encrypted, 30-day lifecycle, HetrixTools heartbeat) and `restore-drill.yml` (Mondays, throwaway supabase/postgres container) |
 | `docs/walkthroughs/waitlist/` | Reusable hands-on waitlist walkthrough on PROD (#107): script, `01-setup` / `02`/`03` cancel / `04-teardown` SQL (Mark pastes), `checklist.html` (published checklist artifact) |
 
 ---
@@ -235,10 +236,10 @@ Ended blocks (`isBlockPast`: end_date < today) show on Booking history only, not
 - **Prod Edge Function versions**: send-email v16, stripe-checkout v11, stripe-webhook v12, lookup-customer-throttled v4, join-waitlist-throttled v2, stripe-refund v5.
 - **Stripe on prod is still a TEST key** — swap at release Phase 3 ([#30](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/30)).
 - **New website LIVE at lg-pilates.co.uk** (DNS cutover 12 Sep 2026). **Release Phases 0 and 1 COMPLETE** (#63, #64 closed 28 Sep). **Next: Phase 1.5** (#65) — decide the Netlify-credit question first (see RELEASE-PLAN.md).
-- **Session 109–112:** #98 uptime monitors LIVE and closed (HetrixTools, every 10 min, 3 locations: website, booking-site `health.txt`, PROD DB check). **#90/#91 data protection LIVE on prod 23 Oct** (`dd6f3cd`): migration 34 (Mark pasted), lookup/checkout/webhook deployed, page pushed. Consent tick box + privacy link removed before launch (privacy page parked), so customers see no change; Louise gets Download data / Delete health form / fuller customer delete. **Auto-clear is OFF** until the retention switch-on (12 months, #124): parq CSV export → `admin_parq_retention_preview(12)` → Louise confirms → Mark pastes the settings INSERT (steps on #124). **Session 113:** #121 done (two never-sent admin email designs removed; Settings notification-email wording now "New booking alerts" only); #112 done: Reports / Catch-ups / Waiting lists / Record swap now wait for the dashboard load (`dashLoadPromise`) — the cause of the RP-01, WL-22, CU-02/04/10 flakes; By Class keeps opened classes open across reloads (AC-08 flake); CI actions moved to Node 24 (v5). EC-09, WL-02, AC-05 one-offs with no pattern; follow-up #125 (failed/overlapping dashboard loads, incl. the unchecked startup classes load behind AC-05). **Next:** #125 (top of High), prod waiting-list walkthrough re-run; leftovers on #124 (Low), Phase 1.5 (#65).
+- **Session 109–112:** #98 uptime monitors LIVE and closed (HetrixTools, every 10 min, 3 locations: website, booking-site `health.txt`, PROD DB check). **#90/#91 data protection LIVE on prod 23 Oct** (`dd6f3cd`): migration 34 (Mark pasted), lookup/checkout/webhook deployed, page pushed. Consent tick box + privacy link removed before launch (privacy page parked), so customers see no change; Louise gets Download data / Delete health form / fuller customer delete. **Auto-clear is OFF** until the retention switch-on (12 months, #124): parq CSV export → `admin_parq_retention_preview(12)` → Louise confirms → Mark pastes the settings INSERT (steps on #124). **Session 113:** #121 done (two never-sent admin email designs removed; Settings notification-email wording now "New booking alerts" only); #112 done: Reports / Catch-ups / Waiting lists / Record swap now wait for the dashboard load (`dashLoadPromise`) — the cause of the RP-01, WL-22, CU-02/04/10 flakes; By Class keeps opened classes open across reloads (AC-08 flake); CI actions moved to Node 24 (v5). EC-09, WL-02, AC-05 one-offs with no pattern; follow-up #125 (failed/overlapping dashboard loads, incl. the unchecked startup classes load behind AC-05). **Session 114:** #96 done — nightly encrypted PROD backups to Cloudflare R2 + weekly restore drill, both proven by live runs (details: docs/backups/README.md). **Next:** #125 (top of High), #126 (alert emails to Mark's other address), prod waiting-list walkthrough re-run; leftovers on #124 (Low), Phase 1.5 (#65, incl. step 19d).
 - **Open risks / follow-ups**:
   - Keep-alive (#111 fixed): a failing run now opens a "Keep-alive ping failing" issue that emails Mark. GitHub can still silently disable schedules after 60 days of repo inactivity — outside monitor is #98.
-  - Free-plan Supabase = **no usable backups** (#96) and no leaked-password check (#21). Supabase Pro (~$25/mo) would cover backups, pausing and leak-check — weigh at #96.
+  - Free-plan Supabase has no built-in backups — covered by our own nightly backups since #96 (admin logins and cron jobs are not in them; restore guide covers both). Still no leaked-password check (#21).
   - [#125](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/125) — a failed dashboard load still shows £0 / "Unknown" with no error, and overlapping loads aren't guarded.
   - #107 waitlist walkthrough PASSED on prod (1 Oct, 33 steps); re-run due for #116/#110 (now 37 steps).
   - [#113](https://github.com/mjones2420-netizen/lg-pilates-booking/issues/113) — booking-system header links still point at `new-lg-website.netlify.app` (9 in index.html); swap to `lg-pilates.co.uk` before the pilot.
@@ -298,6 +299,8 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - One-shot sends / webhook idempotency: atomic `UPDATE ... WHERE x IS NULL/false RETURNING` claim before acting.
 - `payment_mode` is NOT reset by reseed (migration 12 handles it).
 - Test admin users must be created via the Supabase dashboard, not raw SQL.
+- **The Supabase SQL Editor auto-saves every query.** After Mark pastes SQL containing a password (e.g. `backup_reader`), have him delete that saved query.
+- **Public repo: backup/restore jobs must never print row data.** Postgres error DETAIL/CONTEXT lines can quote customer rows — `restore-drill.yml` sends pg_restore stderr to a file. No GitHub artifacts for dumps.
 
 **Front end**
 - Opening `docs/training-hub/training-hub.html` (or any artifact source) straight from disk shows mojibake ("â€œ") — the file has no charset meta; the artifact publisher adds it. Preview via a copy prefixed with `<meta charset="utf-8">`.
