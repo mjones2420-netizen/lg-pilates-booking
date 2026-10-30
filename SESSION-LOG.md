@@ -645,3 +645,10 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - **Live runs:** backup run 41065189565: 16 tables, 144 KB dump, 27 KB encrypted, heartbeat sent. Drill run 41073645781: all counts matched; 28 policies and 30 functions. Playwright CI on the push: green. No npm test needed (no product code).
 - **Tickets:** #96 closed + Done. New **#126** (forward GitHub alert emails to Mark's other address), High. RELEASE-PLAN Phase 1.5 step **19d**: check the backups don't use Netlify credits (comment on #65).
 - **Next session:** #125 (top of High), #126, prod waiting-list walkthrough re-run, Phase 1.5 (#65).
+
+## Session 115 (2026-10-30)
+
+**#126 done: GitHub alert emails now go to Mark's personal live.co.uk address.** Account settings only. No code, prod DB, Stripe or site changes.
+- **Steps (researched from GitHub, Gmail and Microsoft help pages):** adding the address first failed with "email is already in use" because it belonged to an older GitHub account (MJones970). Before Mark removed it there, checked that the address has no link to either repo: both are owned by mjones2420-netizen with no other collaborators, and every commit uses the Gmail address. The live.co.uk mentions in the repo are the booking system's `admin_email` setting, not GitHub. Mark moved the address to mjones2420-netizen and set it as **Settings > Notifications > Default notifications email**. Primary/sign-in stays Gmail (Google-connected). No mailbox forwarding rule needed.
+- **Test:** keep-alive `force_failure` run 41091331746 opened #127 with an @mention; Mark confirmed the email arrived at live.co.uk. #127 and #126 closed; #126 Done on the board.
+- **Next session:** top of the High column (#89, then #125), prod waiting-list walkthrough re-run, Phase 1.5 (#65).
