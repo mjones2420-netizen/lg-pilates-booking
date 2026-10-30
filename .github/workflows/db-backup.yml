@@ -1,0 +1,178 @@
+name: Nightly Database Backup
+
+# Free-plan Supabase has no usable backups (#96). Every night this copies the
+# PRODUCTION database's public schema (every booking, customer, health form,
+# setting, function and security policy) into a private Cloudflare R2 bucket.
+#
+# How it works:
+#   1. Count the rows in every table (docs/backups/table-counts.sql).
+#   2. pg_dump the public schema as the read-only backup_reader login
+#      (docs/backups/01-backup-reader-role.sql) — it cannot change anything.
+#   3. Count again. If the counts moved mid-dump, try again (max 3 times), so
+#      the saved counts always describe exactly what is in the dump.
+#   4. Encrypt the dump (AES-256, BACKUP_PASSPHRASE) and upload it plus the
+#      counts file. The restore drill (restore-drill.yml) uses the counts to
+#      prove a restore brings every row back.
+#
+# The repo is PUBLIC, so nothing sensitive may touch GitHub storage or logs:
+# no artifacts, and the log shows only table names and row counts. The dump
+# is only ever written unencrypted to this job's throwaway machine.
+#
+# Old backups are deleted by a 30-day lifecycle rule on the R2 bucket, not by
+# this job. Emergency restore steps: docs/backups/README.md.
+#
+# After a successful upload the job pings a HetrixTools heartbeat monitor
+# (BACKUP_HEARTBEAT_URL). If no ping arrives for 3 days, HetrixTools emails
+# Mark. This is the outside check for the case the alert job below can't
+# catch: GitHub switching scheduled workflows off after 60 days without repo
+# activity, so the job never runs at all.
+#
+# Secrets: BACKUP_DB_URL (session-pooler URL for backup_reader, with
+# ?sslmode=require), BACKUP_PASSPHRASE, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
+# R2_SECRET_ACCESS_KEY, BACKUP_HEARTBEAT_URL.
+#
+# If this workflow fails, the "alert" job opens (or comments on) a GitHub
+# issue titled "Database backup failing" and @mentions the owner.
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PG_IMAGE: postgres:17
+      R2_BUCKET: lg-pilates-backups
+      BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      AWS_DEFAULT_REGION: auto
+      # Newer AWS CLIs send checksums by default; only send them when R2
+      # requires them.
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: docs/backups
+
+      - name: Check the secrets are set
+        run: |
+          missing=0
+          for name in BACKUP_DB_URL BACKUP_PASSPHRASE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY R2_ACCOUNT_ID; do
+            if [ -z "${!name}" ]; then echo "::error::Secret for ${name} is not set"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Dump the production database
+        run: |
+          # counts <file> — row count per table, as backup_reader.
+          counts() {
+            docker run --rm -i -e BACKUP_DB_URL "$PG_IMAGE" \
+              psql "$BACKUP_DB_URL" -X -A -t -q -v ON_ERROR_STOP=1 -f - \
+              < docs/backups/table-counts.sql > "$1"
+          }
+
+          for attempt in 1 2 3; do
+            counts counts-before.csv
+            docker run --rm -e BACKUP_DB_URL "$PG_IMAGE" \
+              pg_dump "$BACKUP_DB_URL" --schema=public --format=custom > db.dump
+            counts counts-after.csv
+            if cmp -s counts-before.csv counts-after.csv; then
+              break
+            fi
+            echo "Attempt ${attempt}: data changed during the dump — trying again"
+            [ "$attempt" = 3 ] && { echo "::error::Data kept changing during the dump"; exit 1; }
+            sleep 30
+          done
+          mv counts-after.csv counts.csv
+
+          echo "Rows per table:"
+          sed 's/,/: /' counts.csv
+
+      - name: Check the dump is readable and complete
+        run: |
+          docker run --rm -i "$PG_IMAGE" pg_restore --list < db.dump > toc.txt
+          for table in bookings customers parq blocks classes settings; do
+            grep -q " TABLE DATA public ${table} " toc.txt \
+              || { echo "::error::Dump has no data section for ${table}"; exit 1; }
+          done
+          echo "Dump size: $(du -h db.dump | cut -f1)"
+
+      - name: Encrypt and upload to Cloudflare R2
+        run: |
+          stamp=$(date -u '+%Y%m%d-%H%M')
+          key="prod/lg-pilates-prod-${stamp}"
+          endpoint="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+          gpg --batch --yes --pinentry-mode loopback --symmetric --cipher-algo AES256 \
+            --passphrase-file <(printf '%s' "$BACKUP_PASSPHRASE") \
+            --output db.dump.gpg db.dump
+          rm db.dump
+
+          aws s3 cp db.dump.gpg "s3://${R2_BUCKET}/${key}.dump.gpg" --endpoint-url "$endpoint" --only-show-errors
+          aws s3 cp counts.csv  "s3://${R2_BUCKET}/${key}.counts.csv" --endpoint-url "$endpoint" --only-show-errors
+
+          # Confirm R2 really holds the whole file.
+          remote=$(aws s3api head-object --bucket "$R2_BUCKET" --key "${key}.dump.gpg" \
+            --endpoint-url "$endpoint" --query ContentLength --output text)
+          local_size=$(stat -c %s db.dump.gpg)
+          if [ "$remote" != "$local_size" ]; then
+            echo "::error::Uploaded size ${remote} does not match local size ${local_size}"
+            exit 1
+          fi
+          echo "Saved ${key}.dump.gpg (${local_size} bytes)"
+
+      - name: Tell HetrixTools the backup succeeded
+        env:
+          BACKUP_HEARTBEAT_URL: ${{ secrets.BACKUP_HEARTBEAT_URL }}
+        run: |
+          # A warning, not a failure: the backup itself is safe, and a
+          # missed ping only matters if it keeps happening — which is
+          # exactly what HetrixTools alerts on after 3 days.
+          if curl -fsS --retry 3 --max-time 30 -o /dev/null "$BACKUP_HEARTBEAT_URL"; then
+            echo "Heartbeat sent"
+          else
+            echo "::warning::Backup saved, but the HetrixTools heartbeat ping failed"
+          fi
+
+  alert:
+    needs: backup
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      OWNER: ${{ github.repository_owner }}
+    steps:
+      - name: Open or update the failure issue
+        run: |
+          title="Database backup failing"
+          msg="@${OWNER} the Nightly Database Backup workflow failed on $(date -u '+%d %b %Y %H:%M UTC').
+
+          **What it means:** last night's copy of the production database was not saved. The booking system itself is unaffected, and earlier backups are still in Cloudflare R2 (kept for 30 days), but the longer this keeps failing, the more recent bookings would be lost if the database had to be restored.
+
+          **What to do:** open the run log below and ask Claude to look at it. Close this issue once a run passes.
+
+          Run log: ${RUN_URL}"
+
+          existing=$(gh issue list --state open --search "\"${title}\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"${title}\") | .number" | head -n1)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$msg"
+            echo "Commented on existing issue #${existing}"
+          else
+            gh issue create --title "$title" --body "$msg"
+          fi

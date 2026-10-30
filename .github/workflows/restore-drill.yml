@@ -1,0 +1,182 @@
+name: Weekly Restore Drill
+
+# A backup nobody has restored is only a hope (#96). Every Monday this takes
+# the newest nightly backup from Cloudflare R2 and restores it into a
+# throwaway database on this job's own machine — not the test or production
+# Supabase project — then checks it came back whole:
+#
+#   - the newest backup is less than 2 days old (catches a backup job that has
+#     silently stopped running);
+#   - it decrypts with BACKUP_PASSPHRASE and restores with no errors;
+#   - every table has exactly the row count saved alongside the dump;
+#   - the security policies and functions came back too.
+#
+# The throwaway database is Supabase's own Postgres image (same version as
+# production), so the anon/authenticated roles and auth schema the dump
+# refers to exist, just as they would in a fresh Supabase project. It is
+# deleted when the job ends.
+#
+# Restored exactly as an emergency restore would (docs/backups/README.md):
+# admin_users rows are skipped because they point at admin logins in
+# auth.users, which are not in the backup.
+#
+# The repo is PUBLIC: the log shows only table names and row counts.
+#
+# If this workflow fails, the "alert" job opens (or comments on) a GitHub
+# issue titled "Restore drill failing" and @mentions the owner.
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      db:
+        # Keep in step with production's Postgres version (Supabase dashboard
+        # > Settings > Infrastructure).
+        image: supabase/postgres:17.6.1.063
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -h localhost"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      PG_IMAGE: postgres:17
+      LOCAL_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
+      R2_BUCKET: lg-pilates-backups
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: docs/backups
+
+      - name: Download the newest backup
+        run: |
+          endpoint="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          latest=$(aws s3api list-objects-v2 --bucket "$R2_BUCKET" --prefix prod/ --endpoint-url "$endpoint" \
+            --query "sort_by(Contents[?ends_with(Key, '.dump.gpg')] || \`[]\`, &Key)[-1].[Key, LastModified]" --output text)
+          key=$(cut -f1 <<<"$latest")
+          modified=$(cut -f2 <<<"$latest")
+          if [ -z "$key" ] || [ "$key" = "None" ]; then
+            echo "::error::No backups found in ${R2_BUCKET}/prod/"
+            exit 1
+          fi
+          age_hours=$(( ( $(date -u +%s) - $(date -u -d "$modified" +%s) ) / 3600 ))
+          echo "Newest backup: ${key} (${age_hours} hours old)"
+          if [ "$age_hours" -gt 48 ]; then
+            echo "::error::Newest backup is ${age_hours} hours old — the nightly backup has stopped running"
+            exit 1
+          fi
+
+          aws s3 cp "s3://${R2_BUCKET}/${key}" db.dump.gpg --endpoint-url "$endpoint" --only-show-errors
+          aws s3 cp "s3://${R2_BUCKET}/${key%.dump.gpg}.counts.csv" counts-expected.csv --endpoint-url "$endpoint" --only-show-errors
+
+          gpg --batch --yes --pinentry-mode loopback --decrypt \
+            --passphrase-file <(printf '%s' "$BACKUP_PASSPHRASE") \
+            --output db.dump db.dump.gpg
+
+      - name: Restore into the throwaway database
+        run: |
+          # The dump grants SELECT to backup_reader, so the role must exist.
+          docker run --rm --network host "$PG_IMAGE" \
+            psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -c "CREATE ROLE backup_reader NOLOGIN;"
+
+          # Skip what docs/backups/restore-skip.txt lists: the public schema
+          # and its permissions (every Supabase database already has them),
+          # Supabase's default-privilege settings (the non-superuser postgres
+          # login can't set them for supabase_admin) and admin_users rows
+          # (their logins aren't in the backup).
+          docker run --rm -i "$PG_IMAGE" pg_restore --list < db.dump \
+            | grep -v -E -f docs/backups/restore-skip.txt > restore.list
+
+          # Postgres error details can quote a failing row (customer data),
+          # and this log is public — keep them on the runner and print only
+          # which objects failed.
+          if ! docker run --rm --network host -v "$PWD:/work" "$PG_IMAGE" \
+              pg_restore --dbname "$LOCAL_DB_URL" --exit-on-error --use-list /work/restore.list /work/db.dump \
+              2> restore-errors.txt; then
+            echo "Failed objects:"
+            grep '^pg_restore: from TOC entry' restore-errors.txt || true
+            echo "::error::Restore failed (error details hidden because they can contain customer data)"
+            exit 1
+          fi
+          echo "Restore finished with no errors"
+
+      - name: Check every row came back
+        run: |
+          docker run --rm -i --network host "$PG_IMAGE" \
+            psql "$LOCAL_DB_URL" -X -A -t -q -v ON_ERROR_STOP=1 -f - \
+            < docs/backups/table-counts.sql > counts-restored.csv
+
+          grep -v '^admin_users,' counts-expected.csv > expected.csv
+          grep -v '^admin_users,' counts-restored.csv > restored.csv
+          echo "Rows per table (expected vs restored):"
+          LC_ALL=C join --nocheck-order -t, -a1 -a2 -e MISSING -o 0,1.2,2.2 expected.csv restored.csv | sed 's/,/: /; s/,/ vs /'
+          if ! cmp -s expected.csv restored.csv; then
+            echo "::error::Restored row counts do not match the backup"
+            exit 1
+          fi
+
+          # $(...) rather than < <(...) so a failed query stops the step
+          # instead of leaving the counts empty.
+          result=$(docker run --rm --network host "$PG_IMAGE" \
+            psql "$LOCAL_DB_URL" -X -A -t -q -v ON_ERROR_STOP=1 -F ' ' -c \
+            "SELECT (SELECT count(*) FROM pg_policies WHERE schemaname = 'public'),
+                    (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public');")
+          read -r policies functions <<<"$result"
+          echo "Security policies: ${policies}, functions: ${functions}"
+          if [ "${policies:-0}" -eq 0 ] || [ "${functions:-0}" -eq 0 ]; then
+            echo "::error::Security policies or functions are missing from the restore"
+            exit 1
+          fi
+          echo "Restore drill passed"
+
+  alert:
+    needs: drill
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      OWNER: ${{ github.repository_owner }}
+    steps:
+      - name: Open or update the failure issue
+        run: |
+          title="Restore drill failing"
+          msg="@${OWNER} the Weekly Restore Drill workflow failed on $(date -u '+%d %b %Y %H:%M UTC').
+
+          **What it means:** the newest database backup could not be restored cleanly in a test, or is too old. The booking system itself is unaffected, but if the database were lost today the backups might not get everything back.
+
+          **What to do:** open the run log below and ask Claude to look at it. Close this issue once a run passes.
+
+          Run log: ${RUN_URL}"
+
+          existing=$(gh issue list --state open --search "\"${title}\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"${title}\") | .number" | head -n1)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$msg"
+            echo "Commented on existing issue #${existing}"
+          else
+            gh issue create --title "$title" --body "$msg"
+          fi

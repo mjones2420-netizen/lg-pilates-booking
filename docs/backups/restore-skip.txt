@@ -1,0 +1,5 @@
+[[:space:]]SCHEMA - public[[:space:]]
+[[:space:]]COMMENT - SCHEMA public[[:space:]]
+[[:space:]]ACL - SCHEMA public[[:space:]]
+[[:space:]]DEFAULT ACL[[:space:]]
+[[:space:]]TABLE DATA public admin_users[[:space:]]
