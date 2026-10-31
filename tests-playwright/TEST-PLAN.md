@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 30 Oct 2026
-**Total tests:** 354
+**Last updated:** 31 Oct 2026
+**Total tests:** 358
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -385,12 +385,16 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `pr-01-prorata-year-boundary.spec.js` | before the block starts → full price, not prorated |
 | `pr-01-prorata-year-boundary.spec.js` | after the block ends → zero remaining, full price fallback (never negative) |
 
-## Reports (RP) — 2 tests
+## Reports (RP) — 6 tests
 
 | Spec file | Test |
 |---|---|
 | `rp-01-revenue-mtd.spec.js` | RP-01 — a confirmed booking this month makes Revenue MTD greater than £0 |
 | `rp-02-reports-before-data.spec.js` | RP-02 — Revenue MTD appears once the bookings arrive, without reopening Reports |
+| `rp-03-06-dashboard-load-failure.spec.js` | RP-03 — Reports shows an error, not £0, when the dashboard load fails |
+| `rp-03-06-dashboard-load-failure.spec.js` | RP-04 — Catch-ups shows an error and Record swap does not open its form |
+| `rp-03-06-dashboard-load-failure.spec.js` | RP-05 — Waiting lists shows an error when the dashboard load fails |
+| `rp-03-06-dashboard-load-failure.spec.js` | RP-06 — an older dashboard load finishing late does not overwrite a newer one |
 
 ## Mobile Dashboard (MB) — 21 tests
 

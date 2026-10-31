@@ -295,7 +295,7 @@ Adjust `git add` to match what changed. Single-line commit messages — no em-da
 - Cascade deletes: delete `waitlist`/`bookings` explicitly before `classes` (FK ordering isn't guaranteed).
 - After raw SQL on `bookings`, manually resync `blocks.booked` (trigger won't fire).
 - Supabase JS `.update()` without `.select()` swallows errors — always check `error`.
-- **Admin pages that draw from dashboard globals** (`bookings`, `dashCustomerMap`, `catchUpSwaps`) must `await dashLoadPromise` first — opened early they showed £0 / "Unknown" (#112). Spec pattern: `helpers/hold-request.js`.
+- **Admin pages that draw from dashboard globals** (`bookings`, `dashCustomerMap`, `catchUpSwaps`) must `await waitForDashData()` first (not `dashLoadPromise` directly) — opened early they showed £0 / "Unknown" (#112). It rejects when the load fails: catch it and show the page's "Error loading" state (#125). Only the newest `renderDashboard` run may set globals (`dashLoadSeq`). Spec patterns: `helpers/hold-request.js`, `rp-03-06-dashboard-load-failure.spec.js`.
 - One-shot sends / webhook idempotency: atomic `UPDATE ... WHERE x IS NULL/false RETURNING` claim before acting.
 - `payment_mode` is NOT reset by reseed (migration 12 handles it).
 - Test admin users must be created via the Supabase dashboard, not raw SQL.

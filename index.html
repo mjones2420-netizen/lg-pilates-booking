@@ -420,6 +420,11 @@ body:has(#pg-schedule.on) .site-footer-public { display:flex; }
 .db-result-count { font-size:12px; color:var(--mid); margin-bottom:10px; }
 /* reports stats */
 .db-stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+/* Reports load failed (#125): hide the figures so £0 can't pass as real. */
+#rpt-error { display:none; color:var(--red); padding:20px; }
+#dbpage-reports.rpt-failed #rpt-error { display:block; }
+/* !important: .db-report-cols sets display:grid inline. */
+#dbpage-reports.rpt-failed .db-content > :not(#rpt-error) { display:none !important; }
 .db-stat-card { background:white; border:1px solid var(--border); border-radius:4px; padding:16px 18px; }
 .db-stat-lbl { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--light); margin:0 0 6px; }
 .db-stat-val { font-family:'Raleway',sans-serif; font-size:32px; font-weight:400; color:var(--charcoal); margin:0 0 3px; line-height:1; }
@@ -1101,6 +1106,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
           <p class="db-topbar-title">Reports</p>
         </div>
         <div class="db-content">
+          <div id="rpt-error">Error loading reports. Please refresh.</div>
           <div class="db-stat-grid">
             <div class="db-stat-card"><p class="db-stat-lbl">Active bookings</p><p class="db-stat-val" id="rpt-active-bookings">0</p><p class="db-stat-sub">across all classes</p></div>
             <div class="db-stat-card"><p class="db-stat-lbl">Revenue MTD</p><p class="db-stat-val" id="rpt-revenue-mtd">£0</p><p class="db-stat-sub" id="rpt-revenue-month"></p></div>
@@ -1769,7 +1775,11 @@ var dashCustomerMap = null;   // id -> customers row, built in renderDashboard
 // The latest renderDashboard load. Reports, Catch-ups and Waiting lists draw from
 // what it loads (bookings, client names), so they wait for it first — opened
 // before it finished they showed £0 or "Unknown" until reopened (#112).
+// It rejects when the load fails, so those pages show an error instead (#125).
 var dashLoadPromise = Promise.resolve();
+// Bumped by every renderDashboard call. Only the newest run may set the globals
+// or draw, so an older load that finishes late can't put stale figures back (#125).
+var dashLoadSeq = 0;
 var waitlistRows = [];        // waiting-list rows for the admin page (#75)
 var heldByBlock = {};         // live waitlist holds (status 'offered') per block id — taken seats for catch-ups (migration 31)
 var appSettings = {};      // bank details + admin email, loaded at startup
@@ -3552,25 +3562,45 @@ function setBookingTables(rowHtml){
   if(hb) hb.innerHTML=rowHtml;
 }
 
+// Waits for the newest dashboard load, including one started while waiting.
+// Rejects if that load failed — callers show their "couldn't load" state (#125).
+async function waitForDashData(){
+  var p;
+  for(;;){
+    p=dashLoadPromise;
+    try{ await p; }
+    catch(err){ if(p===dashLoadPromise) throw err; continue; }
+    if(p===dashLoadPromise) return;
+  }
+}
+
 function renderDashboard(){
   setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--light);padding:28px;">Loading...</td></tr>');
+  var seq=++dashLoadSeq;
+  function superseded(){ return seq!==dashLoadSeq; }
   dashLoadPromise=(async function(){
     try{
       var{data:sessionData}=await sb.auth.getSession();
+      if(superseded()) return;
       if(!sessionData.session){
-        setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">Not authenticated. Please log in again.</td></tr>');
-        return;
+        var authErr=new Error("Not authenticated");
+        authErr.dashMessage="Not authenticated. Please log in again.";
+        throw authErr;
       }
       // Load bookings
       var bookingsRes=await sb.from("bookings")
         .select("id,status,amount_due,refund_amount,block_id,class_id,customer_id,stripe_payment_intent_id,created_at,terms_version,terms_accepted_at")
         .order("created_at",{ascending:false});
+      if(superseded()) return;
       var dbBookings=bookingsRes.data;
       var bookingsErr=bookingsRes.error;
       if(bookingsErr) throw bookingsErr;
 
-      // Load customers separately and map by id
+      // Load customers separately and map by id. A failed load must fail the
+      // dashboard: an empty map shows every client as "Unknown" (#125).
       var custsRes=await sb.from("customers").select("id,first_name,last_name,email,phone,customer_type");
+      if(superseded()) return;
+      if(custsRes.error) throw custsRes.error;
       var customerMap={};
       if(custsRes.data) custsRes.data.forEach(function(c){ customerMap[c.id]=c; });
       dashCustomerMap=customerMap;
@@ -3600,24 +3630,23 @@ function renderDashboard(){
       // Item 15: Detect bookings that should have a PAR-Q on file but don't.
       // A missing PAR-Q is a safety issue (no emergency contact / medical declaration).
       // We flag any non-cancelled booking whose customer_type is 'new' and whose booking_id
-      // has no row in the parq table.
+      // has no row in the parq table. A failed check fails the load: hiding the
+      // banner would read as "every health form is on file" (#125).
       var parqMissingIds={};
-      try{
-        var parqRes=await sb.from("parq").select("booking_id").is("anonymised_at",null);
-        var parqBookingIds={};
-        if(parqRes.data) parqRes.data.forEach(function(p){ if(p.booking_id) parqBookingIds[p.booking_id]=true; });
-        bookings.forEach(function(b){
-          // Past-block bookings are excluded: a missing PAR-Q on an ended block is
-          // no longer actionable, and its row lives on the History page where the
-          // banner's scroll-to-highlight can't reach it.
-          if(b.customerType==="new" && b.status!=="cancelled" && !b.blockPast && !parqBookingIds[b.dbId]){
-            parqMissingIds[b.dbId]=true;
-            b.parqMissing=true;
-          }
-        });
-      }catch(parqCheckErr){
-        console.error("PAR-Q presence check failed (non-fatal):",parqCheckErr);
-      }
+      var parqRes=await sb.from("parq").select("booking_id").is("anonymised_at",null);
+      if(superseded()) return;
+      if(parqRes.error) throw parqRes.error;
+      var parqBookingIds={};
+      if(parqRes.data) parqRes.data.forEach(function(p){ if(p.booking_id) parqBookingIds[p.booking_id]=true; });
+      bookings.forEach(function(b){
+        // Past-block bookings are excluded: a missing PAR-Q on an ended block is
+        // no longer actionable, and its row lives on the History page where the
+        // banner's scroll-to-highlight can't reach it.
+        if(b.customerType==="new" && b.status!=="cancelled" && !b.blockPast && !parqBookingIds[b.dbId]){
+          parqMissingIds[b.dbId]=true;
+          b.parqMissing=true;
+        }
+      });
       var missingCount=Object.keys(parqMissingIds).length;
       var warnEl=document.getElementById("parq-warn");
       var warnCntEl=document.getElementById("parq-warn-count");
@@ -3671,21 +3700,25 @@ function renderDashboard(){
       if(historyBody) historyBody.innerHTML=hhtml;
 
       // Reload blocks fully from DB — ensures deleted/added blocks are reflected
-      var{data:freshBlocks}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
+      var{data:freshBlocks,error:blocksErr}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
+      if(superseded()) return;
+      if(blocksErr) throw blocksErr;
       if(freshBlocks) blocks=freshBlocks.map(function(b){ return {id:b.id,class_id:b.class_id,start_date:b.start_date,end_date:b.end_date,weeks:b.weeks,dates:b.dates||[],price:b.price,cap:b.cap,booked:b.booked||0,wait:b.wait||0,visible:b.visible!==false,status:b.status}; });
 
-      // Load catch-up swaps (uses customerMap + blocks/classes already loaded)
-      try{
-        var{data:swapsData}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
-        catchUpSwaps=mapSwapRows(swapsData,customerMap);
-      }catch(swapErr){ console.error("Catch-up swaps load error:",swapErr); catchUpSwaps=[]; }
+      // Load catch-up swaps (uses customerMap + blocks/classes already loaded).
+      // Throw rather than fall through to an empty list, as reloadCatchUpSwaps
+      // does: that would silently drop the over-capacity warning (#119, #125).
+      var{data:swapsData,error:swapsErr}=await sb.from("catch_up_swaps").select("*").order("class_date",{ascending:true});
+      if(superseded()) return;
+      if(swapsErr) throw swapsErr;
+      catchUpSwaps=mapSwapRows(swapsData,customerMap);
       // Live waitlist holds — a held seat is taken for catch-ups and counts
-      // toward the over-capacity warning below.
-      try{
-        var{data:holdRows,error:holdErr}=await sb.from("waitlist").select("block_id").eq("status","offered");
-        if(holdErr) throw holdErr;
-        setHeldByBlock(holdRows);
-      }catch(holdLoadErr){ console.error("Waitlist holds load error:",holdLoadErr); heldByBlock={}; }
+      // toward the over-capacity warning below. Fails the load rather than
+      // counting held seats as free (#125).
+      var{data:holdRows,error:holdErr}=await sb.from("waitlist").select("block_id").eq("status","offered");
+      if(superseded()) return;
+      if(holdErr) throw holdErr;
+      setHeldByBlock(holdRows);
 
       // Classes table — each class shows its active and upcoming block
       var chtml="";
@@ -3722,12 +3755,19 @@ function renderDashboard(){
       renderWeekStrip();
 
     }catch(err){
+      // A newer load has taken over — leave the screen to it.
+      if(superseded()) return;
       console.error("Dashboard error:",err);
       var weekStrip=document.getElementById("week-strip");
       if(weekStrip) weekStrip.style.display="none";
-      setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">Error loading. Please refresh.</td></tr>');
+      setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">'+(err.dashMessage||"Error loading. Please refresh.")+'</td></tr>');
+      // Reject so pages waiting on this load show their error state (#125).
+      throw err;
     }
   })();
+  // The pages that wait on it handle the failure; this stops the browser
+  // reporting it as unhandled when no page is waiting.
+  dashLoadPromise.catch(function(){});
 }
 
 function scrollToFirstMissingParq(){
@@ -3922,9 +3962,11 @@ function filterCancellationsTable(){
 // ─── Reports page ────────────────────────────────────────────────────────────
 
 function renderReportsPage(){
+  var page=document.getElementById("dbpage-reports");
   (async function(){
     try{
-      await dashLoadPromise;
+      await waitForDashData();
+      page.classList.remove("rpt-failed");
       // Active (non-cancelled) bookings
       var activeBks=bookings.filter(function(b){ return b.status!=="cancelled"; });
       document.getElementById("rpt-active-bookings").textContent=activeBks.length;
@@ -4003,7 +4045,11 @@ function renderReportsPage(){
       });
       document.getElementById("rpt-class-totals").innerHTML=totalsHtml||'<div style="font-size:13px;color:var(--light)">No data.</div>';
 
-    }catch(err){ console.error("Reports error:",err); }
+    }catch(err){
+      console.error("Reports error:",err);
+      // Hide the figures rather than leave £0 / 0 looking real (#125).
+      page.classList.add("rpt-failed");
+    }
   })();
 }
 
@@ -4622,27 +4668,35 @@ function renderCatchUpSwapsList(){
   el.innerHTML=html;
 }
 
+var CATCHUP_LOAD_ERROR_HTML="<div style=\"color:var(--red);padding:20px\">Error loading catch-up swaps. Please refresh.</div>";
+
 function renderCatchUpSwapsPage(){
   var el=document.getElementById("catchup-list");
   if(!el) return;
   el.innerHTML="<div style=\"color:var(--light);padding:20px;font-size:13px\">Loading&hellip;</div>";
   (async function(){
     try{
-      await dashLoadPromise;
+      await waitForDashData();
       await reloadCatchUpSwaps();
       renderCatchUpSwapsList();
       renderClassesView();
     }catch(err){
       console.error("Catch-up swaps page error:",err);
-      el.innerHTML="<div style=\"color:var(--red);padding:20px\">Error loading catch-up swaps. Please refresh.</div>";
+      el.innerHTML=CATCHUP_LOAD_ERROR_HTML;
     }
   })();
 }
 
 async function openCatchUpModal(){
   // The client and class lists come from the dashboard's bookings; opened
-  // before that load finished they were empty (#112).
-  await dashLoadPromise;
+  // before that load finished they were empty (#112). If the load failed, show
+  // the page's error instead of a form with empty lists (#125).
+  try{ await waitForDashData(); }
+  catch(err){
+    var listEl=document.getElementById("catchup-list");
+    if(listEl) listEl.innerHTML=CATCHUP_LOAD_ERROR_HTML;
+    return;
+  }
   // Moved to another page while it loaded? Don't pop the form up over it.
   if(!document.getElementById("dbpage-catchup").classList.contains("on")) return;
   var errEl=document.getElementById("cu-err");
@@ -5036,7 +5090,7 @@ function renderWaitlistPage(){
   el.innerHTML="<div style=\"color:var(--light);padding:20px;font-size:13px\">Loading&hellip;</div>";
   (async function(){
     try{
-      await dashLoadPromise;
+      await waitForDashData();
       await reloadWaitlist();
       renderWaitlistList();
     }catch(err){
