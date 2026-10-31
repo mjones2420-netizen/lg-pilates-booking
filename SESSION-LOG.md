@@ -661,3 +661,13 @@ Website only (`lg-pilates-website` repo). `afc7b1a` — 7 WordPress URL 301 redi
 - **Tests:** AB-28 to AB-31 in `ab-28-31-week-strip.spec.js`. Counts are checked against the page's own `blocks`, and cards are found by `data-class-id`, because parallel specs add temporary classes, including on weekends. Full suite 354/354 green.
 - **Training Hub:** lesson 2.1 gains a "This week" tip; lesson 4.4 gains a fold step and a retaken `p4-phone` screenshot. Republished to the same URL.
 - **Next session:** top of the High column (#125), prod waiting-list walkthrough re-run, Phase 1.5 (#65).
+
+## Session 117
+
+**Session 117 (2026-10-31):** #125 done (`a1306d1`, live): a failed dashboard load now shows an error instead of £0 / "Unknown", and an older load can no longer overwrite a newer one.
+- **Failures fail:** `renderDashboard`'s promise now rejects on any failed query, and on "Not authenticated". That covers bookings, customers, the PAR-Q check, blocks, catch-up swaps and waitlist holds. The last four used to fall through to empty data. The worst case was the PAR-Q check: a failed check hid the "missing health forms" banner. Reports hides its figures behind "Error loading reports. Please refresh." (`.rpt-failed`). Catch-ups and Waiting lists show their existing error text. Record swap doesn't open its form.
+- **Overlaps:** `dashLoadSeq` means only the newest run may set globals or draw. Pages wait with `waitForDashData()`, which follows a newer load if one starts while waiting, including after a failure.
+- **Mockup:** screenshots of the error states with the customers query aborted, approved by Mark.
+- **Code review:** 8 findings, 5 fixed (holds, PAR-Q and blocks failures now fail the load; the wait helper retries when a newer load replaces a failed one; shared catch-up error markup). Skipped by Mark's choice: an already-open page doesn't redraw when a later load lands. No ticket raised.
+- **Tests:** RP-03 to RP-06 in `rp-03-06-dashboard-load-failure.spec.js`. RP-06 was confirmed to fail with the guard disabled. Full suite 358/358 green. No security review needed (display-only). No Training Hub lessons affected.
+- **Next session:** top of the High column (#95, error alerts from the booking site), then the prod waiting-list walkthrough re-run and Phase 1.5 (#65).
