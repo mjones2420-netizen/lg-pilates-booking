@@ -38,6 +38,7 @@ const GROUPS = [
   ['Mobile Dashboard (MB)', 'mb'],
   ['Waiting List (WL)', 'wl'],
   ['Data Protection (DP)', 'dp'],
+  ['Error Alerts (ER)', 'er'],
 ];
 
 function getRows() {

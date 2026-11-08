@@ -1801,6 +1801,141 @@ var addingBlockClassId = null;
 var IS_TEST_ENV  = new URLSearchParams(window.location.search).get('env') === 'test';
 var IS_NO_EMAIL  = new URLSearchParams(window.location.search).get('noemail') === '1';
 
+// ─── Error alerts (#95) ──────────────────────────────────────────────────────
+// Sends customer-side errors to Sentry (EU region), which emails Mark on each
+// new kind of error. Off under ?env=test and on local hosts, so test runs never
+// report and never load the Sentry script. Most errors here are caught and
+// only console.error'd, so console.error is reported too, not just crashes.
+// Everything sent passes through scrubErrorEvent first: emails, phone numbers,
+// URL query strings (offer / waitlist tokens) and ids are removed (#90).
+// The DSN is public by design: it only allows sending reports, not reading.
+var SENTRY_DSN = "https://10fb9f045f67f5cf5ce537343d21d39b@o4512396135301120.ingest.de.sentry.io/4512396152799312";
+var SENTRY_SRC = "https://browser.sentry-cdn.com/10.20.0/bundle.min.js";
+var SENTRY_SRI = "sha384-du93rFB2Lg6+XlPbc+5esCkrsqWTJf2Q4125iC2tC4qJm/yk6vtLiEnBfHRf28mU";
+var errorReporter = null;        // the Sentry SDK once loaded and initialised
+var pendingErrorReports = [];    // errors raised before the SDK finished loading
+var reportingErrorNow = false;   // re-entry guard (Sentry logging an error itself)
+var errorReportsSent = 0;        // per page load; a looping error can't flood Mark
+var MAX_ERROR_REPORTS = 10;      // or use up the free monthly quota
+
+function errorReportingEnabled(hostname, isTest){
+  if(isTest) return false;
+  if(!hostname) return false; // opened from disk
+  if(/^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(hostname)) return false;
+  if(/\.(localhost|local|test)$/.test(hostname)) return false;
+  if(/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) return false; // LAN / IP address
+  if(/--/.test(hostname)) return false; // Netlify deploy previews (deploy-preview-1--site)
+  return true;
+}
+
+function scrubText(s){
+  return String(s)
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
+    .replace(/\?[A-Za-z_][\w-]*=[^\s"'#\\]*/g, "?[removed]")
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "[id]")
+    .replace(/\+?\(?\d[\d\s()-]{8,}\d/g, "[number]");
+}
+
+// Sentry's beforeSend hook. Returns null (drop the report) if scrubbing fails,
+// so nothing unscrubbed can ever leave the browser.
+function scrubErrorEvent(event){
+  // Walks the report and scrubs string values only (numbers such as
+  // timestamps are left alone). A loop or very deep nesting throws → dropped.
+  function walk(v, depth){
+    if(depth > 20) throw new Error("too deep");
+    if(typeof v === "string") return scrubText(v);
+    if(Array.isArray(v)) return v.map(function(x){ return walk(x, depth+1); });
+    if(v && typeof v === "object"){
+      var o = {};
+      Object.keys(v).forEach(function(k){
+        // Postgres "details"/"hint" can quote a whole failing row (names,
+        // health answers), and console breadcrumbs keep the raw logged values.
+        if(k === "details" || k === "hint") return;
+        if(k === "arguments" && Array.isArray(v[k])) return;
+        o[k] = walk(v[k], depth+1);
+      });
+      return o;
+    }
+    return v;
+  }
+  try{
+    var clean = walk(event, 0);
+    delete clean.user;
+    if(clean.request){ delete clean.request.cookies; delete clean.request.data; }
+    return clean;
+  }catch(e){ return null; }
+}
+
+function sendErrorReport(r){
+  if(!errorReporter) { if(pendingErrorReports.length < 20) pendingErrorReports.push(r); return; }
+  if(reportingErrorNow || errorReportsSent >= MAX_ERROR_REPORTS) return;
+  errorReportsSent++;
+  reportingErrorNow = true;
+  try{
+    if(r.error) errorReporter.captureException(r.error, { tags: { where: r.where || "uncaught" } });
+    else errorReporter.captureMessage(r.where || "console.error", "error");
+  }catch(e){}
+  reportingErrorNow = false;
+}
+
+// Turns console.error("Booking error:", err) into a report. Supabase errors are
+// plain objects ({message, code}), not Error instances, so wrap those.
+function errorReportFromArgs(args){
+  var err = null, words = [];
+  for(var i=0;i<args.length;i++){
+    var a = args[i];
+    if(a instanceof Error){ if(!err) err = a; }
+    else if(a && typeof a === "object" && typeof a.message === "string"){
+      if(!err){ err = new Error(a.message); if(a.code) err.name = "Error " + a.code; }
+    }
+    else if(typeof a === "string" || typeof a === "number") words.push(String(a));
+  }
+  return { error: err, where: words.join(" ").slice(0, 120) };
+}
+
+function installErrorCapture(){
+  var original = console.error;
+  console.error = function(){
+    original.apply(console, arguments);
+    if(reportingErrorNow) return;
+    try{ sendErrorReport(errorReportFromArgs(arguments)); }catch(e){}
+  };
+  // Until the SDK loads, queue uncaught errors ourselves; after that Sentry's
+  // own handlers take them, so these listeners step aside.
+  window.addEventListener("error", function(ev){
+    if(!errorReporter) sendErrorReport({ error: ev.error || new Error(ev.message), where: "uncaught" });
+  });
+  window.addEventListener("unhandledrejection", function(ev){
+    if(!errorReporter){
+      var reason = ev.reason instanceof Error ? ev.reason : new Error(String(ev.reason && ev.reason.message || ev.reason));
+      sendErrorReport({ error: reason, where: "unhandled promise" });
+    }
+  });
+}
+
+function attachErrorReporter(S){
+  S.init({
+    dsn: SENTRY_DSN,
+    sendDefaultPii: false,
+    beforeSend: scrubErrorEvent,
+    // Browser noise that isn't ours (extensions, cross-origin scripts).
+    ignoreErrors: ["ResizeObserver loop", "Script error.", "Non-Error promise rejection captured"]
+  });
+  errorReporter = S;
+  var queued = pendingErrorReports.splice(0);
+  queued.forEach(sendErrorReport);
+}
+
+if(errorReportingEnabled(window.location.hostname, IS_TEST_ENV)){
+  installErrorCapture();
+  var sentryScript = document.createElement("script");
+  sentryScript.src = SENTRY_SRC;
+  sentryScript.integrity = SENTRY_SRI;
+  sentryScript.crossOrigin = "anonymous";
+  sentryScript.onload = function(){ try{ if(window.Sentry) attachErrorReporter(window.Sentry); }catch(e){} };
+  document.head.appendChild(sentryScript);
+}
+
 const PROD_SUPABASE_URL = "https://mrlooyixnlxzcfmvnqme.supabase.co";
 const PROD_SUPABASE_KEY = "sb_publishable_8PxvOxmytzkhdMgAuzuKpA_20rZcz_8";
 const TEST_SUPABASE_URL = "https://ngzfhamjuviwfwuncrjo.supabase.co";

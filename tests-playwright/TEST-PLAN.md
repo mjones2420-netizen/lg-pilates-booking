@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
-**Last updated:** 31 Oct 2026
-**Total tests:** 358
+**Last updated:** 8 Nov 2026
+**Total tests:** 363
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -485,6 +485,16 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `dp-15-grants-and-cron.spec.js` | anon is locked out of the new tables and RPCs |
 | `dp-15-grants-and-cron.spec.js` | a signed-in non-admin is rejected by every admin RPC |
 | `dp-15-grants-and-cron.spec.js` | the nightly clear-down job is scheduled |
+
+## Error Alerts (ER) — 5 tests
+
+| Spec file | Test |
+|---|---|
+| `er-01-05-error-alerts.spec.js` | ER-01: test mode never loads Sentry or sends a report |
+| `er-01-05-error-alerts.spec.js` | ER-02: reporting is on for the live site only |
+| `er-01-05-error-alerts.spec.js` | ER-03: personal details are scrubbed before sending |
+| `er-01-05-error-alerts.spec.js` | ER-04: caught errors queue until Sentry loads, then report once each |
+| `er-01-05-error-alerts.spec.js` | ER-05: the pinned Sentry SDK still matches its integrity hash |
 
 ---
 
