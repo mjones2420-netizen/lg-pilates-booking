@@ -28,7 +28,7 @@ env:
 jobs:
   test:
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned: Playwright 1.60 has no chromium for ubuntu 26.04 (Nov 2026)
 
     steps:
       - name: Checkout
