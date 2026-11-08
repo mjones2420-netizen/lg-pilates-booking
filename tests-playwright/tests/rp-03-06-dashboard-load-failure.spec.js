@@ -32,7 +32,7 @@ async function loginWithCustomersFailing(page) {
   await expect(page.locator('#test-mode-banner.on')).toBeVisible({ timeout: 5000 });
   await loginAsAdmin(page);
   // The dashboard itself reports the failure on All bookings.
-  await expect(page.locator('#btbody')).toContainText('Error loading. Please refresh.');
+  await expect(page.locator('#btbody')).toContainText('Error loading.');
 }
 
 test.describe('RP-03 to RP-06 — Dashboard load failures (#125)', () => {
@@ -47,7 +47,7 @@ test.describe('RP-03 to RP-06 — Dashboard load failures (#125)', () => {
     await expect(page.locator('#dbnav-reports.on')).toBeVisible();
 
     await expect(page.locator('#rpt-error')).toBeVisible();
-    await expect(page.locator('#rpt-error')).toHaveText('Error loading reports. Please refresh.');
+    await expect(page.locator('#rpt-error')).toHaveText('Error loading reports. Try again');
     // The figures are hidden so a £0 can't pass as real.
     await expect(page.locator('#rpt-revenue-mtd')).toBeHidden();
     await expect(page.locator('#rpt-active-bookings')).toBeHidden();
@@ -58,19 +58,19 @@ test.describe('RP-03 to RP-06 — Dashboard load failures (#125)', () => {
     await loginWithCustomersFailing(page);
 
     await page.locator('#dbnav-catchup').click();
-    await expect(page.locator('#catchup-list')).toContainText('Error loading catch-up swaps. Please refresh.');
+    await expect(page.locator('#catchup-list')).toContainText('Error loading catch-up swaps.');
 
     await page.locator('#dbpage-catchup button', { hasText: '+ Record swap' }).click();
     await page.waitForTimeout(500); // room for the form to open, if it would
     await expect(page.locator('#catchup-overlay')).not.toHaveClass(/\bon\b/);
-    await expect(page.locator('#catchup-list')).toContainText('Error loading catch-up swaps. Please refresh.');
+    await expect(page.locator('#catchup-list')).toContainText('Error loading catch-up swaps.');
   });
 
   test('RP-05 — Waiting lists shows an error when the dashboard load fails', async ({ page }) => {
     await loginWithCustomersFailing(page);
 
     await page.locator('#dbnav-waitlist').click();
-    await expect(page.locator('#waitlist-list')).toContainText('Error loading waiting lists. Please refresh.');
+    await expect(page.locator('#waitlist-list')).toContainText('Error loading waiting lists.');
     await expect(page.locator('#waitlist-subtitle')).toHaveText('Could not load');
   });
 

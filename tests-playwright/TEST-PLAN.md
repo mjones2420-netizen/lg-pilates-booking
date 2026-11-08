@@ -1,7 +1,7 @@
 # LG Pilates Booking System — Test Plan
 
 **Last updated:** 8 Nov 2026
-**Total tests:** 363
+**Total tests:** 367
 **Test framework:** Playwright
 **Test database:** `lg-pilates-test` (Supabase project `ngzfhamjuviwfwuncrjo`)
 
@@ -190,7 +190,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `acl-01-clients-tab-lists-customers.spec.js` | Clients tab renders the customer table with all seeded fixture clients |
 | `acl-02-priority-badges-display.spec.js` | overall Priority column shows Manual / Auto / Standard badges per client state |
 
-## Schedule Display (SD) — 6 tests
+## Schedule Display (SD) — 8 tests
 
 | Spec file | Test |
 |---|---|
@@ -200,6 +200,8 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `sd-04-filter-by-day.spec.js` | Baildon + Monday shows only Baildon Monday classes |
 | `sd-05-reset-all-classes.spec.js` | clicking All Classes after a filter restores full grid and hides day buttons |
 | `sd-06-class-without-blocks-hidden.spec.js` | hiding a class's only visible block removes it from the grid |
+| `sd-07-timetable-load-failure.spec.js` | failed load shows Try again, not "No classes available", and Try again recovers |
+| `sd-07-timetable-load-failure.spec.js` | Try again while still offline keeps the error and the button |
 
 ## Settings & Export (SE) — 23 tests
 
@@ -385,7 +387,7 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `pr-01-prorata-year-boundary.spec.js` | before the block starts → full price, not prorated |
 | `pr-01-prorata-year-boundary.spec.js` | after the block ends → zero remaining, full price fallback (never negative) |
 
-## Reports (RP) — 6 tests
+## Reports (RP) — 8 tests
 
 | Spec file | Test |
 |---|---|
@@ -395,6 +397,8 @@ npx playwright show-report   # video, trace and screenshots after a run
 | `rp-03-06-dashboard-load-failure.spec.js` | RP-04 — Catch-ups shows an error and Record swap does not open its form |
 | `rp-03-06-dashboard-load-failure.spec.js` | RP-05 — Waiting lists shows an error when the dashboard load fails |
 | `rp-03-06-dashboard-load-failure.spec.js` | RP-06 — an older dashboard load finishing late does not overwrite a newer one |
+| `rp-07-08-dashboard-try-again.spec.js` | RP-07 — Try again on All bookings reloads the bookings |
+| `rp-07-08-dashboard-try-again.spec.js` | RP-08 — Try again on Waiting lists reloads that page |
 
 ## Mobile Dashboard (MB) — 21 tests
 

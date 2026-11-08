@@ -195,6 +195,9 @@ body:has(#pg-schedule.on) .site-footer-public { display:flex; }
 .no-filter-icon { font-size:40px; margin-bottom:16px; }
 .no-filter-title { font-family:'Raleway',sans-serif; font-size:22px; font-weight:500; color:var(--charcoal); margin-bottom:10px; }
 .no-filter-sub { font-size:14px; color:var(--mid); max-width:380px; margin:0 auto; line-height:1.7; }
+.retry-btn { margin-top:18px; padding:12px 28px; background:var(--charcoal); color:white; border:none; border-radius:2px; font-family:'Open Sans',sans-serif; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:background 0.2s; }
+.retry-btn:hover { background:var(--sage-dk); }
+.retry-btn:disabled { opacity:0.6; cursor:default; }
 .card { background:#fff; border:1.5px solid var(--sage-lt); border-radius:12px; padding:0; cursor:pointer; transition:all 0.25s; overflow:hidden; display:flex; flex-direction:column; }
 .card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,0.07); }
 
@@ -422,6 +425,9 @@ body:has(#pg-schedule.on) .site-footer-public { display:flex; }
 .db-stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
 /* Reports load failed (#125): hide the figures so £0 can't pass as real. */
 #rpt-error { display:none; color:var(--red); padding:20px; }
+.dash-retry-btn { margin-left:10px; padding:6px 14px; background:#fff; color:var(--charcoal); border:1px solid var(--border); border-radius:4px; font-size:13px; cursor:pointer; vertical-align:middle; }
+.dash-retry-btn:hover { border-color:var(--sage-dk); color:var(--sage-dk); }
+.dash-retry-btn:disabled { opacity:0.6; cursor:default; }
 #dbpage-reports.rpt-failed #rpt-error { display:block; }
 /* !important: .db-report-cols sets display:grid inline. */
 #dbpage-reports.rpt-failed .db-content > :not(#rpt-error) { display:none !important; }
@@ -1106,7 +1112,7 @@ tr.parq-missing-highlight { background:#fff8ec; animation:parqPulse 1.2s ease-ou
           <p class="db-topbar-title">Reports</p>
         </div>
         <div class="db-content">
-          <div id="rpt-error">Error loading reports. Please refresh.</div>
+          <div id="rpt-error">Error loading reports. <button type="button" class="dash-retry-btn" onclick="retryDashLoad(this)">Try again</button></div>
           <div class="db-stat-grid">
             <div class="db-stat-card"><p class="db-stat-lbl">Active bookings</p><p class="db-stat-val" id="rpt-active-bookings">0</p><p class="db-stat-sub">across all classes</p></div>
             <div class="db-stat-card"><p class="db-stat-lbl">Revenue MTD</p><p class="db-stat-val" id="rpt-revenue-mtd">£0</p><p class="db-stat-sub" id="rpt-revenue-month"></p></div>
@@ -2110,7 +2116,55 @@ function filterDay(day,loc,btn){
   btn.className="fb on"; activeFilter="day"; activeLoc=loc; activeDay=day; renderGrid();
 }
 
+// Set when the timetable (classes/blocks) failed to load, so the grid shows a
+// "couldn't load, try again" message instead of a false "No classes available" (#93).
+var scheduleLoadFailed=false;
+var SCHEDULE_ERROR_HTML='<div class="no-filter-msg" id="schedule-load-error"><div class="no-filter-icon">📶</div><div class="no-filter-title">We couldn\u2019t load the timetable</div><div class="no-filter-sub">This is usually a weak or dropped connection. Check you\u2019re online, then try again.</div><button type="button" class="retry-btn" id="schedule-retry-btn" onclick="retryScheduleLoad()">Try again</button></div>';
+
+async function loadSchedule(){
+  var res=await Promise.all([
+    sb.from("classes").select("*").order("id",{ascending:true}),
+    sb.from("blocks").select("*").order("start_date",{ascending:true})
+  ]);
+  var cr=res[0], br=res[1];
+  if(cr.error) throw cr.error;
+  if(br.error) throw br.error;
+  classes=(cr.data||[]).map(function(c){ return {id:c.id,name:c.name,level:c.level||c.name,day:c.day,time:c.time,end_time:c.end_time,venue:c.venue,loc:c.loc}; });
+  blocks=(br.data||[]).map(function(b){ return {id:b.id,class_id:b.class_id,start_date:b.start_date,end_date:b.end_date,weeks:b.weeks,dates:b.dates||[],price:b.price,cap:b.cap,booked:b.booked||0,wait:b.wait||0,visible:b.visible!==false,status:b.status}; });
+}
+
+// Loads the timetable and draws it. Returns true when it loaded.
+async function loadAndRenderSchedule(){
+  try{ await loadSchedule(); scheduleLoadFailed=false; }
+  catch(err){
+    // A dropped connection is expected on mobile, so it is only warned (not
+    // sent to error alerts, #95); anything else is a real fault and reported.
+    var msg=String((err&&err.message)||err);
+    if(/failed to fetch|network|load failed/i.test(msg)) console.warn("Timetable load failed (connection):",msg);
+    else console.error("Timetable load error:",err);
+    scheduleLoadFailed=true;
+  }
+  buildFilters();
+  renderGrid();
+  return !scheduleLoadFailed;
+}
+
+// True when the page-load waiting-list links were skipped because the
+// timetable failed; a successful Try again then runs them once.
+var scheduleLinksPending=false;
+
+async function retryScheduleLoad(){
+  var btn=document.getElementById("schedule-retry-btn");
+  if(btn){ btn.disabled=true; btn.textContent="Loading\u2026"; }
+  if(await loadAndRenderSchedule() && scheduleLinksPending){
+    scheduleLinksPending=false;
+    await handleOfferLink();
+    await handleWaitlistConfirmLink();
+  }
+}
+
 function renderGrid() {
+  if(scheduleLoadFailed){ document.getElementById("grid").innerHTML=SCHEDULE_ERROR_HTML; return; }
   // Only show classes that have at least one active or upcoming block
   var filtered = classes.filter(function(c){
     if(activeFilter==="loc" && c.loc!==activeLoc) return false;
@@ -3895,7 +3949,7 @@ function renderDashboard(){
       console.error("Dashboard error:",err);
       var weekStrip=document.getElementById("week-strip");
       if(weekStrip) weekStrip.style.display="none";
-      setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">'+(err.dashMessage||"Error loading. Please refresh.")+'</td></tr>');
+      setBookingTables('<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">'+(err.dashMessage?err.dashMessage:"Error loading. "+DASH_RETRY_BTN)+'</td></tr>');
       // Reject so pages waiting on this load show their error state (#125).
       throw err;
     }
@@ -3916,6 +3970,20 @@ function scrollToFirstMissingParq(){
   rows.forEach(function(r){ r.classList.add("parq-missing-highlight"); });
   // Scroll the first one into view
   rows[0].scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+// "Try again" on a dashboard "Error loading" message (#93): reload all the
+// dashboard data, then redraw whichever page is open (pages that wait on the
+// dashboard load pick up the new load via waitForDashData).
+var DASH_RETRY_BTN='<button type="button" class="dash-retry-btn" onclick="retryDashLoad(this)">Try again</button>';
+async function retryDashLoad(btn){
+  if(btn){ btn.disabled=true; btn.textContent="Loading\u2026"; }
+  var open=document.querySelector('[id^="dbpage-"].on');
+  // Classes come from the startup timetable load; if that failed too, the
+  // dashboard would otherwise "recover" with every class missing.
+  if(scheduleLoadFailed) await loadAndRenderSchedule();
+  renderDashboard();
+  if(open) switchDashPage(open.id.replace("dbpage-",""));
 }
 
 function switchDashPage(page){
@@ -4184,6 +4252,9 @@ function renderReportsPage(){
       console.error("Reports error:",err);
       // Hide the figures rather than leave £0 / 0 looking real (#125).
       page.classList.add("rpt-failed");
+      // The Try again button is fixed markup; undo its "Loading…" from a retry.
+      var rptRetry=document.querySelector("#rpt-error .dash-retry-btn");
+      if(rptRetry){ rptRetry.disabled=false; rptRetry.textContent="Try again"; }
     }
   })();
 }
@@ -4278,7 +4349,7 @@ function renderCustomersTab(){
       tbody.innerHTML=html;
     }catch(err){
       console.error(err);
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading clients.</td></tr>';
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--red);padding:28px;">Error loading clients. <button type="button" class="dash-retry-btn" onclick="renderCustomersTab()">Try again</button></td></tr>';
     }
   })();
 }
@@ -4803,7 +4874,7 @@ function renderCatchUpSwapsList(){
   el.innerHTML=html;
 }
 
-var CATCHUP_LOAD_ERROR_HTML="<div style=\"color:var(--red);padding:20px\">Error loading catch-up swaps. Please refresh.</div>";
+var CATCHUP_LOAD_ERROR_HTML="<div style=\"color:var(--red);padding:20px\">Error loading catch-up swaps. "+DASH_RETRY_BTN+"</div>";
 
 function renderCatchUpSwapsPage(){
   var el=document.getElementById("catchup-list");
@@ -5232,7 +5303,7 @@ function renderWaitlistPage(){
       console.error("Waiting lists page error:",err);
       var sub=document.getElementById("waitlist-subtitle");
       if(sub) sub.textContent="Could not load";
-      el.innerHTML="<div style=\"color:var(--red);padding:20px\">Error loading waiting lists. Please refresh.</div>";
+      el.innerHTML="<div style=\"color:var(--red);padding:20px\">Error loading waiting lists. "+DASH_RETRY_BTN+"</div>";
     }
   })();
 }
@@ -6046,7 +6117,7 @@ function renderCancellationsTab(){
           +"</tr>";
       });
       tbody.innerHTML=html;
-    }catch(err){ console.error(err); tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">Error loading cancellations.</td></tr>'; }
+    }catch(err){ console.error(err); tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--red);padding:28px;">Error loading cancellations. <button type="button" class="dash-retry-btn" onclick="renderCancellationsTab()">Try again</button></td></tr>'; }
   })();
 }
 
@@ -6606,26 +6677,21 @@ async function showStripeOutcome(sessionId){
   fillClassTimeOptions();   // populate the Add/Edit Class time dropdowns (#5)
   await loadSettings();
 
-  try{
-    // Load classes
-    var{data:dbClasses}=await sb.from("classes").select("*").order("id",{ascending:true});
-    if(dbClasses) classes=dbClasses.map(function(c){ return {id:c.id,name:c.name,level:c.level||c.name,day:c.day,time:c.time,end_time:c.end_time,venue:c.venue,loc:c.loc}; });
-  }catch(err){ console.error("Classes error:",err); }
-
-  try{
-    // Load blocks
-    var{data:dbBlocks}=await sb.from("blocks").select("*").order("start_date",{ascending:true});
-    if(dbBlocks) blocks=dbBlocks.map(function(b){ return {id:b.id,class_id:b.class_id,start_date:b.start_date,end_date:b.end_date,weeks:b.weeks,dates:b.dates||[],price:b.price,cap:b.cap,booked:b.booked||0,wait:b.wait||0,visible:b.visible!==false,status:b.status}; });
-  }catch(err){ console.error("Blocks error:",err); }
-
-  buildFilters();
-  renderGrid();
+  var scheduleLoaded=await loadAndRenderSchedule();
 
   // Waiting-list offer link (#74) — needs classes and blocks already loaded,
   // since it opens the booking modal for one of them.
-  await handleOfferLink();
-  // Waiting-list confirmation link (#110) — same reason: needs classes/blocks.
-  await handleWaitlistConfirmLink();
+  // If the timetable failed they wait for a good Try again (retryScheduleLoad).
+  // A Stripe return still runs handleOfferLink now: its payment branch needs no
+  // timetable and must clear a spent offer before the payment flag is stripped.
+  var isStripeReturn=new URLSearchParams(window.location.search).has("payment");
+  if(scheduleLoaded || isStripeReturn){
+    await handleOfferLink();
+    // Waiting-list confirmation link (#110) — same reason: needs classes/blocks.
+    if(scheduleLoaded) await handleWaitlistConfirmLink();
+  } else {
+    scheduleLinksPending=true;
+  }
 
   // Handle Stripe redirect back to app after payment
   (function handleStripeRedirect(){
