@@ -1,0 +1,26 @@
+# Dependabot (#97) — SECURITY FIXES ONLY.
+#
+# open-pull-requests-limit: 0 switches off routine "new version available"
+# pull requests. Dependabot security updates (enabled in the repo settings)
+# ignore this limit, so a library with a known security hole still gets a
+# suggested fix, and Mark gets a Dependabot alert email.
+#
+# Not covered: the libraries index.html loads from outside websites
+# (supabase-js, Sentry, Tabler icons). They are pinned to fixed versions but
+# NOTHING scans them for security holes; check them by hand when updating.
+
+version: 2
+updates:
+  # Test tooling (Playwright, supabase-js, pg, dotenv)
+  - package-ecosystem: npm
+    directory: /tests-playwright
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+
+  # The building blocks the GitHub workflows use (actions/checkout etc.)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0

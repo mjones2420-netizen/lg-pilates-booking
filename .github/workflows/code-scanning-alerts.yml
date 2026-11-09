@@ -1,0 +1,70 @@
+name: Security scan alerts
+
+# CodeQL (#97) runs via GitHub's "default setup" (repo Settings > Code
+# security), so it has no workflow file of its own. Its findings only show on
+# the repo's Security tab and do not email anyone. This weekly job turns any
+# open finding into a GitHub issue titled "Security scan found a problem",
+# which @mentions the owner so it lands in Mark's email (same pattern as the
+# keep-alive alert, #111).
+#
+# Runs Tuesdays, after CodeQL's own weekly scan. To try it by hand:
+# Actions > Security scan alerts > Run workflow.
+
+on:
+  schedule:
+    - cron: '0 7 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      security-events: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      OWNER: ${{ github.repository_owner }}
+      ALERTS_URL: ${{ github.server_url }}/${{ github.repository }}/security/code-scanning
+    steps:
+      - name: Open or update the alert issue if CodeQL has open findings
+        run: |
+          # Fail loudly (rather than report "all clear") if the alert list
+          # cannot be read, e.g. CodeQL switched off.
+          alerts=$(gh api --paginate "repos/${GH_REPO}/code-scanning/alerts?state=open&per_page=100" \
+            --jq '.[] | "- \(.rule.security_severity_level // .rule.severity): \(.rule.description) (\(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line))"') \
+            || { echo "::error::Could not read the CodeQL findings (is code scanning still switched on?)"; exit 1; }
+          count=$(printf '%s' "$alerts" | grep -c '^- ' || true)
+          echo "Open CodeQL findings: ${count}"
+          [ "$count" = "0" ] && exit 0
+
+          title="Security scan found a problem"
+          msg="@${OWNER} GitHub's code scanner (CodeQL) has ${count} open finding(s) as of $(date -u '+%d %b %Y').
+
+          **What it means:** the scanner thinks part of our own code may have a security weakness. Not every finding is real; some are false alarms.
+
+          **What to do:** ask Claude to look at the findings. Close this issue once they are fixed or dismissed.
+
+          ${alerts}
+
+          Findings: ${ALERTS_URL}"
+
+          existing=$(gh issue list --state open --search "\"${title}\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"${title}\") | .number" | head -n1)
+          if [ -n "$existing" ]; then
+            # Same findings as last time? Stay quiet, so an unchanged list
+            # doesn't email Mark every week.
+            last=$(gh issue view "$existing" --json body,comments --jq '(.comments | last | .body) // .body')
+            if [[ "$last" == *"$alerts"* ]]; then
+              echo "Findings unchanged since the last alert on #${existing}; not commenting"
+              exit 0
+            fi
+            gh issue comment "$existing" --body "$msg"
+            echo "Commented on existing issue #${existing}"
+          else
+            gh issue create --title "$title" --body "$msg"
+          fi

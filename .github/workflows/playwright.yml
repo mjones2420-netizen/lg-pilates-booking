@@ -25,8 +25,17 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# Read-only access to the repo is all the test run needs (CodeQL finding, #97).
+permissions:
+  contents: read
+
 jobs:
   test:
+    # #97: skip Dependabot's suggested-fix pull requests. They get no access
+    # to the test secrets (so the run would just fail and email Mark), and
+    # they'd share the one TEST database with any local run. The suite runs
+    # as normal once a fix is merged into main.
+    if: github.actor != 'dependabot[bot]'
     timeout-minutes: 60
     runs-on: ubuntu-24.04  # pinned: Playwright 1.60 has no chromium for ubuntu 26.04 (Nov 2026)
 
